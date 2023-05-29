@@ -1,0 +1,78 @@
+{
+	"beacons": [
+		{
+			"callsign": "CD2RXU-7",
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"symbol": "[",
+			"overlay": "/",
+			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
+			"smart_beacon": {
+				"active": true,
+				"slowRate": 120,
+				"slowSpeed": 3,
+				"fastRate": 60,
+				"fastSpeed": 15,
+				"minTxDist": 50,
+				"minDeltaBeacon": 20,
+				"turnMinDeg": 12,
+				"turnSlope": 60
+			}
+		},
+		{
+			"callsign": "CD2RXU-8",
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"symbol": "b",
+			"overlay": "/",
+			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
+			"smart_beacon": {
+				"active": true,
+				"slowRate": 120,
+				"slowSpeed": 5,
+				"fastRate": 60,
+				"fastSpeed": 40,
+				"minTxDist": 100,
+				"minDeltaBeacon": 12,
+				"turnMinDeg": 12,
+				"turnSlope": 60
+			}
+		},
+		{
+			"callsign": "CD2RXU-9",
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"symbol": ">",
+			"overlay": "/",
+			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
+			"smart_beacon": {
+				"active": true,
+				"slowRate": 120,
+				"slowSpeed": 10,
+				"fastRate": 60,
+				"fastSpeed": 70,
+				"minTxDist": 100,
+				"minDeltaBeacon": 12,
+				"turnMinDeg": 10,
+				"turnSlope": 80
+			}
+		}
+	],
+	"lora": {
+		"frequency": 433775000,
+		"spreadingFactor": 12,
+		"signalBandwidth": 125000,
+		"codingRate4": 5,
+		"power": 20
+	},
+	"other": {
+		"nonSmartBeaconRate": 15,
+		"listeningTrackerTime": 30,
+		"maxDistanceToTracker": 30, 
+		"defaultStatusAfterBoot" : true,
+		"defaultStatus": "https://github.com/richonguzman/LoRa_APRS_Tracker",
+		"ecoMode": false,
+		"standingUpdateTime": 5,
+		"sendAltitude": true
+	}
+}
