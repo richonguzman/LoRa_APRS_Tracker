@@ -1019,7 +1019,7 @@ void loop() {
 
 /// FUNCTIONS ///
 void validateConfigFile() {
-  if (currentBeacon->callsign == "NOCALL-10") {
+  if (currentBeacon->callsign == "NOCALL-7") {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config",
                "You have to change your settings in 'data/tracker.json' and "
                "upload it via \"Upload File System image\"!");
