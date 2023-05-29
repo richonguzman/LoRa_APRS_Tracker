@@ -2,10 +2,7 @@
 	"beacons": [
 		{
 			"callsign": "CD2RXU-7",
-			"destination": "APLR01",
-			"path": "WIDE1-1",
 			"symbol": "[",
-			"overlay": "/",
 			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
 			"smart_beacon": {
 				"active": true,
@@ -17,15 +14,15 @@
 				"minDeltaBeacon": 20,
 				"turnMinDeg": 12,
 				"turnSlope": 60
-			}
+			},
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"overlay": "/"
 		},
 		{
 			"callsign": "CD2RXU-8",
-			"destination": "APLR01",
-			"path": "WIDE1-1",
 			"symbol": "b",
-			"overlay": "/",
-			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
+			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",	
 			"smart_beacon": {
 				"active": true,
 				"slowRate": 120,
@@ -36,14 +33,15 @@
 				"minDeltaBeacon": 12,
 				"turnMinDeg": 12,
 				"turnSlope": 60
-			}
+			},
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"overlay": "/"
+
 		},
 		{
 			"callsign": "CD2RXU-9",
-			"destination": "APLR01",
-			"path": "WIDE1-1",
 			"symbol": ">",
-			"overlay": "/",
 			"comment": "github.com/richonguzman/LoRa_APRS_Tracker",
 			"smart_beacon": {
 				"active": true,
@@ -55,7 +53,10 @@
 				"minDeltaBeacon": 12,
 				"turnMinDeg": 10,
 				"turnSlope": 80
-			}
+			},
+			"destination": "APLR01",
+			"path": "WIDE1-1",
+			"overlay": "/"
 		}
 	],
 	"lora": {
