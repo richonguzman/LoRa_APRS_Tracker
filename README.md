@@ -30,7 +30,7 @@ on the Menu 1:
 
 on the Menu 2:
 - 1 short press/push   = Ask for Weather Report (WX report will arrive in seconds).
-- 1 long press/push    = Listen to other Trackers (working on it!!!).
+- 1 long press/push    = Listen to other Trackers and show distance and course to them.
 - 2 short press/pushes = Menu 0 (back to the Tracker Screen).
 
 ____________________________________________________
