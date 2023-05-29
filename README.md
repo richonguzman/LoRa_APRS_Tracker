@@ -42,9 +42,10 @@ Timeline (Versions):
 - 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
 - 2023.05.29 New Config file for adding more new ideas to the Tracker.
 ____________________________________________________
-This code was inspided by OE5BPA LoRa Tracker and uses byte-saving part of the APRS 434 firmware published by Serge Y. Stroobandt, ON4AA.
+This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
 - https://github.com/aprs434/lora.tracker
 - https://github.com/lora-aprs/LoRa_APRS_Tracker
+- https://github.com/Mane76/LoRa_APRS_Tracker
 ____________________________________________________
 
 # Hope You Enjoy this, 73 !!  CD2RXU , Valparaiso, Chile
