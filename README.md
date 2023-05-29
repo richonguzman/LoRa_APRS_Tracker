@@ -6,12 +6,13 @@ NOTE: To take advantage of Tx/Rx capabilities you should have an Tx/R   x LoRa i
 https://github.com/richonguzman/LoRa_APRS_iGate
 
 ____________________________________________________
-Recent improvements:
-- NOW WE HAVE A MENU (just pushing the central button IO38) !!!
+- NOW WE HAVE A MENU (just pushing the central button IO38)
     - Saving, Reading and Deleting Messages.
     - Asking Weather Report
+    - Listening to other Trackers arround.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption (from ~ 100mA to almost ~80mA) (Thanks Mane76).
-- 4th line of the OLED SCREEN shows New Messages Received.
+- All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
+- 4th line of the OLED SCREEN shows Number of New Messages Received.
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
 ____________________________________________________
 
@@ -32,14 +33,14 @@ on the Menu 2:
 - 1 long press/push    = Listen to other Trackers (working on it!!!).
 - 2 short press/pushes = Menu 0 (back to the Tracker Screen).
 
-
 ____________________________________________________
-Versions:
+Timeline (Versions):
 - 2023.04.16 Sending and Receiving LoRa Packets.
 - 2023.05.12 Saving Messages to Internal Memory.
 - 2023.05.14 Adding Menu.
 - 2023.05.21 Adding Last-Heard LoRa Stations/Trackers
-- 2023.05.29 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
+- 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
+- 2023.05.29 New Config file for adding more new ideas to the Tracker.
 ____________________________________________________
 This code was inspided by OE5BPA LoRa Tracker and uses byte-saving part of the APRS 434 firmware published by Serge Y. Stroobandt, ON4AA.
 - https://github.com/aprs434/lora.tracker
