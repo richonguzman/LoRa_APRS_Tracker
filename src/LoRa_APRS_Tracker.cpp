@@ -905,6 +905,10 @@ void loop() {
 			infoField += "\x47";	
 		}
 
+    if (currentBeacon->comment != "") {
+      infoField += currentBeacon->comment;
+    }
+
     msg.getBody()->setData(infoField);
     String data = msg.encode();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
@@ -969,41 +973,26 @@ void loop() {
           thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
         }
         
-        double infoAMSL = gps.altitude.meters();
-        String fourthRowAlt;
-        if (infoAMSL >= 1000) {
-          fourthRowAlt = String(infoAMSL,0);
-        } else if (infoAMSL >= 100 && infoAMSL < 1000) {
-          fourthRowAlt = "0" + String(infoAMSL,0);
-        } else if (infoAMSL >= 10 && infoAMSL < 100) {
-          fourthRowAlt = "00" + String(infoAMSL,0);
-        } else if (infoAMSL < 10) {
-          fourthRowAlt = "000" + String(infoAMSL,0);
+        String fourthRowAlt = String(gps.altitude.meters(),0);
+        fourthRowAlt.trim();
+        for (int a=fourthRowAlt.length();a<4;a++) {
+          fourthRowAlt = "0" + fourthRowAlt;
         }
-        double infoSpeed = gps.speed.kmph();
-        String fourthRowSpeed, tempSpeed;
-        tempSpeed = String(infoSpeed,0);
-        tempSpeed.trim();
-        if (infoSpeed >= 100) {
-          fourthRowSpeed = tempSpeed;
-        } else if (infoSpeed >= 10 && infoSpeed < 100) {
-          fourthRowSpeed = " " + tempSpeed;
-        } else if (infoSpeed < 10) {
-          fourthRowSpeed = "  " + tempSpeed;
+        String fourthRowSpeed = String(gps.speed.kmph(),0);
+        fourthRowSpeed.trim();
+        for (int b=fourthRowSpeed.length(); b<3;b++) {
+          fourthRowSpeed = " " + fourthRowSpeed;
         }
-        double infoCourse = gps.course.deg();
-        String fourthRowCourse, tempCourse;
-        tempCourse = String(infoCourse,0);
-        tempCourse.trim();
-        if (infoCourse >= 100) {
-          fourthRowCourse = tempCourse;
-        } else if (infoCourse >= 10 && infoCourse < 100) {
-          fourthRowCourse = "0" + tempCourse;
-        } else if (infoCourse < 10) {
-          fourthRowCourse = "00" + tempCourse;
+        String fourthRowCourse = String(gps.course.deg(),0);
+        if (fourthRowSpeed == "  0") {
+          fourthRowCourse = "---";
+        } else {
+          fourthRowCourse.trim();
+          for(int c=fourthRowCourse.length();c<3;c++) {
+            fourthRowCourse = "0" + fourthRowCourse;
+          }
         }
-
-        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse; // AMSL = above mean sea level
+        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
         if (numAPRSMessages > 0){
           fourthRowMainMenu = "*** MESSAGES: " + String(numAPRSMessages) + " ***";
         }
