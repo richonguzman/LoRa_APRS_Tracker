@@ -969,7 +969,41 @@ void loop() {
           thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
         }
         
-        fourthRowMainMenu = "AMSL=" + String(gps.altitude.meters(),0) + "m"; // AMSL = above mean sea level
+        double infoAMSL = gps.altitude.meters();
+        String fourthRowAlt;
+        if (infoAMSL >= 1000) {
+          fourthRowAlt = String(infoAMSL,0);
+        } else if (infoAMSL >= 100 && infoAMSL < 1000) {
+          fourthRowAlt = "0" + String(infoAMSL,0);
+        } else if (infoAMSL >= 10 && infoAMSL < 100) {
+          fourthRowAlt = "00" + String(infoAMSL,0);
+        } else if (infoAMSL < 10) {
+          fourthRowAlt = "000" + String(infoAMSL,0);
+        }
+        double infoSpeed = gps.speed.kmph();
+        String fourthRowSpeed, tempSpeed;
+        tempSpeed = String(infoSpeed,0);
+        tempSpeed.trim();
+        if (infoSpeed >= 100) {
+          fourthRowSpeed = tempSpeed;
+        } else if (infoSpeed >= 10 && infoSpeed < 100) {
+          fourthRowSpeed = " " + tempSpeed;
+        } else if (infoSpeed < 10) {
+          fourthRowSpeed = "  " + tempSpeed;
+        }
+        double infoCourse = gps.course.deg();
+        String fourthRowCourse, tempCourse;
+        tempCourse = String(infoCourse,0);
+        tempCourse.trim();
+        if (infoCourse >= 100) {
+          fourthRowCourse = tempCourse;
+        } else if (infoCourse >= 10 && infoCourse < 100) {
+          fourthRowCourse = "0" + tempCourse;
+        } else if (infoCourse < 10) {
+          fourthRowCourse = "00" + tempCourse;
+        }
+
+        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse; // AMSL = above mean sea level
         if (numAPRSMessages > 0){
           fourthRowMainMenu = "*** MESSAGES: " + String(numAPRSMessages) + " ***";
         }
