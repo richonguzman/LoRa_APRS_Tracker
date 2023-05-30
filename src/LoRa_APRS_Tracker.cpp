@@ -17,7 +17,7 @@
 #include "pins.h"
 #include "power_management.h"
 
-#define VERSION "2023.05.29"
+#define VERSION "2023.05.30"
 
 logging::Logger logger;
 
@@ -969,7 +969,7 @@ void loop() {
           thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
         }
         
-        fourthRowMainMenu = " ALTURA y OTRAS COSAS";
+        fourthRowMainMenu = "AMSL=" + String(gps.altitude.meters(),0) + "m"; // AMSL = above mean sea level
         if (numAPRSMessages > 0){
           fourthRowMainMenu = "*** MESSAGES: " + String(numAPRSMessages) + " ***";
         }
