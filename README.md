@@ -18,9 +18,9 @@ ____________________________________________________
 ____________________________________________________
 
 # INSTRUCTIONS:
-(1). Change _Callsign_, _Symbol_ and _Comment_ on /data/tracker_config.json
-(2). Upload via Platformio --> Upload Filesystem Image (to your TTGO Board)
-(3). Build and Upload the Firmware with Platformio in VSCODE
+- (1). Change _Callsign_, _Symbol_ and _Comment_ on /data/tracker_config.json
+- (2). Upload via Platformio --> Upload Filesystem Image (to your TTGO Board)
+- (3). Build and Upload the Firmware with Platformio in VSCODE
 
 ____________________________________________________
 
