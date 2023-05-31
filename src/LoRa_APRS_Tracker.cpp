@@ -51,7 +51,7 @@ static int numAPRSMessages          = 0;
 static int messagesIterator         = 0;
 static String lastMessageAPRS       = "";
 static bool noMessageWarning        = false;
-static bool statusAfterBootCounter  = true;
+static bool statusAfterBootState    = true;
 
 std::vector<String> loadedAPRSMessages;
 
@@ -204,8 +204,8 @@ static void ButtonLongPress() {
     } else {
       myBeaconsIndex++;
     }
-    statusAfterBootCounter  = true;
-    show_display("__INFO____", "", "Changing Callsign..", 2000);
+    statusAfterBootState  = true;
+    show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
   } else if (menuDisplay == 1) {
     deleteFile();
     show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
@@ -229,9 +229,9 @@ static void ButtonDoublePress() {
 }
 
 void startingStatus() {
-  sendNewLoraPacket(currentBeacon->callsign + ">APLR01,WIDE1-1:>" + Config.defaultStatus);
-  statusAfterBootCounter = false;
   delay(2000);
+  sendNewLoraPacket(currentBeacon->callsign + ">APLR01,WIDE1-1:>" + Config.defaultStatus);
+  statusAfterBootState = false;
 }
 
 void saveNewMessage(String typeMessage, String station, String newMessage) {
@@ -675,25 +675,25 @@ void checkReceivedMessage(String packetReceived) {
 void setup() {
   Serial.begin(115200);
 
-#ifdef TTGO_T_Beam_V1_0
-  Wire.begin(SDA, SCL);
-  if (!powerManagement.begin(Wire)) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
-  } else {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
-  }
-  powerManagement.activateLoRa();
-  powerManagement.activateOLED();
-  powerManagement.activateGPS();
-  powerManagement.activateMeasurement();
-#endif
+  #ifdef TTGO_T_Beam_V1_0
+    Wire.begin(SDA, SCL);
+    if (!powerManagement.begin(Wire)) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
+    } else {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
+    }
+    powerManagement.activateLoRa();
+    powerManagement.activateOLED();
+    powerManagement.activateGPS();
+    powerManagement.activateMeasurement();
+  #endif
 
   delay(500);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: " VERSION);
   setup_display();
 
-  show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "  Version " VERSION, 4000);
+  show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " VERSION, 4000);
   validateConfigFile();
   loadNumMessages();
   setup_gps();
@@ -734,10 +734,6 @@ void loop() {
 
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
-
-  if (Config.defaultStatusAfterBoot && statusAfterBootCounter) {
-    startingStatus();
-  }
 
   String loraPacket = "";
   int packetSize = LoRa.parsePacket();  // Listening for LoRa Packets
@@ -923,6 +919,10 @@ void loop() {
     }
     lastTxTime = millis();
     send_update = false;
+
+    if (Config.defaultStatusAfterBoot && statusAfterBootState) {
+      startingStatus();
+    }
   }
 
   if (gps_time_update) {
