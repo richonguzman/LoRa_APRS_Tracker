@@ -229,11 +229,11 @@ static void ButtonDoublePress() {
 
 void startingStatus() {
   delay(2000);
-  sendNewLoraPacket(currentBeacon->callsign + ">APLR01,WIDE1-1:>" + Config.defaultStatus);
+  sendNewLoraPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
   statusAfterBootState = false;
 }
 
-void saveNewMessage(String typeMessage, String station, String via, String newMessage) {
+void saveNewMessage(String typeMessage, String station, String gate, String newMessage) {
   if (typeMessage == "APRS" && lastMessageAPRS != newMessage) {
     File fileToAppendAPRS = SPIFFS.open("/aprsMessages.txt", FILE_APPEND);
     if(!fileToAppendAPRS){
@@ -241,7 +241,7 @@ void saveNewMessage(String typeMessage, String station, String via, String newMe
       return;
     }
     newMessage.trim();
-    if(!fileToAppendAPRS.println(station + "," + via + "," + newMessage)){
+    if(!fileToAppendAPRS.println(station + "," + gate + "," + newMessage)){
       Serial.println("File append failed");
     }
     lastMessageAPRS = newMessage;
@@ -605,7 +605,7 @@ void getReceivedGPS(String packet, String sender) {
 
 void checkReceivedMessage(String packetReceived) {
   Serial.println(packetReceived);
-  String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage, Via;
+  String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage, iGate;
   if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
     Sender = packetReceived.substring(3,packetReceived.indexOf(">"));
     if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating                                
@@ -613,7 +613,7 @@ void checkReceivedMessage(String packetReceived) {
         AddresseeAndMessage = packetReceived.substring(packetReceived.indexOf("::")+2);  
         Addressee = AddresseeAndMessage.substring(0,AddresseeAndMessage.indexOf(":"));
         Addressee.trim();
-        Via = packetReceived.substring(packetReceived.indexOf("TCPIP,")+6,packetReceived.indexOf("::"));
+        iGate = packetReceived.substring(packetReceived.indexOf("TCPIP,")+6,packetReceived.indexOf("::"));
         if (Addressee == currentBeacon->callsign) {                   // its for me!
           if (AddresseeAndMessage.indexOf("{")>0) {                   // ack?
             ackMessage = "ack" + AddresseeAndMessage.substring(AddresseeAndMessage.indexOf("{")+1);
@@ -653,11 +653,11 @@ void checkReceivedMessage(String packetReceived) {
             } else {
               Serial.println("Message From WRCLP");
               show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);
-              saveNewMessage("APRS", Sender, Via, receivedMessage);
+              saveNewMessage("APRS", Sender, iGate, receivedMessage);
             }
           } else {
             show_display("<  MSG  >", "From --> " + Sender, "", receivedMessage , 3000);
-            saveNewMessage("APRS", Sender, Via, receivedMessage);
+            saveNewMessage("APRS", Sender, iGate, receivedMessage);
           }
         }
       } else if (packetReceived.indexOf(":!") > 10 || packetReceived.indexOf(":=") > 10 ) {     // packetReceived has APRS - GPS info
@@ -939,9 +939,9 @@ void loop() {
         {
           String msgSender      = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
           String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
-          String msgVia         = restOfMessage.substring(0,restOfMessage.indexOf(","));
+          String msgGate        = restOfMessage.substring(0,restOfMessage.indexOf(","));
           String msgText        = restOfMessage.substring(restOfMessage.indexOf(",")+1);
-          show_display("MSG_APRS>", msgSender + "-->" + msgVia, msgText, "", "", "               Next>");
+          show_display("MSG_APRS>", msgSender + "-->" + msgGate, msgText, "", "", "               Next>");
         }
         break;
 
