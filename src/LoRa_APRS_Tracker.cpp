@@ -17,19 +17,17 @@
 #include "pins.h"
 #include "power_management.h"
 
-#define VERSION "2023.05.30"
+#define VERSION "2023.05.31"
 
 logging::Logger logger;
 
 String configurationFilePath = "/tracker_config.json";
-Configuration Config(configurationFilePath);
+Configuration   Config(configurationFilePath);
 
 static int myBeaconsIndex = 0;
 int        myBeaconsSize  = Config.beacons.size();
 Beacon     *currentBeacon = &Config.beacons[myBeaconsIndex];
 
-//Configuration Config;
-//BeaconManager BeaconMan;
 PowerManagement powerManagement;
 OneButton       userButton = OneButton(BUTTON_PIN, true, true);
 
@@ -206,8 +204,7 @@ static void ButtonLongPress() {
     } else {
       myBeaconsIndex++;
     }
-    //BeaconMan.loadNextBeacon();
-    show_display(currentBeacon->callsign, "", "CALLSIGN CHANGED !!!", "", currentBeacon->comment, 2000);
+    show_display("__INFO____", "", "Changing Callsign..", 2000);
   } else if (menuDisplay == 1) {
     deleteFile();
     show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
