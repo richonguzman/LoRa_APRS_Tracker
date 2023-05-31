@@ -828,8 +828,8 @@ void loop() {
   if (send_update && gps_loc_update) {
     APRSMessage msg;
     msg.setSource(currentBeacon->callsign);
-    msg.setDestination(currentBeacon->destination);
-    msg.setPath(currentBeacon->path);
+    msg.setDestination(Config.destination);
+    msg.setPath(Config.path);
     
 
     float Tlat, Tlon;
@@ -853,7 +853,7 @@ void loop() {
     if(Tlon < 0) { Tlon= -Tlon; }
 
     String infoField = "!";
-    infoField += currentBeacon->overlay;
+    infoField += Config.overlay;
 
     char helper_base91[] = {"0000\0"};
     int i;

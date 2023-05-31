@@ -14,6 +14,14 @@ ____________________________________________________
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
 - 4th line of the OLED SCREEN shows Number of New Messages Received.
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
+
+____________________________________________________
+
+# INSTRUCTIONS:
+(1). Change _Callsign_, _Symbol_ and _Comment_ on /data/tracker_config.json
+(2). Upload via Platformio --> Upload Filesystem Image (to your TTGO Board)
+(3). Build and Upload the Firmware with Platformio in VSCODE
+
 ____________________________________________________
 
 # MENU EXPLANATION

@@ -10,10 +10,7 @@
 class Beacon {
 public:
   String callsign;
-  String destination;
-  String path;
   String symbol;
-  String overlay;
   String comment;
   bool  smartBeaconState;
   int   slowRate;
@@ -42,6 +39,9 @@ public:
   std::vector<Beacon> beacons;  
   LoraModule loramodule;
 
+  String  destination;
+  String  path;
+  String  overlay;
   int     nonSmartBeaconRate;
   int     listeningTrackerTime;
   int     maxDistanceToTracker;
@@ -78,10 +78,7 @@ private:
       Beacon bcn;
 
       bcn.callsign          = BeaconsArray[i]["callsign"].as<String>();
-      bcn.destination       = BeaconsArray[i]["destination"].as<String>();
-      bcn.path              = BeaconsArray[i]["path"].as<String>();
       bcn.symbol            = BeaconsArray[i]["symbol"].as<String>();
-      bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
       bcn.comment           = BeaconsArray[i]["comment"].as<String>();
 
       bcn.smartBeaconState  = BeaconsArray[i]["smart_beacon"]["active"].as<bool>();
@@ -103,6 +100,9 @@ private:
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
+    destination                   = data["other"]["destination"].as<String>();
+    path                          = data["other"]["path"].as<String>();
+    overlay                       = data["other"]["overlay"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     listeningTrackerTime          = data["other"]["listeningTrackerTime"].as<int>();
     maxDistanceToTracker          = data["other"]["maxDistanceToTracker"].as<int>();

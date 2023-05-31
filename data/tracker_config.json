@@ -14,15 +14,12 @@
 				"minDeltaBeacon": 20,
 				"turnMinDeg": 12,
 				"turnSlope": 60
-			},
-			"destination": "APLR01",
-			"path": "WIDE1-1",
-			"overlay": "/"
+			}
 		},
 		{
 			"callsign": "NOCALL-8",
 			"symbol": "b",
-			"comment": "https://github.com/richonguzman/LoRa_APRS_Tracker",	
+			"comment": "https://github.com/richonguzman/LoRa_APRS_Tracker",
 			"smart_beacon": {
 				"active": true,
 				"slowRate": 120,
@@ -33,11 +30,7 @@
 				"minDeltaBeacon": 12,
 				"turnMinDeg": 12,
 				"turnSlope": 60
-			},
-			"destination": "APLR01",
-			"path": "WIDE1-1",
-			"overlay": "/"
-
+			}
 		},
 		{
 			"callsign": "NOCALL-9",
@@ -53,10 +46,7 @@
 				"minDeltaBeacon": 12,
 				"turnMinDeg": 10,
 				"turnSlope": 80
-			},
-			"destination": "APLR01",
-			"path": "WIDE1-1",
-			"overlay": "/"
+			}
 		}
 	],
 	"lora": {
@@ -67,6 +57,9 @@
 		"power": 20
 	},
 	"other": {
+		"destination": "APLR01",
+		"path": "WIDE1-1",
+		"overlay": "/",
 		"nonSmartBeaconRate": 15,
 		"listeningTrackerTime": 30,
 		"maxDistanceToTracker": 30, 
