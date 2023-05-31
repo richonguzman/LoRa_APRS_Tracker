@@ -204,6 +204,7 @@ static void ButtonLongPress() {
     } else {
       myBeaconsIndex++;
     }
+    statusAfterBootCounter  = true;
     show_display("__INFO____", "", "Changing Callsign..", 2000);
   } else if (menuDisplay == 1) {
     deleteFile();
