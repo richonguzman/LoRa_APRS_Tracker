@@ -11,7 +11,6 @@
 #include <logger.h>
 #include "SPIFFS.h"
 #include <vector>
-//#include "BeaconManager.h"
 #include "configuration.h"
 #include "display.h"
 #include "pins.h"
