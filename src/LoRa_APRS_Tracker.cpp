@@ -234,7 +234,7 @@ void startingStatus() {
   statusAfterBootState = false;
 }
 
-void saveNewMessage(String typeMessage, String station, String newMessage) {
+void saveNewMessage(String typeMessage, String station, String via, String newMessage) {
   if (typeMessage == "APRS" && lastMessageAPRS != newMessage) {
     File fileToAppendAPRS = SPIFFS.open("/aprsMessages.txt", FILE_APPEND);
     if(!fileToAppendAPRS){
@@ -242,7 +242,7 @@ void saveNewMessage(String typeMessage, String station, String newMessage) {
       return;
     }
     newMessage.trim();
-    if(!fileToAppendAPRS.println("1," + station + "," + newMessage)){
+    if(!fileToAppendAPRS.println(station + "," + via + "," + newMessage)){
       Serial.println("File append failed");
     }
     lastMessageAPRS = newMessage;
@@ -605,7 +605,8 @@ void getReceivedGPS(String packet, String sender) {
 }
 
 void checkReceivedMessage(String packetReceived) {
-  String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage;
+  Serial.println(packetReceived);
+  String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage, Via;
   if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
     Sender = packetReceived.substring(3,packetReceived.indexOf(">"));
     if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating                                
@@ -613,6 +614,7 @@ void checkReceivedMessage(String packetReceived) {
         AddresseeAndMessage = packetReceived.substring(packetReceived.indexOf("::")+2);  
         Addressee = AddresseeAndMessage.substring(0,AddresseeAndMessage.indexOf(":"));
         Addressee.trim();
+        Via = packetReceived.substring(packetReceived.indexOf("TCPIP,")+6,packetReceived.indexOf("::"));
         if (Addressee == currentBeacon->callsign) {                   // its for me!
           if (AddresseeAndMessage.indexOf("{")>0) {                   // ack?
             ackMessage = "ack" + AddresseeAndMessage.substring(AddresseeAndMessage.indexOf("{")+1);
@@ -652,11 +654,11 @@ void checkReceivedMessage(String packetReceived) {
             } else {
               Serial.println("Message From WRCLP");
               show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);
-              saveNewMessage("APRS", Sender, receivedMessage);
+              saveNewMessage("APRS", Sender, Via, receivedMessage);
             }
           } else {
             show_display("<  MSG  >", "From --> " + Sender, "", receivedMessage , 3000);
-            saveNewMessage("APRS", Sender, receivedMessage);
+            saveNewMessage("APRS", Sender, Via, receivedMessage);
           }
         }
       } else if (packetReceived.indexOf(":!") > 10 || packetReceived.indexOf(":=") > 10 ) {     // packetReceived has APRS - GPS info
@@ -775,15 +777,15 @@ void loop() {
   static bool   BatteryIsConnected   = false;
   static String batteryVoltage       = "";
   static String batteryChargeCurrent = "";
-#ifdef TTGO_T_Beam_V1_0
-  static unsigned int rate_limit_check_battery = 0;
-  if (!(rate_limit_check_battery++ % 60))
-    BatteryIsConnected = powerManagement.isBatteryConnect();
-  if (BatteryIsConnected) {
-    batteryVoltage       = String(powerManagement.getBatteryVoltage(), 2);
-    batteryChargeCurrent = String(powerManagement.getBatteryChargeDischargeCurrent(), 0);
-  }
-#endif
+  #ifdef TTGO_T_Beam_V1_0
+    static unsigned int rate_limit_check_battery = 0;
+    if (!(rate_limit_check_battery++ % 60))
+      BatteryIsConnected = powerManagement.isBatteryConnect();
+    if (BatteryIsConnected) {
+      batteryVoltage       = String(powerManagement.getBatteryVoltage(), 2);
+      batteryChargeCurrent = String(powerManagement.getBatteryChargeDischargeCurrent(), 0);
+    }
+  #endif
 
   if (powerManagement.isChargeing()) {
     powerManagement.enableChgLed();
@@ -936,11 +938,11 @@ void loop() {
 
       case 10:            // Display Received/Saved APRS Messages
         {
-          String newIndicator      = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
-          String restOfMessage       = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(newIndicator)+2);
-          String msgSender  = restOfMessage.substring(0, restOfMessage.indexOf(","));
-          String msgText    = restOfMessage.substring(restOfMessage.indexOf(",")+1);
-          show_display("MSG_APRS>", "From ---> " + msgSender, msgText, "", "", "               Next>");
+          String msgSender      = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
+          String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
+          String msgVia         = restOfMessage.substring(0,restOfMessage.indexOf(","));
+          String msgText        = restOfMessage.substring(restOfMessage.indexOf(",")+1);
+          show_display("MSG_APRS>", msgSender + "-->" + msgVia, msgText, "", "", "               Next>");
         }
         break;
 
@@ -1041,11 +1043,8 @@ void loop() {
 /// FUNCTIONS ///
 void validateConfigFile() {
   if (currentBeacon->callsign == "NOCALL-7") {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config",
-               "You have to change your settings in 'data/tracker.json' and "
-               "upload it via \"Upload File System image\"!");
-    show_display("ERROR", "You have to change your settings in 'data/tracker.json' and "
-                          "upload it via \"Upload File System image\"!");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
+    show_display("ERROR", "Change your settings", "in 'data' folder", "'tracker_config.json'", "upload it via", "'Upload File System image'");
     while (true) {}
   }
 }
