@@ -103,7 +103,7 @@ private:
     loramodule.power              = data["lora"]["power"].as<int>();
 
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
-		displayTimeout                = data["other"]["displayTimeout"].as<int>();
+    displayTimeout                = data["other"]["displayTimeout"].as<int>();
     destination                   = data["other"]["destination"].as<String>();
     path                          = data["other"]["path"].as<String>();
     overlay                       = data["other"]["overlay"].as<String>();
