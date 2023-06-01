@@ -223,10 +223,10 @@ static void ButtonLongPress() {
   } else if (menuDisplay == 3) {
     if (!displayEcoMode) {
       displayEcoMode = true;
-      show_display("__DISPLAY_", "", "  ECO MODE -> True", 1000);
+      show_display("__DISPLAY_", "", "   ECO MODE -> ON", 1000);
     } else {
       displayEcoMode = false;
-      show_display("__DISPLAY_", "", "  ECO MODE -> False", 1000);
+      show_display("__DISPLAY_", "", "   ECO MODE -> OFF", 1000);
     }
   }
 }
