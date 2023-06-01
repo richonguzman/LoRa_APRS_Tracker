@@ -162,8 +162,8 @@ void sendMessage(String station, String textMessage) {
   
   if (textMessage.indexOf("ack")== 0) {
     show_display("<<ACK Tx>>", 500);
-  } else if (station.indexOf("WRCLP") == 0 && textMessage.indexOf("wrl")==0) {
-    show_display("<WEATHER>","", "--- asking WRCLP ---",  1000);
+  } else if (station.indexOf("CD2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {
+    show_display("<WEATHER>","", "--- Sending Query ---",  1000);
   } else {
     show_display("MSG Tx >>", "", messageToSend, 1000);
   }
@@ -182,7 +182,7 @@ static void ButtonSinglePress() {
     }
   } else if (menuDisplay == 2) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-    sendMessage("WRCLP","wrl");
+    sendMessage("CD2RXU-15","wrl");
   } else if (menuDisplay == 10) {
     messagesIterator++;
     if (messagesIterator == numAPRSMessages) {
@@ -629,7 +629,7 @@ void checkReceivedMessage(String packetReceived) {
             delay(4000);
             sendMessage(Sender, "pong, 73!");
           }
-          if (Sender == "WRCLP") {
+          if (Sender == "CD2RXU-15") {
             if (receivedMessage.indexOf("WX")==0) {                   // WX = WeatherReport
               Serial.println("Weather Report Received");
               String wxCleaning     = receivedMessage.substring(receivedMessage.indexOf("WX ")+3);
@@ -651,7 +651,6 @@ void checkReceivedMessage(String packetReceived) {
               String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
               show_display("<WEATHER>", "From --> " + Sender, place, summary, fifthLineWR, sixthLineWR , 6000);
             } else {
-              Serial.println("Message From WRCLP");
               show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);
               saveNewMessage("APRS", Sender, iGate, receivedMessage);
             }
