@@ -902,25 +902,25 @@ void loop() {
     infoField += currentBeacon->symbol;
 
     if (Config.sendAltitude) {					// Send Altitude or... (APRS calculates Speed also)
-			int Alt1, Alt2;
-			int Talt;
-			Talt = gps.altitude.feet();
-			if(Talt>0){
-				double ALT=log(Talt)/log(1.002);
-				Alt1= int(ALT/91);
-				Alt2=(int)ALT%91;
-			}else{
-				Alt1=0;
-				Alt2=0;
-			}
-			if (sendStandingUpdate) {
-				infoField += " ";
-			} else {
-				infoField +=char(Alt1+33);
-			}
-			infoField +=char(Alt2+33);
-			infoField +=char(0x30+33);
-		} else {							// ... just send Course and Speed
+      int Alt1, Alt2;
+      int Talt;
+      Talt = gps.altitude.feet();
+      if(Talt>0){
+        double ALT=log(Talt)/log(1.002);
+        Alt1= int(ALT/91);
+        Alt2=(int)ALT%91;
+      }else{
+        Alt1=0;
+        Alt2=0;
+      }
+      if (sendStandingUpdate) {
+        infoField += " ";
+      } else {
+        infoField +=char(Alt1+33);
+      }
+      infoField +=char(Alt2+33);
+      infoField +=char(0x30+33);
+    } else {							// ... just send Course and Speed
 			ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
 			if (sendStandingUpdate) {
 				infoField += " ";
