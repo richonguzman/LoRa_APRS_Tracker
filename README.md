@@ -12,9 +12,8 @@ ____________________________________________________
     - Listening to other Trackers arround.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption (from ~ 100mA to almost ~80mA) (Thanks Mane76).
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
-- 4th line of the OLED SCREEN shows Number of New Messages Received.
+- 4th line of the OLED SCREEN shows Altitude+Speed+Course or Number of New Messages Received.
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
-
 ____________________________________________________
 
 # INSTRUCTIONS:
@@ -49,6 +48,7 @@ Timeline (Versions):
 - 2023.05.21 Adding Last-Heard LoRa Stations/Trackers
 - 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
 - 2023.05.29 New Config file for adding more new ideas to the Tracker.
+- 2023.06.01 Adding Turn Slope calculations for Smart Beacon
 ____________________________________________________
 This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
 - https://github.com/aprs434/lora.tracker

@@ -16,7 +16,7 @@
 #include "pins.h"
 #include "power_management.h"
 
-#define VERSION "2023.05.31"
+#define VERSION "2023.06.01"
 
 logging::Logger logger;
 
@@ -767,10 +767,11 @@ void loop() {
 
   static double   lastTxLat             = 0.0;
   static double   lastTxLng             = 0.0;
-  static double   lastTxdistance        = 0.0;
+  static double   lastTxDistance        = 0.0;
   static uint32_t txInterval            = 60000L;
   static uint32_t lastTxTime            = millis();
   static bool		  sendStandingUpdate 		= false;
+  int 			      currentSpeed 			    = (int)gps.speed.kmph();
 
   static bool   BatteryIsConnected   = false;
   static String batteryVoltage       = "";
@@ -794,18 +795,24 @@ void loop() {
   if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
     uint32_t lastTx = millis() - lastTxTime;
     currentHeading  = gps.course.deg();
-    lastTxdistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
+    lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
     if (lastTx >= txInterval) {
-      if (lastTxdistance > currentBeacon->minTxDist) {
+      if (lastTxDistance > currentBeacon->minTxDist) {
         send_update = true;
         sendStandingUpdate = false;
       }
     }
 
     if (!send_update) {
+      int TurnMinAngle;
       double headingDelta = abs(previousHeading - currentHeading);
       if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
-        if (headingDelta > currentBeacon->turnMinDeg && lastTxdistance > currentBeacon->minTxDist) {
+        if (currentSpeed == 0) {
+					TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/(currentSpeed+1));
+				} else {
+          TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/currentSpeed);
+				}
+				if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
           send_update = true;
           sendStandingUpdate = false;
         }
@@ -817,7 +824,6 @@ void loop() {
 		}
   }
 
-  // para cuando se tiene smartbeacon apagado
   if (!currentBeacon->smartBeaconState) {
     uint32_t lastTx = millis() - lastTxTime;
     if (lastTx >= Config.nonSmartBeaconRate*60*1000) {
@@ -914,8 +920,7 @@ void loop() {
       lastTxLat       = gps.location.lat();
       lastTxLng       = gps.location.lng();
       previousHeading = currentHeading;
-      lastTxdistance  = 0.0;
-      //lastTxTime      = millis();
+      lastTxDistance  = 0.0;
     }
     lastTxTime = millis();
     send_update = false;
@@ -1019,13 +1024,12 @@ void loop() {
     
 
     if (currentBeacon->smartBeaconState) {
-      int curr_speed = (int)gps.speed.kmph();
-      if (curr_speed < currentBeacon->slowSpeed) {
+      if (currentSpeed < currentBeacon->slowSpeed) {
         txInterval = currentBeacon->slowRate * 1000;
-      } else if (curr_speed > currentBeacon->fastSpeed) {
+      } else if (currentSpeed > currentBeacon->fastSpeed) {
         txInterval = currentBeacon->fastRate * 1000;
       } else {
-        txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / curr_speed) * 1000;
+        txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / currentSpeed) * 1000;
       }
     }
   }
