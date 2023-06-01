@@ -901,7 +901,7 @@ void loop() {
     
     infoField += currentBeacon->symbol;
 
-    if (Config.sendAltitude) {					// Send Altitude or... (APRS calculates Speed also)
+    if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
       int Alt1, Alt2;
       int Talt;
       Talt = gps.altitude.feet();
@@ -920,17 +920,17 @@ void loop() {
       }
       infoField +=char(Alt2+33);
       infoField +=char(0x30+33);
-    } else {							// ... just send Course and Speed
-			ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
-			if (sendStandingUpdate) {
-				infoField += " ";
-			} else {
-				infoField += helper_base91[0];
-			}
-			ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
-			infoField += helper_base91[0];
-			infoField += "\x47";	
-		}
+    } else {                      // ... just send Course and Speed
+      ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+      if (sendStandingUpdate) {
+        infoField += " ";
+      } else {
+        infoField += helper_base91[0];
+      }
+      ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+      infoField += helper_base91[0];
+      infoField += "\x47";
+    }
 
     if (currentBeacon->comment != "") {
       infoField += currentBeacon->comment;
