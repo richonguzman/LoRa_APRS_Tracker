@@ -57,6 +57,8 @@
 		"power": 20
 	},
 	"other": {
+		"displayEcoMode": false,
+		"displayTimeout": 4,
 		"destination": "APLR01",
 		"path": "WIDE1-1",
 		"overlay": "/",

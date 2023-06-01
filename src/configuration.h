@@ -39,6 +39,8 @@ public:
   std::vector<Beacon> beacons;  
   LoraModule loramodule;
 
+  bool    displayEcoMode;
+  int     displayTimeout;
   String  destination;
   String  path;
   String  overlay;
@@ -93,13 +95,15 @@ private:
 
       beacons.push_back(bcn);
     }
-
+    
     loramodule.frequency          = data["lora"]["frequency"].as<long>();
     loramodule.spreadingFactor    = data["lora"]["spreadingFactor"].as<int>();
     loramodule.signalBandwidth    = data["lora"]["signalBandwidth"].as<long>();
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
+    displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
+		displayTimeout                = data["other"]["displayTimeout"].as<int>();
     destination                   = data["other"]["destination"].as<String>();
     path                          = data["other"]["path"].as<String>();
     overlay                       = data["other"]["overlay"].as<String>();

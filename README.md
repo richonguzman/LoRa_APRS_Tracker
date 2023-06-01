@@ -10,6 +10,7 @@ ____________________________________________________
     - Saving, Reading and Deleting Messages.
     - Asking Weather Report
     - Listening to other Trackers arround.
+    - Changing Display Eco Mode (turn off after 4 seg).
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption (from ~ 100mA to almost ~80mA) (Thanks Mane76).
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
 - 4th line of the OLED SCREEN shows Altitude+Speed+Course or Number of New Messages Received.
@@ -38,6 +39,11 @@ on the Menu 1:
 on the Menu 2:
 - 1 short press/push   = Ask for Weather Report (WX report will arrive in seconds).
 - 1 long press/push    = Listen to other Trackers and show distance and course to them.
+- 2 short press/pushes = Menu 3 (where you cand change Display Eco Mode and more).
+
+on the Menu 3:
+- 1 short press/push   = NOTHING YET... (any ideas?).
+- 1 long press/push    = Change Display Eco Mode (Turn off after 4 seg).
 - 2 short press/pushes = Menu 0 (back to the Tracker Screen).
 
 ____________________________________________________
@@ -48,7 +54,7 @@ Timeline (Versions):
 - 2023.05.21 Adding Last-Heard LoRa Stations/Trackers
 - 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
 - 2023.05.29 New Config file for adding more new ideas to the Tracker.
-- 2023.06.01 Adding Turn Slope calculations for Smart Beacon
+- 2023.06.01 Adding Turn Slope calculations for Smart Beacon and Display Eco Mode
 ____________________________________________________
 This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
 - https://github.com/aprs434/lora.tracker
