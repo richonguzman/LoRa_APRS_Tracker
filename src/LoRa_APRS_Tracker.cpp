@@ -16,7 +16,7 @@
 #include "pins.h"
 #include "power_management.h"
 
-#define VERSION "2023.06.01"
+#define VERSION "2023.06.02"
 
 logging::Logger logger;
 
@@ -42,8 +42,8 @@ String padding(unsigned int number, unsigned int width);
 
 static int      menuDisplay           = 0;
 static bool     displayEcoMode        = Config.displayEcoMode;
-static bool     displayState          = true;
 static uint32_t displayTime           = millis();
+static bool     displayState          = true;
 static bool     send_update           = true;
 static String   lastHeardTracker      = "NONE";
 static int      numAPRSMessages       = 0;
@@ -172,11 +172,12 @@ void sendMessage(String station, String textMessage) {
 
 static void ButtonSinglePress() {
   if (menuDisplay == 0) {
-    if (!displayState) {
-      display_toggle(true);
-      displayTime = millis();
-    } else {
+    if (displayState) {
       send_update = true;
+    } else {
+      display_toggle(true);
+      displayTime = millis();   
+      displayState = true;  
     }
   } else if (menuDisplay == 1) {
     loadMessagesFromMemory();

@@ -11,6 +11,7 @@ extern logging::Logger logger;
 
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
 
+
 // cppcheck-suppress unusedFunction
 void setup_display() {
   pinMode(OLED_RST, OUTPUT);
