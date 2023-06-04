@@ -666,10 +666,11 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: " VERSION);
   setup_display();
-
   show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " VERSION, 4000);
+  
   Config.validateConfigFile(currentBeacon->callsign);
   loadNumMessages();
+
   setup_gps();
   LoRaUtils::setup();
 
@@ -684,14 +685,17 @@ void setup() {
   userButton.attachDoubleClick(ButtonDoublePress);
 
   powerManagement.lowerCpuFrequency();
-
+  delay(500);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
-  delay(500);
 }
 
 // cppcheck-suppress unusedFunction
 void loop() {
+  currentBeacon = &Config.beacons[myBeaconsIndex];
+
+  userButton.tick();
+
   uint32_t lastDisplayTime = millis() - displayTime;
   if (displayEcoMode) {
     if (menuDisplay == 0 && lastDisplayTime >= Config.displayTimeout*1000) {
@@ -700,16 +704,12 @@ void loop() {
     }
   }
 
-  currentBeacon = &Config.beacons[myBeaconsIndex];
-
-  userButton.tick();
+  powerManagement.obtainBatteryInfo();
+  powerManagement.handleChargingLed();
 
   while (neo6m_gps.available() > 0) {
     gps.encode(neo6m_gps.read());
   }
-
-  powerManagement.obtainBatteryInfo();
-  powerManagement.handleChargingLed();
 
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
