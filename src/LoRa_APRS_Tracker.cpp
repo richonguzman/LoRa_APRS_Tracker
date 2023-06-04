@@ -35,6 +35,7 @@ TinyGPSPlus     gps;
 String getSmartBeaconState();
 
 static int      menuDisplay           = 0;
+static bool     dimDisplayState       = false;
 static bool     displayEcoMode        = Config.displayEcoMode;
 static uint32_t displayTime           = millis();
 static bool     displayState          = true;
@@ -78,7 +79,7 @@ static void ButtonSinglePress() {
   } else if (menuDisplay == 20) {
     menuDisplay = 2;
   } else if (menuDisplay == 3) {
-    show_display("__INFO____", "", "NOTHING YET ...", 1000);
+    show_display("__INFO____", "", "Nothing Yet...", 1500);
   }
 }
 
@@ -373,7 +374,7 @@ void loop() {
         show_display("__MENU_2__", "", "1P -> Weather Report", "LP -> Listen Trackers", "2P -> Menu 3");
         break;
       case 3:
-        show_display("__MENU_3__", "", "1P -> Nothing Yet", "LP -> Display EcoMode", "2P -> (Back) Tracking");
+        show_display("__MENU_3__", "", "1P -> NOTHING YET", "LP -> Display EcoMode", "2P -> (Back) Tracking");
         break;
 
       case 10:            // Display Received/Saved APRS Messages
