@@ -58,6 +58,10 @@ std::vector<String> loadedAPRSMessages;
 
 static uint32_t lastDeleteListenedTracker = millis();
 
+void setup_gps() {
+  neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+}
+
 void loadNumMessages() {
   if(!SPIFFS.begin(true)){
     Serial.println("An Error has occurred while mounting SPIFFS");
@@ -81,10 +85,6 @@ void loadNumMessages() {
     numAPRSMessages++;
   }
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));  
-}
-
-void setup_gps() {
-  neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
 }
 
 void loadMessagesFromMemory() { 
@@ -660,18 +660,7 @@ void checkReceivedMessage(String packetReceived) {
 void setup() {
   Serial.begin(115200);
 
-  #ifdef TTGO_T_Beam_V1_0
-    Wire.begin(SDA, SCL);
-    if (!powerManagement.begin(Wire)) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
-    } else {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
-    }
-    powerManagement.activateLoRa();
-    powerManagement.activateOLED();
-    powerManagement.activateGPS();
-    powerManagement.activateMeasurement();
-  #endif
+  powerManagement.setup();
 
   delay(500);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
@@ -694,13 +683,7 @@ void setup() {
   userButton.attachLongPressStart(ButtonLongPress);
   userButton.attachDoubleClick(ButtonDoublePress);
 
-  #if defined(TTGO_T_Beam_V1_0) 
-  if (setCpuFrequencyMhz(80)) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
-  } else {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency unchanged");
-  }
-  #endif
+  powerManagement.lowerCpuFrequency();
 
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
@@ -724,6 +707,9 @@ void loop() {
   while (neo6m_gps.available() > 0) {
     gps.encode(neo6m_gps.read());
   }
+
+  powerManagement.obtainBatteryInfo();
+  powerManagement.handleChargingLed();
 
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
@@ -765,25 +751,6 @@ void loop() {
   static uint32_t lastTxTime            = millis();
   static bool		  sendStandingUpdate 		= false;
   int 			      currentSpeed 			    = (int)gps.speed.kmph();
-
-  static bool   BatteryIsConnected   = false;
-  static String batteryVoltage       = "";
-  static String batteryChargeCurrent = "";
-  #ifdef TTGO_T_Beam_V1_0
-    static unsigned int rate_limit_check_battery = 0;
-    if (!(rate_limit_check_battery++ % 60))
-      BatteryIsConnected = powerManagement.isBatteryConnect();
-    if (BatteryIsConnected) {
-      batteryVoltage       = String(powerManagement.getBatteryVoltage(), 2);
-      batteryChargeCurrent = String(powerManagement.getBatteryChargeDischargeCurrent(), 0);
-    }
-  #endif
-
-  if (powerManagement.isChargeing()) {
-    powerManagement.enableChgLed();
-  } else {
-    powerManagement.disableChgLed();
-  }
 
   if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
     uint32_t lastTx = millis() - lastTxTime;
@@ -998,7 +965,9 @@ void loop() {
                 
         fifthRowMainMenu  = "LAST Rx = " + lastHeardTracker;
             
-        if (BatteryIsConnected) {
+        if (powerManagement.getBatteryInfoIsConnected()) {
+          String batteryVoltage = powerManagement.getBatteryInfoVoltage();
+          String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
           if (batteryChargeCurrent.toInt() == 0) {
             sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
           } else if (batteryChargeCurrent.toInt() > 0) {
@@ -1007,7 +976,7 @@ void loop() {
             sixthRowMainMenu = "Battery " + String(batteryVoltage) + "V " + String(batteryChargeCurrent) + "mA";
           }
         } else {
-          sixthRowMainMenu = "No Battery Connected." ;
+          sixthRowMainMenu = "No Battery Connected" ;
         }
         show_display(String(firstRowMainMenu),
                     String(secondRowMainMenu),

@@ -6,8 +6,20 @@
 
 class PowerManagement {
 public:
-  PowerManagement();
+  PowerManagement() : BatteryIsConnected(false), batteryVoltage(""), batteryChargeDischargeCurrent("") {};
   bool begin(TwoWire &port);
+
+  void setup();
+  void lowerCpuFrequency();
+  void handleChargingLed(); 
+
+  void obtainBatteryInfo();
+  String getBatteryInfoVoltage();
+  String getBatteryInfoCurrent();
+  bool getBatteryInfoIsConnected();
+
+private:
+  bool isChargeing();
 
   void activateLoRa();
   void deactivateLoRa();
@@ -27,11 +39,13 @@ public:
   double getBatteryVoltage();
   double getBatteryChargeDischargeCurrent();
 
-  bool isBatteryConnect();
-  bool isChargeing();
+  bool isBatteryConnected();
 
-private:
   AXP20X_Class axp;
+
+  bool   BatteryIsConnected;
+  String batteryVoltage;
+  String batteryChargeDischargeCurrent;
 };
 
 #endif

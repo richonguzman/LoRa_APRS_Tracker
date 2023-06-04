@@ -1,9 +1,7 @@
-
 #include "power_management.h"
+#include "logger.h"
 
-// cppcheck-suppress uninitMemberVar
-PowerManagement::PowerManagement() {
-}
+extern logging::Logger logger;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
@@ -77,10 +75,67 @@ double PowerManagement::getBatteryChargeDischargeCurrent() {
   return -1.0 * axp.getBattDischargeCurrent();
 }
 
-bool PowerManagement::isBatteryConnect() {
+bool PowerManagement::isBatteryConnected() {
   return axp.isBatteryConnect();
 }
 
 bool PowerManagement::isChargeing() {
   return axp.isChargeing();
+}
+
+void PowerManagement::setup() {
+#ifdef TTGO_T_Beam_V1_0
+  Wire.begin(SDA, SCL);
+  if (!begin(Wire)) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
+  } else {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
+  }
+  activateLoRa();
+  activateOLED();
+  activateGPS();
+  activateMeasurement();
+#endif
+}
+
+void PowerManagement::lowerCpuFrequency() {
+  #if defined(TTGO_T_Beam_V1_0) 
+  if (setCpuFrequencyMhz(80)) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
+  } else {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency unchanged");
+  }
+  #endif
+}
+
+void PowerManagement::handleChargingLed() {
+  if (isChargeing()) {
+    enableChgLed();
+  } else {
+    disableChgLed();
+  }
+}
+
+void PowerManagement::obtainBatteryInfo() {
+#ifdef TTGO_T_Beam_V1_0
+  static unsigned int rate_limit_check_battery = 0;
+  if (!(rate_limit_check_battery++ % 60))
+    BatteryIsConnected = isBatteryConnected();
+  if (BatteryIsConnected) {
+    batteryVoltage       = String(getBatteryVoltage(), 2);
+    batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
+  }
+#endif
+}
+
+String PowerManagement::getBatteryInfoVoltage() {
+  return batteryVoltage;
+}
+
+String PowerManagement::getBatteryInfoCurrent() {
+  return batteryChargeDischargeCurrent;
+}
+
+bool PowerManagement::getBatteryInfoIsConnected() {
+  return BatteryIsConnected;
 }
