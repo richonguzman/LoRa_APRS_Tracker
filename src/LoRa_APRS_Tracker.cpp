@@ -5,7 +5,6 @@
 #include <Arduino.h>
 #include <LoRa.h>
 #include <OneButton.h>
-#include <TimeLib.h>
 #include <TinyGPS++.h>
 #include <WiFi.h>
 #include <logger.h>
@@ -16,8 +15,9 @@
 #include "pins.h"
 #include "power_management.h"
 #include "lora_utils.h"
+#include "utils.h"
 
-#define VERSION "2023.06.03"
+#define VERSION "2023.06.04"
 
 logging::Logger logger;
 
@@ -31,11 +31,11 @@ OneButton       userButton = OneButton(BUTTON_PIN, true, true);
 HardwareSerial  neo6m_gps(1);
 TinyGPSPlus     gps;
 
-char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
-String createDateString(time_t t);
-String createTimeString(time_t t);
+//char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
+//String createDateString(time_t t);
+//String createTimeString(time_t t);
 String getSmartBeaconState();
-String padding(unsigned int number, unsigned int width);
+//String padding(unsigned int number, unsigned int width);
 
 static int      menuDisplay           = 0;
 static bool     displayEcoMode        = Config.displayEcoMode;
@@ -823,11 +823,11 @@ void loop() {
 
     char helper_base91[] = {"0000\0"};
     int i;
-    ax25_base91enc(helper_base91, 4, aprs_lat);
+    utils::ax25_base91enc(helper_base91, 4, aprs_lat);
     for (i=0; i<4; i++) {
       infoField += helper_base91[i];
       }
-    ax25_base91enc(helper_base91, 4, aprs_lon);
+    utils::ax25_base91enc(helper_base91, 4, aprs_lon);
     for (i=0; i<4; i++) {
       infoField += helper_base91[i];
     }
@@ -854,13 +854,13 @@ void loop() {
       infoField +=char(Alt2+33);
       infoField +=char(0x30+33);
     } else {                      // ... just send Course and Speed
-      ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+      utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
       if (sendStandingUpdate) {
         infoField += " ";
       } else {
         infoField += helper_base91[0];
       }
-      ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+      utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
       infoField += helper_base91[0];
       infoField += "\x47";
     }
@@ -920,7 +920,7 @@ void loop() {
         String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;;
 
         firstRowMainMenu = currentBeacon->callsign;
-        secondRowMainMenu = createDateString(now()) + "   " + createTimeString(now());
+        secondRowMainMenu = utils::createDateString(now()) + "   " + utils::createTimeString(now());
         
         if (gps.hdop.hdop() > 5) {
           hdopState = "X";
@@ -1008,40 +1008,9 @@ void loop() {
 }
 
 /// FUNCTIONS ///
-char *ax25_base91enc(char *s, uint8_t n, uint32_t v) {
-  /* Creates a Base-91 representation of the value in v in the string */
-  /* pointed to by s, n-characters long. String length should be n+1. */
-  for(s += n, *s = '\0'; n; n--) {
-    *(--s) = v % 91 + 33;
-    v /= 91;
-  }
-  return(s);
-}
-
-String createDateString(time_t t) {
-  return String(padding(year(t), 4) + "-" + padding(month(t), 2) + "-" + padding(day(t), 2));
-}
-
-String createTimeString(time_t t) {
-  return String(padding(hour(t), 2) + ":" + padding(minute(t), 2) + ":" + padding(second(t), 2));
-}
-
 String getSmartBeaconState() {
   if (currentBeacon->smartBeaconState) {
     return "On";
   }
   return "Off";
-}
-
-String padding(unsigned int number, unsigned int width) {
-  String result;
-  String num(number);
-  if (num.length() > width) {
-    width = num.length();
-  }
-  for (unsigned int i = 0; i < width - num.length(); i++) {
-    result.concat('0');
-  }
-  result.concat(num);
-  return result;
 }
