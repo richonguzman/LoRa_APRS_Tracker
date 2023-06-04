@@ -38,6 +38,7 @@ public:
   std::vector<Beacon> beacons;  
   LoraModule loramodule;
 
+  bool    showSymbolOnDisplay;
   bool    displayEcoMode;
   int     displayTimeout;
   String  destination;

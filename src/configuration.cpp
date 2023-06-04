@@ -48,6 +48,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
+    showSymbolOnDisplay           = data["other"]["showSymbolOnDisplay"].as<bool>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
     destination                   = data["other"]["destination"].as<String>();
@@ -65,7 +66,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 }
 
 void Configuration::validateConfigFile(String currentBeaconCallsign) {
-  if (currentBeaconCallsign == "NOCALL-7") {
+  if (currentBeaconCallsign == "NOCALL-7" || currentBeaconCallsign == "NOCALL-8" || currentBeaconCallsign == "NOCALL-9") {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
     show_display("ERROR", "Change your settings", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
     while (true) {

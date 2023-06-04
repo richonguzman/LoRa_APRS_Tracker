@@ -57,6 +57,7 @@
 		"power": 20
 	},
 	"other": {
+		"showSymbolOnDisplay": true,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
 		"destination": "APLR01",
@@ -67,7 +68,6 @@
 		"maxDistanceToTracker": 30, 
 		"defaultStatusAfterBoot" : true,
 		"defaultStatus": "https://github.com/richonguzman/LoRa_APRS_Tracker",
-		"ecoMode": false,
 		"standingUpdateTime": 15,
 		"sendAltitude": true
 	}
