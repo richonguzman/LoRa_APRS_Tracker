@@ -1,9 +1,9 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-3",
 			"symbol": "[",
-			"comment": "https://github.com/richonguzman/LoRa_APRS_Tracker",
+			"comment": "",
 			"smart_beacon": {
 				"active": true,
 				"slowRate": 120,
@@ -17,9 +17,9 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-8",
+			"callsign": "CD2RXU-4",
 			"symbol": "b",
-			"comment": "https://github.com/richonguzman/LoRa_APRS_Tracker",
+			"comment": "",
 			"smart_beacon": {
 				"active": true,
 				"slowRate": 120,
@@ -33,9 +33,9 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-9",
+			"callsign": "CD2RXU-4",
 			"symbol": ">",
-			"comment": "https://github.com/richonguzman/LoRa_APRS_Tracker",
+			"comment": "",
 			"smart_beacon": {
 				"active": true,
 				"slowRate": 120,
