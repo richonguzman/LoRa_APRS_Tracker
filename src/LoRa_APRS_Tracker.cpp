@@ -35,7 +35,6 @@ TinyGPSPlus     gps;
 String getSmartBeaconState();
 
 static int      menuDisplay           = 0;
-static bool     dimDisplayState       = false;
 static bool     displayEcoMode        = Config.displayEcoMode;
 static uint32_t displayTime           = millis();
 static bool     displayState          = true;
