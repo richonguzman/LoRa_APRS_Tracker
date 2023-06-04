@@ -15,8 +15,9 @@
 #include "display.h"
 #include "pins.h"
 #include "power_management.h"
+#include "lora_utils.h"
 
-#define VERSION "2023.06.02"
+#define VERSION "2023.06.03"
 
 logging::Logger logger;
 
@@ -29,10 +30,6 @@ PowerManagement powerManagement;
 OneButton       userButton = OneButton(BUTTON_PIN, true, true);
 HardwareSerial  neo6m_gps(1);
 TinyGPSPlus     gps;
-
-void validateConfigFile();
-void setup_lora();
-void setup_gps();
 
 char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
 String createDateString(time_t t);
@@ -90,29 +87,6 @@ void setup_gps() {
   neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
 }
 
-void setup_lora() {
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
-  SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set LoRa pins!");
-  LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
-
-  long freq = Config.loramodule.frequency;
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "frequency: %d", freq);
-  if (!LoRa.begin(freq)) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
-    show_display("ERROR", "Starting LoRa failed!");
-    while (true) {
-    }
-  }
-  LoRa.setSpreadingFactor(Config.loramodule.spreadingFactor);
-  LoRa.setSignalBandwidth(Config.loramodule.signalBandwidth);
-  LoRa.setCodingRate4(Config.loramodule.codingRate4);
-  LoRa.enableCrc();
-
-  LoRa.setTxPower(Config.loramodule.power);
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-}
-
 void loadMessagesFromMemory() { 
   File fileToRead;
   noMessageWarning = false;
@@ -144,15 +118,6 @@ void deleteFile() {
   SPIFFS.remove("/aprsMessages.txt");
 }
 
-void sendNewLoraPacket(String newPacket) {
-  LoRa.beginPacket();
-  LoRa.write('<');
-  LoRa.write(0xFF);
-  LoRa.write(0x01);
-  LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
-  LoRa.endPacket();
-}
-
 void sendMessage(String station, String textMessage) {
   String messageToSend;
   for(int i = station.length(); i < 9; i++) {
@@ -167,7 +132,7 @@ void sendMessage(String station, String textMessage) {
   } else {
     show_display("MSG Tx >>", "", messageToSend, 1000);
   }
-  sendNewLoraPacket(messageToSend);
+  LoRaUtils::sendNewPacket(messageToSend);
 }
 
 static void ButtonSinglePress() {
@@ -249,7 +214,7 @@ static void ButtonDoublePress() {
 
 void startingStatus() {
   delay(2000);
-  sendNewLoraPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
+  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
   statusAfterBootState = false;
 }
 
@@ -714,10 +679,10 @@ void setup() {
   setup_display();
 
   show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " VERSION, 4000);
-  validateConfigFile();
+  Config.validateConfigFile(currentBeacon->callsign);
   loadNumMessages();
   setup_gps();
-  setup_lora();
+  LoRaUtils::setup();
 
   WiFi.mode(WIFI_OFF);
   btStop();
@@ -942,7 +907,7 @@ void loop() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
     show_display("<<< TX >>>", "", data);
 
-    sendNewLoraPacket(data);
+    LoRaUtils::sendNewPacket(data);
 
     if (currentBeacon->smartBeaconState) {
       lastTxLat       = gps.location.lat();
@@ -1074,14 +1039,6 @@ void loop() {
 }
 
 /// FUNCTIONS ///
-void validateConfigFile() {
-  if (currentBeacon->callsign == "NOCALL-7") {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
-    show_display("ERROR", "Change your settings", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
-    while (true) {}
-  }
-}
-
 char *ax25_base91enc(char *s, uint8_t n, uint32_t v) {
   /* Creates a Base-91 representation of the value in v in the string */
   /* pointed to by s, n-characters long. String length should be n+1. */
