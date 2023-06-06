@@ -40,7 +40,7 @@ static uint32_t displayTime           = millis();
 static bool     displayState          = true;
 static bool     send_update           = true;
 static int      messagesIterator      = 0;
-static bool     statusAfterBootState  = true;
+bool            statusAfterBootState  = Config.statusAfterBoot;
 
 std::vector<String> loadedAPRSMessages;
 
@@ -89,7 +89,9 @@ static void ButtonLongPress() {
     } else {
       myBeaconsIndex++;
     }
-    statusAfterBootState  = true;
+    if (Config.defaultStatus) {
+      statusAfterBootState  = true;
+    }
     display_toggle(true);
     displayTime = millis();
     show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
@@ -359,7 +361,7 @@ void loop() {
     lastTxTime = millis();
     send_update = false;
 
-    if (Config.defaultStatusAfterBoot && statusAfterBootState) {
+    if (statusAfterBootState) {
       startingStatus();
     }
   }
@@ -378,7 +380,7 @@ void loop() {
 
       case 10:            // Display Received/Saved APRS Messages
         {
-          String msgSender      = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
+          String msgSender      = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
           String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
           String msgGate        = restOfMessage.substring(0,restOfMessage.indexOf(","));
           String msgText        = restOfMessage.substring(restOfMessage.indexOf(",")+1);

@@ -55,9 +55,9 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     path                          = data["other"]["path"].as<String>();
     overlay                       = data["other"]["overlay"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
-    listeningTrackerTime          = data["other"]["listeningTrackerTime"].as<int>();
+    rememberStationTime           = data["other"]["rememberStationTime"].as<int>();
     maxDistanceToTracker          = data["other"]["maxDistanceToTracker"].as<int>();
-    defaultStatusAfterBoot        = data["other"]["defaultStatusAfterBoot"].as<bool>();
+    statusAfterBoot               = data["other"]["statusAfterBoot"].as<bool>();
     defaultStatus                 = data["other"]["defaultStatus"].as<String>();
     standingUpdateTime            = data["other"]["standingUpdateTime"].as<int>();
     sendAltitude                  = data["other"]["sendAltitude"].as<bool>();

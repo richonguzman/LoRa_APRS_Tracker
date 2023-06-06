@@ -45,11 +45,10 @@ public:
   String  path;
   String  overlay;
   int     nonSmartBeaconRate;
-  int     listeningTrackerTime;
+  int     rememberStationTime;
   int     maxDistanceToTracker;
-  bool    defaultStatusAfterBoot;
+  bool    statusAfterBoot;
   String  defaultStatus;
-  bool    standingUpdate;
   int     standingUpdateTime;
   bool    sendAltitude;
 

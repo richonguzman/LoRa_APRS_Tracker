@@ -64,9 +64,9 @@
 		"path": "WIDE1-1",
 		"overlay": "/",
 		"nonSmartBeaconRate": 15,
-		"listeningTrackerTime": 30,
+		"rememberStationTime": 30,
 		"maxDistanceToTracker": 30, 
-		"defaultStatusAfterBoot" : true,
+		"statusAfterBoot" : true,
 		"defaultStatus": "https://github.com/richonguzman/LoRa_APRS_Tracker",
 		"standingUpdateTime": 15,
 		"sendAltitude": true
