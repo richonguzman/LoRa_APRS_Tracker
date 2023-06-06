@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CD2RXU-3",
+			"callsign": "CD2RXU-1",
 			"symbol": "[",
 			"comment": "",
 			"smart_beacon": {
@@ -17,7 +17,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-4",
+			"callsign": "CD2RXU-2",
 			"symbol": "b",
 			"comment": "",
 			"smart_beacon": {
@@ -33,7 +33,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-4",
+			"callsign": "CD2RXU-2",
 			"symbol": ">",
 			"comment": "",
 			"smart_beacon": {
@@ -60,7 +60,7 @@
 		"showSymbolOnDisplay": true,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
-		"destination": "APLR01",
+		"destination": "APLRT1",
 		"path": "WIDE1-1",
 		"overlay": "/",
 		"nonSmartBeaconRate": 15,
