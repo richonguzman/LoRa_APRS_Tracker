@@ -18,7 +18,7 @@
 #include "utils.h"
 #include "messages.h"
 
-#define VERSION "2023.06.04"
+#define VERSION "2023.06.06"
 
 logging::Logger logger;
 
