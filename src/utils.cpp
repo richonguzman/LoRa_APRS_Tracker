@@ -1,4 +1,10 @@
+#include "configuration.h"
+#include "lora_utils.h"
 #include "utils.h"
+
+extern Beacon           *currentBeacon;
+extern Configuration    Config;
+extern bool             statusAfterBootState;
 
 namespace utils {
 
@@ -31,6 +37,12 @@ String createDateString(time_t t) {
 
 String createTimeString(time_t t) {
     return String(padding(hour(t), 2) + ":" + padding(minute(t), 2) + ":" + padding(second(t), 2));
+}
+
+void startingStatus() {
+  delay(2000);
+  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
+  statusAfterBootState = false;
 }
 
 }

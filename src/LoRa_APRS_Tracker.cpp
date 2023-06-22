@@ -12,19 +12,21 @@
 #include <vector>
 #include "configuration.h"
 #include "display.h"
-#include "pins.h"
+#include "pins_config.h"
 #include "power_management.h"
 #include "lora_utils.h"
 #include "utils.h"
 #include "messages.h"
+#include "button_utils.h"
+#include "gps_utils.h"
 
-#define VERSION "2023.06.06"
+#define VERSION "2023.06.22"
 
 logging::Logger logger;
 
 String configurationFilePath = "/tracker_config.json";
 Configuration   Config(configurationFilePath);
-static int      myBeaconsIndex = 0;
+int             myBeaconsIndex = 0;
 int             myBeaconsSize  = Config.beacons.size();
 Beacon          *currentBeacon = &Config.beacons[myBeaconsIndex];
 PowerManagement powerManagement;
@@ -34,106 +36,16 @@ TinyGPSPlus     gps;
 
 String getSmartBeaconState();
 
-static int      menuDisplay           = 0;
-static bool     displayEcoMode        = Config.displayEcoMode;
-static uint32_t displayTime           = millis();
-static bool     displayState          = true;
-static bool     send_update           = true;
-static int      messagesIterator      = 0;
-bool            statusAfterBootState  = Config.statusAfterBoot;
+int      menuDisplay           = 0;
+bool     displayEcoMode        = Config.displayEcoMode;
+uint32_t displayTime           = millis();
+bool     displayState          = true;
+bool     send_update           = true;
+int      messagesIterator      = 0;
+bool     statusAfterBootState  = Config.statusAfterBoot;
 
 std::vector<String> loadedAPRSMessages;
 
-void setup_gps() {
-  neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
-}
-
-static void ButtonSinglePress() {
-  if (menuDisplay == 0) {
-    if (displayState) {
-      send_update = true;
-    } else {
-      display_toggle(true);
-      displayTime = millis();   
-      displayState = true;  
-    }
-  } else if (menuDisplay == 1) {
-    messages::loadMessagesFromMemory();
-    if (messages::warnNoMessages()) {
-      menuDisplay = 1;
-    } else {
-      menuDisplay = 10;
-    }
-  } else if (menuDisplay == 2) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-    messages::sendMessage("CD2RXU-15","wrl");
-  } else if (menuDisplay == 10) {
-    messagesIterator++;
-    if (messagesIterator == messages::getNumAPRSMessages()) {
-      menuDisplay = 1;
-      messagesIterator = 0;
-    } else {
-      menuDisplay = 10;
-    }
-  } else if (menuDisplay == 20) {
-    menuDisplay = 2;
-  } else if (menuDisplay == 3) {
-    show_display("__INFO____", "", "Nothing Yet...", 1500);
-  }
-}
-
-static void ButtonLongPress() {
-  if (menuDisplay == 0) {
-    if(myBeaconsIndex >= (myBeaconsSize-1)) {
-      myBeaconsIndex = 0;
-    } else {
-      myBeaconsIndex++;
-    }
-    if (Config.defaultStatus) {
-      statusAfterBootState  = true;
-    }
-    display_toggle(true);
-    displayTime = millis();
-    show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
-  } else if (menuDisplay == 1) {
-    messages::deleteFile();
-    show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
-    messages::loadNumMessages();
-  } else if (menuDisplay == 2) {
-    menuDisplay = 20;
-  } else if (menuDisplay == 3) {
-    if (!displayEcoMode) {
-      displayEcoMode = true;
-      show_display("__DISPLAY_", "", "   ECO MODE -> ON", 1000);
-    } else {
-      displayEcoMode = false;
-      show_display("__DISPLAY_", "", "   ECO MODE -> OFF", 1000);
-    }
-  }
-}
-
-static void ButtonDoublePress() {
-  display_toggle(true);
-  if (menuDisplay == 0) {
-    menuDisplay = 1;
-  } else if (menuDisplay == 1) {
-    menuDisplay = 2;
-    messagesIterator = 0;
-  } else if (menuDisplay == 2) {
-    menuDisplay = 3;
-  } else if (menuDisplay == 3 || menuDisplay == 20) {
-    menuDisplay = 0;
-    displayTime = millis();
-  } 
-}
-
-void startingStatus() {
-  delay(2000);
-  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
-  statusAfterBootState = false;
-}
-
-// cppcheck-suppress unusedFunction
 void setup() {
   Serial.begin(115200);
 
@@ -149,7 +61,7 @@ void setup() {
   Config.validateConfigFile(currentBeacon->callsign);
   messages::loadNumMessages();
 
-  setup_gps();
+  GPS_Utils::setup();
   LoRaUtils::setup();
 
   WiFi.mode(WIFI_OFF);
@@ -158,9 +70,9 @@ void setup() {
   esp_bt_controller_disable();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
 
-  userButton.attachClick(ButtonSinglePress);
-  userButton.attachLongPressStart(ButtonLongPress);
-  userButton.attachDoubleClick(ButtonDoublePress);
+  userButton.attachClick(BUTTON_Utils::singlePress);
+  userButton.attachLongPressStart(BUTTON_Utils::longPress);
+  userButton.attachDoubleClick(BUTTON_Utils::doublePress);
 
   powerManagement.lowerCpuFrequency();
   delay(500);
@@ -168,7 +80,6 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
 }
 
-// cppcheck-suppress unusedFunction
 void loop() {
   currentBeacon = &Config.beacons[myBeaconsIndex];
 
@@ -362,7 +273,7 @@ void loop() {
     send_update = false;
 
     if (statusAfterBootState) {
-      startingStatus();
+      utils::startingStatus();
     }
   }
 

@@ -1,6 +1,8 @@
 #ifndef MESSAGES_H_
 #define MESSAGES_H_
 
+#include <Arduino.h>
+
 namespace messages {
 
 bool    warnNoMessages();

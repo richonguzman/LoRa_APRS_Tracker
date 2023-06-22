@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CD2RXU-3",
+			"callsign": "CD2RXU-7",
 			"symbol": "[",
 			"comment": "",
 			"smart_beacon": {
@@ -17,7 +17,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-4",
+			"callsign": "CD2RXU-7",
 			"symbol": "b",
 			"comment": "",
 			"smart_beacon": {
@@ -33,7 +33,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-5",
+			"callsign": "CD2RXU-7",
 			"symbol": ">",
 			"comment": "",
 			"smart_beacon": {

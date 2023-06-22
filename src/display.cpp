@@ -5,7 +5,7 @@
 #include <logger.h>
 
 #include "display.h"
-#include "pins.h"
+#include "pins_config.h"
 
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
