@@ -10,7 +10,7 @@ void calculateDistanceCourse(String Callsign, double checkpointLatitude, double 
 void decodeEncodedGPS(String packet, String sender);
 void getReceivedGPS(String packet, String sender);
 void getData();
-void setTimeFromData();
+void setDateFromData();
 
 }
 

@@ -87,7 +87,7 @@ void getData() {
   }
 }
 
-void setTimeFromData() {
+void setDateFromData() {
   if (gps.time.isValid()) {
     setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
   }

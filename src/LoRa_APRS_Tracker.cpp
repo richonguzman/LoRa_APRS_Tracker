@@ -88,7 +88,11 @@ void loop() {
   GPS_Utils::getData();
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
-  GPS_Utils::setTimeFromData();
+  GPS_Utils::setDateFromData();
+
+  /*if (gps.time.isValid()) {
+    setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+  }*/
 
   currentBeacon = &Config.beacons[myBeaconsIndex];
    
@@ -368,11 +372,11 @@ void loop() {
     }
   }
 
-  if ((millis() > 5000 && gps.charsProcessed() < 10)) {
+  if ((millis() > 8000 && gps.charsProcessed() < 10)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                "No GPS frames detected! Try to reset the GPS Chip with this "
                "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");
-    show_display("No GPS frames detected!", "Try to reset the GPS Chip", "https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset", 2000);
+    show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", "https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset", 2000);
   }
 }
 
