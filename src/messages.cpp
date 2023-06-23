@@ -1,10 +1,14 @@
 #include <Arduino.h>
+#include <SPIFFS.h>
 #include <TinyGPS++.h>
 #include "messages.h"
 #include "configuration.h"
 #include "logger.h"
 #include "display.h"
 #include "lora_utils.h"
+#include "station_utils.h"
+#include "gps_utils.h"
+
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
@@ -12,18 +16,18 @@ extern std::vector<String>  loadedAPRSMessages;
 extern TinyGPSPlus          gps;
 extern Configuration        Config;
 
+String   firstNearTracker            = "";
+String   secondNearTracker           = "";
+String   thirdNearTracker            = "";
+String   fourthNearTracker           = "";
+
+String   lastMessageAPRS             = "";
+int      numAPRSMessages             = 0;
+bool     noMessageWarning            = false;
+String   lastHeardTracker            = "NONE";
+uint32_t lastDeleteListenedTracker   = millis();
+
 namespace messages {
-
-static String   lastMessageAPRS             = "";
-static int      numAPRSMessages             = 0;
-static bool     noMessageWarning            = false;
-static String   lastHeardTracker            = "NONE";
-static uint32_t lastDeleteListenedTracker   = millis();
-
-static String   firstNearTracker            = "";
-static String   secondNearTracker           = "";
-static String   thirdNearTracker            = "";
-static String   fourthNearTracker           = "";
 
 bool warnNoMessages() {
     return noMessageWarning;
@@ -35,22 +39,6 @@ String getLastHeardTracker() {
 
 int getNumAPRSMessages() {
     return numAPRSMessages;
-}
-
-String getFirstNearTracker() {
-    return String(firstNearTracker.substring(0,firstNearTracker.indexOf(",")));
-}
-
-String getSecondNearTracker() {
-    return String(secondNearTracker.substring(0,secondNearTracker.indexOf(",")));
-}
-
-String getThirdNearTracker() {
-    return String(thirdNearTracker.substring(0,thirdNearTracker.indexOf(",")));
-}
-
-String getFourthNearTracker() {
-    return String(fourthNearTracker.substring(0,fourthNearTracker.indexOf(",")));
 }
 
 void loadNumMessages() {
@@ -107,365 +95,6 @@ void deleteFile() {
     return;
   } 
   SPIFFS.remove("/aprsMessages.txt");
-}
-
-void orderListenedTrackersByDistance(String callsign, float distance, float course) {
-  String firstNearTrackerDistance, secondNearTrackerDistance, thirdNearTrackerDistance, fourthNearTrackerDistance, newTrackerInfo, firstNearTrackerCallsign, secondNearTrackerCallsign,thirdNearTrackerCallsign, fourthNearTrackerCallsign;
-  newTrackerInfo = callsign + "> " + String(distance,2) + "km " + String(int(course)) + "," + String(millis());
-  float firstDistance   = 0.0;
-  float secondDistance  = 0.0;
-  float thirdDistance   = 0.0;
-  float fourthDistance  = 0.0;
-  if (firstNearTracker != "") {
-    firstNearTrackerCallsign = firstNearTracker.substring(0,firstNearTracker.indexOf(">"));
-    firstNearTrackerDistance = firstNearTracker.substring(firstNearTracker.indexOf(">")+1,firstNearTracker.indexOf("km"));
-    firstDistance = firstNearTrackerDistance.toFloat();
-  }
-  if (secondNearTracker != "") {
-    secondNearTrackerCallsign = secondNearTracker.substring(0,secondNearTracker.indexOf(">"));
-    secondNearTrackerDistance = secondNearTracker.substring(secondNearTracker.indexOf(">")+1,secondNearTracker.indexOf("km"));
-    secondDistance = secondNearTrackerDistance.toFloat();
-  }
-  if (thirdNearTracker != "") {
-    thirdNearTrackerCallsign = thirdNearTracker.substring(0,thirdNearTracker.indexOf(">"));
-    thirdNearTrackerDistance = thirdNearTracker.substring(thirdNearTracker.indexOf(">")+1,thirdNearTracker.indexOf("km"));
-    thirdDistance = thirdNearTrackerDistance.toFloat();
-  }
-  if (fourthNearTracker != "") {
-    fourthNearTrackerCallsign = fourthNearTracker.substring(0,fourthNearTracker.indexOf(">"));
-    fourthNearTrackerDistance = fourthNearTracker.substring(fourthNearTracker.indexOf(">")+1,fourthNearTracker.indexOf("km"));
-    fourthDistance = fourthNearTrackerDistance.toFloat();
-  } 
-
-  if (firstNearTracker == "" && secondNearTracker == "" && thirdNearTracker == "" && fourthNearTracker == "") {
-    firstNearTracker = newTrackerInfo;
-  } else if (firstNearTracker != "" && secondNearTracker == "" && thirdNearTracker == "" && fourthNearTracker == "") {
-    if (callsign != firstNearTrackerCallsign) {
-      if (distance < firstDistance) {
-        secondNearTracker = firstNearTracker;
-        firstNearTracker  = newTrackerInfo;
-      } else {
-        secondNearTracker = newTrackerInfo;
-      }
-    } else { 
-      if (distance != firstDistance) {
-        firstNearTracker  = newTrackerInfo;
-      }
-    }
-  } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker == "" && fourthNearTracker == "") {
-    if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign) {
-      if (distance < firstDistance) {
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = firstNearTracker;
-        firstNearTracker  = newTrackerInfo;
-      } else if (distance < secondDistance && distance >= firstDistance) {
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = newTrackerInfo;
-      } else if (distance >= secondDistance) {
-        thirdNearTracker  = newTrackerInfo;
-      }
-    } else {  
-      if (callsign == firstNearTrackerCallsign) {
-        if (distance != firstDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > secondDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else {
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == secondNearTrackerCallsign) {
-        if (distance != secondDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance < firstDistance) {
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          } else {
-            secondNearTracker = newTrackerInfo;
-          }
-        }
-      }     
-    }
-  } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker != "" && fourthNearTracker == "") {
-    if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign && callsign != thirdNearTrackerCallsign) {
-      if (distance < firstDistance) {
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = firstNearTracker;
-        firstNearTracker  = newTrackerInfo;
-      } else if (distance >= firstDistance && distance < secondDistance) {
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = newTrackerInfo;
-      } else if (distance >= secondDistance && distance < thirdDistance) {
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = newTrackerInfo;
-      } else if (distance >= thirdDistance) {
-        fourthNearTracker = newTrackerInfo;
-      }
-    } else {  
-      if (callsign == firstNearTrackerCallsign) {
-        if (distance != firstDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > thirdDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance <= thirdDistance && distance > secondDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= secondDistance) {
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == secondNearTrackerCallsign) {
-        if (distance != secondDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > thirdDistance) {
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance <= thirdDistance && distance > firstDistance) {
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= firstDistance) {
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == thirdNearTrackerCallsign) {
-        if (distance != thirdDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance <= firstDistance) {
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          } else if (distance > firstDistance && distance <= secondDistance) {
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else if (distance > secondDistance) {
-            thirdNearTracker  = newTrackerInfo;
-          }
-        }
-      }  
-    }
-  } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker != "" && fourthNearTracker != "") {
-    if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign && callsign != thirdNearTrackerCallsign && callsign != fourthNearTrackerCallsign) {
-      if (distance < firstDistance) {
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = firstNearTracker;
-        firstNearTracker  = newTrackerInfo;
-      } else if (distance < secondDistance && distance >= firstDistance) {
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = secondNearTracker;
-        secondNearTracker = newTrackerInfo;
-      } else if (distance < thirdDistance && distance >= secondDistance) {
-
-        fourthNearTracker = thirdNearTracker;
-        thirdNearTracker  = newTrackerInfo;
-      } else if (distance < fourthDistance && distance >= thirdDistance) {
-        fourthNearTracker = newTrackerInfo;
-      }
-    } else {
-      if (callsign == firstNearTrackerCallsign) {
-        if (distance != firstDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > fourthDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = fourthNearTracker;
-            fourthNearTracker = newTrackerInfo;
-          } else if (distance > thirdDistance && distance <= fourthDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance > secondDistance && distance <= thirdDistance) {
-            firstNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= secondDistance) {
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == secondNearTrackerCallsign) {
-        if (distance != secondDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > fourthDistance) {
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = fourthNearTracker;
-            fourthNearTracker = newTrackerInfo;
-          } else if (distance > thirdDistance && distance <= fourthDistance) {
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance > firstDistance && distance <= thirdDistance) {
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= firstDistance) {
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == thirdNearTrackerCallsign) {
-        if (distance != thirdDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > fourthDistance) {
-            thirdNearTracker  = fourthNearTracker;
-            fourthNearTracker = newTrackerInfo;
-          } else if (distance > secondDistance && distance <= fourthDistance) {
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance > firstDistance && distance <= secondDistance) {
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= firstDistance) {
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      } else if (callsign == fourthNearTrackerCallsign) {
-        if (distance != fourthDistance) {
-          Serial.print("Distance Updated for : "); Serial.println(callsign);
-          if (distance > thirdDistance) {
-            fourthNearTracker = newTrackerInfo;
-          } else if (distance > secondDistance && distance <= thirdDistance) {
-            fourthNearTracker = thirdNearTracker;
-            thirdNearTracker  = newTrackerInfo;
-          } else if (distance > firstDistance && distance <= secondDistance) {
-            fourthNearTracker = thirdNearTracker;
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = newTrackerInfo;
-          } else if (distance <= firstDistance) {
-            fourthNearTracker = thirdNearTracker;
-            thirdNearTracker  = secondNearTracker;
-            secondNearTracker = firstNearTracker;
-            firstNearTracker  = newTrackerInfo;
-          }
-        }
-      }       
-    }
-  }
-}
-
-void deleteListenedTrackersbyTime() {
-  String firstNearTrackermillis, secondNearTrackermillis, thirdNearTrackermillis, fourthNearTrackermillis;
-  uint32_t firstTrackermillis, secondTrackermillis, thirdTrackermillis, fourthTrackermillis;
-  if (firstNearTracker != "") {
-    firstNearTrackermillis = firstNearTracker.substring(firstNearTracker.indexOf(",")+1);
-    firstTrackermillis = firstNearTrackermillis.toInt();
-    if ((millis() - firstTrackermillis) > Config.rememberStationTime*60*1000) {
-      firstNearTracker = "";
-    }
-  }
-  if (secondNearTracker != "") {
-    secondNearTrackermillis = secondNearTracker.substring(secondNearTracker.indexOf(",")+1);
-    secondTrackermillis = secondNearTrackermillis.toInt();
-    if ((millis() - secondTrackermillis) > Config.rememberStationTime*60*1000) {
-      secondNearTracker = "";
-    }
-  }
-  if (thirdNearTracker != "") {
-    thirdNearTrackermillis = thirdNearTracker.substring(thirdNearTracker.indexOf(",")+1);
-    thirdTrackermillis = thirdNearTrackermillis.toInt();
-    if ((millis() - thirdTrackermillis) > Config.rememberStationTime*60*1000) {
-      thirdNearTracker = "";
-    }
-  }
-  if (fourthNearTracker != "") {
-    fourthNearTrackermillis = fourthNearTracker.substring(fourthNearTracker.indexOf(",")+1);
-    fourthTrackermillis = fourthNearTrackermillis.toInt();
-    if ((millis() - fourthTrackermillis) > Config.rememberStationTime*60*1000) {
-      fourthNearTracker = "";
-    }
-  }
-
-  if (thirdNearTracker == "") {
-    thirdNearTracker = fourthNearTracker;
-    fourthNearTracker = "";
-  } 
-  if (secondNearTracker == "") {
-    secondNearTracker = thirdNearTracker;
-    thirdNearTracker = fourthNearTracker;
-    fourthNearTracker = "";
-  }
-  if  (firstNearTracker == "") {
-    firstNearTracker = secondNearTracker;
-    secondNearTracker = thirdNearTracker;
-    thirdNearTracker = fourthNearTracker;
-    fourthNearTracker = "";
-  }
-  lastDeleteListenedTracker = millis();
-}
-
-void checkListenedTrackersByTimeAndDelete() {
-  if (millis() - lastDeleteListenedTracker > Config.rememberStationTime*60*1000) {
-    deleteListenedTrackersbyTime();
-  }
-}
-
-void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {
-  double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
-  double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
-  deleteListenedTrackersbyTime();
-  orderListenedTrackersByDistance(Callsign, distanceKm, courseTo);
-}
-
-void decodeEncodedGPS(String packet, String sender) {
-  String GPSPacket = packet.substring(packet.indexOf(":!/")+3);
-  String encodedLatitude    = GPSPacket.substring(0,4);
-  String encodedLongtitude  = GPSPacket.substring(4,8);
-
-  int Y1 = int(encodedLatitude[0]);
-  int Y2 = int(encodedLatitude[1]);
-  int Y3 = int(encodedLatitude[2]);
-  int Y4 = int(encodedLatitude[3]);
-  float decodedLatitude = 90.0 - ((((Y1-33) * pow(91,3)) + ((Y2-33) * pow(91,2)) + ((Y3-33) * 91) + Y4-33) / 380926.0);
-    
-  int X1 = int(encodedLongtitude[0]);
-  int X2 = int(encodedLongtitude[1]);
-  int X3 = int(encodedLongtitude[2]);
-  int X4 = int(encodedLongtitude[3]);
-  float decodedLongitude = -180.0 + ((((X1-33) * pow(91,3)) + ((X2-33) * pow(91,2)) + ((X3-33) * 91) + X4-33) / 190463.0);
-    
-  Serial.print(sender); 
-  Serial.print(" GPS : "); 
-  Serial.print(decodedLatitude); Serial.print(" N "); 
-  Serial.print(decodedLongitude);Serial.println(" E");
-
-  calculateDistanceCourse(sender, decodedLatitude, decodedLongitude);
-}
-
-void getReceivedGPS(String packet, String sender) {
-  String infoGPS;
-  if (packet.indexOf(":!") > 10) {
-    infoGPS = packet.substring(packet.indexOf(":!")+2);
-  } else if (packet.indexOf(":=") > 10) {
-    infoGPS = packet.substring(packet.indexOf(":=")+2);
-  }
-  String Latitude       = infoGPS.substring(0,8);
-  String Longitude      = infoGPS.substring(9,18);
-
-  float convertedLatitude, convertedLongitude;
-  String firstLatPart   = Latitude.substring(0,2);
-  String secondLatPart  = Latitude.substring(2,4);
-  String thirdLatPart   = Latitude.substring(Latitude.indexOf(".")+1,Latitude.indexOf(".")+3);
-  String firstLngPart   = Longitude.substring(0,3);
-  String secondLngPart  = Longitude.substring(3,5);
-  String thirdLngPart   = Longitude.substring(Longitude.indexOf(".")+1,Longitude.indexOf(".")+3);
-  convertedLatitude     = firstLatPart.toFloat() + (secondLatPart.toFloat()/60) + (thirdLatPart.toFloat()/(60*100));
-  convertedLongitude    = firstLngPart.toFloat() + (secondLngPart.toFloat()/60) + (thirdLngPart.toFloat()/(60*100));
-  
-  String LatSign = String(Latitude[7]);
-  String LngSign = String(Longitude[8]);
-  if (LatSign == "S") {
-    convertedLatitude = -convertedLatitude;
-  } 
-  if (LngSign == "W") {
-    convertedLongitude = -convertedLongitude;
-  } 
-  Serial.print(sender); 
-  Serial.print(" GPS : "); 
-  Serial.print(convertedLatitude); Serial.print(" N "); 
-  Serial.print(convertedLongitude);Serial.println(" E");
-
-  calculateDistanceCourse(sender, convertedLatitude, convertedLongitude);
 }
 
 void saveNewMessage(String typeMessage, String station, String newMessage) {
@@ -562,9 +191,9 @@ void checkReceivedMessage(String packetReceived) {
       } else if (packetReceived.indexOf(":!") > 10 || packetReceived.indexOf(":=") > 10 ) {     // packetReceived has APRS - GPS info
         lastHeardTracker = Sender; // eliminar?
         if (packetReceived.indexOf(":!/") > 10) {         // encoded GPS
-          decodeEncodedGPS(packetReceived, Sender);
+          GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
         } else {
-          getReceivedGPS(packetReceived, Sender);         // not encoded GPS          }
+          GPS_Utils::getReceivedGPS(packetReceived, Sender);         // not encoded GPS          }
         }
       }
     }

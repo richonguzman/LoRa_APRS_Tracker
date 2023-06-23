@@ -19,13 +19,14 @@
 #include "messages.h"
 #include "button_utils.h"
 #include "gps_utils.h"
+#include "station_utils.h"
 
-#define VERSION "2023.06.22"
+#define VERSION "2023.06.23"
 
 logging::Logger logger;
 
-String configurationFilePath = "/tracker_config.json";
-Configuration   Config(configurationFilePath);
+Configuration   Config;
+
 int             myBeaconsIndex = 0;
 int             myBeaconsSize  = Config.beacons.size();
 Beacon          *currentBeacon = &Config.beacons[myBeaconsIndex];
@@ -42,7 +43,7 @@ uint32_t displayTime           = millis();
 bool     displayState          = true;
 bool     send_update           = true;
 int      messagesIterator      = 0;
-bool     statusAfterBootState  = Config.statusAfterBoot;
+bool     statusAfterBootState  = true;
 
 std::vector<String> loadedAPRSMessages;
 
@@ -85,13 +86,7 @@ void loop() {
 
   userButton.tick();
 
-  uint32_t lastDisplayTime = millis() - displayTime;
-  if (displayEcoMode) {
-    if (menuDisplay == 0 && lastDisplayTime >= Config.displayTimeout*1000) {
-      display_toggle(false);
-      displayState = false;
-    }
-  }
+  utils::checkDisplayEcoMode();
 
   powerManagement.obtainBatteryInfo();
   powerManagement.handleChargingLed();
@@ -103,17 +98,8 @@ void loop() {
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
 
-  String loraPacket = "";
-  int packetSize = LoRa.parsePacket();  // Listening for LoRa Packets
-  if (packetSize) {
-    while (LoRa.available()) {
-      int inChar = LoRa.read();
-      loraPacket += (char)inChar;
-    }
-    messages::checkReceivedMessage(loraPacket);
-  }
-
-  messages::checkListenedTrackersByTimeAndDelete();
+  messages::checkReceivedMessage(LoRaUtils::receivePacket());
+  STATION_Utils::checkListenedTrackersByTimeAndDelete();
 
   /*if (gps_loc_update != gps_loc_update_valid) {
     gps_loc_update_valid = gps_loc_update;
@@ -181,8 +167,8 @@ void loop() {
   if (send_update && gps_loc_update) {
     APRSMessage msg;
     msg.setSource(currentBeacon->callsign);
-    msg.setDestination(Config.destination);
-    msg.setPath(Config.path);
+    msg.setDestination("APLRT1");
+    msg.setPath("WIDE1-1");
     
 
     float Tlat, Tlon;
@@ -300,7 +286,7 @@ void loop() {
         break;
 
       case 20:            // Display Heared Tracker/Stations
-        show_display("LISTENING>", messages::getFirstNearTracker(), messages::getSecondNearTracker(), messages::getThirdNearTracker(), messages::getFourthNearTracker(), "<Back");
+        show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
         break;
 
       case 0:       ///////////// MAIN MENU //////////////

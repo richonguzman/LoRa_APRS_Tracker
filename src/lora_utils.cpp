@@ -2,6 +2,7 @@
 #include <logger.h>
 #include "configuration.h"
 #include "display.h"
+#include "messages.h"
 
 extern logging::Logger logger;
 extern Configuration Config;
@@ -42,20 +43,19 @@ void sendNewPacket(const String &newPacket) {
   LoRa.endPacket();
 }
 
-
-/*String receivePacket() {
-  String loraPacket;
-  int packetSize = LoRa.parsePacket();  // Listening for LoRa Packets
+String receivePacket() {
+  String loraPacket = "";
+  int packetSize = LoRa.parsePacket();
   if (packetSize) {
     while (LoRa.available()) {
       int inChar = LoRa.read();
       loraPacket += (char)inChar;
     }
+    //rssi      = LoRa.packetRssi();
+    //snr       = LoRa.packetSnr();
+    //freqError = LoRa.packetFrequencyError();
   }
-
   return loraPacket;
-}*/
-
-
+}
 
 }

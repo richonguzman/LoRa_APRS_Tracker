@@ -6,6 +6,9 @@
 namespace GPS_Utils {
 
 void setup();
+void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude);
+void decodeEncodedGPS(String packet, String sender);
+void getReceivedGPS(String packet, String sender);
 
 }
 

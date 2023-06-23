@@ -1,10 +1,16 @@
 #include "configuration.h"
 #include "lora_utils.h"
 #include "utils.h"
+#include "display.h"
 
 extern Beacon           *currentBeacon;
 extern Configuration    Config;
 extern bool             statusAfterBootState;
+extern bool             displayEcoMode; 
+extern uint32_t         displayTime;
+extern bool             displayState;
+extern int              menuDisplay;
+
 
 namespace utils {
 
@@ -40,9 +46,19 @@ String createTimeString(time_t t) {
 }
 
 void startingStatus() {
-  delay(2000);
-  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">" + Config.destination + "," + Config.path + ":>" + Config.defaultStatus);
+  delay(3000);
+  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">APLRT1,WIDE1-1:>https://github.com/richonguzman/LoRa_APRS_Tracker");
   statusAfterBootState = false;
+}
+
+void checkDisplayEcoMode() {
+  uint32_t lastDisplayTime = millis() - displayTime;
+  if (displayEcoMode) {
+    if (menuDisplay == 0 && lastDisplayTime >= Config.displayTimeout*1000) {
+      display_toggle(false);
+      displayState = false;
+    }
+  }
 }
 
 }

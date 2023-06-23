@@ -2,9 +2,7 @@
 #define CONFIGURATION_H_
 
 #include <Arduino.h>
-#include <SPIFFS.h>
 #include <FS.h>
-#include <ArduinoJson.h>
 #include <vector>
 
 class Beacon {
@@ -41,22 +39,18 @@ public:
   bool    showSymbolOnDisplay;
   bool    displayEcoMode;
   int     displayTimeout;
-  String  destination;
-  String  path;
   String  overlay;
   int     nonSmartBeaconRate;
   int     rememberStationTime;
   int     maxDistanceToTracker;
   bool    statusAfterBoot;
-  String  defaultStatus;
   int     standingUpdateTime;
   bool    sendAltitude;
 
-  Configuration(const String &filePath);
+  Configuration();
   void validateConfigFile(String currentBeaconCallsign);
 
 private:
-  Configuration() {}; // Hide default constructor
   void readFile(fs::FS &fs, const char *fileName) ;
   String _filePath;
 };

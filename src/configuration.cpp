@@ -1,11 +1,13 @@
+#include <ArduinoJson.h>
+#include <SPIFFS.h>
 #include "configuration.h"
-#include "logger.h"
 #include "display.h"
+#include "logger.h"
 
 extern logging::Logger logger;
 
-Configuration::Configuration(const String &filePath) {
-    _filePath = filePath;
+Configuration::Configuration() {
+    _filePath = "/tracker_config.json";;
     if (!SPIFFS.begin(false)) {
       Serial.println("SPIFFS Mount Failed");
       return;
@@ -51,14 +53,10 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     showSymbolOnDisplay           = data["other"]["showSymbolOnDisplay"].as<bool>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
-    destination                   = data["other"]["destination"].as<String>();
-    path                          = data["other"]["path"].as<String>();
     overlay                       = data["other"]["overlay"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     rememberStationTime           = data["other"]["rememberStationTime"].as<int>();
     maxDistanceToTracker          = data["other"]["maxDistanceToTracker"].as<int>();
-    statusAfterBoot               = data["other"]["statusAfterBoot"].as<bool>();
-    defaultStatus                 = data["other"]["defaultStatus"].as<String>();
     standingUpdateTime            = data["other"]["standingUpdateTime"].as<int>();
     sendAltitude                  = data["other"]["sendAltitude"].as<bool>();
 

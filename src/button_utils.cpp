@@ -60,9 +60,7 @@ void longPress() {
     } else {
       myBeaconsIndex++;
     }
-    if (Config.defaultStatus) {
-      statusAfterBootState  = true;
-    }
+    statusAfterBootState  = true;
     display_toggle(true);
     displayTime = millis();
     show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
