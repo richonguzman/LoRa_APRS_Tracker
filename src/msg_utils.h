@@ -1,9 +1,9 @@
-#ifndef MESSAGES_H_
-#define MESSAGES_H_
+#ifndef MSG_UTILS_H_
+#define MSG_UTILS_H_
 
 #include <Arduino.h>
 
-namespace messages {
+namespace MSG_Utils {
 
 bool    warnNoMessages();
 int     getNumAPRSMessages();

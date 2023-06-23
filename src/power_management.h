@@ -17,6 +17,7 @@ public:
   String getBatteryInfoVoltage();
   String getBatteryInfoCurrent();
   bool getBatteryInfoIsConnected();
+  void batteryManager();
 
 private:
   bool isChargeing();

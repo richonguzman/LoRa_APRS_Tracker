@@ -2,12 +2,12 @@
 #include <logger.h>
 #include "configuration.h"
 #include "display.h"
-#include "messages.h"
+#include "msg_utils.h"
 
 extern logging::Logger logger;
 extern Configuration Config;
 
-namespace LoRaUtils {
+namespace LoRa_Utils {
 
 void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");

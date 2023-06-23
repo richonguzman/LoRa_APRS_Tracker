@@ -1,7 +1,7 @@
 #ifndef LORA_UTILS_H_
 #define LORA_UTILS_H_
 
-namespace LoRaUtils {
+namespace LoRa_Utils {
 
 void setup();
 void sendNewPacket(const String &newPacket);

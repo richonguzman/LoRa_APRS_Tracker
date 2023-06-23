@@ -139,3 +139,10 @@ String PowerManagement::getBatteryInfoCurrent() {
 bool PowerManagement::getBatteryInfoIsConnected() {
   return BatteryIsConnected;
 }
+
+void PowerManagement::batteryManager() {
+#ifdef TTGO_T_Beam_V1_0
+  obtainBatteryInfo();
+  handleChargingLed();
+#endif
+}

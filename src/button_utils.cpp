@@ -1,5 +1,5 @@
 #include "button_utils.h"
-#include "messages.h"
+#include "msg_utils.h"
 #include "display.h"
 #include "configuration.h"
 #include <logger.h>
@@ -29,18 +29,18 @@ void singlePress() {
       displayState = true;  
     }
   } else if (menuDisplay == 1) {
-    messages::loadMessagesFromMemory();
-    if (messages::warnNoMessages()) {
+    MSG_Utils::loadMessagesFromMemory();
+    if (MSG_Utils::warnNoMessages()) {
       menuDisplay = 1;
     } else {
       menuDisplay = 10;
     }
   } else if (menuDisplay == 2) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-    messages::sendMessage("CD2RXU-15","wrl");
+    MSG_Utils::sendMessage("CD2RXU-15","wrl");
   } else if (menuDisplay == 10) {
     messagesIterator++;
-    if (messagesIterator == messages::getNumAPRSMessages()) {
+    if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
       menuDisplay = 1;
       messagesIterator = 0;
     } else {
@@ -65,9 +65,9 @@ void longPress() {
     displayTime = millis();
     show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
   } else if (menuDisplay == 1) {
-    messages::deleteFile();
+    MSG_Utils::deleteFile();
     show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
-    messages::loadNumMessages();
+    MSG_Utils::loadNumMessages();
   } else if (menuDisplay == 2) {
     menuDisplay = 20;
   } else if (menuDisplay == 3) {

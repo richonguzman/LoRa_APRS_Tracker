@@ -47,7 +47,7 @@ String createTimeString(time_t t) {
 
 void startingStatus() {
   delay(3000);
-  LoRaUtils::sendNewPacket(currentBeacon->callsign + ">APLRT1,WIDE1-1:>https://github.com/richonguzman/LoRa_APRS_Tracker");
+  LoRa_Utils::sendNewPacket(currentBeacon->callsign + ">APLRT1,WIDE1-1:>https://github.com/richonguzman/LoRa_APRS_Tracker");
   statusAfterBootState = false;
 }
 

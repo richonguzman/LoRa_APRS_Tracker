@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SPIFFS.h>
 #include <TinyGPS++.h>
-#include "messages.h"
+#include "msg_utils.h"
 #include "configuration.h"
 #include "logger.h"
 #include "display.h"
@@ -27,7 +27,7 @@ bool     noMessageWarning            = false;
 String   lastHeardTracker            = "NONE";
 uint32_t lastDeleteListenedTracker   = millis();
 
-namespace messages {
+namespace MSG_Utils {
 
 bool warnNoMessages() {
     return noMessageWarning;
@@ -128,7 +128,7 @@ void sendMessage(String station, String textMessage) {
   } else {
     show_display("MSG Tx >>", "", messageToSend, 1000);
   }
-  LoRaUtils::sendNewPacket(messageToSend);
+  LoRa_Utils::sendNewPacket(messageToSend);
 }
 
 void checkReceivedMessage(String packetReceived) {

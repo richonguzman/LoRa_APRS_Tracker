@@ -2,6 +2,7 @@
 #include "gps_utils.h"
 #include "pins_config.h"
 #include "station_utils.h"
+#include "TimeLib.h"
 
 extern HardwareSerial  neo6m_gps;
 extern TinyGPSPlus     gps;
@@ -78,6 +79,18 @@ void getReceivedGPS(String packet, String sender) {
   Serial.print(convertedLongitude);Serial.println(" E");
 
   calculateDistanceCourse(sender, convertedLatitude, convertedLongitude);
+}
+
+void getData() {
+  while (neo6m_gps.available() > 0) {
+    gps.encode(neo6m_gps.read());
+  }
+}
+
+void setTimeFromData() {
+  if (gps.time.isValid()) {
+    setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+  }
 }
 
 }

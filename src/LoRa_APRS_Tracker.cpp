@@ -16,7 +16,7 @@
 #include "power_management.h"
 #include "lora_utils.h"
 #include "utils.h"
-#include "messages.h"
+#include "msg_utils.h"
 #include "button_utils.h"
 #include "gps_utils.h"
 #include "station_utils.h"
@@ -60,10 +60,10 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: " VERSION);
   
   Config.validateConfigFile(currentBeacon->callsign);
-  messages::loadNumMessages();
 
+  MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-  LoRaUtils::setup();
+  LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   btStop();
@@ -76,29 +76,23 @@ void setup() {
   userButton.attachDoubleClick(BUTTON_Utils::doublePress);
 
   powerManagement.lowerCpuFrequency();
-  delay(500);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
 }
 
 void loop() {
-  currentBeacon = &Config.beacons[myBeaconsIndex];
-
+  powerManagement.batteryManager();
   userButton.tick();
-
   utils::checkDisplayEcoMode();
 
-  powerManagement.obtainBatteryInfo();
-  powerManagement.handleChargingLed();
-
-  while (neo6m_gps.available() > 0) {
-    gps.encode(neo6m_gps.read());
-  }
-
+  GPS_Utils::getData();
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
+  GPS_Utils::setTimeFromData();
 
-  messages::checkReceivedMessage(LoRaUtils::receivePacket());
+  currentBeacon = &Config.beacons[myBeaconsIndex];
+   
+  MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
 
   /*if (gps_loc_update != gps_loc_update_valid) {
@@ -110,13 +104,8 @@ void loop() {
     }
   }*/
 
-  static double       currentHeading          = 0;
-  static double       previousHeading         = 0;
-
-  if (gps.time.isValid()) {
-    setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
-  }
-
+  static double   currentHeading        = 0;
+  static double   previousHeading       = 0;
   static double   lastTxLat             = 0.0;
   static double   lastTxLng             = 0.0;
   static double   lastTxDistance        = 0.0;
@@ -247,7 +236,7 @@ void loop() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
     show_display("<<< TX >>>", "", data);
 
-    LoRaUtils::sendNewPacket(data);
+    LoRa_Utils::sendNewPacket(data);
 
     if (currentBeacon->smartBeaconState) {
       lastTxLat       = gps.location.lat();
@@ -266,7 +255,7 @@ void loop() {
   if (gps_time_update) {
     switch (menuDisplay) { // Graphic Menu is in here!!!!
       case 1:
-        show_display("__MENU_1__", "", "1P -> Read Msg (" + String(messages::getNumAPRSMessages()) + ")", "LP -> Delete Msg", "2P -> Menu 2");
+        show_display("__MENU_1__", "", "1P -> Read Msg (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "LP -> Delete Msg", "2P -> Menu 2");
         break;
       case 2:
         show_display("__MENU_2__", "", "1P -> Weather Report", "LP -> Listen Trackers", "2P -> Menu 3");
@@ -339,11 +328,11 @@ void loop() {
           }
         }
         fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
-        if (messages::getNumAPRSMessages() > 0){
-          fourthRowMainMenu = "*** MESSAGES: " + String(messages::getNumAPRSMessages()) + " ***";
+        if (MSG_Utils::getNumAPRSMessages() > 0){
+          fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
         }
                 
-        fifthRowMainMenu  = "LAST Rx = " + messages::getLastHeardTracker();
+        fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
             
         if (powerManagement.getBatteryInfoIsConnected()) {
           String batteryVoltage = powerManagement.getBatteryInfoVoltage();
