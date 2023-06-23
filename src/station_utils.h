@@ -11,8 +11,10 @@ String getThirdNearTracker();
 String getFourthNearTracker();
 
 void deleteListenedTrackersbyTime();
-void checkListenedTrackersByTimeAndDelete();
+void checkListenedTrackersInterval();
 void orderListenedTrackersByDistance(String callsign, float distance, float course);
+
+void sendBeacon();
 
 }
 

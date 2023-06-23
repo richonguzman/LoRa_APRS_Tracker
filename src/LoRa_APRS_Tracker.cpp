@@ -1,7 +1,7 @@
 #ifdef ESP32
 #include <esp_bt.h>
 #endif
-#include <APRS-Decoder.h>
+//#include <APRS-Decoder.h>
 #include <Arduino.h>
 #include <LoRa.h>
 #include <OneButton.h>
@@ -47,6 +47,11 @@ bool     statusAfterBootState  = true;
 
 std::vector<String> loadedAPRSMessages;
 
+double   lastTxLat, lastTxLng, lastTxDistance, currentHeading, previousHeading;
+bool		  sendStandingUpdate 		= false;
+uint32_t  lastTxTime = 0;
+bool gps_time_update, gps_loc_update;
+
 void setup() {
   Serial.begin(115200);
 
@@ -86,18 +91,14 @@ void loop() {
   utils::checkDisplayEcoMode();
 
   GPS_Utils::getData();
-  bool gps_time_update = gps.time.isUpdated();
-  bool gps_loc_update  = gps.location.isUpdated();
+  gps_time_update = gps.time.isUpdated();
+  gps_loc_update  = gps.location.isUpdated();
   GPS_Utils::setDateFromData();
-
-  /*if (gps.time.isValid()) {
-    setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
-  }*/
 
   currentBeacon = &Config.beacons[myBeaconsIndex];
    
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
-  STATION_Utils::checkListenedTrackersByTimeAndDelete();
+  STATION_Utils::checkListenedTrackersInterval();
 
   /*if (gps_loc_update != gps_loc_update_valid) {
     gps_loc_update_valid = gps_loc_update;
@@ -108,15 +109,15 @@ void loop() {
     }
   }*/
 
-  static double   currentHeading        = 0;
-  static double   previousHeading       = 0;
-  static double   lastTxLat             = 0.0;
-  static double   lastTxLng             = 0.0;
-  static double   lastTxDistance        = 0.0;
-  static uint32_t txInterval            = 60000L;
-  static uint32_t lastTxTime            = millis();
-  static bool		  sendStandingUpdate 		= false;
-  int 			      currentSpeed 			    = (int)gps.speed.kmph();
+  //double    currentHeading        = 0;
+  //double    previousHeading       = 0;
+  //double   lastTxLat             = 0.0;
+  //double   lastTxLng             = 0.0;
+  //double    lastTxDistance        = 0.0;
+  static uint32_t txInterval      = 60000L;
+  lastTxTime = millis();
+  //bool		  sendStandingUpdate 		= false;
+  int       currentSpeed 			    = (int)gps.speed.kmph();
 
   if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
     uint32_t lastTx = millis() - lastTxTime;
@@ -158,102 +159,7 @@ void loop() {
   }
 
   if (send_update && gps_loc_update) {
-    APRSMessage msg;
-    msg.setSource(currentBeacon->callsign);
-    msg.setDestination("APLRT1");
-    msg.setPath("WIDE1-1");
-    
-
-    float Tlat, Tlon;
-    float Tspeed=0, Tcourse=0;
-    Tlat    = gps.location.lat();
-    Tlon    = gps.location.lng();
-    Tcourse = gps.course.deg();
-    Tspeed  = gps.speed.knots();
-
-    uint32_t aprs_lat, aprs_lon;
-    aprs_lat = 900000000 - Tlat * 10000000;
-    aprs_lat = aprs_lat / 26 - aprs_lat / 2710 + aprs_lat / 15384615;
-    aprs_lon = 900000000 + Tlon * 10000000 / 2;
-    aprs_lon = aprs_lon / 26 - aprs_lon / 2710 + aprs_lon / 15384615;
-
-    String Ns, Ew, helper;
-    if(Tlat < 0) { Ns = "S"; } else { Ns = "N"; }
-    if(Tlat < 0) { Tlat= -Tlat; }
-
-    if(Tlon < 0) { Ew = "W"; } else { Ew = "E"; }
-    if(Tlon < 0) { Tlon= -Tlon; }
-
-    String infoField = "!";
-    infoField += Config.overlay;
-
-    char helper_base91[] = {"0000\0"};
-    int i;
-    utils::ax25_base91enc(helper_base91, 4, aprs_lat);
-    for (i=0; i<4; i++) {
-      infoField += helper_base91[i];
-      }
-    utils::ax25_base91enc(helper_base91, 4, aprs_lon);
-    for (i=0; i<4; i++) {
-      infoField += helper_base91[i];
-    }
-    
-    infoField += currentBeacon->symbol;
-
-    if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
-      int Alt1, Alt2;
-      int Talt;
-      Talt = gps.altitude.feet();
-      if(Talt>0){
-        double ALT=log(Talt)/log(1.002);
-        Alt1= int(ALT/91);
-        Alt2=(int)ALT%91;
-      }else{
-        Alt1=0;
-        Alt2=0;
-      }
-      if (sendStandingUpdate) {
-        infoField += " ";
-      } else {
-        infoField +=char(Alt1+33);
-      }
-      infoField +=char(Alt2+33);
-      infoField +=char(0x30+33);
-    } else {                      // ... just send Course and Speed
-      utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
-      if (sendStandingUpdate) {
-        infoField += " ";
-      } else {
-        infoField += helper_base91[0];
-      }
-      utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
-      infoField += helper_base91[0];
-      infoField += "\x47";
-    }
-
-    if (currentBeacon->comment != "") {
-      infoField += currentBeacon->comment;
-    }
-
-    msg.getBody()->setData(infoField);
-    String data = msg.encode();
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
-    show_display("<<< TX >>>", "", data);
-
-    LoRa_Utils::sendNewPacket(data);
-
-    if (currentBeacon->smartBeaconState) {
-      lastTxLat       = gps.location.lat();
-      lastTxLng       = gps.location.lng();
-      previousHeading = currentHeading;
-      lastTxDistance  = 0.0;
-    }
-    lastTxTime = millis();
-    send_update = false;
-
-    if (statusAfterBootState) {
-      utils::startingStatus();
-    }
+    STATION_Utils::sendBeacon();
   }
 
   if (gps_time_update) {
