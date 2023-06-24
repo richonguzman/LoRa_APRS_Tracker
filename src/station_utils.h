@@ -14,6 +14,7 @@ void deleteListenedTrackersbyTime();
 void checkListenedTrackersByTimeAndDelete();
 void orderListenedTrackersByDistance(String callsign, float distance, float course);
 void checkSmartBeaconInterval(int speed);
+void checkStandingUpdateTime();
 void checkSmartBeaconState();
 
 }

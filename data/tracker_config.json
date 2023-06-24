@@ -5,7 +5,7 @@
 			"symbol": "j",
 			"comment": "",
 			"smart_beacon": {
-				"active": false,
+				"active": true,
 				"slowRate": 120,
 				"slowSpeed": 3,
 				"fastRate": 60,
@@ -61,7 +61,7 @@
 		"displayEcoMode": false,
 		"displayTimeout": 4,
 		"overlay": "/",
-		"nonSmartBeaconRate": 3,
+		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
 		"maxDistanceToTracker": 30, 
 		"statusAfterBoot" : true,

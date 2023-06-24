@@ -92,46 +92,31 @@ void setup() {
 }
 
 void loop() {
+  currentBeacon = &Config.beacons[myBeaconsIndex];
+  
   powerManagement.batteryManager();
   userButton.tick();
   utils::checkDisplayEcoMode();
-
+  
   GPS_Utils::getData();
-  bool gps_time_update = gps.time.isUpdated();
-  bool gps_loc_update  = gps.location.isUpdated();
-  GPS_Utils::setDateFromData();
-
-  currentBeacon = &Config.beacons[myBeaconsIndex];
-   
+  GPS_Utils::setDateFromData();   
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
 
   int currentSpeed = (int)gps.speed.kmph();
 
-  /*if (gps_loc_update != gps_loc_update_valid) {
-    gps_loc_update_valid = gps_loc_update;
-    if (gps_loc_update) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "GPS fix state went to VALID");
-    } else {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "GPS fix state went to INVALID");
-    }
-  }*/
-
   lastTx = millis() - lastTxTime;
-  if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
+  if (!send_update && gps.location.isUpdated() && currentBeacon->smartBeaconState) {
     GPS_Utils::calculateDistanceTraveled();
     if (!send_update) {
       GPS_Utils::calculateHeadingDelta(currentSpeed);
     }
-    if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
-			send_update = true;
-			sendStandingUpdate = true;
-		}
+    STATION_Utils::checkStandingUpdateTime();
   }
   STATION_Utils::checkSmartBeaconState();
 
   //////
-  if (send_update && gps_loc_update) {
+  if (send_update && gps.location.isUpdated()) {
     APRSMessage msg;
     msg.setSource(currentBeacon->callsign);
     msg.setDestination("APLRT1");
@@ -231,7 +216,7 @@ void loop() {
   }
   //////
 
-  if (gps_time_update) {
+  if (gps.time.isUpdated()) {
     MENU_Utils::showOnScreen();
     STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   }
