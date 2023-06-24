@@ -64,7 +64,7 @@
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
 		"maxDistanceToTracker": 30, 
-		"standingUpdateTime": 5,
+		"standingUpdateTime": 15,
 		"sendAltitude": true
 	}
 }
