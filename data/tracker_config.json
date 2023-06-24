@@ -5,7 +5,7 @@
 			"symbol": "j",
 			"comment": "",
 			"smart_beacon": {
-				"active": true,
+				"active": false,
 				"slowRate": 120,
 				"slowSpeed": 3,
 				"fastRate": 60,

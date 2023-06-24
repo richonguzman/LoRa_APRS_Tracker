@@ -4,11 +4,14 @@
 #include "station_utils.h"
 #include "TimeLib.h"
 #include "configuration.h"
+#include "display.h"
+#include "logger.h"
 
 
 extern HardwareSerial   neo6m_gps;
 extern TinyGPSPlus      gps;
 extern Beacon           *currentBeacon;
+extern logging::Logger  logger;
 
 extern bool             send_update;
 extern bool		          sendStandingUpdate;
@@ -114,7 +117,6 @@ void setDateFromData() {
 }
 
 void calculateDistanceTraveled() {
-  //uint32_t lastTx = millis() - lastTxTime;
   currentHeading  = gps.course.deg();
   lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
   if (lastTx >= txInterval) {
@@ -138,6 +140,15 @@ void calculateHeadingDelta(int speed) {
       send_update = true;
       sendStandingUpdate = false;
     }
+  }
+}
+
+void checkStartUpFrames() {
+  if ((millis() > 8000 && gps.charsProcessed() < 10)) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
+               "No GPS frames detected! Try to reset the GPS Chip with this "
+               "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");
+    show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", "https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset", 2000);
   }
 }
 

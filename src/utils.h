@@ -11,6 +11,7 @@ String createDateString(time_t t);
 String createTimeString(time_t t);
 void startingStatus();
 void checkDisplayEcoMode();
+String getSmartBeaconState();
 
 }
 #endif

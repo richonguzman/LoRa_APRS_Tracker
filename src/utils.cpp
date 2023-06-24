@@ -11,7 +11,6 @@ extern uint32_t         displayTime;
 extern bool             displayState;
 extern int              menuDisplay;
 
-
 namespace utils {
 
 char *ax25_base91enc(char *s, uint8_t n, uint32_t v) {
@@ -59,6 +58,13 @@ void checkDisplayEcoMode() {
       displayState = false;
     }
   }
+}
+
+String getSmartBeaconState() {
+  if (currentBeacon->smartBeaconState) {
+    return "On";
+  }
+  return "Off";
 }
 
 }

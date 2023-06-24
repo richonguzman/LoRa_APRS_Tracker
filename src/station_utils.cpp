@@ -4,15 +4,20 @@
 #include <vector>
 
 extern Configuration        Config;
+extern Beacon               *currentBeacon;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern String               fourthLine;
 
-extern String    firstNearTracker;
-extern String    secondNearTracker;
-extern String    thirdNearTracker;
-extern String    fourthNearTracker;
-extern uint32_t  lastDeleteListenedTracker;
+extern String               firstNearTracker;
+extern String               secondNearTracker;
+extern String               thirdNearTracker;
+extern String               fourthNearTracker;
+
+extern uint32_t             lastDeleteListenedTracker;
+extern uint32_t             lastTxTime;
+extern bool                 send_update;
+extern uint32_t             txInterval;
 
 namespace STATION_Utils {
 
@@ -320,6 +325,27 @@ void orderListenedTrackersByDistance(String callsign, float distance, float cour
           }
         }
       }       
+    }
+  }
+}
+
+void checkSmartBeaconInterval(int speed) {
+  if (currentBeacon->smartBeaconState) {
+    if (speed < currentBeacon->slowSpeed) {
+      txInterval = currentBeacon->slowRate * 1000;
+    } else if (speed > currentBeacon->fastSpeed) {
+      txInterval = currentBeacon->fastRate * 1000;
+    } else {
+      txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / speed) * 1000;
+    }
+  }
+}
+
+void checkSmartBeaconState() {
+  if (!currentBeacon->smartBeaconState) {
+    uint32_t lastTxSmartBeacon = millis() - lastTxTime;
+    if (lastTxSmartBeacon >= Config.nonSmartBeaconRate*60*1000) {
+      send_update = true;
     }
   }
 }

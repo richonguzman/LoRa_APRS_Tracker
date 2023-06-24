@@ -20,30 +20,28 @@
 #include "button_utils.h"
 #include "gps_utils.h"
 #include "station_utils.h"
+#include "menu_utils.h"
 
-#define VERSION "2023.06.23"
+#define VERSION "2023.06.24"
 
-logging::Logger logger;
+logging::Logger             logger;
 
-Configuration   Config;
+Configuration               Config;
+int myBeaconsIndex          = 0;
+int myBeaconsSize           = Config.beacons.size();
+Beacon *currentBeacon       = &Config.beacons[myBeaconsIndex];
+PowerManagement             powerManagement;
+OneButton userButton        = OneButton(BUTTON_PIN, true, true);
+HardwareSerial              neo6m_gps(1);
+TinyGPSPlus                 gps;
 
-int             myBeaconsIndex = 0;
-int             myBeaconsSize  = Config.beacons.size();
-Beacon          *currentBeacon = &Config.beacons[myBeaconsIndex];
-PowerManagement powerManagement;
-OneButton       userButton = OneButton(BUTTON_PIN, true, true);
-HardwareSerial  neo6m_gps(1);
-TinyGPSPlus     gps;
+int      menuDisplay        = 0;
+bool     displayEcoMode     = Config.displayEcoMode;
+uint32_t displayTime        = millis();
+bool     displayState       = true;
 
-String getSmartBeaconState();
-
-int      menuDisplay           = 0;
-bool     displayEcoMode        = Config.displayEcoMode;
-uint32_t displayTime           = millis();
-bool     displayState          = true;
-
-bool     send_update           = true;
-bool		 sendStandingUpdate     = false;
+bool     send_update        = true;
+bool		 sendStandingUpdate = false;
 
 int      messagesIterator      = 0;
 bool     statusAfterBootState  = true;
@@ -59,7 +57,6 @@ double   lastTxDistance         = 0.0;
 uint32_t txInterval             = 60000L;
 uint32_t lastTxTime             = millis();
 uint32_t lastTx;
-
 
 void setup() {
   Serial.begin(115200);
@@ -90,7 +87,7 @@ void setup() {
   userButton.attachDoubleClick(BUTTON_Utils::doublePress);
 
   powerManagement.lowerCpuFrequency();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", getSmartBeaconState());
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
 }
 
@@ -103,10 +100,6 @@ void loop() {
   bool gps_time_update = gps.time.isUpdated();
   bool gps_loc_update  = gps.location.isUpdated();
   GPS_Utils::setDateFromData();
-
-  /*if (gps.time.isValid()) {
-    setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
-  }*/
 
   currentBeacon = &Config.beacons[myBeaconsIndex];
    
@@ -124,44 +117,11 @@ void loop() {
     }
   }*/
 
-  //double   currentHeading        = 0;
-  //double   previousHeading       = 0;
-  //static double   lastTxLat             = 0.0;
-  //static double   lastTxLng             = 0.0;
-  //static double   lastTxDistance        = 0.0;
-  //uint32_t txInterval            = 60000L;
-  //static uint32_t lastTxTime            = millis();
-  //bool		  sendStandingUpdate 		= false;
-  
-
   lastTx = millis() - lastTxTime;
   if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
     GPS_Utils::calculateDistanceTraveled();
-    /*uint32_t lastTx = millis() - lastTxTime;
-    currentHeading  = gps.course.deg();
-    lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
-    if (lastTx >= txInterval) {
-      if (lastTxDistance > currentBeacon->minTxDist) {
-        send_update = true;
-        sendStandingUpdate = false;
-      }
-    }*/
-
     if (!send_update) {
       GPS_Utils::calculateHeadingDelta(currentSpeed);
-      /*int TurnMinAngle;
-      double headingDelta = abs(previousHeading - currentHeading);
-      if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
-        if (currentSpeed == 0) {
-					TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/(currentSpeed+1));
-				} else {
-          TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/currentSpeed);
-				}
-				if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
-          send_update = true;
-          sendStandingUpdate = false;
-        }
-      }*/
     }
     if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
 			send_update = true;
@@ -169,12 +129,7 @@ void loop() {
 		}
   }
 
-  if (!currentBeacon->smartBeaconState) {
-    uint32_t lastTx = millis() - lastTxTime;
-    if (lastTx >= Config.nonSmartBeaconRate*60*1000) {
-      send_update = true;
-    }
-  }
+  STATION_Utils::checkSmartBeaconState();
 
   if (send_update && gps_loc_update) {
     APRSMessage msg;
@@ -276,133 +231,8 @@ void loop() {
   }
 
   if (gps_time_update) {
-    switch (menuDisplay) { // Graphic Menu is in here!!!!
-      case 1:
-        show_display("__MENU_1__", "", "1P -> Read Msg (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "LP -> Delete Msg", "2P -> Menu 2");
-        break;
-      case 2:
-        show_display("__MENU_2__", "", "1P -> Weather Report", "LP -> Listen Trackers", "2P -> Menu 3");
-        break;
-      case 3:
-        show_display("__MENU_3__", "", "1P -> NOTHING YET", "LP -> Display EcoMode", "2P -> (Back) Tracking");
-        break;
-
-      case 10:            // Display Received/Saved APRS Messages
-        {
-          String msgSender      = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
-          String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
-          String msgGate        = restOfMessage.substring(0,restOfMessage.indexOf(","));
-          String msgText        = restOfMessage.substring(restOfMessage.indexOf(",")+1);
-          show_display("MSG_APRS>", msgSender + "-->" + msgGate, msgText, "", "", "               Next>");
-        }
-        break;
-
-      case 20:            // Display Heared Tracker/Stations
-        show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
-        break;
-
-      case 0:       ///////////// MAIN MENU //////////////
-        String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;;
-
-        firstRowMainMenu = currentBeacon->callsign;
-        if (Config.showSymbolOnDisplay) {
-          for (int j=firstRowMainMenu.length();j<9;j++) {
-            firstRowMainMenu += " ";
-          }
-          firstRowMainMenu += currentBeacon->symbol;
-        }
-        
-        secondRowMainMenu = utils::createDateString(now()) + "   " + utils::createTimeString(now());
-        
-        if (gps.hdop.hdop() > 5) {
-          hdopState = "X";
-        } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
-          hdopState = "-";
-        } else if (gps.hdop.hdop() <= 2) {
-          hdopState = "+";
-        }
-        thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
-        for(int i = thirdRowMainMenu.length(); i < 18; i++) {
-          thirdRowMainMenu += " ";
-        }
-        if (gps.satellites.value() > 9) { 
-          thirdRowMainMenu += String(gps.satellites.value()) + hdopState;
-        } else {
-          thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
-        }
-        
-        String fourthRowAlt = String(gps.altitude.meters(),0);
-        fourthRowAlt.trim();
-        for (int a=fourthRowAlt.length();a<4;a++) {
-          fourthRowAlt = "0" + fourthRowAlt;
-        }
-        String fourthRowSpeed = String(gps.speed.kmph(),0);
-        fourthRowSpeed.trim();
-        for (int b=fourthRowSpeed.length(); b<3;b++) {
-          fourthRowSpeed = " " + fourthRowSpeed;
-        }
-        String fourthRowCourse = String(gps.course.deg(),0);
-        if (fourthRowSpeed == "  0") {
-          fourthRowCourse = "---";
-        } else {
-          fourthRowCourse.trim();
-          for(int c=fourthRowCourse.length();c<3;c++) {
-            fourthRowCourse = "0" + fourthRowCourse;
-          }
-        }
-        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
-        if (MSG_Utils::getNumAPRSMessages() > 0){
-          fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
-        }
-                
-        fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
-            
-        if (powerManagement.getBatteryInfoIsConnected()) {
-          String batteryVoltage = powerManagement.getBatteryInfoVoltage();
-          String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
-          if (batteryChargeCurrent.toInt() == 0) {
-            sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
-          } else if (batteryChargeCurrent.toInt() > 0) {
-            sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
-          } else {
-            sixthRowMainMenu = "Battery " + String(batteryVoltage) + "V " + String(batteryChargeCurrent) + "mA";
-          }
-        } else {
-          sixthRowMainMenu = "No Battery Connected" ;
-        }
-        show_display(String(firstRowMainMenu),
-                    String(secondRowMainMenu),
-                    String(thirdRowMainMenu),
-                    String(fourthRowMainMenu),
-                    String(fifthRowMainMenu),
-                    String(sixthRowMainMenu));
-        break;
-    }
-    
-
-    if (currentBeacon->smartBeaconState) {
-      if (currentSpeed < currentBeacon->slowSpeed) {
-        txInterval = currentBeacon->slowRate * 1000;
-      } else if (currentSpeed > currentBeacon->fastSpeed) {
-        txInterval = currentBeacon->fastRate * 1000;
-      } else {
-        txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / currentSpeed) * 1000;
-      }
-    }
+    MENU_Utils::showOnScreen();
+    STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   }
-
-  if ((millis() > 8000 && gps.charsProcessed() < 10)) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
-               "No GPS frames detected! Try to reset the GPS Chip with this "
-               "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");
-    show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", "https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset", 2000);
-  }
-}
-
-/// FUNCTIONS ///
-String getSmartBeaconState() {
-  if (currentBeacon->smartBeaconState) {
-    return "On";
-  }
-  return "Off";
+  GPS_Utils::checkStartUpFrames();
 }
