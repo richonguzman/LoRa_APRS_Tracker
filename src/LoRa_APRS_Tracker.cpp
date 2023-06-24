@@ -23,7 +23,6 @@
 
 #define VERSION "2023.06.24"
 
-logging::Logger               logger;
 Configuration                 Config;
 PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
@@ -55,6 +54,8 @@ double    lastTxLng           = 0.0;
 double    lastTxDistance      = 0.0;
 double    currentHeading      = 0;
 double    previousHeading     = 0;
+
+logging::Logger               logger;
 
 
 void setup() {
