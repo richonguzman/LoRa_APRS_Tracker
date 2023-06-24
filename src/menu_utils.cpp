@@ -15,11 +15,15 @@ extern TinyGPSPlus          gps;
 extern PowerManagement      powerManagement;
 extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
-
+extern uint32_t             menuTime;
 
 namespace MENU_Utils {
 
 void showOnScreen() {
+    uint32_t lastMenuTime = millis() - menuTime;
+    if (!(menuDisplay==0) && !(menuDisplay==20) && lastMenuTime > 30*1000) {
+        menuDisplay = 0;
+    }
     switch (menuDisplay) { // Graphic Menu is in here!!!!
         case 1:
             show_display("__MENU_1__", "", "1P -> Read Msg (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "LP -> Delete Msg", "2P -> Menu 2");

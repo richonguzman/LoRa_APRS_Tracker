@@ -15,6 +15,7 @@ extern bool             statusState;
 extern bool             displayEcoMode;
 extern int              myBeaconsSize;
 extern Configuration    Config;
+extern uint32_t         menuTime;
 
 
 namespace BUTTON_Utils {
@@ -32,8 +33,10 @@ void singlePress() {
     MSG_Utils::loadMessagesFromMemory();
     if (MSG_Utils::warnNoMessages()) {
       menuDisplay = 1;
+      menuTime = millis();
     } else {
       menuDisplay = 10;
+      menuTime = millis();
     }
   } else if (menuDisplay == 2) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
@@ -42,12 +45,15 @@ void singlePress() {
     messagesIterator++;
     if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
       menuDisplay = 1;
+      menuTime = millis();
       messagesIterator = 0;
     } else {
       menuDisplay = 10;
+      menuTime = millis();
     }
   } else if (menuDisplay == 20) {
     menuDisplay = 2;
+    menuTime = millis();
   } else if (menuDisplay == 3) {
     show_display("__INFO____", "", "Nothing Yet...", 1500);
   }
@@ -70,6 +76,7 @@ void longPress() {
     MSG_Utils::loadNumMessages();
   } else if (menuDisplay == 2) {
     menuDisplay = 20;
+    menuTime = millis();
   } else if (menuDisplay == 3) {
     if (!displayEcoMode) {
       displayEcoMode = true;
@@ -85,13 +92,17 @@ void doublePress() {
   display_toggle(true);
   if (menuDisplay == 0) {
     menuDisplay = 1;
+    menuTime = millis();
   } else if (menuDisplay == 1) {
     menuDisplay = 2;
+    menuTime = millis();
     messagesIterator = 0;
   } else if (menuDisplay == 2) {
     menuDisplay = 3;
+    menuTime = millis();
   } else if (menuDisplay == 3 || menuDisplay == 20) {
     menuDisplay = 0;
+    menuTime = millis();
     displayTime = millis();
   } 
 }

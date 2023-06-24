@@ -55,6 +55,8 @@ double    lastTxDistance      = 0.0;
 double    currentHeading      = 0;
 double    previousHeading     = 0;
 
+uint32_t  menuTime            = millis();
+
 logging::Logger               logger;
 
 
