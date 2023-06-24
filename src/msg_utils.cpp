@@ -14,6 +14,9 @@ extern std::vector<String>  loadedAPRSMessages;
 extern TinyGPSPlus          gps;
 extern Configuration        Config;
 
+extern int                  menuDisplay;
+extern uint32_t             menuTime;
+
 String   firstNearTracker            = "";
 String   secondNearTracker           = "";
 String   thirdNearTracker            = "";
@@ -176,7 +179,9 @@ void checkReceivedMessage(String packetReceived) {
 
               String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
               String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
-              show_display("<WEATHER>", "From --> " + Sender, place, summary, fifthLineWR, sixthLineWR , 6000);
+              show_display("<WEATHER>", "From --> " + Sender, place, summary, fifthLineWR, sixthLineWR);
+              menuDisplay = 21;
+              menuTime = millis();
             } else {
               show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);
               saveNewMessage("APRS", Sender, receivedMessage);

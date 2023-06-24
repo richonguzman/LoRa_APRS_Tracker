@@ -52,11 +52,9 @@ void startingStatus() {
 
 void checkDisplayEcoMode() {
   uint32_t lastDisplayTime = millis() - displayTime;
-  if (displayEcoMode) {
-    if (menuDisplay == 0 && lastDisplayTime >= Config.displayTimeout*1000) {
-      display_toggle(false);
-      displayState = false;
-    }
+  if (displayEcoMode && menuDisplay==0 && millis()>10*1000 && lastDisplayTime >= Config.displayTimeout*1000) {
+    display_toggle(false);
+    displayState = false;
   }
 }
 

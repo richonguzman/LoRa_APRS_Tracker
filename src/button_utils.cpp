@@ -41,6 +41,7 @@ void singlePress() {
   } else if (menuDisplay == 2) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
     MSG_Utils::sendMessage("CD2RXU-15","wrl");
+    menuTime = millis();
   } else if (menuDisplay == 10) {
     messagesIterator++;
     if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
@@ -54,7 +55,10 @@ void singlePress() {
   } else if (menuDisplay == 20) {
     menuDisplay = 2;
     menuTime = millis();
-  } else if (menuDisplay == 3) {
+  } else if (menuDisplay == 21) {
+    menuDisplay = 2;
+    menuTime = millis();
+  } if (menuDisplay == 3) {
     show_display("__INFO____", "", "Nothing Yet...", 1500);
   }
 }

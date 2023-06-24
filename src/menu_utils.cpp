@@ -21,7 +21,7 @@ namespace MENU_Utils {
 
 void showOnScreen() {
     uint32_t lastMenuTime = millis() - menuTime;
-    if (!(menuDisplay==0) && !(menuDisplay==20) && lastMenuTime > 30*1000) {
+    if (!(menuDisplay==0) && !(menuDisplay==20) && !(menuDisplay==21) && lastMenuTime > 30*1000) {
         menuDisplay = 0;
     }
     switch (menuDisplay) { // Graphic Menu is in here!!!!
@@ -47,6 +47,9 @@ void showOnScreen() {
 
         case 20:            // Display Heared Tracker/Stations
             show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
+            break;
+        case 21:
+            // waiting for Weather Report
             break;
 
         case 0:       ///////////// MAIN MENU //////////////
