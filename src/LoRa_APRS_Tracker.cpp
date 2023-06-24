@@ -119,6 +119,7 @@ void loop() {
   STATION_Utils::checkSmartBeaconState();
 
   if (send_update && gps_loc_update) {
+    String beaconPacket = currentBeacon->callsign + ">APLRT1,WIDE1-1:!/";
     APRSMessage msg;
     msg.setSource(currentBeacon->callsign);
     msg.setDestination("APLRT1");
@@ -201,6 +202,8 @@ void loop() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
     show_display("<<< TX >>>", "", data);
 
+    beaconPacket += infoField;
+    Serial.println(beaconPacket);
     LoRa_Utils::sendNewPacket(data);
 
     if (currentBeacon->smartBeaconState) {
