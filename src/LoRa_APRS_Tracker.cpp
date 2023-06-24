@@ -128,9 +128,9 @@ void loop() {
 			sendStandingUpdate = true;
 		}
   }
-
   STATION_Utils::checkSmartBeaconState();
 
+  //////
   if (send_update && gps_loc_update) {
     APRSMessage msg;
     msg.setSource(currentBeacon->callsign);
@@ -229,6 +229,7 @@ void loop() {
       utils::startingStatus();
     }
   }
+  //////
 
   if (gps_time_update) {
     MENU_Utils::showOnScreen();
