@@ -9,9 +9,9 @@ extern bool             displayState;
 extern uint32_t         displayTime;
 extern logging::Logger  logger;
 extern int              messagesIterator;
-extern bool             send_update;
+extern bool             sendUpdate;
 extern int              myBeaconsIndex;
-extern bool             statusAfterBootState;
+extern bool             statusState;
 extern bool             displayEcoMode;
 extern int              myBeaconsSize;
 extern Configuration    Config;
@@ -22,7 +22,7 @@ namespace BUTTON_Utils {
 void singlePress() {
   if (menuDisplay == 0) {
     if (displayState) {
-      send_update = true;
+      sendUpdate = true;
     } else {
       display_toggle(true);
       displayTime = millis();   
@@ -60,7 +60,7 @@ void longPress() {
     } else {
       myBeaconsIndex++;
     }
-    statusAfterBootState  = true;
+    statusState  = true;
     display_toggle(true);
     displayTime = millis();
     show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);

@@ -1,10 +1,18 @@
 #include "station_utils.h"
+#include <TinyGPS++.h>
 #include "configuration.h"
 #include "msg_utils.h"
 #include <vector>
+#include "gps_utils.h"
+#include "utils.h"
+#include "logger.h"
+#include "lora_utils.h"
+#include "display.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
+extern logging::Logger      logger;
+extern TinyGPSPlus          gps;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern String               fourthLine;
@@ -17,11 +25,20 @@ extern String               fourthNearTracker;
 extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTxTime;
 
-extern bool                 send_update;
+extern bool                 sendUpdate;
 extern bool                 sendStandingUpdate;
+extern bool                 statusState;
 
 extern uint32_t             txInterval;
 extern uint32_t             lastTx;
+
+extern double               currentHeading;
+extern double               previousHeading;
+
+extern double               lastTxLat;
+extern double               lastTxLng;
+extern double               lastTxDistance;
+
 
 namespace STATION_Utils {
 
@@ -346,8 +363,8 @@ void checkSmartBeaconInterval(int speed) {
 }
 
 void checkStandingUpdateTime() {
-  if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
-		send_update = true;
+  if (!sendUpdate && lastTx >= Config.standingUpdateTime*60*1000) {
+		sendUpdate = true;
 		sendStandingUpdate = true;
 	}
 }
@@ -356,8 +373,34 @@ void checkSmartBeaconState() {
   if (!currentBeacon->smartBeaconState) {
     uint32_t lastTxSmartBeacon = millis() - lastTxTime;
     if (lastTxSmartBeacon >= Config.nonSmartBeaconRate*60*1000) {
-      send_update = true;
+      sendUpdate = true;
     }
+  }
+}
+
+void sendBeacon() {
+  String packet = currentBeacon->callsign + ">APLRT1,WIDE1-1:!" + Config.overlay;
+  packet += GPS_Utils::encondeGPS();
+
+  if (currentBeacon->comment != "") {
+    packet += currentBeacon->comment;
+  }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", packet.c_str());
+  show_display("<<< TX >>>", "", packet);
+  LoRa_Utils::sendNewPacket(packet);
+
+  if (currentBeacon->smartBeaconState) {
+    lastTxLat       = gps.location.lat();
+    lastTxLng       = gps.location.lng();
+    previousHeading = currentHeading;
+    lastTxDistance  = 0.0;
+  }
+  lastTxTime = millis();
+  sendUpdate = false;
+
+  if (statusState) {
+    utils::startingStatus();
   }
 }
 

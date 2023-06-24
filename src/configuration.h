@@ -43,7 +43,6 @@ public:
   int     nonSmartBeaconRate;
   int     rememberStationTime;
   int     maxDistanceToTracker;
-  bool    statusAfterBoot;
   int     standingUpdateTime;
   bool    sendAltitude;
 

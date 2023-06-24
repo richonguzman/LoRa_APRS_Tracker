@@ -64,7 +64,6 @@
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
 		"maxDistanceToTracker": 30, 
-		"statusAfterBoot" : true,
 		"standingUpdateTime": 5,
 		"sendAltitude": true
 	}

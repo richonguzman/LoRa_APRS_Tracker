@@ -5,7 +5,7 @@
 
 extern Beacon           *currentBeacon;
 extern Configuration    Config;
-extern bool             statusAfterBootState;
+extern bool             statusState;
 extern bool             displayEcoMode; 
 extern uint32_t         displayTime;
 extern bool             displayState;
@@ -47,7 +47,7 @@ String createTimeString(time_t t) {
 void startingStatus() {
   delay(3000);
   LoRa_Utils::sendNewPacket(currentBeacon->callsign + ">APLRT1,WIDE1-1:>https://github.com/richonguzman/LoRa_APRS_Tracker");
-  statusAfterBootState = false;
+  statusState = false;
 }
 
 void checkDisplayEcoMode() {

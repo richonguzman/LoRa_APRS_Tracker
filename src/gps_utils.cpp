@@ -6,29 +6,26 @@
 #include "configuration.h"
 #include "display.h"
 #include "logger.h"
+#include "utils.h"
 
-
+extern Configuration    Config;
 extern HardwareSerial   neo6m_gps;
 extern TinyGPSPlus      gps;
 extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 
-extern bool             send_update;
+extern bool             sendUpdate;
 extern bool		          sendStandingUpdate;
 
 extern double           currentHeading;
 extern double           previousHeading;
 
-extern double           lastTxDistance;
 extern uint32_t         lastTxTime;
 extern uint32_t         txInterval;
 extern double           lastTxLat;
 extern double           lastTxLng;
 extern double           lastTxDistance;
 extern uint32_t         lastTx;
-
-
-
 
 namespace GPS_Utils {
 
@@ -121,7 +118,7 @@ void calculateDistanceTraveled() {
   lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
   if (lastTx >= txInterval) {
     if (lastTxDistance > currentBeacon->minTxDist) {
-      send_update = true;
+      sendUpdate = true;
       sendStandingUpdate = false;
     }
   }
@@ -137,7 +134,7 @@ void calculateHeadingDelta(int speed) {
       TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/speed);
   	}
 		if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
-      send_update = true;
+      sendUpdate = true;
       sendStandingUpdate = false;
     }
   }
@@ -150,6 +147,74 @@ void checkStartUpFrames() {
                "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");
     show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", "https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset", 2000);
   }
+}
+
+String encondeGPS() {
+  String encodedData;
+  float Tlat, Tlon;
+  float Tspeed=0, Tcourse=0;
+  Tlat    = gps.location.lat();
+  Tlon    = gps.location.lng();
+  Tcourse = gps.course.deg();
+  Tspeed  = gps.speed.knots();
+
+  uint32_t aprs_lat, aprs_lon;
+  aprs_lat = 900000000 - Tlat * 10000000;
+  aprs_lat = aprs_lat / 26 - aprs_lat / 2710 + aprs_lat / 15384615;
+  aprs_lon = 900000000 + Tlon * 10000000 / 2;
+  aprs_lon = aprs_lon / 26 - aprs_lon / 2710 + aprs_lon / 15384615;
+
+  String Ns, Ew, helper;
+  if(Tlat < 0) { Ns = "S"; } else { Ns = "N"; }
+  if(Tlat < 0) { Tlat= -Tlat; }
+
+  if(Tlon < 0) { Ew = "W"; } else { Ew = "E"; }
+  if(Tlon < 0) { Tlon= -Tlon; }
+
+  char helper_base91[] = {"0000\0"};
+  int i;
+  utils::ax25_base91enc(helper_base91, 4, aprs_lat);
+  for (i=0; i<4; i++) {
+    encodedData += helper_base91[i];
+  }
+  utils::ax25_base91enc(helper_base91, 4, aprs_lon);
+  for (i=0; i<4; i++) {
+    encodedData += helper_base91[i];
+  }
+    
+  encodedData += currentBeacon->symbol;
+
+  if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
+    int Alt1, Alt2;
+    int Talt;
+    Talt = gps.altitude.feet();
+    if(Talt>0) {
+      double ALT=log(Talt)/log(1.002);
+      Alt1= int(ALT/91);
+      Alt2=(int)ALT%91;
+    } else {
+      Alt1=0;
+      Alt2=0;
+    }
+    if (sendStandingUpdate) {
+      encodedData += " ";
+    } else {
+      encodedData +=char(Alt1+33);
+    }
+    encodedData +=char(Alt2+33);
+    encodedData +=char(0x30+33);
+  } else {                      // ... just send Course and Speed
+    utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+    if (sendStandingUpdate) {
+      encodedData += " ";
+    } else {
+      encodedData += helper_base91[0];
+    }
+    utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+    encodedData += helper_base91[0];
+    encodedData += "\x47";
+  }
+  return encodedData;
 }
 
 }

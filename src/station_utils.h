@@ -16,6 +16,7 @@ void orderListenedTrackersByDistance(String callsign, float distance, float cour
 void checkSmartBeaconInterval(int speed);
 void checkStandingUpdateTime();
 void checkSmartBeaconState();
+void sendBeacon();
 
 }
 

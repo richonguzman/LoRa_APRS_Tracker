@@ -14,6 +14,7 @@ void setDateFromData();
 void calculateDistanceTraveled();
 void calculateHeadingDelta(int speed);
 void checkStartUpFrames();
+String encondeGPS();
 
 }
 
