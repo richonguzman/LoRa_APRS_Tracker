@@ -1,13 +1,13 @@
-#include "station_utils.h"
 #include <TinyGPS++.h>
-#include "configuration.h"
-#include "msg_utils.h"
 #include <vector>
-#include "gps_utils.h"
-#include "utils.h"
-#include "logger.h"
+#include "station_utils.h"
+#include "configuration.h"
 #include "lora_utils.h"
+#include "msg_utils.h"
+#include "gps_utils.h"
 #include "display.h"
+#include "logger.h"
+#include "utils.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;

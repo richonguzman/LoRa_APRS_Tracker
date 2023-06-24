@@ -2,24 +2,24 @@
 #include <esp_bt.h>
 #endif
 #include <Arduino.h>
-#include <LoRa.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
-#include <WiFi.h>
 #include <logger.h>
-#include "SPIFFS.h"
+#include <WiFi.h>
+#include <LoRa.h>
 #include <vector>
-#include "configuration.h"
-#include "display.h"
-#include "pins_config.h"
 #include "power_management.h"
-#include "lora_utils.h"
-#include "utils.h"
-#include "msg_utils.h"
-#include "button_utils.h"
-#include "gps_utils.h"
+#include "configuration.h"
 #include "station_utils.h"
+#include "button_utils.h"
+#include "pins_config.h"
 #include "menu_utils.h"
+#include "lora_utils.h"
+#include "msg_utils.h"
+#include "gps_utils.h"
+#include "display.h"
+#include "SPIFFS.h"
+#include "utils.h"
 
 #define VERSION "2023.06.24"
 

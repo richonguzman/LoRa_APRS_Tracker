@@ -1,8 +1,8 @@
-#include <LoRa.h>
 #include <logger.h>
+#include <LoRa.h>
 #include "configuration.h"
-#include "display.h"
 #include "msg_utils.h"
+#include "display.h"
 
 extern logging::Logger logger;
 extern Configuration Config;

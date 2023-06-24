@@ -1,7 +1,7 @@
 #include "configuration.h"
 #include "lora_utils.h"
-#include "utils.h"
 #include "display.h"
+#include "utils.h"
 
 extern Beacon           *currentBeacon;
 extern Configuration    Config;

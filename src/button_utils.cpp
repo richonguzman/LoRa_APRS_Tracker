@@ -1,8 +1,8 @@
+#include <logger.h>
+#include "configuration.h"
 #include "button_utils.h"
 #include "msg_utils.h"
 #include "display.h"
-#include "configuration.h"
-#include <logger.h>
 
 extern int              menuDisplay;
 extern bool             displayState;

@@ -1,12 +1,12 @@
-#include "menu_utils.h"
 #include <TinyGPS++.h>
-#include "display.h"
-#include "msg_utils.h"
+#include <vector>
 #include "power_management.h"
 #include "station_utils.h"
-#include "utils.h"
 #include "configuration.h"
-#include <vector>
+#include "menu_utils.h"
+#include "msg_utils.h"
+#include "display.h"
+#include "utils.h"
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;

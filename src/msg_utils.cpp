@@ -1,14 +1,12 @@
-#include <Arduino.h>
-#include <SPIFFS.h>
 #include <TinyGPS++.h>
-#include "msg_utils.h"
+#include <SPIFFS.h>
 #include "configuration.h"
-#include "logger.h"
-#include "display.h"
-#include "lora_utils.h"
 #include "station_utils.h"
+#include "lora_utils.h"
+#include "msg_utils.h"
 #include "gps_utils.h"
-
+#include "display.h"
+#include "logger.h"
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
