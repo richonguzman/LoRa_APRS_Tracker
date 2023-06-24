@@ -1,7 +1,6 @@
 #ifdef ESP32
 #include <esp_bt.h>
 #endif
-#include <APRS-Decoder.h>
 #include <Arduino.h>
 #include <LoRa.h>
 #include <OneButton.h>
@@ -119,13 +118,8 @@ void loop() {
   STATION_Utils::checkSmartBeaconState();
 
   if (send_update && gps_loc_update) {
-    String beaconPacket = currentBeacon->callsign + ">APLRT1,WIDE1-1:!/";
-    APRSMessage msg;
-    msg.setSource(currentBeacon->callsign);
-    msg.setDestination("APLRT1");
-    msg.setPath("WIDE1-1");
+    String beaconPacket = currentBeacon->callsign + ">APLRT1,WIDE1-1:!" + Config.overlay;
     
-
     float Tlat, Tlon;
     float Tspeed=0, Tcourse=0;
     Tlat    = gps.location.lat();
@@ -146,21 +140,18 @@ void loop() {
     if(Tlon < 0) { Ew = "W"; } else { Ew = "E"; }
     if(Tlon < 0) { Tlon= -Tlon; }
 
-    String infoField = "!";
-    infoField += Config.overlay;
-
     char helper_base91[] = {"0000\0"};
     int i;
     utils::ax25_base91enc(helper_base91, 4, aprs_lat);
     for (i=0; i<4; i++) {
-      infoField += helper_base91[i];
+      beaconPacket += helper_base91[i];
       }
     utils::ax25_base91enc(helper_base91, 4, aprs_lon);
     for (i=0; i<4; i++) {
-      infoField += helper_base91[i];
+      beaconPacket += helper_base91[i];
     }
     
-    infoField += currentBeacon->symbol;
+    beaconPacket += currentBeacon->symbol;
 
     if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
       int Alt1, Alt2;
@@ -175,36 +166,31 @@ void loop() {
         Alt2=0;
       }
       if (sendStandingUpdate) {
-        infoField += " ";
+        beaconPacket += " ";
       } else {
-        infoField +=char(Alt1+33);
+        beaconPacket +=char(Alt1+33);
       }
-      infoField +=char(Alt2+33);
-      infoField +=char(0x30+33);
+      beaconPacket +=char(Alt2+33);
+      beaconPacket +=char(0x30+33);
     } else {                      // ... just send Course and Speed
       utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
       if (sendStandingUpdate) {
-        infoField += " ";
+        beaconPacket += " ";
       } else {
-        infoField += helper_base91[0];
+        beaconPacket += helper_base91[0];
       }
       utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
-      infoField += helper_base91[0];
-      infoField += "\x47";
+      beaconPacket += helper_base91[0];
+      beaconPacket += "\x47";
     }
 
     if (currentBeacon->comment != "") {
-      infoField += currentBeacon->comment;
+      beaconPacket += currentBeacon->comment;
     }
 
-    msg.getBody()->setData(infoField);
-    String data = msg.encode();
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", data.c_str());
-    show_display("<<< TX >>>", "", data);
-
-    beaconPacket += infoField;
-    Serial.println(beaconPacket);
-    LoRa_Utils::sendNewPacket(data);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", beaconPacket.c_str());
+    show_display("<<< TX >>>", "", beaconPacket);
+    LoRa_Utils::sendNewPacket(beaconPacket);
 
     if (currentBeacon->smartBeaconState) {
       lastTxLat       = gps.location.lat();
