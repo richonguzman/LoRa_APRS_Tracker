@@ -30,31 +30,31 @@ HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-int     myBeaconsIndex          = 0;
-int     myBeaconsSize           = Config.beacons.size();
-Beacon  *currentBeacon          = &Config.beacons[myBeaconsIndex];
+int       myBeaconsIndex      = 0;
+int       myBeaconsSize       = Config.beacons.size();
+Beacon    *currentBeacon      = &Config.beacons[myBeaconsIndex];
 
-int      menuDisplay            = 0;
+int       menuDisplay         = 0;
 
-int      messagesIterator       = 0;
-std::vector<String>             loadedAPRSMessages;
+int       messagesIterator    = 0;
+std::vector<String>           loadedAPRSMessages;
 
-bool     displayEcoMode         = Config.displayEcoMode;
-bool     displayState           = true;
-uint32_t displayTime            = millis();
+bool      displayEcoMode      = Config.displayEcoMode;
+bool      displayState        = true;
+uint32_t  displayTime         = millis();
 
-bool     sendUpdate            = true;
-bool		 sendStandingUpdate     = false;
-bool     statusState            = true;
+bool      sendUpdate          = true;
+bool		  sendStandingUpdate  = false;
+bool      statusState         = true;
 
-uint32_t lastTx                 = 0.0;
-uint32_t txInterval             = 60000L;
-uint32_t lastTxTime             = millis();
-double   lastTxLat              = 0.0;
-double   lastTxLng              = 0.0;
-double   lastTxDistance         = 0.0;
-double   currentHeading         = 0;
-double   previousHeading        = 0;
+uint32_t  lastTx              = 0.0;
+uint32_t  txInterval          = 60000L;
+uint32_t  lastTxTime          = millis();
+double    lastTxLat           = 0.0;
+double    lastTxLng           = 0.0;
+double    lastTxDistance      = 0.0;
+double    currentHeading      = 0;
+double    previousHeading     = 0;
 
 
 void setup() {
