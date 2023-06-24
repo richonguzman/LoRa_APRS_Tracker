@@ -41,11 +41,25 @@ int      menuDisplay           = 0;
 bool     displayEcoMode        = Config.displayEcoMode;
 uint32_t displayTime           = millis();
 bool     displayState          = true;
+
 bool     send_update           = true;
+bool		 sendStandingUpdate     = false;
+
 int      messagesIterator      = 0;
 bool     statusAfterBootState  = true;
 
 std::vector<String> loadedAPRSMessages;
+
+double   currentHeading         = 0;
+double   previousHeading        = 0;
+
+double   lastTxLat              = 0.0;
+double   lastTxLng              = 0.0;
+double   lastTxDistance         = 0.0;
+uint32_t txInterval             = 60000L;
+uint32_t lastTxTime             = millis();
+uint32_t lastTx;
+
 
 void setup() {
   Serial.begin(115200);
@@ -99,6 +113,8 @@ void loop() {
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
 
+  int currentSpeed = (int)gps.speed.kmph();
+
   /*if (gps_loc_update != gps_loc_update_valid) {
     gps_loc_update_valid = gps_loc_update;
     if (gps_loc_update) {
@@ -108,18 +124,20 @@ void loop() {
     }
   }*/
 
-  static double   currentHeading        = 0;
-  static double   previousHeading       = 0;
-  static double   lastTxLat             = 0.0;
-  static double   lastTxLng             = 0.0;
-  static double   lastTxDistance        = 0.0;
-  static uint32_t txInterval            = 60000L;
-  static uint32_t lastTxTime            = millis();
-  static bool		  sendStandingUpdate 		= false;
-  int 			      currentSpeed 			    = (int)gps.speed.kmph();
+  //double   currentHeading        = 0;
+  //double   previousHeading       = 0;
+  //static double   lastTxLat             = 0.0;
+  //static double   lastTxLng             = 0.0;
+  //static double   lastTxDistance        = 0.0;
+  //uint32_t txInterval            = 60000L;
+  //static uint32_t lastTxTime            = millis();
+  //bool		  sendStandingUpdate 		= false;
+  
 
+  lastTx = millis() - lastTxTime;
   if (!send_update && gps_loc_update && currentBeacon->smartBeaconState) {
-    uint32_t lastTx = millis() - lastTxTime;
+    GPS_Utils::calculateDistanceTraveled();
+    /*uint32_t lastTx = millis() - lastTxTime;
     currentHeading  = gps.course.deg();
     lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
     if (lastTx >= txInterval) {
@@ -127,10 +145,11 @@ void loop() {
         send_update = true;
         sendStandingUpdate = false;
       }
-    }
+    }*/
 
     if (!send_update) {
-      int TurnMinAngle;
+      GPS_Utils::calculateHeadingDelta(currentSpeed);
+      /*int TurnMinAngle;
       double headingDelta = abs(previousHeading - currentHeading);
       if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
         if (currentSpeed == 0) {
@@ -142,7 +161,7 @@ void loop() {
           send_update = true;
           sendStandingUpdate = false;
         }
-      }
+      }*/
     }
     if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
 			send_update = true;

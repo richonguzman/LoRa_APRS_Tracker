@@ -3,9 +3,29 @@
 #include "pins_config.h"
 #include "station_utils.h"
 #include "TimeLib.h"
+#include "configuration.h"
 
-extern HardwareSerial  neo6m_gps;
-extern TinyGPSPlus     gps;
+
+extern HardwareSerial   neo6m_gps;
+extern TinyGPSPlus      gps;
+extern Beacon           *currentBeacon;
+
+extern bool             send_update;
+extern bool		          sendStandingUpdate;
+
+extern double           currentHeading;
+extern double           previousHeading;
+
+extern double           lastTxDistance;
+extern uint32_t         lastTxTime;
+extern uint32_t         txInterval;
+extern double           lastTxLat;
+extern double           lastTxLng;
+extern double           lastTxDistance;
+extern uint32_t         lastTx;
+
+
+
 
 namespace GPS_Utils {
 
@@ -90,6 +110,34 @@ void getData() {
 void setDateFromData() {
   if (gps.time.isValid()) {
     setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+  }
+}
+
+void calculateDistanceTraveled() {
+  //uint32_t lastTx = millis() - lastTxTime;
+  currentHeading  = gps.course.deg();
+  lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
+  if (lastTx >= txInterval) {
+    if (lastTxDistance > currentBeacon->minTxDist) {
+      send_update = true;
+      sendStandingUpdate = false;
+    }
+  }
+}
+
+void calculateHeadingDelta(int speed) {
+  int TurnMinAngle;
+  double headingDelta = abs(previousHeading - currentHeading);
+  if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
+    if (speed == 0) {
+			TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/(speed+1));
+		} else {
+      TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/speed);
+  	}
+		if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
+      send_update = true;
+      sendStandingUpdate = false;
+    }
   }
 }
 

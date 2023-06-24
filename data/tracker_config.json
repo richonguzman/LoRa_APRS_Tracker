@@ -1,8 +1,8 @@
 {
 	"beacons": [
 		{
-			"callsign": "CD2RXU-7",
-			"symbol": "[",
+			"callsign": "CD2RXU-8",
+			"symbol": "j",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -17,7 +17,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-7",
+			"callsign": "CD2RXU-8",
 			"symbol": "b",
 			"comment": "",
 			"smart_beacon": {
@@ -33,7 +33,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-7",
+			"callsign": "CD2RXU-8",
 			"symbol": ">",
 			"comment": "",
 			"smart_beacon": {
@@ -65,7 +65,7 @@
 		"rememberStationTime": 30,
 		"maxDistanceToTracker": 30, 
 		"statusAfterBoot" : true,
-		"standingUpdateTime": 15,
+		"standingUpdateTime": 5,
 		"sendAltitude": true
 	}
 }

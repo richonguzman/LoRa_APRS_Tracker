@@ -11,6 +11,8 @@ void decodeEncodedGPS(String packet, String sender);
 void getReceivedGPS(String packet, String sender);
 void getData();
 void setDateFromData();
+void calculateDistanceTraveled();
+void calculateHeadingDelta(int speed);
 
 }
 
