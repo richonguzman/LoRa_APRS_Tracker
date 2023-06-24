@@ -113,10 +113,7 @@ void loop() {
     if (!send_update) {
       GPS_Utils::calculateHeadingDelta(currentSpeed);
     }
-    if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
-			send_update = true;
-			sendStandingUpdate = true;
-		}
+    STATION_Utils::checkStandingUpdateTime();
   }
 
   STATION_Utils::checkSmartBeaconState();

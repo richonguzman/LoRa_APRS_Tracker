@@ -16,8 +16,12 @@ extern String               fourthNearTracker;
 
 extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTxTime;
+
 extern bool                 send_update;
+extern bool                 sendStandingUpdate;
+
 extern uint32_t             txInterval;
+extern uint32_t             lastTx;
 
 namespace STATION_Utils {
 
@@ -339,6 +343,13 @@ void checkSmartBeaconInterval(int speed) {
       txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / speed) * 1000;
     }
   }
+}
+
+void checkStandingUpdateTime() {
+  if (!send_update && lastTx >= Config.standingUpdateTime*60*1000) {
+		send_update = true;
+		sendStandingUpdate = true;
+	}
 }
 
 void checkSmartBeaconState() {
