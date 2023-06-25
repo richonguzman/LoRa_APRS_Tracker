@@ -1,9 +1,9 @@
 #include <TinyGPS++.h>
-#include "gps_utils.h"
-#include "pins_config.h"
-#include "station_utils.h"
 #include "TimeLib.h"
 #include "configuration.h"
+#include "station_utils.h"
+#include "pins_config.h"
+#include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
 #include "utils.h"

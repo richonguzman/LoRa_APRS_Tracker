@@ -1,5 +1,5 @@
-#ifndef POWER_MANAGEMENT_H_
-#define POWER_MANAGEMENT_H_
+#ifndef POWER_UTILS_H_
+#define POWER_UTILS_H_
 
 #include <Arduino.h>
 #include <axp20x.h>

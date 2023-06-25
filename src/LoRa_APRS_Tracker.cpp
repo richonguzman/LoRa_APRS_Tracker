@@ -8,11 +8,11 @@
 #include <WiFi.h>
 #include <LoRa.h>
 #include <vector>
-#include "power_management.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "button_utils.h"
 #include "pins_config.h"
+#include "power_utils.h"
 #include "menu_utils.h"
 #include "lora_utils.h"
 #include "msg_utils.h"

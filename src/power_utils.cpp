@@ -1,4 +1,4 @@
-#include "power_management.h"
+#include "power_utils.h"
 #include "logger.h"
 
 extern logging::Logger logger;
