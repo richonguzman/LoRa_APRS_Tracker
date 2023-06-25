@@ -120,8 +120,11 @@ void sendMessage(String station, String textMessage) {
   for(int i = station.length(); i < 9; i++) {
     station += ' ';
   }
-  messageToSend = currentBeacon->callsign + ">APLR01,WIDE1-1::" + station + ":" + textMessage;
-  
+  messageToSend = currentBeacon->callsign + ">APLRT1";
+  if (Config.path != "") {
+    messageToSend += "," + Config.path;
+  }
+  messageToSend += "::" + station + ":" + textMessage;
   if (textMessage.indexOf("ack")== 0) {
     show_display("<<ACK Tx>>", 500);
   } else if (station.indexOf("CD2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {

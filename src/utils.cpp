@@ -46,7 +46,12 @@ String createTimeString(time_t t) {
 
 void startingStatus() {
   delay(3000);
-  LoRa_Utils::sendNewPacket(currentBeacon->callsign + ">APLRT1,WIDE1-1:>https://github.com/richonguzman/LoRa_APRS_Tracker");
+  String packet = currentBeacon->callsign + ">APLRT1";
+  if (Config.path != "") {
+    packet += "," + Config.path;
+  }
+  packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker";
+  LoRa_Utils::sendNewPacket(packet);
   statusState = false;
 }
 

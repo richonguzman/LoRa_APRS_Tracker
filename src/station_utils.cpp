@@ -379,7 +379,11 @@ void checkSmartBeaconState() {
 }
 
 void sendBeacon() {
-  String packet = currentBeacon->callsign + ">APLRT1,WIDE1-1:!" + Config.overlay;
+  String packet = currentBeacon->callsign + ">APLRT1";
+  if (Config.path != "") {
+    packet += "," + Config.path;
+  }
+  packet += ":!" + Config.overlay;
   packet += GPS_Utils::encondeGPS();
 
   if (currentBeacon->comment != "") {

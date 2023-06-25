@@ -54,6 +54,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
     overlay                       = data["other"]["overlay"].as<String>();
+    path                          = data["other"]["path"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     rememberStationTime           = data["other"]["rememberStationTime"].as<int>();
     maxDistanceToTracker          = data["other"]["maxDistanceToTracker"].as<int>();

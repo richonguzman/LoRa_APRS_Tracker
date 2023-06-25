@@ -40,6 +40,7 @@ public:
   bool    displayEcoMode;
   int     displayTimeout;
   String  overlay;
+  String  path;
   int     nonSmartBeaconRate;
   int     rememberStationTime;
   int     maxDistanceToTracker;
