@@ -54,7 +54,12 @@ Timeline (Versions):
 - 2023.05.21 Adding Last-Heard LoRa Stations/Trackers
 - 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
 - 2023.05.29 New Config file for adding more new ideas to the Tracker.
-- 2023.06.01 Adding Turn Slope calculations for Smart Beacon and Display Eco Mode
+- 2023.06.01 Adding Turn Slope calculations for Smart Beacon and Display Eco Mode.
+- 2023.06.20 Mayor Code Repacking.
+- 2023.06.23 Return to from any Menu number to Main Menu (Tracker) after 30 segs.
+- 2023.06.24 displayEcoMode=true doesn't turn the screen off at boot.
+- 2023.06.25 Sends comment after X count of beacons.
+- 2023.06.26 Weather Report now stays until button pressed, to avoid missing it.
 ____________________________________________________
 This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
 - https://github.com/aprs434/lora.tracker

@@ -26,6 +26,7 @@ extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTxTime;
 
 extern bool                 sendUpdate;
+extern int                  updateCounter;
 extern bool                 sendStandingUpdate;
 extern bool                 statusState;
 
@@ -387,11 +388,15 @@ void sendBeacon() {
   packet += GPS_Utils::encondeGPS();
 
   if (currentBeacon->comment != "") {
-    packet += currentBeacon->comment;
+    updateCounter++;
+    if (updateCounter >= Config.sendCommentAfterXBeacons) {
+      packet += currentBeacon->comment;
+      updateCounter = 0;
+    } 
   }
 
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", packet.c_str());
-  show_display("<<< TX >>>", "", packet);
+  show_display("<<< TX >>>", "", packet,100);
   LoRa_Utils::sendNewPacket(packet);
 
   if (currentBeacon->smartBeaconState) {

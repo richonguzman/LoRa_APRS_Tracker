@@ -51,6 +51,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.power              = data["lora"]["power"].as<int>();
 
     showSymbolOnDisplay           = data["other"]["showSymbolOnDisplay"].as<bool>();
+    sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
     overlay                       = data["other"]["overlay"].as<String>();

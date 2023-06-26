@@ -18,22 +18,6 @@
 		},
 		{
 			"callsign": "NOCALL-7",
-			"symbol": "b",
-			"comment": "",
-			"smart_beacon": {
-				"active": true,
-				"slowRate": 120,
-				"slowSpeed": 5,
-				"fastRate": 60,
-				"fastSpeed": 40,
-				"minTxDist": 100,
-				"minDeltaBeacon": 12,
-				"turnMinDeg": 12,
-				"turnSlope": 60
-			}
-		},
-		{
-			"callsign": "NOCALL-7",
 			"symbol": ">",
 			"comment": "",
 			"smart_beacon": {
@@ -47,7 +31,23 @@
 				"turnMinDeg": 10,
 				"turnSlope": 80
 			}
-		}
+		},
+		{
+			"callsign": "NOCALL-7",
+			"symbol": "b",
+			"comment": "",
+			"smart_beacon": {
+				"active": true,
+				"slowRate": 120,
+				"slowSpeed": 5,
+				"fastRate": 60,
+				"fastSpeed": 40,
+				"minTxDist": 100,
+				"minDeltaBeacon": 12,
+				"turnMinDeg": 12,
+				"turnSlope": 60
+			}
+		}		
 	],
 	"lora": {
 		"frequency": 433775000,
@@ -58,6 +58,7 @@
 	},
 	"other": {
 		"showSymbolOnDisplay": true,
+		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
 		"overlay": "/",

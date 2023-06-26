@@ -21,7 +21,7 @@
 #include "SPIFFS.h"
 #include "utils.h"
 
-#define VERSION "2023.06.25"
+#define VERSION "2023.06.26"
 
 Configuration                 Config;
 PowerManagement               powerManagement;
@@ -43,6 +43,7 @@ bool      displayState        = true;
 uint32_t  displayTime         = millis();
 
 bool      sendUpdate          = true;
+int       updateCounter       = Config.sendCommentAfterXBeacons;
 bool		  sendStandingUpdate  = false;
 bool      statusState         = true;
 

@@ -37,6 +37,7 @@ public:
   LoraModule loramodule;
 
   bool    showSymbolOnDisplay;
+  int     sendCommentAfterXBeacons;
   bool    displayEcoMode;
   int     displayTimeout;
   String  overlay;
