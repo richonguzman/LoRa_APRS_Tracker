@@ -55,7 +55,7 @@ Timeline (Versions):
 - 2023.05.27 Adding Altitude + Speed or Course + Speed in the encoded GPS info.
 - 2023.05.29 New Config file for adding more new ideas to the Tracker.
 - 2023.06.01 Adding Turn Slope calculations for Smart Beacon and Display Eco Mode.
-- 2023.06.20 Mayor Code Repacking.
+- 2023.06.20 Major Code Repacking.
 - 2023.06.23 Return to from any Menu number to Main Menu (Tracker) after 30 segs.
 - 2023.06.24 displayEcoMode=true doesn't turn the screen off at boot.
 - 2023.06.25 Sends comment after X count of beacons.
