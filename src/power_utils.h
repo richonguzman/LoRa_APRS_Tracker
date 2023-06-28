@@ -2,7 +2,13 @@
 #define POWER_UTILS_H_
 
 #include <Arduino.h>
+#ifdef TTGO_T_Beam_V1_0
 #include <axp20x.h>
+#endif
+#ifdef TTGO_T_Beam_V1_2
+#define XPOWERS_CHIP_AXP2101
+#include "XPowersLib.h"
+#endif
 
 class PowerManagement {
 public:
@@ -42,7 +48,12 @@ private:
 
   bool isBatteryConnected();
 
+  #ifdef TTGO_T_Beam_V1_0
   AXP20X_Class axp;
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
+  XPowersPMU PMU;
+  #endif
 
   bool   BatteryIsConnected;
   String batteryVoltage;

@@ -21,4 +21,9 @@
 #define GPS_TX 34
 #endif
 
+#ifdef TTGO_T_Beam_V1_2
+#define GPS_RX 12
+#define GPS_TX 34
+#endif
+
 #endif
