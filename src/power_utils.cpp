@@ -18,12 +18,36 @@ bool PowerManagement::begin(TwoWire &port) {
   #ifdef TTGO_T_Beam_V1_2
   bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
   if (!result) {
-    PMU.setDC3Voltage(3000);
-    PMU.enableDC3();
-    PMU.setDC2Voltage(3000);
-    PMU.enableDC2();
-    PMU.setDC1Voltage(3000);
+    PMU.setDC1Voltage(3300);
     PMU.enableDC1();
+
+    PMU.setDC2Voltage(1000);
+    PMU.enableDC2();
+
+
+    PMU.setDC3Voltage(3300);
+    PMU.enableDC3();
+
+
+    PMU.setDC4Voltage(1000);
+    PMU.enableDC4();
+
+    PMU.setDC5Voltage(3300);   
+    PMU.enableDC5();
+
+
+    PMU.disableDC2();
+    PMU.disableDC3();
+    PMU.disableDC4();
+    PMU.disableDC5();
+
+    PMU.disableALDO1();
+    PMU.disableALDO2();
+    PMU.disableALDO3();
+    PMU.disableALDO4();
+
+    PMU.disableBLDO1();
+    PMU.disableBLDO2();
   }
   return result;
   #endif
@@ -36,7 +60,7 @@ void PowerManagement::activateLoRa() {
   #endif
   #ifdef TTGO_T_Beam_V1_2
   PMU.setALDO2Voltage(3300);
-  PMU.enableALDO2(); 
+  PMU.enableALDO2();
   #endif
 }
 
@@ -146,15 +170,39 @@ void PowerManagement::setup() {
   } else {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
   }
-  Serial.println("activando LoRa");
   activateLoRa();
-  Serial.println("activando OLED");
   activateOLED();
-  Serial.println("activando GPS");
   activateGPS();
-  Serial.println("activando Measurement");
   activateMeasurement();
-  Serial.println("activado");
+
+  PMU.enableBattDetection();
+  PMU.enableVbusVoltageMeasure();
+  PMU.enableBattVoltageMeasure();
+  PMU.enableSystemVoltageMeasure();
+
+  //PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
+
+  /*uint8_t charge_status = PMU.getChargerStatus();
+    if (charge_status == XPOWERS_AXP2101_CHG_TRI_STATE) {
+        Serial.println("tri_charge");
+    } else if (charge_status == XPOWERS_AXP2101_CHG_PRE_STATE) {
+        Serial.println("pre_charge");
+    } else if (charge_status == XPOWERS_AXP2101_CHG_CC_STATE) {
+        Serial.println("constant charge");
+    } else if (charge_status == XPOWERS_AXP2101_CHG_CV_STATE) {
+        Serial.println("constant voltage");
+    } else if (charge_status == XPOWERS_AXP2101_CHG_DONE_STATE) {
+        Serial.println("charge done");
+    } else if (charge_status == XPOWERS_AXP2101_CHG_STOP_STATE) {
+        Serial.println("not chargin");
+    }*/
+
+    /*Serial.print("getBattVoltage:"); Serial.print(PMU.getBattVoltage()); Serial.println("mV");
+    Serial.print("getVbusVoltage:"); Serial.print(PMU.getVbusVoltage()); Serial.println("mV");
+    Serial.print("getSystemVoltage:"); Serial.print(PMU.getSystemVoltage()); Serial.println("mV");
+    */
+
+
 #endif
 }
 
