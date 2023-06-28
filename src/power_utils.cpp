@@ -21,18 +21,18 @@ bool PowerManagement::begin(TwoWire &port) {
     PMU.setDC1Voltage(3300);
     PMU.enableDC1();
 
-    PMU.setDC2Voltage(1000);
+    PMU.setDC2Voltage(1000);  //this is something I saw on meshtastic or elsewhere
     PMU.enableDC2();
 
 
-    PMU.setDC3Voltage(3300);
+    PMU.setDC3Voltage(3300);  //this is something I saw on meshtastic or elsewhere
     PMU.enableDC3();
 
 
-    PMU.setDC4Voltage(1000);
+    PMU.setDC4Voltage(1000);  //this is something I saw on meshtastic or elsewhere
     PMU.enableDC4();
 
-    PMU.setDC5Voltage(3300);   
+    PMU.setDC5Voltage(3300);  //this is something I saw on meshtastic or elsewhere
     PMU.enableDC5();
 
 
