@@ -111,6 +111,7 @@ void showOnScreen() {
             if (powerManagement.getBatteryInfoIsConnected()) {
                 String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                 String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
+                #ifdef TTGO_T_Beam_V1_0
                 if (batteryChargeCurrent.toInt() == 0) {
                     sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
                 } else if (batteryChargeCurrent.toInt() > 0) {
@@ -118,6 +119,17 @@ void showOnScreen() {
                 } else {
                     sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryChargeCurrent + "mA";
                 }
+                #endif
+                #ifdef TTGO_T_Beam_V1_2
+                    batteryVoltage = batteryVoltage.toFloat()/1000;
+                    if (powerManagement.isChargeing() && batteryChargeCurrent!="100") { 
+                        sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
+                    } else if (!powerManagement.isChargeing() && batteryChargeCurrent=="100") {
+                        sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
+                    } else {
+                        sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryChargeCurrent + "%";
+                    }
+                #endif
             } else {
                 sixthRowMainMenu = "No Battery Connected" ;
             }

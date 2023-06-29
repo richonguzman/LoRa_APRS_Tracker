@@ -24,9 +24,10 @@ public:
   String getBatteryInfoCurrent();
   bool getBatteryInfoIsConnected();
   void batteryManager();
+  bool isChargeing();
 
 private:
-  bool isChargeing();
+  
 
   void activateLoRa();
   void deactivateLoRa();
