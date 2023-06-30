@@ -21,7 +21,7 @@
 #include "SPIFFS.h"
 #include "utils.h"
 
-#define VERSION "2023.06.30"
+#define VERSION "2023.07.01"
 
 Configuration                 Config;
 PowerManagement               powerManagement;

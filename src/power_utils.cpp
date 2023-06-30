@@ -17,37 +17,20 @@ bool PowerManagement::begin(TwoWire &port) {
 #endif
 #ifdef TTGO_T_Beam_V1_2
   bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
-  if (!result) {
-    PMU.setDC1Voltage(3300);
-    PMU.enableDC1();
-
-    PMU.setDC2Voltage(1000);  //this is something I saw on meshtastic or elsewhere
-    PMU.enableDC2();
-
-
-    PMU.setDC3Voltage(3300);  //this is something I saw on meshtastic or elsewhere
-    PMU.enableDC3();
-
-
-    PMU.setDC4Voltage(1000);  //this is something I saw on meshtastic or elsewhere
-    PMU.enableDC4();
-
-    PMU.setDC5Voltage(3300);  //this is something I saw on meshtastic or elsewhere
-    PMU.enableDC5();
-
-
+  if (result) {
     PMU.disableDC2();
     PMU.disableDC3();
     PMU.disableDC4();
     PMU.disableDC5();
-
     PMU.disableALDO1();
-    PMU.disableALDO2();
-    PMU.disableALDO3();
     PMU.disableALDO4();
-
     PMU.disableBLDO1();
     PMU.disableBLDO2();
+    PMU.disableDLDO1();
+    PMU.disableDLDO2();
+
+    PMU.setDC1Voltage(3300);
+    PMU.enableDC1();
   }
   return result;
 #endif
@@ -128,6 +111,13 @@ void PowerManagement::activateMeasurement() {
 #ifdef TTGO_T_Beam_V1_0
   axp.adc1Enable(AXP202_BATT_CUR_ADC1 | AXP202_BATT_VOL_ADC1, true);
 #endif
+#ifdef TTGO_T_Beam_V1_2
+  PMU.enableBattDetection();
+  PMU.enableVbusVoltageMeasure();
+  PMU.enableBattVoltageMeasure();
+  PMU.enableSystemVoltageMeasure();
+#endif
+
 }
 
 // cppcheck-suppress unusedFunction
@@ -193,7 +183,7 @@ void PowerManagement::setup() {
 #endif
 #ifdef TTGO_T_Beam_V1_2
   Wire.begin(SDA, SCL);
-  if (!begin(Wire)) {
+  if (begin(Wire)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
   } else {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
@@ -202,11 +192,6 @@ void PowerManagement::setup() {
   activateOLED();
   activateGPS();
   activateMeasurement();
-
-  PMU.enableBattDetection();
-  PMU.enableVbusVoltageMeasure();
-  PMU.enableBattVoltageMeasure();
-  PMU.enableSystemVoltageMeasure();
   PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
   PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
 #endif

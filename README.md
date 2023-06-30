@@ -60,6 +60,7 @@ Timeline (Versions):
 - 2023.06.24 displayEcoMode=true doesn't turn the screen off at boot.
 - 2023.06.25 Sends comment after X count of beacons.
 - 2023.06.26 Weather Report now stays until button pressed, to avoid missing it.
+- 2023.07.01 Added Support for new T-Beam AXP2101 v1.2 Board.
 ____________________________________________________
 This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
 - https://github.com/aprs434/lora.tracker
