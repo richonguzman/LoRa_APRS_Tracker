@@ -207,15 +207,13 @@ void PowerManagement::setup() {
   PMU.enableVbusVoltageMeasure();
   PMU.enableBattVoltageMeasure();
   PMU.enableSystemVoltageMeasure();
-
-  //Serial.print("getBattVoltage:"); Serial.print(PMU.getBattVoltage()); Serial.println("mV");
-  //Serial.print("getVbusVoltage:"); Serial.print(PMU.getVbusVoltage()); Serial.println("mV");
-  //Serial.print("getSystemVoltage:"); Serial.print(PMU.getSystemVoltage()); Serial.println("mV");
+  PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
+  PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
 #endif
 }
 
 void PowerManagement::lowerCpuFrequency() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) 
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2)
   if (setCpuFrequencyMhz(80)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
   } else {
