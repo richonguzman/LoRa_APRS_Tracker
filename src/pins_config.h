@@ -1,5 +1,5 @@
-#ifndef PINS_H_
-#define PINS_H_
+#ifndef PINS_CONFIG_H_
+#define PINS_CONFIG_H_
 
 #undef OLED_SDA
 #undef OLED_SCL
@@ -16,12 +16,7 @@
 #define GPS_TX 12
 #endif
 
-#ifdef TTGO_T_Beam_V1_0
-#define GPS_RX 12
-#define GPS_TX 34
-#endif
-
-#ifdef TTGO_T_Beam_V1_2
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2)
 #define GPS_RX 12
 #define GPS_TX 34
 #endif
