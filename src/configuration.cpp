@@ -7,7 +7,7 @@
 extern logging::Logger logger;
 
 Configuration::Configuration() {
-    _filePath = "/tracker_config.json";;
+    _filePath = "/tracker_config.json";
     if (!SPIFFS.begin(false)) {
       Serial.println("SPIFFS Mount Failed");
       return;
