@@ -1,6 +1,6 @@
-#ifdef ESP32
+/*#ifdef ESP32
 #include <esp_bt.h>
-#endif
+#endif*/
 #include <Arduino.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
@@ -21,10 +21,15 @@
 #include "SPIFFS.h"
 #include "utils.h"
 
+#include "ble_utils.h"
+
 #define VERSION "2023.07.01"
 
 Configuration                 Config;
 PowerManagement               powerManagement;
+
+
+
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
@@ -79,12 +84,14 @@ void setup() {
   GPS_Utils::setup();
   LoRa_Utils::setup();
 
-  WiFi.mode(WIFI_OFF);
+  BLE_Utils::setup();
+
+  /*WiFi.mode(WIFI_OFF);
   btStop();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi and BT controller stopped");
   esp_bt_controller_disable();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
-
+  */
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);
   userButton.attachDoubleClick(BUTTON_Utils::doublePress);
