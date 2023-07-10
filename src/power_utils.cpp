@@ -194,6 +194,7 @@ void PowerManagement::setup() {
   activateMeasurement();
   PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
   PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
+  PMU.setSysPowerDownVoltage(2600); // to maximize battery utilization
 #endif
 }
 
