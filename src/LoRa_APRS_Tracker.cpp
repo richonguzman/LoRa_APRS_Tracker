@@ -1,6 +1,6 @@
-#ifdef ESP32
-#include <esp_bt.h>
-#endif
+//#ifdef ESP32
+//#include <esp_bt.h>
+//#endif
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <OneButton.h>

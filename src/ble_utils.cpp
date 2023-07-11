@@ -1,5 +1,6 @@
 #include "ble_utils.h"
 #include <NimBLEDevice.h>
+#include "lora_utils.h"
 
 #define SERVICE_UUID        "0000180A-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_UUID "00002A29-0000-1000-8000-00805F9B34FB"
@@ -25,6 +26,11 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     } else if (receivedString=="CD2RXU-7") {
       Serial.println("Sending message to CD2RXU-7...");
       pCharacteristic->setValue("Sending message to CD2RXU-7...");
+      pCharacteristic->notify();
+    } else if (receivedString=="test") {
+      Serial.println("Sending Test message to CD2RXU-15...");
+      LoRa_Utils::sendNewPacket("CD2RXU-7>APLRT1,WIDE1-1::CD2RXU-15:wrl");
+      pCharacteristic->setValue("Sending Test message to CD2RXU-15...");
       pCharacteristic->notify();
     }
   }
