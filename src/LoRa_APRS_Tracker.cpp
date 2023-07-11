@@ -2,6 +2,7 @@
 #include <esp_bt.h>
 #endif
 #include <Arduino.h>
+#include <NimBLEDevice.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
 #include <logger.h>
@@ -17,6 +18,7 @@
 #include "lora_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
+#include "ble_utils.h"
 #include "display.h"
 #include "SPIFFS.h"
 #include "utils.h"
@@ -27,6 +29,7 @@ Configuration                 Config;
 PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
+NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
 int       myBeaconsIndex      = 0;
@@ -79,11 +82,12 @@ void setup() {
   GPS_Utils::setup();
   LoRa_Utils::setup();
 
-  WiFi.mode(WIFI_OFF);
+  /*WiFi.mode(WIFI_OFF);
   btStop();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi and BT controller stopped");
   esp_bt_controller_disable();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");*/
+  BLE_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);
