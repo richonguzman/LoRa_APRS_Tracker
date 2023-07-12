@@ -47,6 +47,7 @@ public:
   int     maxDistanceToTracker;
   int     standingUpdateTime;
   bool    sendAltitude;
+  bool    sendBatteryInfo;
 
   Configuration();
   void validateConfigFile(String currentBeaconCallsign);

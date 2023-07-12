@@ -2,6 +2,7 @@
 #include <vector>
 #include "station_utils.h"
 #include "configuration.h"
+#include "power_utils.h"
 #include "lora_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
@@ -13,6 +14,7 @@ extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
+extern PowerManagement      powerManagement;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern String               fourthLine;
@@ -393,6 +395,17 @@ void sendBeacon() {
       packet += currentBeacon->comment;
       updateCounter = 0;
     } 
+  }
+
+  if (Config.sendBatteryInfo) {
+    String batteryVoltage = powerManagement.getBatteryInfoVoltage();
+    String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
+    #ifdef TTGO_T_Beam_V1_0
+    packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+    #endif
+    #ifdef TTGO_T_Beam_V1_2
+    packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+    #endif
   }
 
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", packet.c_str());

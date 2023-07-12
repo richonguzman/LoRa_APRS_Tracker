@@ -82,12 +82,12 @@ void setup() {
   GPS_Utils::setup();
   LoRa_Utils::setup();
 
-  /*WiFi.mode(WIFI_OFF);
+  WiFi.mode(WIFI_OFF);
   btStop();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi and BT controller stopped");
   esp_bt_controller_disable();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");*/
-  BLE_Utils::setup();
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
+  //BLE_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);

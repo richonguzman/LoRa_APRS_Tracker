@@ -61,6 +61,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     maxDistanceToTracker          = data["other"]["maxDistanceToTracker"].as<int>();
     standingUpdateTime            = data["other"]["standingUpdateTime"].as<int>();
     sendAltitude                  = data["other"]["sendAltitude"].as<bool>();
+    sendBatteryInfo               = data["other"]["sendBatteryInfo"].as<bool>();
 
     configFile.close();
 }
