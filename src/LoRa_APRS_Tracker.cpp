@@ -1,6 +1,6 @@
-//#ifdef ESP32
-//#include <esp_bt.h>
-//#endif
+#ifdef ESP32
+#include <esp_bt.h>
+#endif
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <OneButton.h>
@@ -18,12 +18,11 @@
 #include "lora_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
-#include "ble_utils.h"
 #include "display.h"
 #include "SPIFFS.h"
 #include "utils.h"
 
-#define VERSION "2023.07.01"
+#define VERSION "2023.07.12"
 
 Configuration                 Config;
 PowerManagement               powerManagement;
@@ -87,7 +86,6 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi and BT controller stopped");
   esp_bt_controller_disable();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
-  //BLE_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);
