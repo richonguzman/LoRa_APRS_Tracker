@@ -10,6 +10,7 @@ extern bool             displayEcoMode;
 extern uint32_t         displayTime;
 extern bool             displayState;
 extern int              menuDisplay;
+extern String           versionDate;
 
 namespace utils {
 
@@ -50,7 +51,7 @@ void startingStatus() {
   if (Config.path != "") {
     packet += "," + Config.path;
   }
-  packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker";
+  packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate;
   LoRa_Utils::sendNewPacket(packet);
   statusState = false;
 }

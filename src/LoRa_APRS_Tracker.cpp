@@ -22,7 +22,6 @@
 #include "SPIFFS.h"
 #include "utils.h"
 
-#define VERSION "2023.07.12"
 
 Configuration                 Config;
 PowerManagement               powerManagement;
@@ -31,6 +30,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
+String    versionDate         = "2023.07.12";
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
 Beacon    *currentBeacon      = &Config.beacons[myBeaconsIndex];
@@ -71,10 +71,10 @@ void setup() {
   delay(500);
   
   setup_display();
-  show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " VERSION, 4000);
+  show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " + versionDate, 4000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: " VERSION);
-  
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
+
   Config.validateConfigFile(currentBeacon->callsign);
 
   MSG_Utils::loadNumMessages();
