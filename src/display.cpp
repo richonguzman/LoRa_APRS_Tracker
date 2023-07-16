@@ -15,7 +15,7 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 
-const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, bikeSymbol};
+const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, noSymbol};
 
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
@@ -177,8 +177,12 @@ void show_display(String header, String line1, String line2, String line3, Strin
       symbol = 0;
     } else if(currentBeacon->symbol == ">") {
       symbol = 1;
-    } else {
+    } else if(currentBeacon->symbol == "j") {
       symbol = 2;
+    } else if(currentBeacon->symbol == "b") {
+      symbol = 3;
+    } else {
+      symbol = 4;
     }
     display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
   }
