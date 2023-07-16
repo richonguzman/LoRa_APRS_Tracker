@@ -11,8 +11,9 @@
 #define SYM_HEIGHT 14
 #define SYM_WIDTH  16
 
+extern Configuration    Config;
 extern Beacon           *currentBeacon;
-extern int                  menuDisplay;
+extern int              menuDisplay;
 
 const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, bikeSymbol};
 
@@ -170,7 +171,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(1);
 
-  if (menuDisplay==0) {
+  if (menuDisplay==0 && Config.showSymbolCharacter && Config.showCustomCharacter) {
     int symbol;
     if(currentBeacon->symbol == "[") {
       symbol = 0;

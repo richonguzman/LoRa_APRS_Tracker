@@ -139,8 +139,6 @@ void showOnScreen() {
                         String(fourthRowMainMenu),
                         String(fifthRowMainMenu),
                         String(sixthRowMainMenu));
-                //if(currentBeacon->symbol == "[") drawAPRSSymbol(0);
-                //if(currentBeacon->symbol == ">") drawAPRSSymbol(1);
             break;
     }
 }
