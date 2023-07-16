@@ -22,6 +22,8 @@
 #include "SPIFFS.h"
 #include "utils.h"
 
+//#include "custom_characters.h"
+
 
 Configuration                 Config;
 PowerManagement               powerManagement;
@@ -30,7 +32,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.07.12";
+String    versionDate         = "2023.07.16";
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
 Beacon    *currentBeacon      = &Config.beacons[myBeaconsIndex];

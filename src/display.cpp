@@ -6,6 +6,12 @@
 #include "pins_config.h"
 #include "display.h"
 
+#include "custom_characters.h"
+#define SYM_HEIGHT 14
+#define SYM_WIDTH  16
+
+const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, bikeSymbol};
+
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
@@ -39,8 +45,20 @@ void setup_display() {
   display.setCursor(0, 0);
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(1);
+
+  //display.drawBitmap(0, 0, runnerSymbol, 8, 14, WHITE);
+
   display.display();
 }
+
+
+void drawAPRSSymbol(int i) {
+  display.drawBitmap(
+    (display.width() - SYM_WIDTH), 0, symbolsAPRS[i], SYM_WIDTH, SYM_HEIGHT, 1);
+  display.display();
+}
+
+
 
 // cppcheck-suppress unusedFunction
 void display_toggle(bool toggle) {
