@@ -53,7 +53,7 @@ void showOnScreen() {
             break;
 
         case 0:       ///////////// MAIN MENU //////////////
-            String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;;
+            String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 
             firstRowMainMenu = currentBeacon->callsign;
             if (Config.showSymbolOnDisplay) {

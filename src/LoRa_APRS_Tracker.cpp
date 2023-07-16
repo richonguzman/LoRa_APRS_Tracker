@@ -67,8 +67,6 @@ void setup() {
   Serial.begin(115200);
 
   powerManagement.setup();
-
-  delay(500);
   
   setup_display();
   show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " + versionDate, 4000);

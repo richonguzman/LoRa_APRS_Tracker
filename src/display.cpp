@@ -18,7 +18,7 @@ Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
 
 // cppcheck-suppress unusedFunction
 void setup_display() {
-
+  delay(500);
   #ifdef OLED_DISPLAY_HAS_RST_PIN // 
     pinMode(OLED_RST, OUTPUT);
     digitalWrite(OLED_RST, LOW);
