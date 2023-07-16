@@ -57,7 +57,8 @@
 		"power": 20
 	},
 	"other": {
-		"showSymbolOnDisplay": true,
+		"showSymbolCharacter": true,
+		"showCustomCharacter": true,
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
 		"displayTimeout": 4,

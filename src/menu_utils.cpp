@@ -56,11 +56,11 @@ void showOnScreen() {
             String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 
             firstRowMainMenu = currentBeacon->callsign;
-            if (Config.showSymbolOnDisplay) {
+            if (Config.showSymbolCharacter && !Config.showCustomCharacter) {
                 for (int j=firstRowMainMenu.length();j<9;j++) {
                     firstRowMainMenu += " ";
                 }
-                //firstRowMainMenu += currentBeacon->symbol;
+                firstRowMainMenu += currentBeacon->symbol;
             }
             
             secondRowMainMenu = utils::createDateString(now()) + "   " + utils::createTimeString(now());
@@ -139,8 +139,8 @@ void showOnScreen() {
                         String(fourthRowMainMenu),
                         String(fifthRowMainMenu),
                         String(sixthRowMainMenu));
-                if(currentBeacon->symbol == "[") drawAPRSSymbol(0);
-                if(currentBeacon->symbol == ">") drawAPRSSymbol(1);
+                //if(currentBeacon->symbol == "[") drawAPRSSymbol(0);
+                //if(currentBeacon->symbol == ">") drawAPRSSymbol(1);
             break;
     }
 }

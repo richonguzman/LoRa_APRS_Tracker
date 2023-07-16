@@ -36,7 +36,8 @@ public:
   std::vector<Beacon> beacons;  
   LoraModule loramodule;
 
-  bool    showSymbolOnDisplay;
+  bool    showSymbolCharacter;
+  bool    showCustomCharacter;
   int     sendCommentAfterXBeacons;
   bool    displayEcoMode;
   int     displayTimeout;

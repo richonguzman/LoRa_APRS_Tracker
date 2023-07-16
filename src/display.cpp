@@ -6,9 +6,13 @@
 #include "pins_config.h"
 #include "display.h"
 
+#include "configuration.h"
 #include "custom_characters.h"
 #define SYM_HEIGHT 14
 #define SYM_WIDTH  16
+
+extern Beacon           *currentBeacon;
+extern int                  menuDisplay;
 
 const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, bikeSymbol};
 
@@ -20,7 +24,6 @@ const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, bikeSymbol};
 extern logging::Logger logger;
 
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
-
 
 // cppcheck-suppress unusedFunction
 void setup_display() {
@@ -45,20 +48,8 @@ void setup_display() {
   display.setCursor(0, 0);
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(1);
-
-  //display.drawBitmap(0, 0, runnerSymbol, 8, 14, WHITE);
-
   display.display();
 }
-
-
-void drawAPRSSymbol(int i) {
-  display.drawBitmap(
-    (display.width() - SYM_WIDTH), 0, symbolsAPRS[i], SYM_WIDTH, SYM_HEIGHT, 1);
-  display.display();
-}
-
-
 
 // cppcheck-suppress unusedFunction
 void display_toggle(bool toggle) {
@@ -178,6 +169,19 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.println(line5);
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(1);
+
+  if (menuDisplay==0) {
+    int symbol;
+    if(currentBeacon->symbol == "[") {
+      symbol = 0;
+    } else if(currentBeacon->symbol == ">") {
+      symbol = 1;
+    } else {
+      symbol = 2;
+    }
+    display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
+  }
+  
   display.display();
   delay(wait);
 }

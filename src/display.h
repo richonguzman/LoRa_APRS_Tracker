@@ -3,7 +3,6 @@
 #define DISPLAY_H_
 
 void setup_display();
-void drawAPRSSymbol(int i);
 void display_toggle(bool toggle);
 
 void show_display(String header, int wait = 0);

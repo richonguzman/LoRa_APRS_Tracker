@@ -37,7 +37,7 @@ int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
 Beacon    *currentBeacon      = &Config.beacons[myBeaconsIndex];
 
-int       menuDisplay         = 0;
+int       menuDisplay         = 100;
 
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
@@ -94,6 +94,7 @@ void setup() {
   powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+  menuDisplay = 0;
 }
 
 void loop() {
