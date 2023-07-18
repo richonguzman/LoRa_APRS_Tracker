@@ -50,6 +50,12 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
+    ptt.active                    = data["ptt_trigger"]["active"].as<bool>();
+    ptt.io_pin                    = data["ptt_trigger"]["io_pin"].as<int>();
+    ptt.preDelay                  = data["ptt_trigger"]["preDelay"].as<int>();
+    ptt.postDelay                 = data["ptt_trigger"]["postDelay"].as<int>();
+    ptt.reverse                   = data["ptt_trigger"]["reverse"].as<bool>();
+
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
@@ -67,7 +73,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 }
 
 void Configuration::validateConfigFile(String currentBeaconCallsign) {
-  if (currentBeaconCallsign == "NOCALL-7") {
+  if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
     show_display("ERROR", "Change your settings", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
     while (true) {

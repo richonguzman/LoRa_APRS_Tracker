@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.07.17";
+String    versionDate         = "2023.07.18";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -76,6 +76,11 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
   Config.validateConfigFile(currentBeacon->callsign);
+
+  if (Config.ptt.active) {
+    pinMode(Config.ptt.io_pin, OUTPUT);
+    digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
+  }
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
