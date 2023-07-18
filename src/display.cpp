@@ -179,7 +179,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
     for (int i=0; i<symbolArraySize; i++) {
       if (currentBeacon->symbol == symbolArray[i]) {
         symbol = i;
-
+        break;
       }
     }
     if (symbol != 100) {
