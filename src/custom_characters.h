@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-const unsigned char runnerSymbol[] PROGMEM = {
+static const unsigned char runnerSymbol[] PROGMEM = {
     0b00000000, 0b11100000,
     0b00000000, 0b11100000,
     0b00000000, 0b01000110,
@@ -71,7 +71,7 @@ static const unsigned char bikeSymbol[] PROGMEM = {
     0b00000000, 0b00000000
 };
 
-static const unsigned char noSymbol[] PROGMEM = {
+/*static const unsigned char noSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
@@ -86,8 +86,6 @@ static const unsigned char noSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
     0b00000000, 0b00000000
-};
-
-
+};*/
 
 #endif

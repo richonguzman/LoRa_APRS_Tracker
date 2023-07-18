@@ -50,8 +50,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
-    showSymbolCharacter           = data["other"]["showSymbolCharacter"].as<bool>();
-    showCustomCharacter           = data["other"]["showCustomCharacter"].as<bool>();    
+    showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();

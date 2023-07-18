@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include <vector>
+#include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
 #include "menu_utils.h"
@@ -7,6 +8,7 @@
 #include "msg_utils.h"
 #include "display.h"
 #include "utils.h"
+
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
@@ -16,6 +18,8 @@ extern PowerManagement      powerManagement;
 extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
+extern bool                 symbolAvailable;
+
 
 namespace MENU_Utils {
 
@@ -56,11 +60,13 @@ void showOnScreen() {
             String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 
             firstRowMainMenu = currentBeacon->callsign;
-            if (Config.showSymbolCharacter && !Config.showCustomCharacter) {
+            if (Config.showSymbolOnScreen) {
                 for (int j=firstRowMainMenu.length();j<9;j++) {
                     firstRowMainMenu += " ";
                 }
-                firstRowMainMenu += currentBeacon->symbol;
+                if (!symbolAvailable) {
+                    firstRowMainMenu += currentBeacon->symbol;
+                }
             }
             
             secondRowMainMenu = utils::createDateString(now()) + "   " + utils::createTimeString(now());

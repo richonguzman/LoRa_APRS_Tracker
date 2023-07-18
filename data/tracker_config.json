@@ -47,7 +47,7 @@
 				"turnMinDeg": 12,
 				"turnSlope": 60
 			}
-		}		
+		}
 	],
 	"lora": {
 		"frequency": 433775000,
@@ -57,8 +57,7 @@
 		"power": 20
 	},
 	"other": {
-		"showSymbolCharacter": true,
-		"showCustomCharacter": true,
+		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
