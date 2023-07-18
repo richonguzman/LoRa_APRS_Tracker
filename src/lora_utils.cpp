@@ -48,7 +48,6 @@ void sendNewPacket(const String &newPacket) {
     delay(Config.ptt.postDelay);
     digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
   }
-
 }
 
 String receivePacket() {
