@@ -9,6 +9,7 @@ class Beacon {
 public:
   String callsign;
   String symbol;
+  String overlay;
   String comment;
   bool  smartBeaconState;
   int   slowRate;
@@ -50,7 +51,6 @@ public:
   int     sendCommentAfterXBeacons;
   bool    displayEcoMode;
   int     displayTimeout;
-  String  overlay;
   String  path;
   int     nonSmartBeaconRate;
   int     rememberStationTime;

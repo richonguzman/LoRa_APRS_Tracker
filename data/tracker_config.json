@@ -3,6 +3,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": "[",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -19,6 +20,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": ">",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -35,6 +37,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": "j",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -61,7 +64,6 @@
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
-		"overlay": "/",
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,

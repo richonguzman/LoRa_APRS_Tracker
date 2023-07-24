@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.07.18";
+String    versionDate         = "2023.07.24";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -75,8 +75,6 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
-  Config.validateConfigFile(currentBeacon->callsign);
-
   if (Config.ptt.active) {
     pinMode(Config.ptt.io_pin, OUTPUT);
     digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
@@ -104,6 +102,9 @@ void setup() {
 
 void loop() {
   currentBeacon = &Config.beacons[myBeaconsIndex];
+  if (statusState) {
+    Config.validateConfigFile(currentBeacon->callsign);
+  }
 
   powerManagement.batteryManager();
   userButton.tick();

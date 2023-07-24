@@ -29,6 +29,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
         bcn.callsign          = BeaconsArray[i]["callsign"].as<String>();
         bcn.symbol            = BeaconsArray[i]["symbol"].as<String>();
+        bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
         bcn.comment           = BeaconsArray[i]["comment"].as<String>();
 
         bcn.smartBeaconState  = BeaconsArray[i]["smart_beacon"]["active"].as<bool>();
@@ -60,7 +61,6 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
-    overlay                       = data["other"]["overlay"].as<String>();
     path                          = data["other"]["path"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     rememberStationTime           = data["other"]["rememberStationTime"].as<int>();
@@ -74,8 +74,8 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
 void Configuration::validateConfigFile(String currentBeaconCallsign) {
   if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
-    show_display("ERROR", "Change your settings", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
+    show_display("ERROR", "Change all callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
     while (true) {
         delay(1000);
     }

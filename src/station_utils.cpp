@@ -386,7 +386,7 @@ void sendBeacon() {
   if (Config.path != "") {
     packet += "," + Config.path;
   }
-  packet += ":!" + Config.overlay;
+  packet += ":!" + currentBeacon->overlay;
   packet += GPS_Utils::encondeGPS();
 
   if (currentBeacon->comment != "") {
