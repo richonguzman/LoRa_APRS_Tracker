@@ -16,9 +16,9 @@ extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             symbolAvailable;
 
-String symbolArray[5]         = {"[", ">", "j", "b", "<"};
+String symbolArray[8]         = {"[", ">", "j", "b", "<", "s", "u"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
-const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol};
+const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, truckSymbol};
 
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
