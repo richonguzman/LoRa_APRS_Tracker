@@ -3,6 +3,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": "[",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -19,6 +20,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": ">",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -35,6 +37,7 @@
 		{
 			"callsign": "NOCALL-7",
 			"symbol": "j",
+			"overlay": "/",
 			"comment": "",
 			"smart_beacon": {
 				"active": true,
@@ -47,7 +50,7 @@
 				"turnMinDeg": 12,
 				"turnSlope": 60
 			}
-		}		
+		}
 	],
 	"lora": {
 		"frequency": 433775000,
@@ -57,12 +60,10 @@
 		"power": 20
 	},
 	"other": {
-		"showSymbolCharacter": true,
-		"showCustomCharacter": true,
+		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
 		"displayTimeout": 4,
-		"overlay": "/",
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
@@ -70,5 +71,12 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false
+	},
+	"ptt_trigger": {
+		"active": false,
+		"io_pin": 4,
+		"preDelay": 0,
+		"postDelay": 0,
+		"reverse": false
 	}
 }

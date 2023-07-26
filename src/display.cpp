@@ -3,19 +3,22 @@
 #include <Adafruit_GFX.h>
 #include <logger.h>
 #include <Wire.h>
+#include "custom_characters.h"
+#include "configuration.h"
 #include "pins_config.h"
 #include "display.h"
 
-#include "configuration.h"
-#include "custom_characters.h"
 #define SYM_HEIGHT 14
 #define SYM_WIDTH  16
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
+extern bool             symbolAvailable;
 
-const uint8_t *symbolsAPRS[]={runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, noSymbol};
+String symbolArray[5]         = {"[", ">", "j", "b", "<"};
+int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
+const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol};
 
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
@@ -171,20 +174,20 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(1);
 
-  if (menuDisplay==0 && Config.showSymbolCharacter && Config.showCustomCharacter) {
-    int symbol;
-    if(currentBeacon->symbol == "[") {
-      symbol = 0;
-    } else if(currentBeacon->symbol == ">") {
-      symbol = 1;
-    } else if(currentBeacon->symbol == "j") {
-      symbol = 2;
-    } else if(currentBeacon->symbol == "b") {
-      symbol = 3;
-    } else {
-      symbol = 4;
+  if (menuDisplay==0 && Config.showSymbolOnScreen) {
+    int symbol = 100;
+    for (int i=0; i<symbolArraySize; i++) {
+      if (currentBeacon->symbol == symbolArray[i]) {
+        symbol = i;
+        break;
+      }
     }
-    display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
+    if (symbol != 100) {
+      symbolAvailable = true;
+      display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
+    } else {
+      symbolAvailable = false;
+    }
   }
   
   display.display();

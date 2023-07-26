@@ -20,7 +20,6 @@ void setup() {
   if (!LoRa.begin(freq)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
     show_display("ERROR", "Starting LoRa failed!");
-    //displayUtils::show("ERROR", "Starting LoRa failed!");
     while (true) {
       delay(1000);
     }
@@ -35,12 +34,20 @@ void setup() {
 }
 
 void sendNewPacket(const String &newPacket) {
+  if (Config.ptt.active) {
+    digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
+    delay(Config.ptt.preDelay);
+  }
   LoRa.beginPacket();
   LoRa.write('<');
   LoRa.write(0xFF);
   LoRa.write(0x01);
   LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
   LoRa.endPacket();
+  if (Config.ptt.active) {
+    delay(Config.ptt.postDelay);
+    digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
+  }
 }
 
 String receivePacket() {

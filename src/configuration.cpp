@@ -29,6 +29,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
         bcn.callsign          = BeaconsArray[i]["callsign"].as<String>();
         bcn.symbol            = BeaconsArray[i]["symbol"].as<String>();
+        bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
         bcn.comment           = BeaconsArray[i]["comment"].as<String>();
 
         bcn.smartBeaconState  = BeaconsArray[i]["smart_beacon"]["active"].as<bool>();
@@ -50,12 +51,16 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
-    showSymbolCharacter           = data["other"]["showSymbolCharacter"].as<bool>();
-    showCustomCharacter           = data["other"]["showCustomCharacter"].as<bool>();    
+    ptt.active                    = data["ptt_trigger"]["active"].as<bool>();
+    ptt.io_pin                    = data["ptt_trigger"]["io_pin"].as<int>();
+    ptt.preDelay                  = data["ptt_trigger"]["preDelay"].as<int>();
+    ptt.postDelay                 = data["ptt_trigger"]["postDelay"].as<int>();
+    ptt.reverse                   = data["ptt_trigger"]["reverse"].as<bool>();
+
+    showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
-    overlay                       = data["other"]["overlay"].as<String>();
     path                          = data["other"]["path"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     rememberStationTime           = data["other"]["rememberStationTime"].as<int>();
@@ -68,9 +73,9 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 }
 
 void Configuration::validateConfigFile(String currentBeaconCallsign) {
-  if (currentBeaconCallsign == "NOCALL-7") {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your settings in 'data/tracker_config.json' and upload it via 'Upload File System image'");
-    show_display("ERROR", "Change your settings", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
+  if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
+    show_display("ERROR", "Change all callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
     while (true) {
         delay(1000);
     }
