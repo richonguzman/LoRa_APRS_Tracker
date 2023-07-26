@@ -16,6 +16,10 @@ namespace utils {
 
 static char locator[11];
 
+// The letterize and getMaidenheadLocator functions are
+// Copyright (c) 2021 Mateusz Salwach
+// MIT License
+
 static char letterize(int x) {
     return (char) x + 65;
 }
