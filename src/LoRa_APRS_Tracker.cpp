@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.07.25";
+String    versionDate         = "2023.07.31";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
