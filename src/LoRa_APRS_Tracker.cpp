@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.08.01";
+String    versionDate         = "2023.08.01 ";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -82,7 +82,7 @@ void setup() {
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-  LoRa_Utils::setup();
+  //LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   btStop();
