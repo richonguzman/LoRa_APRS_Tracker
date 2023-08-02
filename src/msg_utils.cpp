@@ -7,6 +7,7 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "bluetooth_utils.h"
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
@@ -141,6 +142,7 @@ void checkReceivedMessage(String packetReceived) {
   }
   String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage;
   if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
+    BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
     Sender = packetReceived.substring(3,packetReceived.indexOf(">"));
     if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating                                
       if (packetReceived.indexOf("::") > 10) {                        // its a Message!

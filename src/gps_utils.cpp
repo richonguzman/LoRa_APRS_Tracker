@@ -30,7 +30,12 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
 void setup() {
-    neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+  if (Config.disableGps) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
+    return;
+  }
+
+  neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
 }
 
 void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {
@@ -102,6 +107,10 @@ void getReceivedGPS(String packet, String sender) {
 }
 
 void getData() {
+  if (Config.disableGps) {
+    return;
+  }
+
   while (neo6m_gps.available() > 0) {
     gps.encode(neo6m_gps.read());
   }
@@ -141,6 +150,10 @@ void calculateHeadingDelta(int speed) {
 }
 
 void checkStartUpFrames() {
+  if (Config.disableGps) {
+    return;
+  }
+
   if ((millis() > 8000 && gps.charsProcessed() < 10)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                "No GPS frames detected! Try to reset the GPS Chip with this "

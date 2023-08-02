@@ -117,7 +117,7 @@ void showOnScreen() {
             if (powerManagement.getBatteryInfoIsConnected()) {
                 String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                 String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
-                #ifdef TTGO_T_Beam_V1_0
+                #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1)
                 if (batteryChargeCurrent.toInt() == 0) {
                     sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
                 } else if (batteryChargeCurrent.toInt() > 0) {

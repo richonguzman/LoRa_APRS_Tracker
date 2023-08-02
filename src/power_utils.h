@@ -2,7 +2,7 @@
 #define POWER_UTILS_H_
 
 #include <Arduino.h>
-#ifdef TTGO_T_Beam_V1_0
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1)
 #include <axp20x.h>
 #endif
 #ifdef TTGO_T_Beam_V1_2
@@ -49,7 +49,7 @@ private:
 
   bool isBatteryConnected();
 
-  #ifdef TTGO_T_Beam_V1_0
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1)
   AXP20X_Class axp;
   #endif
   #ifdef TTGO_T_Beam_V1_2
