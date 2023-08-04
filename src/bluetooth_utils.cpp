@@ -58,6 +58,8 @@ namespace BLUETOOTH_Utils {
 
     bool isNmea = buffer[0] == '$';
 
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "bluetooth", "Received buffer size %d. Nmea=%d", size, isNmea);
+
     for (int i = 0; i < size; i++) {
       char c = (char) buffer[i];
 
@@ -68,11 +70,12 @@ namespace BLUETOOTH_Utils {
       }
     }
 
-    if (serialReceived.isEmpty()) {
-      return;
-    }
+    shouldSendToLoRa = !serialReceived.isEmpty(); // because we can't send data here
 
-    shouldSendToLoRa = true; // because we can't send here
+    if (shouldSendToLoRa) {
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth",
+                   "Data received should be transmitted to RF => %s", serialReceived.c_str());
+    }
   }
 
   void sendToLoRa() {
