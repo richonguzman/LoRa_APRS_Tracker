@@ -2,7 +2,6 @@
 #include <esp_bt.h>
 #endif
 #include <Arduino.h>
-#include <NimBLEDevice.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
 #include <logger.h>
@@ -27,7 +26,6 @@ Configuration                 Config;
 PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
-NimBLECharacteristic*         pCharacteristic;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
 String    versionDate         = "2023.08.01 ";
