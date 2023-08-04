@@ -29,7 +29,12 @@ namespace BLUETOOTH_Utils {
     SerialBT.register_callback(BLUETOOTH_Utils::bluetoothCallback);
     SerialBT.onData(BLUETOOTH_Utils::getData); // callback instead of while to avoid RX buffer limit when NMEA data received
 
-    if (!SerialBT.begin(String("LoRa Tracker " + String((unsigned long) ESP.getEfuseMac())))) {
+    uint8_t dmac[6];
+    esp_efuse_mac_get_default(dmac);
+    char ourId[5];
+    snprintf(ourId, sizeof(ourId), "%02x%02x", dmac[4], dmac[5]);
+
+    if (!SerialBT.begin(String("LoRa Tracker " + String(ourId)))) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Bluetooth", "Starting Bluetooth failed!");
       show_display("ERROR", "Starting Bluetooth failed!");
       while(true) {
