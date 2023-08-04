@@ -79,7 +79,7 @@ void setup() {
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-  //LoRa_Utils::setup();
+  LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
