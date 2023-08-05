@@ -131,9 +131,11 @@ void loop() {
     STATION_Utils::sendBeacon();
   }
 
-  if (gps_time_update) {
+  STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+  
+  if (millis() - displayTime >= 1000 || gps_time_update) {
+    GPS_Utils::checkStartUpFrames();
     MENU_Utils::showOnScreen();
-    STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+    displayTime = millis();
   }
-  GPS_Utils::checkStartUpFrames();
 }
