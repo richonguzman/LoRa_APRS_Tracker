@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <LoRa.h>
 #include <vector>
+#include "bluetooth_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "button_utils.h"
@@ -83,6 +84,7 @@ void setup() {
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
+  BLUETOOTH_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);

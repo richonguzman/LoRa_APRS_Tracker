@@ -71,7 +71,8 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
-		"bluetooth": true
+		"bluetooth": true,
+		"disableGPS": false
 	},
 	"ptt_trigger": {
 		"active": false,
