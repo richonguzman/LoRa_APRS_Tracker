@@ -1,10 +1,12 @@
+#include "configuration.h"
 #include "power_utils.h"
 #include "logger.h"
 
 #define I2C_SDA 21
 #define I2C_SCL 22
 
-extern logging::Logger logger;
+extern Configuration    Config;
+extern logging::Logger  logger;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
@@ -178,7 +180,11 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  activateGPS();
+  if (Config.disableGps) {
+    deactivateGPS();
+  } else {
+    activateGPS();
+  }
   activateMeasurement();
 #endif
 #ifdef TTGO_T_Beam_V1_2
@@ -190,7 +196,11 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  activateGPS();
+  if (Config.disableGps) {
+    deactivateGPS();
+  } else {
+    activateGPS();
+  }
   activateMeasurement();
   PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
   PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);

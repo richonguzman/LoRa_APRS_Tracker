@@ -93,7 +93,7 @@ void setup() {
   powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
-  menuDisplay = 0;
+  menuDisplay = BUTTON_PIN == -1 ? 20 : 0;
 }
 
 void loop() {
@@ -114,7 +114,7 @@ void loop() {
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
 
-  int currentSpeed = (int)gps.speed.kmph();
+  int currentSpeed = (int) gps.speed.kmph();
 
   lastTx = millis() - lastTxTime;
   if (!sendUpdate && gps_loc_update && currentBeacon->smartBeaconState) {
