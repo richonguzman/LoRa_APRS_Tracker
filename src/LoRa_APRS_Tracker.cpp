@@ -113,6 +113,7 @@ void loop() {
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
+  BLUETOOTH_Utils::sendToLoRa();
 
   int currentSpeed = (int) gps.speed.kmph();
 
