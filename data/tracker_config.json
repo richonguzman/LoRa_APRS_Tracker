@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": "[",
 			"overlay": "/",
 			"comment": "",
@@ -18,7 +18,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": ">",
 			"overlay": "/",
 			"comment": "",
@@ -35,7 +35,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": "j",
 			"overlay": "/",
 			"comment": "",
@@ -70,7 +70,8 @@
 		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"sendBatteryInfo": false
+		"sendBatteryInfo": false,
+		"bluetooth": true
 	},
 	"ptt_trigger": {
 		"active": false,

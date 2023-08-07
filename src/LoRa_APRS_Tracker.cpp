@@ -1,10 +1,7 @@
-#ifdef ESP32
-#include <esp_bt.h>
-#endif
-#include <Arduino.h>
-#include <NimBLEDevice.h>
+#include <BluetoothSerial.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
+#include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
 #include <LoRa.h>
@@ -27,10 +24,10 @@ Configuration                 Config;
 PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
-NimBLECharacteristic*         pCharacteristic;
+BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.07.25";
+String    versionDate         = "2023.08.05";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -85,10 +82,7 @@ void setup() {
   LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
-  btStop();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi and BT controller stopped");
-  esp_bt_controller_disable();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);
