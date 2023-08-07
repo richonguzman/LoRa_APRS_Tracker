@@ -28,7 +28,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.08.05";
+String    versionDate         = "2023.08.07";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -80,11 +80,11 @@ void setup() {
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-  LoRa_Utils::setup();
+  //LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
-  BLUETOOTH_Utils::setup();
+  //BLUETOOTH_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);
   userButton.attachLongPressStart(BUTTON_Utils::longPress);
@@ -129,7 +129,7 @@ void loop() {
   STATION_Utils::checkSmartBeaconState();
 
   if (sendUpdate && gps_loc_update) {
-    STATION_Utils::sendBeacon();
+    //STATION_Utils::sendBeacon();
   }
 
   STATION_Utils::checkSmartBeaconInterval(currentSpeed);

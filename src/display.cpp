@@ -6,7 +6,7 @@
 #include "pins_config.h"
 #include "display.h"
 
-#define ssd1306 //uncomment this line when using SH1106 screen instead of SSD1306
+//#define ssd1306 //uncomment this line when using SH1106 screen instead of SSD1306
 
 #ifdef ssd1306
 #include <Adafruit_SSD1306.h>
@@ -22,9 +22,9 @@ extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             symbolAvailable;
 
-String symbolArray[10]         = {"[", ">", "j", "b", "<", "s", "u", "R", "v"};
+String symbolArray[13]         = {"BT", "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
-const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, truckSymbol, recreationalVehicleSymbol, vanSymbol};
+const uint8_t *symbolsAPRS[]  = {bluetoothSymbol, runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, truckSymbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol};
 
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
