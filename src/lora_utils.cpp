@@ -7,10 +7,52 @@
 extern logging::Logger logger;
 extern Configuration Config;
 
+#include <Radiolib.h>
+
+#define RADIO_SCLK_PIN               5
+#define RADIO_MISO_PIN              19
+#define RADIO_MOSI_PIN              27
+#define RADIO_CS_PIN                18
+#define RADIO_DIO0_PIN              26           // SX1278's IRQ(Interrupt Request)
+#define RADIO_RST_PIN               23           // SX1278's RESET
+#define RADIO_DIO1_PIN              33
+#define RADIO_BUSY_PIN              32
+
+#define BAND    433.775000  
+
+SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+
 namespace LoRa_Utils {
 
   void setup() {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
+    SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+
+    Serial.print(F("[SX1268] Initializing ... "));
+    state = radio.begin(BAND);
+    if (state == RADIOLIB_ERR_NONE)
+    {
+      Serial.println(F("success!"));
+    } else {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+      while (true);
+    }
+    radio.setSpreadingFactor(12);           // ranges from 6-12,default 7 see API docs
+    radio.setBandwidth(125000);
+    radio.setCodingRate(5);
+    state = radio.setOutputPower(20);
+
+    if (state == RADIOLIB_ERR_NONE) {
+      Serial.println(F("success!"));
+    } else {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+      while (true);
+    }
+    
+
+
+    /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set LoRa pins!");
     LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
@@ -30,7 +72,7 @@ namespace LoRa_Utils {
     LoRa.enableCrc();
 
     LoRa.setTxPower(Config.loramodule.power);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");*/
   }
 
   void sendNewPacket(const String &newPacket) {
