@@ -42,6 +42,7 @@ std::vector<String>           loadedAPRSMessages;
 bool      displayEcoMode      = Config.displayEcoMode;
 bool      displayState        = true;
 uint32_t  displayTime         = millis();
+uint32_t  refreshDisplayTime   = millis();
 
 bool      sendUpdate          = true;
 int       updateCounter       = Config.sendCommentAfterXBeacons;
@@ -137,9 +138,9 @@ void loop() {
     STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   }
 
-  if (millis() - displayTime >= 1000 || gps_time_update) {
+  if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
     GPS_Utils::checkStartUpFrames();
     MENU_Utils::showOnScreen();
-    displayTime = millis();
+    refreshDisplayTime = millis();
   }
 }
