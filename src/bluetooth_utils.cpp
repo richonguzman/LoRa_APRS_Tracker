@@ -75,11 +75,17 @@ namespace BLUETOOTH_Utils {
       }
     }
 
-    shouldSendToLoRa = !serialReceived.isEmpty(); // because we can't send data here
+    shouldSendToLoRa = !serialReceived.isEmpty()
+            // Test true APRS frame and not a NMEA (case when RX buffer overflow)
+            && serialReceived.indexOf(">") != -1
+            && serialReceived.indexOf(":") != -1
+            && serialReceived.indexOf("$G") == -1
+            && serialReceived.indexOf("$B") == -1;
 
     if (shouldSendToLoRa) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth",
                    "Data received should be transmitted to RF => %s", serialReceived.c_str());
+        // because we can't send data here
     }
   }
 
