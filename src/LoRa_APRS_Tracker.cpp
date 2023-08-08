@@ -80,7 +80,7 @@ void setup() {
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-  //LoRa_Utils::setup();
+  LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
@@ -129,7 +129,7 @@ void loop() {
   STATION_Utils::checkSmartBeaconState();
 
   if (sendUpdate && gps_loc_update) {
-    //STATION_Utils::sendBeacon();
+    STATION_Utils::sendBeacon();
   }
 
   STATION_Utils::checkSmartBeaconInterval(currentSpeed);

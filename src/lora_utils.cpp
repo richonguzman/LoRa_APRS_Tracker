@@ -7,7 +7,7 @@
 extern logging::Logger logger;
 extern Configuration Config;
 
-#include <Radiolib.h>
+#include <RadioLib.h>
 
 #define RADIO_SCLK_PIN               5
 #define RADIO_MISO_PIN              19
@@ -28,7 +28,7 @@ namespace LoRa_Utils {
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
 
     Serial.print(F("[SX1268] Initializing ... "));
-    state = radio.begin(BAND);
+    int state = radio.begin(BAND);
     if (state == RADIOLIB_ERR_NONE)
     {
       Serial.println(F("success!"));
@@ -80,12 +80,38 @@ namespace LoRa_Utils {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
       delay(Config.ptt.preDelay);
     }
-    LoRa.beginPacket();
+    Serial.println("Transmiting...");
+    int state = radio.transmit("\x3c\xff\x01" + newPacket);
+    if (state == RADIOLIB_ERR_NONE) {
+      // the packet was successfully transmitted
+      Serial.println(F("success!"));
+
+      // print measured data rate
+      Serial.print(F("[SX1268] Datarate:\t"));
+      Serial.print(radio.getDataRate());
+      Serial.println(F(" bps"));
+
+    } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
+      // the supplied packet was longer than 256 bytes
+      Serial.println(F("too long!"));
+
+    } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
+      // timeout occured while transmitting packet
+      Serial.println(F("timeout!"));
+
+    } else {
+      // some other error occurred
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
+
+
+    /*LoRa.beginPacket();
     LoRa.write('<');
     LoRa.write(0xFF);
     LoRa.write(0x01);
     LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
-    LoRa.endPacket();
+    LoRa.endPacket();*/
     if (Config.ptt.active) {
       delay(Config.ptt.postDelay);
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
