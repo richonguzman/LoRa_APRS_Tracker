@@ -1,5 +1,7 @@
+#include <RadioLib.h>
 #include <logger.h>
 #include <LoRa.h>
+#include <SPI.h>
 #include "configuration.h"
 #include "msg_utils.h"
 #include "display.h"
@@ -7,7 +9,7 @@
 extern logging::Logger logger;
 extern Configuration Config;
 
-#include <RadioLib.h>
+
 
 #define RADIO_SCLK_PIN               5
 #define RADIO_MISO_PIN              19
@@ -25,16 +27,18 @@ SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUS
 namespace LoRa_Utils {
 
   void setup() {
+    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
 
     Serial.print(F("[SX1268] Initializing ... "));
     int state = radio.begin(BAND);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "frequency: %d", BAND);
     if (state == RADIOLIB_ERR_NONE)
     {
       Serial.println(F("success!"));
     } else {
-      Serial.print(F("failed, code "));
-      Serial.println(state);
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
     }
     radio.setSpreadingFactor(12);           // ranges from 6-12,default 7 see API docs
@@ -43,16 +47,14 @@ namespace LoRa_Utils {
     state = radio.setOutputPower(20);
 
     if (state == RADIOLIB_ERR_NONE) {
-      Serial.println(F("success!"));
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
     } else {
-      Serial.print(F("failed, code "));
-      Serial.println(state);
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
     }
-    
-
-
-    /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
+    #endif
+    #if defined(TTGO_T_Beam_V1_0)
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set LoRa pins!");
     LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
@@ -72,7 +74,8 @@ namespace LoRa_Utils {
     LoRa.enableCrc();
 
     LoRa.setTxPower(Config.loramodule.power);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");*/
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+    #endif
   }
 
   void sendNewPacket(const String &newPacket) {
@@ -80,6 +83,7 @@ namespace LoRa_Utils {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
       delay(Config.ptt.preDelay);
     }
+    #if defined(TTGO_T_Beam_V1_0_SX1268)
     Serial.println("Transmiting...");
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
@@ -104,14 +108,15 @@ namespace LoRa_Utils {
       Serial.print(F("failed, code "));
       Serial.println(state);
     }
-
-
-    /*LoRa.beginPacket();
+    #endif
+    #if defined(TTGO_T_Beam_V1_0)
+    LoRa.beginPacket();
     LoRa.write('<');
     LoRa.write(0xFF);
     LoRa.write(0x01);
     LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
-    LoRa.endPacket();*/
+    LoRa.endPacket();
+    #endif
     if (Config.ptt.active) {
       delay(Config.ptt.postDelay);
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
