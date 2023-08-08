@@ -10,6 +10,10 @@ extern logging::Logger  logger;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
+#ifdef TTGO_T_Beam_V0_7
+  bool result = true;
+  return result;
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   bool result = axp.begin(port, AXP192_SLAVE_ADDRESS);
   if (!result) {
@@ -131,6 +135,9 @@ void PowerManagement::deactivateMeasurement() {
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryVoltage() {
+#ifdef TTGO_T_Beam_V0_7
+  return 0;
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.getBattVoltage() / 1000.0;
 #endif
@@ -141,6 +148,9 @@ double PowerManagement::getBatteryVoltage() {
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryChargeDischargeCurrent() {
+#ifdef TTGO_T_Beam_V0_7
+  return 0;
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   if (axp.isChargeing()) {
     return axp.getBattChargeCurrent();
@@ -153,6 +163,9 @@ double PowerManagement::getBatteryChargeDischargeCurrent() {
 }
 
 bool PowerManagement::isBatteryConnected() {
+#ifdef TTGO_T_Beam_V0_7
+  return 0;
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.isBatteryConnect();
 #endif
@@ -162,6 +175,9 @@ bool PowerManagement::isBatteryConnected() {
 }
 
 bool PowerManagement::isChargeing() {
+#ifdef TTGO_T_Beam_V0_7
+  return 0;
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.isChargeing();
 #endif

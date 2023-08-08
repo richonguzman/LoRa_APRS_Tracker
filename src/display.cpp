@@ -6,7 +6,7 @@
 #include "pins_config.h"
 #include "display.h"
 
-//#define ssd1306 //uncomment this line when using SH1106 screen instead of SSD1306
+#define ssd1306 //uncomment this line when using SH1106 screen instead of SSD1306
 
 #ifdef ssd1306
 #include <Adafruit_SSD1306.h>

@@ -4,7 +4,7 @@
 #include "display.h"
 #include "lora_utils.h"
 #include "configuration.h"
-#include "TinyGPSPlus.h"
+#include <TinyGPS++.h>
 
 extern Configuration    Config;
 extern BluetoothSerial  SerialBT;

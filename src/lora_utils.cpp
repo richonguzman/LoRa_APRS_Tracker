@@ -10,7 +10,9 @@
 extern logging::Logger logger;
 extern Configuration Config;
 
+#if defined(TTGO_T_Beam_V1_0_SX1268)
 SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+#endif
 
 namespace LoRa_Utils {
 
@@ -115,7 +117,6 @@ namespace LoRa_Utils {
         loraPacket += (char)inChar;
       }
     }
-    return loraPacket;
     #endif
     #if defined(TTGO_T_Beam_V1_0_SX1268)
     int state = radio.receive(loraPacket);
@@ -131,8 +132,8 @@ namespace LoRa_Utils {
       Serial.print(F("failed, code "));
       Serial.println(state);
     }
-    return loraPacket;
     #endif
+    return loraPacket;
   }
 
 }
