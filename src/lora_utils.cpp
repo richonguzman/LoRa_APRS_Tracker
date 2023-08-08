@@ -3,24 +3,12 @@
 #include <LoRa.h>
 #include <SPI.h>
 #include "configuration.h"
+#include "pins_config.h"
 #include "msg_utils.h"
 #include "display.h"
 
 extern logging::Logger logger;
 extern Configuration Config;
-
-
-
-#define RADIO_SCLK_PIN               5
-#define RADIO_MISO_PIN              19
-#define RADIO_MOSI_PIN              27
-#define RADIO_CS_PIN                18
-#define RADIO_DIO0_PIN              26           // SX1278's IRQ(Interrupt Request)
-#define RADIO_RST_PIN               23           // SX1278's RESET
-#define RADIO_DIO1_PIN              33
-#define RADIO_BUSY_PIN              32
-
-#define BAND    433.775000  
 
 SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 
@@ -30,21 +18,19 @@ namespace LoRa_Utils {
     #if defined(TTGO_T_Beam_V1_0_SX1268)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-
-    Serial.print(F("[SX1268] Initializing ... "));
-    int state = radio.begin(BAND);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "frequency: %d", BAND);
+    float freq = (float)Config.loramodule.frequency/1000000.0;
+    int state = radio.begin(freq);
     if (state == RADIOLIB_ERR_NONE)
     {
-      Serial.println(F("success!"));
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX1268");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
     }
-    radio.setSpreadingFactor(12);           // ranges from 6-12,default 7 see API docs
-    radio.setBandwidth(125000);
-    radio.setCodingRate(5);
-    state = radio.setOutputPower(20);
+    radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
+    radio.setBandwidth(Config.loramodule.signalBandwidth);
+    radio.setCodingRate(Config.loramodule.codingRate4);
+    state = radio.setOutputPower(Config.loramodule.power + 2);
 
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
@@ -53,7 +39,7 @@ namespace LoRa_Utils {
       while (true);
     }
     #endif
-    #if defined(TTGO_T_Beam_V1_0)
+    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_2)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set LoRa pins!");
@@ -84,10 +70,9 @@ namespace LoRa_Utils {
       delay(Config.ptt.preDelay);
     }
     #if defined(TTGO_T_Beam_V1_0_SX1268)
-    Serial.println("Transmiting...");
+    Serial.print("Transmiting... ");
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
-      // the packet was successfully transmitted
       Serial.println(F("success!"));
 
       // print measured data rate
@@ -96,20 +81,17 @@ namespace LoRa_Utils {
       Serial.println(F(" bps"));
 
     } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
-      // the supplied packet was longer than 256 bytes
       Serial.println(F("too long!"));
 
     } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
-      // timeout occured while transmitting packet
       Serial.println(F("timeout!"));
 
     } else {
-      // some other error occurred
       Serial.print(F("failed, code "));
       Serial.println(state);
     }
     #endif
-    #if defined(TTGO_T_Beam_V1_0)
+    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_2)
     LoRa.beginPacket();
     LoRa.write('<');
     LoRa.write(0xFF);
@@ -125,17 +107,32 @@ namespace LoRa_Utils {
 
   String receivePacket() {
     String loraPacket = "";
+    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_2)
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
       while (LoRa.available()) {
         int inChar = LoRa.read();
         loraPacket += (char)inChar;
       }
-      //rssi      = LoRa.packetRssi();
-      //snr       = LoRa.packetSnr();
-      //freqError = LoRa.packetFrequencyError();
     }
     return loraPacket;
+    #endif
+    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    int state = radio.receive(loraPacket);
+    if (state == RADIOLIB_ERR_NONE) {
+      Serial.println(F("success!"));
+      Serial.print(F("[SX1268] Data:\t\t")); Serial.println(loraPacket);
+    } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+      // timeout occurred while waiting for a packet
+      //Serial.println(F("timeout!"));
+    } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
+      Serial.println(F("CRC error!"));
+    } else {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
+    }
+    return loraPacket;
+    #endif
   }
 
 }
