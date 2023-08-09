@@ -68,8 +68,20 @@ namespace MENU_Utils {
                     }
                 }
                 
-                secondRowMainMenu = utils::createDateString(now()) + "   " + utils::createTimeString(now());
+                const auto time_now = now();
+                secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
                 
+                if (time_now % 10 < 5) {
+                    thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
+                }
+                else {
+                    thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                }
+
+                for(int i = thirdRowMainMenu.length(); i < 18; i++) {
+                    thirdRowMainMenu += " ";
+                }
+
                 if (gps.hdop.hdop() > 5) {
                     hdopState = "X";
                 } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
@@ -77,10 +89,7 @@ namespace MENU_Utils {
                 } else if (gps.hdop.hdop() <= 2) {
                     hdopState = "+";
                 }
-                thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
-                for(int i = thirdRowMainMenu.length(); i < 18; i++) {
-                    thirdRowMainMenu += " ";
-                }
+        
                 if (gps.satellites.value() > 9) { 
                     thirdRowMainMenu += String(gps.satellites.value()) + hdopState;
                 } else {
