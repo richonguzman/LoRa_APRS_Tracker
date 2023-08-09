@@ -37,7 +37,11 @@ void sendNewPacket(const String &newPacket) {
   if (Config.ptt.active) {
     digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
     delay(Config.ptt.preDelay);
+
   }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Send data: %s", newPacket.c_str());
+
   LoRa.beginPacket();
   LoRa.write('<');
   LoRa.write(0xFF);
@@ -58,6 +62,9 @@ String receivePacket() {
       int inChar = LoRa.read();
       loraPacket += (char)inChar;
     }
+
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
+
     //rssi      = LoRa.packetRssi();
     //snr       = LoRa.packetSnr();
     //freqError = LoRa.packetFrequencyError();
