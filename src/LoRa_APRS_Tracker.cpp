@@ -28,7 +28,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.08.07";
+String    versionDate         = "2023.08.08";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
