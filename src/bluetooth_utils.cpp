@@ -10,6 +10,7 @@ extern Configuration    Config;
 extern BluetoothSerial  SerialBT;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
+extern bool             bluetoothConnected;
 
 namespace BLUETOOTH_Utils {
   String serialReceived;
@@ -47,9 +48,11 @@ namespace BLUETOOTH_Utils {
 
   void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
     if (event == ESP_SPP_SRV_OPEN_EVT) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth client connected !");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client connected !");
+      bluetoothConnected = true;
     } else if (event == ESP_SPP_CLOSE_EVT) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth client disconnected !");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client disconnected !");
+      bluetoothConnected = false;
     }
   }
 
@@ -75,7 +78,12 @@ namespace BLUETOOTH_Utils {
       }
     }
 
-    shouldSendToLoRa = !serialReceived.isEmpty(); // because we can't send data here
+    shouldSendToLoRa = !serialReceived.isEmpty()
+            // Test true APRS frame and not a NMEA (case when RX buffer overflow)
+            && serialReceived.indexOf('>') != -1
+            && serialReceived.indexOf(':') != -1
+            && serialReceived.indexOf("$G") == -1
+            && serialReceived.indexOf("$B") == -1;
 
     if (shouldSendToLoRa) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth",
