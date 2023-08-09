@@ -65,7 +65,7 @@ Timeline (Versions):
 - 2023.07.18 Add Support for triggering PTT to external amplifier.
 - 2023.07.24 New Validation for Callsings, Overlay change and New Icons (Bike, Motorcycle).
 - 2023.08.05 New Support for SH1106 Oled Screen (0,96" and 1.3")
-- 2023.08.06 Added Bluetooth Support for TNC in Android/APRSDroid
+- 2023.08.06 Added Bluetooth Support for TNC in Android/APRSDroid. Thanks Valentin F4HVV
 - 2023.08.08 Added Maidenhead info (now changes between GPS and Maidenhead on Screen) Thanks Mathias "mpbraendli"
 ____________________________________________________
 This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
