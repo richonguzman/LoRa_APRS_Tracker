@@ -1,11 +1,12 @@
 #include <BluetoothSerial.h>
-#include <Arduino.h>
 #include <OneButton.h>
 #include <TinyGPS++.h>
+#include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
 #include <LoRa.h>
 #include <vector>
+#include "bluetooth_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "button_utils.h"
@@ -18,17 +19,16 @@
 #include "display.h"
 #include "SPIFFS.h"
 #include "utils.h"
-#include "bluetooth_utils.h"
 
 
 Configuration                 Config;
 PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
-BluetoothSerial SerialBT;
+BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.08.09";
+String    versionDate         = "2023.08.10";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -42,11 +42,11 @@ std::vector<String>           loadedAPRSMessages;
 bool      displayEcoMode      = Config.displayEcoMode;
 bool      displayState        = true;
 uint32_t  displayTime         = millis();
-uint32_t  refreshDisplayTime   = millis();
+uint32_t  refreshDisplayTime  = millis();
 
 bool      sendUpdate          = true;
 int       updateCounter       = Config.sendCommentAfterXBeacons;
-bool	    sendStandingUpdate  = false;
+bool	  sendStandingUpdate  = false;
 bool      statusState         = true;
 bool      bluetoothConnected  = false;
 
@@ -85,12 +85,10 @@ void setup() {
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
-
   LoRa_Utils::setup();
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
-
   BLUETOOTH_Utils::setup();
 
   userButton.attachClick(BUTTON_Utils::singlePress);

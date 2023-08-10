@@ -72,7 +72,7 @@
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
 		"bluetooth": true,
-		"disableGps": false
+		"disableGPS": false
 	},
 	"ptt_trigger": {
 		"active": false,
