@@ -65,10 +65,10 @@ namespace MSG_Utils {
     for (String s1 : v1) {
       numAPRSMessages++;
     }
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));  
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
   }
 
-  void loadMessagesFromMemory() { 
+  void loadMessagesFromMemory() {
     File fileToRead;
     noMessageWarning = false;
     if (numAPRSMessages == 0) {
@@ -88,14 +88,14 @@ namespace MSG_Utils {
         loadedAPRSMessages.push_back(fileToRead.readStringUntil('\n'));
       }
       fileToRead.close();
-    }  
+    }
   }
 
   void deleteFile() {
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
-    } 
+    }
     SPIFFS.remove("/aprsMessages.txt");
   }
 
@@ -144,9 +144,9 @@ namespace MSG_Utils {
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
       Sender = packetReceived.substring(3,packetReceived.indexOf(">"));
-      if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating                                
+      if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating
         if (packetReceived.indexOf("::") > 10) {                        // its a Message!
-          AddresseeAndMessage = packetReceived.substring(packetReceived.indexOf("::")+2);  
+          AddresseeAndMessage = packetReceived.substring(packetReceived.indexOf("::")+2);
           Addressee = AddresseeAndMessage.substring(0,AddresseeAndMessage.indexOf(":"));
           Addressee.trim();
           if (Addressee == currentBeacon->callsign) {                   // its for me!

@@ -34,6 +34,7 @@ namespace GPS_Utils {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
+
     neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
   }
 
@@ -54,16 +55,16 @@ namespace GPS_Utils {
     int Y3 = int(encodedLatitude[2]);
     int Y4 = int(encodedLatitude[3]);
     float decodedLatitude = 90.0 - ((((Y1-33) * pow(91,3)) + ((Y2-33) * pow(91,2)) + ((Y3-33) * 91) + Y4-33) / 380926.0);
-      
+
     int X1 = int(encodedLongtitude[0]);
     int X2 = int(encodedLongtitude[1]);
     int X3 = int(encodedLongtitude[2]);
     int X4 = int(encodedLongtitude[3]);
     float decodedLongitude = -180.0 + ((((X1-33) * pow(91,3)) + ((X2-33) * pow(91,2)) + ((X3-33) * 91) + X4-33) / 190463.0);
-      
-    Serial.print(sender); 
-    Serial.print(" GPS : "); 
-    Serial.print(decodedLatitude); Serial.print(" N "); 
+
+    Serial.print(sender);
+    Serial.print(" GPS : ");
+    Serial.print(decodedLatitude); Serial.print(" N ");
     Serial.print(decodedLongitude);Serial.println(" E");
 
     calculateDistanceCourse(sender, decodedLatitude, decodedLongitude);
@@ -88,18 +89,18 @@ namespace GPS_Utils {
     String thirdLngPart   = Longitude.substring(Longitude.indexOf(".")+1,Longitude.indexOf(".")+3);
     convertedLatitude     = firstLatPart.toFloat() + (secondLatPart.toFloat()/60) + (thirdLatPart.toFloat()/(60*100));
     convertedLongitude    = firstLngPart.toFloat() + (secondLngPart.toFloat()/60) + (thirdLngPart.toFloat()/(60*100));
-    
+
     String LatSign = String(Latitude[7]);
     String LngSign = String(Longitude[8]);
     if (LatSign == "S") {
       convertedLatitude = -convertedLatitude;
-    } 
+    }
     if (LngSign == "W") {
       convertedLongitude = -convertedLongitude;
-    } 
-    Serial.print(sender); 
-    Serial.print(" GPS : "); 
-    Serial.print(convertedLatitude); Serial.print(" N "); 
+    }
+    Serial.print(sender);
+    Serial.print(" GPS : ");
+    Serial.print(convertedLatitude); Serial.print(" N ");
     Serial.print(convertedLongitude);Serial.println(" E");
 
     calculateDistanceCourse(sender, convertedLatitude, convertedLongitude);
@@ -191,7 +192,7 @@ namespace GPS_Utils {
     for (i=0; i<4; i++) {
       encodedData += helper_base91[i];
     }
-      
+
     encodedData += currentBeacon->symbol;
 
     if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)

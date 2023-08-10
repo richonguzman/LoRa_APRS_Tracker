@@ -67,6 +67,8 @@ namespace LoRa_Utils {
   }
 
   void sendNewPacket(const String &newPacket) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Send data: %s", newPacket.c_str());
+
     if (Config.ptt.active) {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
       delay(Config.ptt.preDelay);
@@ -116,8 +118,10 @@ namespace LoRa_Utils {
         int inChar = LoRa.read();
         loraPacket += (char)inChar;
       }
+
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
     }
-    #endif
+     #endif
     #if defined(TTGO_T_Beam_V1_0_SX1268)
     int state = radio.receive(loraPacket);
     if (state == RADIOLIB_ERR_NONE) {

@@ -173,8 +173,8 @@ static const unsigned char vanSymbol[] PROGMEM = {
     0b00000000, 0b00000000
 };
 
-static const unsigned char carsateliteSymbol[] PROGMEM = { 
-    0b00000000, 0b00000100, 
+static const unsigned char carsateliteSymbol[] PROGMEM = {
+    0b00000000, 0b00000100,
     0b01000000, 0b00000100,
     0b00111111, 0b11011111,
     0b00100100, 0b00100100,
@@ -190,7 +190,7 @@ static const unsigned char carsateliteSymbol[] PROGMEM = {
     0b00000000, 0b00000000
 };
 
-static const unsigned char tentSymbol[] PROGMEM = { 
+static const unsigned char tentSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
     0b00001111, 0b11110000,

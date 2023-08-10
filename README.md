@@ -47,7 +47,35 @@ on the Menu 3:
 - 2 short press/pushes = Menu 0 (back to the Tracker Screen).
 
 ____________________________________________________
+
+# BLUETOOTH EXPLANATION (**Only for Android**)
+
+## APRSDroid
+
+- Pair your phone with the tracker. Its name is "Lora Tracker XXXX"
+- Install [APRSDroid](https://aprsdroid.org/) app
+- Open app and go to Settings and click on connection preferences
+- Protocol : TNC2 or Kiss
+- Type : BLuetooth SPP
+- Module : Select our tracker name
+- Tadam !
+
+## ShareGps (NMEA)
+
+- Pair your phone with the tracker. Its name is "Lora Tracker XXXX"
+- Install [ShareGPS](https://play.google.com/store/apps/details?id=com.jillybunch.shareGPS&pcampaignid=web_share) app
+- Open app and go to Connections tab
+- Click on add button
+- Choose NMEA as Data Type
+- Choose Bluetooth as Connectoin Method
+- Name it and click next to set you tracker
+- To connect to it : long press on the connection name and click connect
+- BT is listening, repeat the operation a second time to initiate the connection
+- Tadam !
+
+____________________________________________________
 Timeline (Versions):
+- 2023.08.09 Adding Bluetooth capabilities with Kiss and TNC2, TTGO Lora 32
 - 2023.04.16 Sending and Receiving LoRa Packets.
 - 2023.05.12 Saving Messages to Internal Memory.
 - 2023.05.14 Adding Menu.
@@ -68,10 +96,12 @@ Timeline (Versions):
 - 2023.08.06 Added Bluetooth Support for TNC in Android/APRSDroid. Thanks Valentin F4HVV
 - 2023.08.08 Added Maidenhead info (now changes between GPS and Maidenhead on Screen) Thanks Mathias "mpbraendli"
 ____________________________________________________
-This code was based on the work by OE5BPA LoRa Tracker, Serge Y. Stroobandt, ON4AA in the byte-saving part of the APRS 434 firmware  and Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed.
-- https://github.com/aprs434/lora.tracker
-- https://github.com/lora-aprs/LoRa_APRS_Tracker
-- https://github.com/Mane76/LoRa_APRS_Tracker
+This code was based on the work of :
+- Serge Y. Stroobandt : base91 and others ideas
+- https://github.com/aprs434/lora.tracker : ON4AA in the byte-saving part of the APRS 434 firmware
+- https://github.com/lora-aprs/LoRa_APRS_Tracker : OE5BPA LoRa Tracker
+- https://github.com/Mane76/LoRa_APRS_Tracker : Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed
+- https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : DL9SAU for the Kiss <> TNC2 lib
 ____________________________________________________
 
 # Hope You Enjoy this, 73 !!  CD2RXU , Valparaiso, Chile

@@ -5,6 +5,7 @@
 #include "configuration.h"
 #include "pins_config.h"
 #include "display.h"
+#include "TimeLib.h"
 
 #define ssd1306 //uncomment this line when using SH1106 screen instead of SSD1306
 
@@ -23,10 +24,9 @@ extern int              menuDisplay;
 extern bool             symbolAvailable;
 extern bool             bluetoothConnected;
 
-String symbolArray[13]        = {"BT", "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";"};
+const char* symbolArray[]        = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
-const uint8_t *symbolsAPRS[]  = {bluetoothSymbol, runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, truckSymbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol};
-uint32_t  symbolTime          = millis();
+const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, truckSymbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol};
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
@@ -99,7 +99,7 @@ void show_display(String header, int wait) {
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -118,7 +118,7 @@ void show_display(String header, String line1, int wait) {
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -140,7 +140,7 @@ void show_display(String header, String line1, String line2, int wait) {
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -164,7 +164,7 @@ void show_display(String header, String line1, String line2, String line3, int w
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -190,7 +190,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -218,7 +218,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.setTextColor(WHITE);
   #else
   display.setTextColor(SH110X_WHITE);
-  #endif  
+  #endif
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -246,26 +246,25 @@ void show_display(String header, String line1, String line2, String line3, Strin
         break;
       }
     }
+
+    symbolAvailable = symbol != 100;
+
     /*
-     * Symbol alternate every 2.5s (+/- 500ms due to 1s tick of display refresh)
+     * Symbol alternate every 5s
      * If bluetooth is disconnected or if we are in the first part of the clock, then we show the APRS symbol
      * Otherwise, we are in the second part of the clock, then we show BT connected
      */
-    if (!bluetoothConnected || millis() - symbolTime <= 2500) {
-      if (symbol != 100) {
-        symbolAvailable = true;
+    const auto time_now = now();
+    if (!bluetoothConnected || time_now % 10 < 5) {
+      if (symbolAvailable) {
         display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
-      } else {
-        symbolAvailable = false;
       }
     } else if (bluetoothConnected) {
+      // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
       display.drawBitmap((display.width() - SYM_WIDTH), 0, bluetoothSymbol, SYM_WIDTH, SYM_HEIGHT, 1);
     }
-
-    if (millis() - symbolTime >= 5000) {
-      symbolTime = millis();
-    }
-  }  
+  }
+  
   display.display();
   delay(wait);
 }

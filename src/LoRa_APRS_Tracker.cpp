@@ -46,8 +46,9 @@ uint32_t  refreshDisplayTime  = millis();
 
 bool      sendUpdate          = true;
 int       updateCounter       = Config.sendCommentAfterXBeacons;
-bool		  sendStandingUpdate  = false;
+bool	  sendStandingUpdate  = false;
 bool      statusState         = true;
+bool      bluetoothConnected  = false;
 
 uint32_t  lastTx              = 0.0;
 uint32_t  txInterval          = 60000L;
@@ -61,16 +62,17 @@ double    previousHeading     = 0;
 uint32_t  menuTime            = millis();
 bool      symbolAvailable     = true;
 
-bool      bluetoothConnected  = false;
-
 logging::Logger               logger;
-
 
 void setup() {
   Serial.begin(115200);
 
+#ifndef DEBUG
+  logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
+#endif
+
   powerManagement.setup();
-  
+
   setup_display();
   show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " + versionDate, 4000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
@@ -135,8 +137,10 @@ void loop() {
     STATION_Utils::sendBeacon();
   }
 
-  STATION_Utils::checkSmartBeaconInterval(currentSpeed);
-  
+  if (gps_time_update) {
+    STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+  }
+
   if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
     GPS_Utils::checkStartUpFrames();
     MENU_Utils::showOnScreen();

@@ -67,10 +67,10 @@ namespace MENU_Utils {
                         firstRowMainMenu += currentBeacon->symbol;
                     }
                 }
-                
+
                 const auto time_now = now();
                 secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
-                
+
                 if (time_now % 10 < 5) {
                     thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                 }
@@ -89,13 +89,13 @@ namespace MENU_Utils {
                 } else if (gps.hdop.hdop() <= 2) {
                     hdopState = "+";
                 }
-        
-                if (gps.satellites.value() > 9) { 
+
+                if (gps.satellites.value() > 9) {
                     thirdRowMainMenu += String(gps.satellites.value()) + hdopState;
                 } else {
                     thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
                 }
-                
+
                 String fourthRowAlt = String(gps.altitude.meters(),0);
                 fourthRowAlt.trim();
                 for (int a=fourthRowAlt.length();a<4;a++) {
@@ -119,9 +119,9 @@ namespace MENU_Utils {
                 if (MSG_Utils::getNumAPRSMessages() > 0){
                     fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
                 }
-                        
+
                 fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
-                    
+
                 if (powerManagement.getBatteryInfoIsConnected()) {
                     String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                     String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
@@ -136,7 +136,7 @@ namespace MENU_Utils {
                     #endif
                     #ifdef TTGO_T_Beam_V1_2
                         batteryVoltage = batteryVoltage.toFloat()/1000;
-                        if (powerManagement.isChargeing() && batteryChargeCurrent!="100") { 
+                        if (powerManagement.isChargeing() && batteryChargeCurrent!="100") {
                             sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
                         } else if (!powerManagement.isChargeing() && batteryChargeCurrent=="100") {
                             sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
