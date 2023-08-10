@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CD2RXU-6",
+			"callsign": "NOCALL-7",
 			"symbol": "[",
 			"overlay": "/",
 			"comment": "",
@@ -18,7 +18,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-6",
+			"callsign": "NOCALL-7",
 			"symbol": ">",
 			"overlay": "/",
 			"comment": "",
@@ -35,7 +35,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-6",
+			"callsign": "NOCALL-7",
 			"symbol": "j",
 			"overlay": "/",
 			"comment": "",
