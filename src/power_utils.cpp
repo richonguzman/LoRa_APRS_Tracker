@@ -11,8 +11,8 @@ extern logging::Logger  logger;
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
 #ifdef TTGO_T_Beam_V0_7
-  bool result = true;
-  return result;
+// Currently there is no init for V0.7 boards(they only measure battery voltage).
+  return true;
 #endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   bool result = axp.begin(port, AXP192_SLAVE_ADDRESS);
@@ -136,7 +136,16 @@ void PowerManagement::deactivateMeasurement() {
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryVoltage() {
 #ifdef TTGO_T_Beam_V0_7
-  return 0;
+// the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
+// the measured voltage is inaccurate du to known nonlinearity and ~100mV offset of the ESP32 A/D converter
+  int adc_value;
+  double voltage;
+//  analogSetAttenuation(ADC_11db); // this is the default setting (range 0-3.3V)
+  adc_value = analogRead(35); // ADC1_CHANNEL_7
+  voltage = (adc_value * 3.3 ) / 4095;
+  voltage += 0.1; // add 0.1V offset
+  voltage = 2 * voltage; // multiply result by two because the voltage was measured after the 1:2 divider
+  return voltage;
 #endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.getBattVoltage() / 1000.0;
@@ -164,7 +173,11 @@ double PowerManagement::getBatteryChargeDischargeCurrent() {
 
 bool PowerManagement::isBatteryConnected() {
 #ifdef TTGO_T_Beam_V0_7
-  return 0;
+  if(getBatteryVoltage() > 1.0) {
+    return true;
+  } else {
+    return false;
+  }
 #endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.isBatteryConnect();
@@ -247,6 +260,9 @@ void PowerManagement::obtainBatteryInfo() {
   if (!(rate_limit_check_battery++ % 60))
     BatteryIsConnected = isBatteryConnected();
   if (BatteryIsConnected) {
+    #ifdef TTGO_T_Beam_V0_7
+    batteryVoltage       = String(getBatteryVoltage(), 2);
+    #endif
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
     batteryVoltage       = String(getBatteryVoltage(), 2);
     #endif
@@ -270,6 +286,9 @@ bool PowerManagement::getBatteryInfoIsConnected() {
 }
 
 void PowerManagement::batteryManager() {
+#ifdef TTGO_T_Beam_V0_7
+  obtainBatteryInfo();
+#endif
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_LORA_V2_1)  || defined(TTGO_T_Beam_V1_0_SX1268)
   obtainBatteryInfo();
   handleChargingLed();

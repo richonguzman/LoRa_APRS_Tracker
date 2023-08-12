@@ -125,6 +125,9 @@ namespace MENU_Utils {
                 if (powerManagement.getBatteryInfoIsConnected()) {
                     String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                     String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
+                    #ifdef TTGO_T_Beam_V0_7
+					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
+                    #endif
                     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1)
                     if (batteryChargeCurrent.toInt() == 0) {
                         sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
