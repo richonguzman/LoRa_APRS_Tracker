@@ -29,7 +29,7 @@
 #ifdef TTGO_T_Beam_V0_7
 #define GPS_RX          15
 #define GPS_TX          12
-#define BUTTON_PIN      38
+#define BUTTON_PIN      39
 #endif
 
 #ifdef TTGO_T_LORA_V2_1
