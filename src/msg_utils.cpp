@@ -198,10 +198,19 @@ namespace MSG_Utils {
           }
         } else if (packetReceived.indexOf(":!") > 10 || packetReceived.indexOf(":=") > 10 ) {     // packetReceived has APRS - GPS info
           lastHeardTracker = Sender; // eliminar?
-          if (packetReceived.indexOf(":!/") > 10) {         // encoded GPS
-            GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
-          } else {
-            GPS_Utils::getReceivedGPS(packetReceived, Sender);         // not encoded GPS          }
+          int encodedBytePosition = 0;
+          if (packetReceived.indexOf(":!") > 10) {
+            encodedBytePosition = packetReceived.indexOf(":!") + 14;
+          }
+          if (packetReceived.indexOf(":=") > 10) {
+            encodedBytePosition = packetReceived.indexOf(":=") + 14;
+          }
+          if (encodedBytePosition != 0) {
+            if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q") {
+              GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
+            } else {
+              GPS_Utils::getReceivedGPS(packetReceived, Sender); 
+            }
           }
         }
       }

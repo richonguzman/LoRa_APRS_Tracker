@@ -46,7 +46,7 @@ namespace GPS_Utils {
   }
 
   void decodeEncodedGPS(String packet, String sender) {
-    String GPSPacket = packet.substring(packet.indexOf(":!/")+3);
+    String GPSPacket = packet.substring(packet.indexOf(":!")+3);
     String encodedLatitude    = GPSPacket.substring(0,4);
     String encodedLongtitude  = GPSPacket.substring(4,8);
 
