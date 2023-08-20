@@ -1,10 +1,9 @@
-#include <RadioLib.h>
+#include <RadioLib.h> // useful to build
 #include <logger.h>
 #include <LoRa.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
-#include "pins_config.h"
 #include "msg_utils.h"
 #include "display.h"
 

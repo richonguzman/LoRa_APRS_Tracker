@@ -44,11 +44,11 @@ namespace GPS_Utils {
     neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
   }
 
-  void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {
+  void calculateDistanceCourse(String callsign, double checkpointLatitude, double checkPointLongitude) {
     double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
     double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
     STATION_Utils::deleteListenedTrackersbyTime();
-    STATION_Utils::orderListenedTrackersByDistance(Callsign, distanceKm, courseTo);
+    STATION_Utils::orderListenedTrackersByDistance(std::move(callsign), distanceKm, courseTo);
   }
 
   void getData() {

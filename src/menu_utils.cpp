@@ -1,7 +1,5 @@
 #include <TinyGPS++.h>
 #include <vector>
-#include "notification_utils.h"
-#include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
 #include "APRSPacketLib.h"

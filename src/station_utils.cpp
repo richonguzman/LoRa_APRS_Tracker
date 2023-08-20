@@ -124,7 +124,7 @@ namespace STATION_Utils {
     }
   }
 
-  void orderListenedTrackersByDistance(String callsign, float distance, float course) {
+  void orderListenedTrackersByDistance(const String& callsign, float distance, float course) {
     String firstNearTrackerDistance, secondNearTrackerDistance, thirdNearTrackerDistance, fourthNearTrackerDistance, newTrackerInfo, firstNearTrackerCallsign, secondNearTrackerCallsign,thirdNearTrackerCallsign, fourthNearTrackerCallsign;
     newTrackerInfo = callsign + "> " + String(distance,2) + "km " + String(int(course)) + "," + String(millis());
     float firstDistance   = 0.0;

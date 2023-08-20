@@ -1,4 +1,3 @@
-#include <Adafruit_GFX.h>
 #include <logger.h>
 #include <Wire.h>
 #include "custom_characters.h"
@@ -58,6 +57,7 @@ void setup_display() {
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306", "allocation failed!");
     while (true) {
+      delay(1000);
     }
   }
   #else
@@ -96,7 +96,7 @@ void display_toggle(bool toggle) {
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, int wait) {
+void show_display(const String& header, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);
@@ -115,7 +115,7 @@ void show_display(String header, int wait) {
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, String line1, int wait) {
+void show_display(const String& header, const String& line1, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);
@@ -137,7 +137,7 @@ void show_display(String header, String line1, int wait) {
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, String line1, String line2, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);
@@ -161,7 +161,7 @@ void show_display(String header, String line1, String line2, int wait) {
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, String line1, String line2, String line3, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, const String& line3, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);
@@ -187,7 +187,7 @@ void show_display(String header, String line1, String line2, String line3, int w
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, String line1, String line2, String line3, String line4, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);
@@ -215,7 +215,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
 }
 
 // cppcheck-suppress unusedFunction
-void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
   display.clearDisplay();
   #ifdef ssd1306
   display.setTextColor(WHITE);

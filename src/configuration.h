@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <vector>
-#include <FS.h>
 
 class Beacon {
 public:
@@ -91,8 +90,8 @@ public:
   bool    disableGPS;
 
   Configuration();
-  void validateConfigFile(String currentBeaconCallsign);
-  bool validateMicE(String currentBeaconMicE);
+  void validateConfigFile(const String& currentBeaconCallsign);
+  bool validateMicE(const String& currentBeaconMicE);
 
 private:
   void readFile(fs::FS &fs, const char *fileName) ;

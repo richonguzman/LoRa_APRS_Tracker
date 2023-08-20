@@ -21,7 +21,6 @@
 #include "bme_utils.h"
 #include "ble_utils.h"
 #include "display.h"
-#include "SPIFFS.h"
 #include "utils.h"
 
 Configuration                 Config;
@@ -118,7 +117,7 @@ void setup() {
   }
   show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate.c_str());
 
   if (Config.ptt.active) {
     pinMode(Config.ptt.io_pin, OUTPUT);
@@ -149,7 +148,7 @@ void setup() {
   }
 
   powerManagement.lowerCpuFrequency();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState().c_str());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
 }
