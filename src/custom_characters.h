@@ -122,7 +122,7 @@ static const unsigned char shipSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
 };
 
-static const unsigned char truckSymbol[] PROGMEM = {
+static const unsigned char truck18Symbol[] PROGMEM = {
     0b00000000, 0b00100000,
     0b00000000, 0b00010000,
     0b11111111, 0b11010000,
@@ -222,6 +222,23 @@ static const unsigned char houseSymbol[] PROGMEM = {
     0b01001000, 0b10000010,
     0b01001000, 0b10000010,
     0b01111111, 0b11111110
+};
+
+static const unsigned char truckSymbol[] PROGMEM = {
+    0b00000000, 0b00000000,
+    0b00000011, 0b11100000,
+    0b00000010, 0b00100000,
+    0b00000010, 0b00010000,
+    0b00000010, 0b00010000,
+    0b00000010, 0b00001000,
+    0b11111111, 0b11111111,
+    0b11111111, 0b11111101,
+    0b11111111, 0b11111101,
+    0b11111111, 0b11111111,
+    0b11001111, 0b11110011,
+    0b01001000, 0b00010010,
+    0b00110000, 0b00001100,
+    0b00000000, 0b00000000
 };
 
 /*static const unsigned char noSymbol[] PROGMEM = {

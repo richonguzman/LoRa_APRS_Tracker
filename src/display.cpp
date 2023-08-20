@@ -24,11 +24,11 @@ extern int              menuDisplay;
 extern bool             symbolAvailable;
 extern bool             bluetoothConnected;
 
-const char* symbolArray[]        = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-"};
+const char* symbolArray[]        = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
 const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, 
-                                truckSymbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
-                                houseSymbol };
+                                truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
+                                houseSymbol, truckSymbol};
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
