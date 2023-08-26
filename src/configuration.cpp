@@ -57,6 +57,8 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     ptt.postDelay                 = data["ptt_trigger"]["postDelay"].as<int>();
     ptt.reverse                   = data["ptt_trigger"]["reverse"].as<bool>();
 
+    bme.active                    = data["bme"]["active"].as<bool>();
+
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();

@@ -40,12 +40,18 @@ public:
   bool  reverse;
 };
 
+class BME {
+public:
+  bool    active;
+};
+
 class Configuration {
 public:
 
   std::vector<Beacon> beacons;  
-  LoraModule loramodule;
-  Ptt ptt;
+  LoraModule          loramodule;
+  Ptt                 ptt;
+  BME                 bme;
   
   bool    showSymbolOnScreen;
   int     sendCommentAfterXBeacons;

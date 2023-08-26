@@ -6,6 +6,7 @@
 #include "menu_utils.h"
 #include "power_utils.h"
 #include "msg_utils.h"
+#include "bme_utils.h"
 #include "display.h"
 #include "utils.h"
 
@@ -73,8 +74,7 @@ namespace MENU_Utils {
 
                 if (time_now % 10 < 5) {
                     thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
-                }
-                else {
+                } else {
                     thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                 }
 
@@ -115,7 +115,15 @@ namespace MENU_Utils {
                         fourthRowCourse = "0" + fourthRowCourse;
                     }
                 }
-                fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                if (Config.bme.active) {
+                    if (time_now % 10 < 5) {
+                        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                    } else {
+                        fourthRowMainMenu = BME_Utils::readDataSensor();
+                    }
+                } else {
+                    fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                }               
                 if (MSG_Utils::getNumAPRSMessages() > 0){
                     fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
                 }
