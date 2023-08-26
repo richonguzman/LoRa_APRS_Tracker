@@ -82,6 +82,6 @@
 		"reverse": false
 	},
 	"bme": {
-		"active": true
+		"active": false
 	}
 }
