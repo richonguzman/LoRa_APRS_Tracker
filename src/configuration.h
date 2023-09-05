@@ -53,6 +53,7 @@ public:
   Ptt                 ptt;
   BME                 bme;
   
+  bool    simplifiedTrackerMode;
   bool    showSymbolOnScreen;
   int     sendCommentAfterXBeacons;
   bool    displayEcoMode;

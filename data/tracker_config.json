@@ -60,6 +60,7 @@
 		"power": 20
 	},
 	"other": {
+		"simplifiedTrackerMode": false,
 		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,

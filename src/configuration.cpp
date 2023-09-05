@@ -59,6 +59,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
     bme.active                    = data["bme"]["active"].as<bool>();
 
+    simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();

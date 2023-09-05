@@ -29,7 +29,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.08.26";
+String    versionDate         = "2023.09.05";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -93,9 +93,11 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
   BLUETOOTH_Utils::setup();
 
-  userButton.attachClick(BUTTON_Utils::singlePress);
-  userButton.attachLongPressStart(BUTTON_Utils::longPress);
-  userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+  if (!Config.simplifiedTrackerMode) {
+    userButton.attachClick(BUTTON_Utils::singlePress);
+    userButton.attachLongPressStart(BUTTON_Utils::longPress);
+    userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+  }
 
   powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
@@ -104,14 +106,15 @@ void setup() {
 }
 
 void loop() {
-  //Serial.println(BME_Utils::readDataSensor());
   currentBeacon = &Config.beacons[myBeaconsIndex];
   if (statusState) {
     Config.validateConfigFile(currentBeacon->callsign);
   }
 
   powerManagement.batteryManager();
-  userButton.tick();
+  if (!Config.simplifiedTrackerMode) {
+    userButton.tick();
+  }
   utils::checkDisplayEcoMode();
 
   GPS_Utils::getData();

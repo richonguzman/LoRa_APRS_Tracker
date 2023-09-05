@@ -189,27 +189,33 @@ namespace MSG_Utils {
                 menuTime = millis();
               } else {
                 show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);
-                saveNewMessage("APRS", Sender, receivedMessage);
+                if (!Config.simplifiedTrackerMode) {
+                  saveNewMessage("APRS", Sender, receivedMessage);
+                }
               }
             } else {
               show_display("<  MSG  >", "From --> " + Sender, "", receivedMessage , 3000);
-              saveNewMessage("APRS", Sender, receivedMessage);
+              if (!Config.simplifiedTrackerMode) {
+                saveNewMessage("APRS", Sender, receivedMessage);
+              }
             }
           }
         } else if (packetReceived.indexOf(":!") > 10 || packetReceived.indexOf(":=") > 10 ) {     // packetReceived has APRS - GPS info
-          lastHeardTracker = Sender; // eliminar?
-          int encodedBytePosition = 0;
-          if (packetReceived.indexOf(":!") > 10) {
-            encodedBytePosition = packetReceived.indexOf(":!") + 14;
-          }
-          if (packetReceived.indexOf(":=") > 10) {
-            encodedBytePosition = packetReceived.indexOf(":=") + 14;
-          }
-          if (encodedBytePosition != 0) {
-            if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q") {
-              GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
-            } else {
-              GPS_Utils::getReceivedGPS(packetReceived, Sender); 
+          lastHeardTracker = Sender;
+          if (!Config.simplifiedTrackerMode) {
+            int encodedBytePosition = 0;
+            if (packetReceived.indexOf(":!") > 10) {
+              encodedBytePosition = packetReceived.indexOf(":!") + 14;
+            }
+            if (packetReceived.indexOf(":=") > 10) {
+              encodedBytePosition = packetReceived.indexOf(":=") + 14;
+            }
+            if (encodedBytePosition != 0) {
+              if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q") {
+                GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
+              } else {
+                GPS_Utils::getReceivedGPS(packetReceived, Sender); 
+              }
             }
           }
         }
