@@ -75,7 +75,10 @@ ____________________________________________________
 
 ____________________________________________________
 Timeline (Versions):
-- 2023.08.12 Adding also support for old V0_7 board. Thanks Béla Török
+
+- 2023.09.05 Adding "simplified Tracker Mode": only GPS beacons Tx.
+- 2023.08.27 Adding support to connect BME280 and see Temperature, Humidity, Pressure.
+- 2023.08.12 Adding also support for old V0_7 board. Thanks Béla Török.
 - 2023.08.09 Adding Bluetooth capabilities with Kiss and TNC2, TTGO Lora 32. Thanks Thomas DL9SAU.
 - 2023.08.08 Added Maidenhead info (now changes between GPS and Maidenhead on Screen) Thanks Mathias "mpbraendli".
 - 2023.08.06 Added Bluetooth Support for TNC in Android/APRSDroid. Thanks Valentin F4HVV.
