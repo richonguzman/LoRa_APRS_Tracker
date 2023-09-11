@@ -18,6 +18,7 @@ void checkStandingUpdateTime();
 void checkSmartBeaconState();
 void sendBeacon();
 void saveCallsingIndex(int index);
+void loadCallsignIndex();
 
 }
 

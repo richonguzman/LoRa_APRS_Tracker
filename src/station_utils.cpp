@@ -19,6 +19,7 @@ extern PowerManagement      powerManagement;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern String               fourthLine;
+extern int                  myBeaconsIndex;
 
 extern String               firstNearTracker;
 extern String               secondNearTracker;
@@ -455,6 +456,17 @@ namespace STATION_Utils {
       Serial.println("Error saving data to file");
     }
     fileCallsignIndex.close();
+  }
+
+  void loadCallsignIndex() {
+    if(!SPIFFS.begin(true)) {
+      Serial.println("An Error has occurred while mounting SPIFFS");
+      myBeaconsIndex = 0;
+    }
+
+    // aqui las otras cosas que pasan si pilla o no el archivo
+
+
   }
 
 }
