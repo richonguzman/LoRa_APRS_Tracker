@@ -424,49 +424,35 @@ namespace STATION_Utils {
     sendUpdate = false;
 
     if (statusState) {
-      utils::startingStatus();
+      //utils::startingStatus();
     }
   }
 
   void saveCallsingIndex(int index) {
-    if(!SPIFFS.begin(true)) {
-      Serial.println("An Error has occurred while mounting SPIFFS");
-      return;
-    }
-
-    /*if (SPIFFS.exists("/file.txt")) {
-      Serial.println("File exists in SPIFFS");
-    } else {
-      Serial.println("File does not exist in SPIFFS");
-    }*/
-
     File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt", "w");
     if(!fileCallsignIndex){
-      Serial.println("no existe archivo, se escribe");
-      Serial.println("Failed to open APRS_Msg for reading");
-      //return;
-    } else {
-      Serial.println("ya existe archivo pero se SOBRE escribe");
-    }
+      return;
+    } 
     String dataToSave = String(index);
 
     if (fileCallsignIndex.println(dataToSave)) {
-      Serial.println("Callsign Index saved to SPIFFS");
-    } else {
-      Serial.println("Error saving data to file");
-    }
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Callsign Index saved to SPIFFS");
+    } 
     fileCallsignIndex.close();
   }
 
   void loadCallsignIndex() {
-    if(!SPIFFS.begin(true)) {
-      Serial.println("An Error has occurred while mounting SPIFFS");
-      myBeaconsIndex = 0;
+    File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt");
+    if(!fileCallsignIndex){
+      return;
+    } else {
+      while (fileCallsignIndex.available()) {
+        String firstLine = fileCallsignIndex.readStringUntil('\n');
+        myBeaconsIndex = firstLine.toInt();
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine);
+      }
+      fileCallsignIndex.close();
     }
-
-    // aqui las otras cosas que pasan si pilla o no el archivo
-
-
   }
 
 }
