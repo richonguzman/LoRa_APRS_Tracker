@@ -1,4 +1,5 @@
 #include <TinyGPS++.h>
+#include <SPIFFS.h>
 #include <vector>
 #include "station_utils.h"
 #include "configuration.h"
@@ -424,6 +425,36 @@ namespace STATION_Utils {
     if (statusState) {
       utils::startingStatus();
     }
+  }
+
+  void saveCallsingIndex(int index) {
+    if(!SPIFFS.begin(true)) {
+      Serial.println("An Error has occurred while mounting SPIFFS");
+      return;
+    }
+
+    /*if (SPIFFS.exists("/file.txt")) {
+      Serial.println("File exists in SPIFFS");
+    } else {
+      Serial.println("File does not exist in SPIFFS");
+    }*/
+
+    File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt", "w");
+    if(!fileCallsignIndex){
+      Serial.println("no existe archivo, se escribe");
+      Serial.println("Failed to open APRS_Msg for reading");
+      //return;
+    } else {
+      Serial.println("ya existe archivo pero se SOBRE escribe");
+    }
+    String dataToSave = String(index);
+
+    if (fileCallsignIndex.println(dataToSave)) {
+      Serial.println("Callsign Index saved to SPIFFS");
+    } else {
+      Serial.println("Error saving data to file");
+    }
+    fileCallsignIndex.close();
   }
 
 }

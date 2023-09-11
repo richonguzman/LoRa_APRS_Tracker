@@ -1,5 +1,6 @@
 #include <logger.h>
 #include "configuration.h"
+#include "station_utils.h"
 #include "button_utils.h"
 #include "msg_utils.h"
 #include "display.h"
@@ -74,6 +75,7 @@ namespace BUTTON_Utils {
       display_toggle(true);
       displayTime = millis();
       show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
+      STATION_Utils::saveCallsingIndex(myBeaconsIndex);
     } else if (menuDisplay == 1) {
       MSG_Utils::deleteFile();
       show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
