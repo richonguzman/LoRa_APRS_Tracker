@@ -13,6 +13,7 @@ extern int              messagesIterator;
 extern bool             sendUpdate;
 extern int              myBeaconsIndex;
 extern bool             statusState;
+extern uint32_t         statusTime;
 extern bool             displayEcoMode;
 extern int              myBeaconsSize;
 extern Configuration    Config;
@@ -71,9 +72,10 @@ namespace BUTTON_Utils {
       } else {
         myBeaconsIndex++;
       }
-      statusState  = true;
       display_toggle(true);
       displayTime = millis();
+      statusState  = true;
+      statusTime = millis();
       show_display("__INFO____", "", "CHANGING CALLSIGN ...", 1000);
       STATION_Utils::saveCallsingIndex(myBeaconsIndex);
     } else if (menuDisplay == 1) {

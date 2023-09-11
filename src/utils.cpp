@@ -6,6 +6,8 @@
 extern Beacon           *currentBeacon;
 extern Configuration    Config;
 extern bool             statusState;
+extern uint32_t         statusTime;
+
 extern bool             displayEcoMode; 
 extern uint32_t         displayTime;
 extern bool             displayState;
@@ -80,15 +82,19 @@ namespace utils {
       return String(padding(hour(t), 2) + ":" + padding(minute(t), 2) + ":" + padding(second(t), 2));
   }
 
-  void startingStatus() {
-    delay(3000);
-    String packet = currentBeacon->callsign + ">APLRT1";
-    if (Config.path != "") {
-      packet += "," + Config.path;
+  void checkStatus() {
+    if (statusState) {
+      uint32_t statusTx = millis() - statusTime;
+      if (statusTx > 5*60*1000) {
+        String packet = currentBeacon->callsign + ">APLRT1";
+        if (Config.path != "") {
+          packet += "," + Config.path;
+        }
+        packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate;
+        LoRa_Utils::sendNewPacket(packet);
+        statusState = false;
+      }
     }
-    packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate;
-    LoRa_Utils::sendNewPacket(packet);
-    statusState = false;
   }
 
   void checkDisplayEcoMode() {

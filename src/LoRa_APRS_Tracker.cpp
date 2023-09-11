@@ -47,8 +47,9 @@ uint32_t  refreshDisplayTime  = millis();
 
 bool      sendUpdate          = true;
 int       updateCounter       = Config.sendCommentAfterXBeacons;
-bool	  sendStandingUpdate  = false;
+bool	    sendStandingUpdate  = false;
 bool      statusState         = true;
+uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
 
 uint32_t  lastTx              = 0.0;
@@ -143,6 +144,7 @@ void loop() {
   if (sendUpdate && gps_loc_update) {
     STATION_Utils::sendBeacon();
   }
+  utils::checkStatus();
 
   if (gps_time_update) {
     STATION_Utils::checkSmartBeaconInterval(currentSpeed);

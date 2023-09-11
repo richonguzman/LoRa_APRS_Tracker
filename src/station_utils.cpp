@@ -32,7 +32,6 @@ extern uint32_t             lastTxTime;
 extern bool                 sendUpdate;
 extern int                  updateCounter;
 extern bool                 sendStandingUpdate;
-extern bool                 statusState;
 
 extern uint32_t             txInterval;
 extern uint32_t             lastTx;
@@ -422,10 +421,6 @@ namespace STATION_Utils {
     }
     lastTxTime = millis();
     sendUpdate = false;
-
-    if (statusState) {
-      //utils::startingStatus();
-    }
   }
 
   void saveCallsingIndex(int index) {
