@@ -76,6 +76,7 @@ ____________________________________________________
 ____________________________________________________
 Timeline (Versions):
 
+- 2023.09.11 Saving last used Callsign into internal Memory to remember it at next boot.
 - 2023.09.05 Adding "simplified Tracker Mode": only GPS beacons Tx.
 - 2023.08.27 Adding support to connect BME280 and see Temperature, Humidity, Pressure.
 - 2023.08.12 Adding also support for old V0_7 board. Thanks Béla Török.
