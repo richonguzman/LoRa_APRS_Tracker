@@ -29,7 +29,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.09.11";
+String    versionDate         = "2023.09.12";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -138,18 +138,16 @@ void loop() {
     }
     STATION_Utils::checkStandingUpdateTime();
   }
-
   STATION_Utils::checkSmartBeaconState();
-
   if (sendUpdate && gps_loc_update) {
     STATION_Utils::sendBeacon();
   }
-  utils::checkStatus();
-
   if (gps_time_update) {
     STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   }
-
+  if (gps_loc_update) {
+    utils::checkStatus();
+  }
   if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
     GPS_Utils::checkStartUpFrames();
     MENU_Utils::showOnScreen();
