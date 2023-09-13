@@ -75,7 +75,7 @@
 		"bluetooth": true,
 		"disableGPS": false
 	},
-	"ptt_trigger": {
+	"pttTrigger": {
 		"active": false,
 		"io_pin": 4,
 		"preDelay": 0,
@@ -84,5 +84,18 @@
 	},
 	"bme": {
 		"active": false
+	},
+	"notifications": {
+		"ledTx": false,
+		"ledTxPin": 20,
+		"ledMessage": false,
+		"ledMessagePin": 21,
+		"buzzerActive": false,
+		"buzzerPin": 22,
+		"bootUpBeep": false,
+		"gpsFixBeep": false,
+		"txBeep":false,
+		"messageRxBeep": false,
+		"stationHeardBeep": false
 	}
 }

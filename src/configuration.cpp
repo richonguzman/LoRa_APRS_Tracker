@@ -51,13 +51,19 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
 
-    ptt.active                    = data["ptt_trigger"]["active"].as<bool>();
-    ptt.io_pin                    = data["ptt_trigger"]["io_pin"].as<int>();
-    ptt.preDelay                  = data["ptt_trigger"]["preDelay"].as<int>();
-    ptt.postDelay                 = data["ptt_trigger"]["postDelay"].as<int>();
-    ptt.reverse                   = data["ptt_trigger"]["reverse"].as<bool>();
+    ptt.active                    = data["pttTrigger"]["active"].as<bool>();
+    ptt.io_pin                    = data["pttTrigger"]["io_pin"].as<int>();
+    ptt.preDelay                  = data["pttTrigger"]["preDelay"].as<int>();
+    ptt.postDelay                 = data["pttTrigger"]["postDelay"].as<int>();
+    ptt.reverse                   = data["pttTrigger"]["reverse"].as<bool>();
 
     bme.active                    = data["bme"]["active"].as<bool>();
+
+    notifications.ledTx           = data["notifications"]["ledTx"].as<bool>();
+    notifications.ledTxPin        = data["notifications"]["ledTxPin"].as<int>();
+
+
+
 
     simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
