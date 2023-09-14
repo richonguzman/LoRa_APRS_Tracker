@@ -52,9 +52,9 @@ public:
   bool    ledMessage;
   int     ledMessagePin;
   bool    buzzerActive;
-  int     buzzerPin;
+  int     buzzerPinTone;
+  int     buzzerPinVcc;
   bool    bootUpBeep;
-  bool    gpsFixBeep;
   bool    txBeep;
   bool    messageRxBeep;
   bool    stationBeep;

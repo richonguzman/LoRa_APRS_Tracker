@@ -18,47 +18,47 @@ namespace Notification_Utils {
 
   void playTone(int frequency, int duration){
     ledcSetup(channel, frequency, resolution);
-    ledcAttachPin(Config.notification.buzzerPin, 0);
+    ledcAttachPin(Config.notification.buzzerPinTone, 0);
     ledcWrite(channel, 128);
     delay(duration);
     ledcWrite(channel, 0);
     delay(pauseDuration);
   }
 
-  void gpsFixBeep() {
-    playTone(440,50);
-    playTone(1320,200);
-  }
-
   void beaconTxBeep() {
-    playTone(880,100);
+    digitalWrite(Config.notification.buzzerPinVcc, HIGH);
+    playTone(1320,100);
+    digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 
   void messageBeep() {
-    playTone(880,100);
-    playTone(880,100);
+    digitalWrite(Config.notification.buzzerPinVcc, HIGH);
+    playTone(1100,100);
+    playTone(1100,100);
+    digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 
   void stationHeardBeep() {
-    playTone(880,100);
-    playTone(440,100);
+    digitalWrite(Config.notification.buzzerPinVcc, HIGH);
+    playTone(1200,100);
+    playTone(600,100);
+    digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 
   void shutDownBeep() {
+    digitalWrite(Config.notification.buzzerPinVcc, HIGH);
     for (int i = 0; i < sizeof(shutDownSound) / sizeof(shutDownSound[0]); i++) {
       playTone(shutDownSound[i], shutDownSoundDuration[i]);
     }
+    digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 
   void start() {
+    digitalWrite(Config.notification.buzzerPinVcc, HIGH);
     for (int i = 0; i < sizeof(startUpSound) / sizeof(startUpSound[0]); i++) {
       playTone(startUpSound[i], startUpSoundDuration[i]);
     }
-    /*delay(3000);
-    gpsFixBeep();
-    delay(3000);
-    shutDownBeep();   */ 
+    digitalWrite(Config.notification.buzzerPinVcc, LOW);
+    /*shutDownBeep();*/ 
   }
-    
-    /*Serial.println(Config.notification.gpsFixBeep);*/
 }

@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CD2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": "[",
 			"overlay": "/",
 			"comment": "",
@@ -18,7 +18,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": ">",
 			"overlay": "/",
 			"comment": "",
@@ -35,7 +35,7 @@
 			}
 		},
 		{
-			"callsign": "CD2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": "j",
 			"overlay": "/",
 			"comment": "",
@@ -86,16 +86,16 @@
 		"active": false
 	},
 	"notification": {
-		"ledTx": true,
+		"ledTx": false,
 		"ledTxPin": 13,
-		"ledMessage": true,
+		"ledMessage": false,
 		"ledMessagePin": 2,
-		"buzzerActive": true,
-		"buzzerPin": 33,
-		"bootUpBeep": true,
-		"gpsFixBeep": true,
-		"txBeep": true,
-		"messageRxBeep": true,
-		"stationBeep": true
+		"buzzerActive": false,
+		"buzzerPinTone": 33,
+		"buzzerPinVcc": 25,
+		"bootUpBeep": false,
+		"txBeep": false,
+		"messageRxBeep": false,
+		"stationBeep": false
 	}
 }

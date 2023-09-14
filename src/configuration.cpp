@@ -16,7 +16,7 @@ Configuration::Configuration() {
 }
 
 void Configuration::readFile(fs::FS &fs, const char *fileName) {
-    StaticJsonDocument<2048> data;
+    StaticJsonDocument<2560> data;
     File configFile = fs.open(fileName, "r");
     DeserializationError error = deserializeJson(data, configFile);
     if (error) {
@@ -64,9 +64,9 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.ledMessage       = data["notification"]["ledTx"].as<bool>();
 		notification.ledMessagePin    = data["notification"]["ledMessagePin"].as<int>();
 		notification.buzzerActive     = data["notification"]["buzzerActive"].as<bool>();
-		notification.buzzerPin        = data["notification"]["buzzerPin"].as<int>();
+		notification.buzzerPinTone    = data["notification"]["buzzerPinTone"].as<int>();
+    notification.buzzerPinVcc     = data["notification"]["buzzerPinVcc"].as<int>();
 		notification.bootUpBeep       = data["notification"]["bootUpBeep"].as<bool>();
-		notification.gpsFixBeep       = data["notification"]["gpsFixBeep"].as<bool>();
 		notification.txBeep           = data["notification"]["txBeep"].as<bool>();
 		notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
 		notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();

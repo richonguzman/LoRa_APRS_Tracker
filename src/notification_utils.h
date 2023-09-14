@@ -6,7 +6,6 @@
 namespace Notification_Utils {
 
 void playTone(int frequency, int duration);
-void gpsFixBeep();
 void beaconTxBeep();
 void messageBeep();
 void stationHeardBeep();
