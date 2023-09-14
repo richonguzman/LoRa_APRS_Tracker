@@ -59,11 +59,17 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
     bme.active                    = data["bme"]["active"].as<bool>();
 
-    notifications.ledTx           = data["notifications"]["ledTx"].as<bool>();
-    notifications.ledTxPin        = data["notifications"]["ledTxPin"].as<int>();
-
-
-
+    notification.ledTx            = data["notification"]["ledTx"].as<bool>();
+    notification.ledTxPin         = data["notification"]["ledTxPin"].as<int>();
+    notification.ledMessage       = data["notification"]["ledTx"].as<bool>();
+		notification.ledMessagePin    = data["notification"]["ledMessagePin"].as<int>();
+		notification.buzzerActive     = data["notification"]["buzzerActive"].as<bool>();
+		notification.buzzerPin        = data["notification"]["buzzerPin"].as<int>();
+		notification.bootUpBeep       = data["notification"]["bootUpBeep"].as<bool>();
+		notification.gpsFixBeep       = data["notification"]["gpsFixBeep"].as<bool>();
+		notification.txBeep           = data["notification"]["txBeep"].as<bool>();
+		notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
+		notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
 
     simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();

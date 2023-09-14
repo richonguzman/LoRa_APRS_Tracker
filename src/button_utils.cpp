@@ -50,6 +50,9 @@ namespace BUTTON_Utils {
         menuDisplay = 1;
         menuTime = millis();
         messagesIterator = 0;
+        if (Config.notification.ledMessage){
+          digitalWrite(Config.notification.ledMessagePin, LOW);
+        }
       } else {
         menuDisplay = 10;
         menuTime = millis();

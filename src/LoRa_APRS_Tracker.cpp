@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <LoRa.h>
 #include <vector>
+#include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
@@ -29,7 +30,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.09.12";
+String    versionDate         = "2023.09.13";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -76,8 +77,18 @@ void setup() {
   powerManagement.setup();
 
   setup_display();
+  if (Config.notification.buzzerActive) {
+    pinMode(Config.notification.buzzerPin, OUTPUT);
+    Notification_Utils::start();
+  } 
+  if (Config.notification.ledTx){
+    pinMode(Config.notification.ledTxPin, OUTPUT);
+  }
+  if (Config.notification.ledMessage){
+    pinMode(Config.notification.ledMessagePin, OUTPUT);
+  }
   show_display(" LoRa APRS", "", "     Richonguzman", "     -- CD2RXU --", "", "      " + versionDate, 4000);
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman -> CD2RXU --> LoRa APRS Tracker/Station");
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CD2RXU) --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
   if (Config.ptt.active) {

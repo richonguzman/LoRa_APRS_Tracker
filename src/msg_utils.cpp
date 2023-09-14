@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
+#include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
@@ -97,6 +98,9 @@ namespace MSG_Utils {
       return;
     }
     SPIFFS.remove("/aprsMessages.txt");
+    if (Config.notification.ledMessage){
+      digitalWrite(Config.notification.ledMessagePin, LOW);
+    }
   }
 
   void saveNewMessage(String typeMessage, String station, String newMessage) {
@@ -113,6 +117,9 @@ namespace MSG_Utils {
       lastMessageAPRS = newMessage;
       numAPRSMessages++;
       fileToAppendAPRS.close();
+      if (Config.notification.ledMessage){
+        digitalWrite(Config.notification.ledMessagePin, HIGH);
+      }
     }
   }
 
@@ -160,6 +167,9 @@ namespace MSG_Utils {
               receivedMessage = AddresseeAndMessage.substring(AddresseeAndMessage.indexOf(":")+1);
             }
             //Serial.println(receivedMessage);
+            if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
+              Notification_Utils::messageBeep();
+            }            
             if (receivedMessage.indexOf("ping")==0 || receivedMessage.indexOf("Ping")==0 || receivedMessage.indexOf("PING")==0) {
               delay(4000);
               sendMessage(Sender, "pong, 73!");
@@ -211,6 +221,9 @@ namespace MSG_Utils {
               encodedBytePosition = packetReceived.indexOf(":=") + 14;
             }
             if (encodedBytePosition != 0) {
+              if (Config.notification.buzzerActive && Config.notification.stationBeep) {
+                Notification_Utils::stationHeardBeep();
+              }
               if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q") {
                 GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
               } else {

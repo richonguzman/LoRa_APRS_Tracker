@@ -34,7 +34,7 @@ public:
 class Ptt {
 public:
   bool  active;
-  int   pptPin;
+  int   io_pin;
   int   preDelay;
   int   postDelay;
   bool  reverse;
@@ -45,7 +45,7 @@ public:
   bool    active;
 };
 
-class Notifications {
+class Notification {
 public:
   bool    ledTx;
   int     ledTxPin;
@@ -57,9 +57,8 @@ public:
   bool    gpsFixBeep;
   bool    txBeep;
   bool    messageRxBeep;
-  bool    stationHeardBeep;
+  bool    stationBeep;
 };
-
 
 
 class Configuration {
@@ -69,7 +68,7 @@ public:
   LoraModule          loramodule;
   Ptt                 ptt;
   BME                 bme;
-  Notifications       notifications;
+  Notification        notification;
   
   bool    simplifiedTrackerMode;
   bool    showSymbolOnScreen;
