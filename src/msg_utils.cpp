@@ -224,7 +224,7 @@ namespace MSG_Utils {
               if (Config.notification.buzzerActive && Config.notification.stationBeep) {
                 Notification_Utils::stationHeardBeep();
               }
-              if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q") {
+              if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q" || String(packetReceived[encodedBytePosition]) == "[" || String(packetReceived[encodedBytePosition]) == "H") {
                 GPS_Utils::decodeEncodedGPS(packetReceived, Sender);
               } else {
                 GPS_Utils::getReceivedGPS(packetReceived, Sender); 
