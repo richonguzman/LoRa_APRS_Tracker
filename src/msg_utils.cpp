@@ -92,6 +92,11 @@ namespace MSG_Utils {
     }
   }
 
+  void ledNotification() {
+
+    
+  }
+
   void deleteFile() {
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");

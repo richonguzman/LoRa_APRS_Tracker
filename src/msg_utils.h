@@ -9,8 +9,8 @@ bool    warnNoMessages();
 int     getNumAPRSMessages();
 void    loadNumMessages();
 void    loadMessagesFromMemory();
+void    ledNotification();
 void    deleteFile();
-//void    checkListenedTrackersByTimeAndDelete();
 void    sendMessage(String station, String textMessage);
 void    checkReceivedMessage(String packetReceived);
 

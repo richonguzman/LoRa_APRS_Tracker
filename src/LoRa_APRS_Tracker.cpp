@@ -53,6 +53,10 @@ bool      statusState         = true;
 uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
 
+bool      messageNotification = false;
+uint32_t  messageLedTimeOn    = millis();
+uint32_t  messageLedTimeOff   = millis();
+
 uint32_t  lastTx              = 0.0;
 uint32_t  txInterval          = 60000L;
 uint32_t  lastTxTime          = millis();
