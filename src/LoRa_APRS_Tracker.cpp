@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.09.14";
+String    versionDate         = "2023.09.16";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -53,9 +53,8 @@ bool      statusState         = true;
 uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
 
-bool      messageNotification = false;
-uint32_t  messageLedTimeOn    = millis();
-uint32_t  messageLedTimeOff   = millis();
+bool      messageLed          = false;
+uint32_t  messageLedTime      = millis();
 
 uint32_t  lastTx              = 0.0;
 uint32_t  txInterval          = 60000L;
@@ -84,7 +83,7 @@ void setup() {
   if (Config.notification.buzzerActive) {
     pinMode(Config.notification.buzzerPinTone, OUTPUT);
     pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-    Notification_Utils::start();
+    NOTIFICATION_Utils::start();
   } 
   if (Config.notification.ledTx){
     pinMode(Config.notification.ledTxPin, OUTPUT);
@@ -141,6 +140,7 @@ void loop() {
   GPS_Utils::setDateFromData();
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+  MSG_Utils::ledNotification();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
   BLUETOOTH_Utils::sendToLoRa();
 

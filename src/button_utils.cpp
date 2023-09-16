@@ -18,6 +18,7 @@ extern bool             displayEcoMode;
 extern int              myBeaconsSize;
 extern Configuration    Config;
 extern uint32_t         menuTime;
+extern bool             messageLed;
 
 
 namespace BUTTON_Utils {
@@ -51,7 +52,7 @@ namespace BUTTON_Utils {
         menuTime = millis();
         messagesIterator = 0;
         if (Config.notification.ledMessage){
-          digitalWrite(Config.notification.ledMessagePin, LOW);
+          messageLed = false;
         }
       } else {
         menuDisplay = 10;

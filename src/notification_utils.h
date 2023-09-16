@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-namespace Notification_Utils {
+namespace NOTIFICATION_Utils {
 
 void playTone(int frequency, int duration);
 void beaconTxBeep();

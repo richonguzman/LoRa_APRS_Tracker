@@ -19,6 +19,9 @@ extern Configuration        Config;
 extern int                  menuDisplay;
 extern uint32_t             menuTime;
 
+extern bool                 messageLed;
+extern uint32_t             messageLedTime;
+
 String   firstNearTracker            = "";
 String   secondNearTracker           = "";
 String   thirdNearTracker            = "";
@@ -93,8 +96,18 @@ namespace MSG_Utils {
   }
 
   void ledNotification() {
-
-    
+    uint32_t ledTimeDelta = millis() - messageLedTime;
+    if (messageLed && ledTimeDelta > 10*1000) {
+      digitalWrite(Config.notification.ledMessagePin, HIGH);
+      messageLedTime = millis();
+    }
+    uint32_t ledOnDelta = millis() - messageLedTime;
+    if (messageLed && ledOnDelta > 1*1000) {
+      digitalWrite(Config.notification.ledMessagePin, LOW);
+    }
+    if (!messageLed && digitalRead(Config.notification.ledMessagePin)==HIGH) {
+      digitalWrite(Config.notification.ledMessagePin, LOW);
+    }
   }
 
   void deleteFile() {
@@ -104,7 +117,7 @@ namespace MSG_Utils {
     }
     SPIFFS.remove("/aprsMessages.txt");
     if (Config.notification.ledMessage){
-      digitalWrite(Config.notification.ledMessagePin, LOW);
+      messageLed = false;
     }
   }
 
@@ -123,7 +136,7 @@ namespace MSG_Utils {
       numAPRSMessages++;
       fileToAppendAPRS.close();
       if (Config.notification.ledMessage){
-        digitalWrite(Config.notification.ledMessagePin, HIGH);
+        messageLed = true;
       }
     }
   }
@@ -173,7 +186,7 @@ namespace MSG_Utils {
             }
             //Serial.println(receivedMessage);
             if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
-              Notification_Utils::messageBeep();
+              NOTIFICATION_Utils::messageBeep();
             }            
             if (receivedMessage.indexOf("ping")==0 || receivedMessage.indexOf("Ping")==0 || receivedMessage.indexOf("PING")==0) {
               delay(4000);
@@ -227,7 +240,7 @@ namespace MSG_Utils {
             }
             if (encodedBytePosition != 0) {
               if (Config.notification.buzzerActive && Config.notification.stationBeep) {
-                Notification_Utils::stationHeardBeep();
+                NOTIFICATION_Utils::stationHeardBeep();
               }
               if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q" || String(packetReceived[encodedBytePosition]) == "[" || String(packetReceived[encodedBytePosition]) == "H") {
                 GPS_Utils::decodeEncodedGPS(packetReceived, Sender);

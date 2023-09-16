@@ -70,13 +70,16 @@ namespace LoRa_Utils {
   void sendNewPacket(const String &newPacket) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Send data: %s", newPacket.c_str());
 
-    if (Config.notification.ledTx){
-      digitalWrite(Config.notification.ledTxPin, HIGH);
-    }
     if (Config.ptt.active) {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
       delay(Config.ptt.preDelay);
-    }    
+    }
+    if (Config.notification.ledTx){
+      digitalWrite(Config.notification.ledTxPin, HIGH);
+    }
+    if (Config.notification.buzzerActive && Config.notification.txBeep) {
+      NOTIFICATION_Utils::beaconTxBeep();
+    }
     #if defined(TTGO_T_Beam_V1_0_SX1268)
     Serial.print("Transmiting... ");
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
@@ -107,15 +110,12 @@ namespace LoRa_Utils {
     LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
     LoRa.endPacket();
     #endif
-    if (Config.ptt.active) {
-      delay(Config.ptt.postDelay);
-      digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
-    }
     if (Config.notification.ledTx){
       digitalWrite(Config.notification.ledTxPin, LOW);
     }
-    if (Config.notification.buzzerActive && Config.notification.txBeep) {
-      Notification_Utils::beaconTxBeep();
+    if (Config.ptt.active) {
+      delay(Config.ptt.postDelay);
+      digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
     }
   }
 
