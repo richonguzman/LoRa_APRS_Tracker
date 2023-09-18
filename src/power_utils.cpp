@@ -231,8 +231,10 @@ void PowerManagement::setup() {
     activateGPS();
   }
   activateMeasurement();
+  PMU.setPrechargeCurr(XPOWERS_AXP2101_PRECHARGE_200MA);
+  PMU.setChargerTerminationCurr(XPOWERS_AXP2101_CHG_ITERM_25MA);
   PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
-  PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_500MA);
+  PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
   PMU.setSysPowerDownVoltage(2600);
 #endif
 }
