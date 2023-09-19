@@ -3,6 +3,7 @@
 
 namespace LoRa_Utils {
 
+void setFlag();
 void setup();
 void sendNewPacket(const String &newPacket);
 String receivePacket();
