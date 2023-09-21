@@ -97,7 +97,7 @@ namespace MSG_Utils {
 
   void ledNotification() {
     uint32_t ledTimeDelta = millis() - messageLedTime;
-    if (messageLed && ledTimeDelta > 10*1000) {
+    if (messageLed && ledTimeDelta > 5*1000) {
       digitalWrite(Config.notification.ledMessagePin, HIGH);
       messageLedTime = millis();
     }

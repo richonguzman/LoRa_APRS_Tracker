@@ -21,10 +21,12 @@ namespace LoRa_Utils {
 
   void setFlag(void) {
     Serial.println("setFlag");
+    #if defined(TTGO_T_Beam_V1_0_SX1268)
     if (!enableInterrupt) {   // check if the interrupt is enabled
       return;
     }    
     transmissionFlag = true;  // we got a packet, set the flag
+    #endif
   }
 
   void setup() {
