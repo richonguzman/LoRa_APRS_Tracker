@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": "[",
 			"overlay": "/",
 			"comment": "",
@@ -18,7 +18,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": ">",
 			"overlay": "/",
 			"comment": "",
@@ -35,7 +35,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CD2RXU-7",
 			"symbol": "j",
 			"overlay": "/",
 			"comment": "",
@@ -86,16 +86,17 @@
 		"active": false
 	},
 	"notification": {
-		"ledTx": false,
+		"ledTx": true,
 		"ledTxPin": 13,
-		"ledMessage": false,
+		"ledMessage": true,
 		"ledMessagePin": 2,
-		"buzzerActive": false,
+		"buzzerActive": true,
 		"buzzerPinTone": 33,
 		"buzzerPinVcc": 25,
-		"bootUpBeep": false,
-		"txBeep": false,
-		"messageRxBeep": false,
-		"stationBeep": false
+		"bootUpBeep": true,
+		"txBeep": true,
+		"messageRxBeep": true,
+		"stationBeep": true,
+		"lowBatteryBeep": true
 	}
 }

@@ -9,7 +9,8 @@ void playTone(int frequency, int duration);
 void beaconTxBeep();
 void messageBeep();
 void stationHeardBeep();
-void shutDownBeep();
+//void shutDownBeep();
+void lowBatteryBeep();
 void start();
 
 }

@@ -70,6 +70,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 		notification.txBeep           = data["notification"]["txBeep"].as<bool>();
 		notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
 		notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
+    notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
 
     simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();

@@ -58,6 +58,7 @@ public:
   bool    txBeep;
   bool    messageRxBeep;
   bool    stationBeep;
+  bool    lowBatteryBeep;
 };
 
 
