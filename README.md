@@ -17,7 +17,7 @@ ____________________________________________________
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
 ____________________________________________________
 
-### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>
+### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
 
 ### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
 
@@ -37,7 +37,7 @@ Timeline (Versions):
 - 2023.08.27 Adding support to connect BME280 and see Temperature, Humidity, Pressure.
 - 2023.08.12 Adding also support for old V0_7 board. Thanks Béla Török.
 - 2023.08.09 Adding Bluetooth capabilities with Kiss and TNC2, TTGO Lora 32. Thanks Thomas DL9SAU.
-- 2023.08.08 Added Maidenhead info (now changes between GPS and Maidenhead on Screen) Thanks Mathias "mpbraendli".
+- 2023.08.08 Added Maidenhead info on Screen. Thanks Mathias "mpbraendli".
 - 2023.08.06 Added Bluetooth Support for TNC in Android/APRSDroid. Thanks Valentin F4HVV.
 - 2023.08.05 New Support for SH1106 Oled Screen (0,96" and 1.3")
 - 2023.07.24 New Validation for Callsings, Overlay change and New Icons (Bike, Motorcycle).
