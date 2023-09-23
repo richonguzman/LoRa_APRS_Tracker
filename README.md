@@ -17,41 +17,19 @@ ____________________________________________________
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
 ____________________________________________________
 
-# INSTRUCTIONS:
-- (1). Change _Callsign_, _Symbol_ and _Comment_ on /data/tracker_config.json
-- (2). Upload this changes via Platformio --> Upload Filesystem Image (to your TTGO Board)
-- (3). Build and Upload the Firmware with Platformio in VSCODE
-
+# Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>
 ____________________________________________________
 
-# <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Menu-Guide" target="_blank">MENU EXPLANATION</a>
-
+# Tracker Configuration and explanation for each setting<a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>
 ____________________________________________________
 
-# BLUETOOTH EXPLANATION (**Only for Android**)
+# Upload Firmware and Filesystem Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>
+____________________________________________________
 
-## APRSDroid
+# MENU GUIDE <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Menu-Guide" target="_blank">here</a>
+____________________________________________________
 
-- Pair your phone with the tracker. Its name is "Lora Tracker XXXX"
-- Install [APRSDroid](https://aprsdroid.org/) app
-- Open app and go to Settings and click on connection preferences
-- Protocol : TNC2 or Kiss
-- Type : BLuetooth SPP
-- Module : Select our tracker name
-- Tadam !
-
-## ShareGps (NMEA)
-
-- Pair your phone with the tracker. Its name is "Lora Tracker XXXX"
-- Install [ShareGPS](https://play.google.com/store/apps/details?id=com.jillybunch.shareGPS&pcampaignid=web_share) app
-- Open app and go to Connections tab
-- Click on add button
-- Choose NMEA as Data Type
-- Choose Bluetooth as Connectoin Method
-- Name it and click next to set you tracker
-- To connect to it : long press on the connection name and click connect
-- BT is listening, repeat the operation a second time to initiate the connection
-- Tadam !
+# Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Bluetooth-Connection" target="_blank">here</a>
 
 ____________________________________________________
 Timeline (Versions):
