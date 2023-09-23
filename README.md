@@ -17,19 +17,15 @@ ____________________________________________________
 - 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
 ____________________________________________________
 
-### Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>
-____________________________________________________
+### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>
 
-### Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>
-____________________________________________________
+### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>
 
-### Upload _Firmware_ and _Filesystem_ Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>
-____________________________________________________
+### 3. Upload _Firmware_ and _Filesystem_ Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>
 
-### MENU Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Menu-Guide" target="_blank">here</a>
-____________________________________________________
+### 4. MENU Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>
 
-### Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Bluetooth-Connection" target="_blank">here</a>
+### 5. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Bluetooth-Connection" target="_blank">here</a>
 
 ____________________________________________________
 Timeline (Versions):
