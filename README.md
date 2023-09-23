@@ -19,13 +19,13 @@ ____________________________________________________
 
 ### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>
 
-### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>
+### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
 
-### 3. Upload _Firmware_ and _Filesystem_ Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>
+### 3. Upload _Firmware_ and _Filesystem_ Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
 
-### 4. MENU Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>
+### 4. Tracker Menu Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
 
-### 5. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Bluetooth-Connection" target="_blank">here</a>
+### 5. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Bluetooth-Connection" target="_blank">here</a>.
 
 ____________________________________________________
 Timeline (Versions):
