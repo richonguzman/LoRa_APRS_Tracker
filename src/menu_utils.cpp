@@ -21,7 +21,7 @@ extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
-extern int                  batteryPercent;
+extern int                  lowBatteryPercent;
 
 namespace MENU_Utils {
 
@@ -148,18 +148,15 @@ namespace MENU_Utils {
                     }
                     #endif
                     #ifdef TTGO_T_Beam_V1_2
-                        if (Config.notification.lowBatteryBeep && !powerManagement.isChargeing() && batteryCharge.toInt() < batteryPercent) {
-                            Serial.println(batteryPercent);
-                            Serial.println(batteryCharge.toInt());
-                            Serial.println("--");
-                            batteryPercent = batteryCharge.toInt();
+                        if (Config.notification.lowBatteryBeep && !powerManagement.isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
+                            lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
                             if (batteryCharge.toInt() < 6) {
                                 NOTIFICATION_Utils::lowBatteryBeep();
                             }
                         } 
                         if (powerManagement.isChargeing()) {
-                            batteryPercent = 21;
+                            lowBatteryPercent = 21;
                         }
                         batteryVoltage = batteryVoltage.toFloat()/1000;
                         if (powerManagement.isChargeing() && batteryCharge!="100") {

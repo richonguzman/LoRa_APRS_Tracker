@@ -55,7 +55,7 @@ bool      bluetoothConnected  = false;
 
 bool      messageLed          = false;
 uint32_t  messageLedTime      = millis();
-int       batteryPercent      = 21;
+int       lowBatteryPercent   = 21;
 
 uint32_t  lastTx              = 0.0;
 uint32_t  txInterval          = 60000L;
