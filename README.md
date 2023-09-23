@@ -24,27 +24,7 @@ ____________________________________________________
 
 ____________________________________________________
 
-# MENU EXPLANATION
-
-on the Tracker Screen/Menu 0:
-- 1 short press/push   = Forced GPS Beacon Tx
-- 1 long press/push    = Change between three Callsigns saved on "/data/tracker.json".
-- 2 short press/pushes = Menu 1 (where you cand read Messages)
-
-on the Menu 1:
-- 1 short press/push   = Read Received Messages saved on internal Memory.
-- 1 long press/push    = Delete all Messages from internal Memory.
-- 2 short press/pushes = Menu 2 (where you cand ask for Weather Report and more).
-
-on the Menu 2:
-- 1 short press/push   = Ask for Weather Report (WX report will arrive in seconds).
-- 1 long press/push    = Listen to other Trackers and show distance and course to them.
-- 2 short press/pushes = Menu 3 (where you cand change Display Eco Mode and more).
-
-on the Menu 3:
-- 1 short press/push   = NOTHING YET... (any ideas?).
-- 1 long press/push    = Change Display Eco Mode (Turn off after 4 seg).
-- 2 short press/pushes = Menu 0 (back to the Tracker Screen).
+# <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Menu-Guide" target="_blank">MENU EXPLANATION</a>
 
 ____________________________________________________
 
