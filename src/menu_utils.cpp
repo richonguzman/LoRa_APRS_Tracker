@@ -154,12 +154,12 @@ namespace MENU_Utils {
                             Serial.println("--");
                             batteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
-                            if (batteryCharge.toInt() < 76) {
+                            if (batteryCharge.toInt() < 6) {
                                 NOTIFICATION_Utils::lowBatteryBeep();
                             }
                         } 
                         if (powerManagement.isChargeing()) {
-                            batteryPercent = 81;
+                            batteryPercent = 21;
                         }
                         batteryVoltage = batteryVoltage.toFloat()/1000;
                         if (powerManagement.isChargeing() && batteryCharge!="100") {

@@ -54,9 +54,10 @@ namespace NOTIFICATION_Utils {
 
   void lowBatteryBeep() {
     digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-    playTone(1600,100);
-    playTone(1600,100);
-    playTone(800,100);
+    playTone(1550,100);
+    playTone(650,100);
+    playTone(1550,100);
+    playTone(650,100);
     digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 
