@@ -15,6 +15,7 @@ ____________________________________________________
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
 - OLED SCREEN shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
 - OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
+- Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
 ____________________________________________________
 
 ### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
