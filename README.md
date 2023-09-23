@@ -6,15 +6,15 @@ NOTE: To take advantage of Tx/Rx capabilities you should have an Tx/R   x LoRa i
 https://github.com/richonguzman/LoRa_APRS_iGate
 
 ____________________________________________________
-- NOW WE HAVE A MENU (just pushing the central button IO38)
+- NOW WE HAVE A MENU !!! (just pushing the central button IO38)
     - Saving, Reading and Deleting Messages.
     - Asking Weather Report
     - Listening to other Trackers arround.
     - Changing Display Eco Mode (turn off after 4 seg).
-- Processor from 240Mhz to 80MHz to save almost 20% power consumption (from ~ 100mA to almost ~80mA)
+- Processor from 240Mhz to 80MHz to save almost 20% power consumption.
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
-- 4th line of the OLED SCREEN shows Altitude+Speed+Course or Number of New Messages Received.
-- 5th line of the OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
+- OLED SCREEN shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
+- OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
 ____________________________________________________
 
 ### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
