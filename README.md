@@ -22,15 +22,21 @@ ____________________________________________________
 
 ### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
 
-### 3. Upload _Firmware_ and _Filesystem_ Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
+### 3. Select Board Environment <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Select-Board-Environment" target="_blank">here</a>.
 
-### 4. Tracker Menu Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
+### 4. Upload Firmware and Filesystem <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
 
-### 5. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Bluetooth-Connection" target="_blank">here</a>.
+### 5. Tracker Menu Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
+
+### 6. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Bluetooth-Connection" target="_blank">here</a>.
+
+### 7. First Time Boot and GPS <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
+
 
 ____________________________________________________
 Timeline (Versions):
 
+- 2023.09.25 Wiki added.
 - 2023.09.16 Adding Led notification for Beacon Tx and for Message Received.
 - 2023.09.14 Adding buzzer sounds for BootUp, BeaconTx, MessageRx and more.
 - 2023.09.11 Saving last used Callsign into internal Memory to remember it at next boot.
