@@ -1,7 +1,5 @@
 # Richonguzman / CD2RXU LoRa APRS Tracker/Station
-# (Firmware for Tx and Rx !!!)
-
-NOTE: To take advantage of Tx/Rx capabilities you should have an Tx/Rx LoRa iGate (near you) like:
+NOTE: To take advantage of Tx/Rx capabilities of this *Tracker* you should have an Tx/Rx LoRa iGate (near you) like:
 
 https://github.com/richonguzman/LoRa_APRS_iGate
 
