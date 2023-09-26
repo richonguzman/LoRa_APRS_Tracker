@@ -401,7 +401,7 @@ namespace STATION_Utils {
     if (Config.sendBatteryInfo) {
       String batteryVoltage = powerManagement.getBatteryInfoVoltage();
       String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
-      #ifdef TTGO_T_Beam_V1_0
+      #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
       packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
       #endif
       #ifdef TTGO_T_Beam_V1_2
