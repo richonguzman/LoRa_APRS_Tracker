@@ -144,7 +144,7 @@ namespace LoRa_Utils {
       radio.startReceive();
       int state = radio.readData(loraPacket);
       if (state == RADIOLIB_ERR_NONE) {
-        //Serial.println(F("success!"));
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
         //Serial.print(F("[SX1268] Data:\t\t")); Serial.println(loraPacket);
       } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
         // timeout occurred while waiting for a packet
