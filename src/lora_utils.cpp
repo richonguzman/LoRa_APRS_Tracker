@@ -20,12 +20,8 @@ bool enableInterrupt = true;
 namespace LoRa_Utils {
 
   void setFlag(void) {
-    Serial.println("setFlag");
     #if defined(TTGO_T_Beam_V1_0_SX1268)
-    if (!enableInterrupt) {   // check if the interrupt is enabled
-      return;
-    }    
-    transmissionFlag = true;  // we got a packet, set the flag
+    transmissionFlag = true;
     #endif
   }
 
@@ -46,7 +42,7 @@ namespace LoRa_Utils {
     radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
     radio.setBandwidth(Config.loramodule.signalBandwidth);
     radio.setCodingRate(Config.loramodule.codingRate4);
-    state = radio.setOutputPower(Config.loramodule.power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be update to 22.
+    state = radio.setOutputPower(Config.loramodule.power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
 
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
@@ -94,30 +90,22 @@ namespace LoRa_Utils {
       NOTIFICATION_Utils::beaconTxBeep();
     }
     #if defined(TTGO_T_Beam_V1_0_SX1268)
-    if (transmissionFlag) {
-      enableInterrupt = false;
-      transmissionFlag = false;
-      Serial.print("Transmiting... ");
-      int state = radio.transmit("\x3c\xff\x01" + newPacket);
-      if (state == RADIOLIB_ERR_NONE) {
-        Serial.println(F("success!"));
+    //Serial.print("Transmiting... ");
+    int state = radio.transmit("\x3c\xff\x01" + newPacket);
+    if (state == RADIOLIB_ERR_NONE) {
+      /*Serial.println(F("success!"));
 
-        // print measured data rate
-        Serial.print(F("[SX1268] Datarate:\t"));
-        Serial.print(radio.getDataRate());
-        Serial.println(F(" bps"));
+      Serial.print(F("[SX1268] Datarate:\t")); // print measured data rate
+      Serial.print(radio.getDataRate());
+      Serial.println(F(" bps"));*/
 
-      } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
-        Serial.println(F("too long!"));
-
-      } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
-        Serial.println(F("timeout!"));
-
-      } else {
-        Serial.print(F("failed, code "));
-        Serial.println(state);
-      }
-      enableInterrupt = true;
+    } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
+      Serial.println(F("too long!"));
+    } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
+      Serial.println(F("timeout!"));
+    } else {
+      Serial.print(F("failed, code "));
+      Serial.println(state);
     }
     #endif
     #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_2)
@@ -152,13 +140,12 @@ namespace LoRa_Utils {
      #endif
     #if defined(TTGO_T_Beam_V1_0_SX1268)
     if (transmissionFlag) {
-      enableInterrupt = false;
       transmissionFlag = false;
+      radio.startReceive();
       int state = radio.readData(loraPacket);
-      //int state = radio.receive(loraPacket);
       if (state == RADIOLIB_ERR_NONE) {
-        Serial.println(F("success!"));
-        Serial.print(F("[SX1268] Data:\t\t")); Serial.println(loraPacket);
+        //Serial.println(F("success!"));
+        //Serial.print(F("[SX1268] Data:\t\t")); Serial.println(loraPacket);
       } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
         // timeout occurred while waiting for a packet
         //Serial.println(F("timeout!"));
@@ -168,9 +155,7 @@ namespace LoRa_Utils {
         Serial.print(F("failed, code "));
         Serial.println(state);
       }
-      radio.startReceive();
-      enableInterrupt = true;
-      transmissionFlag = true;
+      //radio.startReceive();
     }
     #endif
     return loraPacket;
