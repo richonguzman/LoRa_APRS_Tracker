@@ -32,15 +32,27 @@ namespace BME_Utils {
     }
   }
 
-  String generateTempString(float bmeTemp) {
+  String generateTempString(float bmeTemp, String type) {
     String strTemp;
-    strTemp = String((int)bmeTemp);
+    if (type=="OLED") {
+      strTemp = String((int)bmeTemp);
+    } else {
+      strTemp = String((int)((bmeTemp * 1.8) + 32));
+    }
     switch (strTemp.length()) {
       case 1:
-        return "  " + strTemp;
+        if (type=="OLED") {
+          return "  " + strTemp;
+        } else {
+          return "00" + strTemp;
+        }
         break;
       case 2:
-        return " " + strTemp;
+        if (type=="OLED") {
+          return " " + strTemp;
+        } else {
+          return "0" + strTemp;
+        }
         break;
       case 3:
         return strTemp;
@@ -50,19 +62,27 @@ namespace BME_Utils {
     }
   }
 
-  String generateHumString(float bmeHum) {
+  String generateHumString(float bmeHum, String type) {
     String strHum;
     strHum = String((int)bmeHum);
     switch (strHum.length()) {
       case 1:
-        return " " + strHum;
+        if (type=="OLED") {
+          return " " + strHum;
+        } else {
+          return "0" + strHum;
+        }
         break;
       case 2:
         return strHum;
         break;
       case 3:
         if ((int)bmeHum == 100) {
-          return "  ";
+          if (type=="OLED") {
+            return "  ";
+          } else {
+            return "00";
+          }
         } else {
           return "-99";
         }
@@ -72,21 +92,37 @@ namespace BME_Utils {
     }
   }
 
-  String generatePresString(float bmePress) {
+  String generatePresString(float bmePress, String type) {
     String strPress;
     strPress = String((int)bmePress);
     switch (strPress.length()) {
       case 1:
-        return "000" + strPress;
+        if (type=="OLED") {
+          return "000" + strPress;
+        } else {
+          return "000" + strPress + "0";
+        }
         break;
       case 2:
-        return "00" + strPress;
+        if (type=="OLED") {
+          return "00" + strPress;
+        } else {
+          return "00" + strPress + "0";
+        }
         break;
       case 3:
-        return "0" + strPress;
+        if (type=="OLED") {
+          return "0" + strPress;
+        } else {
+          return "0" + strPress + "0";
+        }
         break;
       case 4:
-        return strPress;
+        if (type=="OLED") {
+          return strPress;
+        } else {
+          return strPress + "0";
+        }
         break;
       case 5:
         return strPress;
@@ -96,7 +132,7 @@ namespace BME_Utils {
     }
   }
 
-  String readDataSensor() {
+  String readDataSensor(String type) {
     String wx, tempStr, humStr, presStr;
     float newTemp   = bme.readTemperature();
     float newHum    = bme.readHumidity();
@@ -104,13 +140,21 @@ namespace BME_Utils {
     
     if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
       Serial.println("BME280 Module data failed");
-      wx = " - C    - %    - hPa";
+      if (type == "OLED") {
+        wx = " - C    - %    - hPa";
+      } else {
+        wx = ".../...g...t...r...p...P...h..b.....";
+      }
       return wx;
     } else {
-      tempStr = generateTempString(newTemp);
-      humStr  = generateHumString(newHum);
-      presStr = generatePresString(newPress + (HEIGHT_CORRECTION/CORRECTION_FACTOR));
-      wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
+      tempStr = generateTempString(newTemp, type);
+      humStr  = generateHumString(newHum, type);
+      presStr = generatePresString(newPress + (HEIGHT_CORRECTION/CORRECTION_FACTOR), type);
+      if (type == "OLED") {
+        wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
+      } else {
+        wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
+      }
       return wx;
     }
   }

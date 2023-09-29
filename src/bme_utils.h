@@ -8,10 +8,10 @@
 namespace BME_Utils {
 
 void setup();
-String generateTempString(float bmeTemp);
-String generateHumString(float bmeHum);
-String generatePresString(float bmePress);
-String readDataSensor();
+String generateTempString(float bmeTemp, String type);
+String generateHumString(float bmeHum, String type);
+String generatePresString(float bmePress, String type);
+String readDataSensor(String type);
 
 }
 
