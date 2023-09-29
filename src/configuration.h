@@ -43,6 +43,8 @@ public:
 class BME {
 public:
   bool    active;
+  bool    sendTelemetry;
+  int     heightCorrection;
 };
 
 class Notification {

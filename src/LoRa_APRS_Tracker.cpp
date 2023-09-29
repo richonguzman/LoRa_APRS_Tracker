@@ -30,7 +30,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.09.26";
+String    versionDate         = "2023.09.29";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -56,6 +56,9 @@ bool      bluetoothConnected  = false;
 bool      messageLed          = false;
 uint32_t  messageLedTime      = millis();
 int       lowBatteryPercent   = 21;
+
+uint32_t  lastTelemetryTx     = millis();
+uint32_t  telemetryTx         = millis();
 
 uint32_t  lastTx              = 0.0;
 uint32_t  txInterval          = 60000L;
@@ -148,6 +151,10 @@ void loop() {
   int currentSpeed = (int) gps.speed.kmph();
 
   lastTx = millis() - lastTxTime;
+  if (gps_loc_update) {
+    utils::checkStatus();
+    STATION_Utils::checkTelemetryTx();
+  }
   if (!sendUpdate && gps_loc_update && currentBeacon->smartBeaconState) {
     GPS_Utils::calculateDistanceTraveled();
     if (!sendUpdate) {
@@ -157,14 +164,12 @@ void loop() {
   }
   STATION_Utils::checkSmartBeaconState();
   if (sendUpdate && gps_loc_update) {
-    STATION_Utils::sendBeacon();
+    STATION_Utils::sendBeacon("GPS");
   }
   if (gps_time_update) {
     STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   }
-  if (gps_loc_update) {
-    utils::checkStatus();
-  }
+  
   if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
     GPS_Utils::checkStartUpFrames();
     MENU_Utils::showOnScreen();

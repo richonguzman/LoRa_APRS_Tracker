@@ -160,7 +160,7 @@ namespace GPS_Utils {
     }
   }
 
-  String encondeGPS() {
+  String encondeGPS(String type) {
     String encodedData;
     float Tlat, Tlon;
     float Tspeed=0, Tcourse=0;
@@ -192,8 +192,11 @@ namespace GPS_Utils {
     for (i=0; i<4; i++) {
       encodedData += helper_base91[i];
     }
-
-    encodedData += currentBeacon->symbol;
+    if (type=="Wx") {
+      encodedData += "_";
+    } else {
+      encodedData += currentBeacon->symbol;
+    }
 
     if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
       int Alt1, Alt2;

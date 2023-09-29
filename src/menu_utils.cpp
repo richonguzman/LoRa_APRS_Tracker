@@ -122,9 +122,6 @@ namespace MENU_Utils {
                         fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                     } else {
                         fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
-                        //
-                        Serial.println(BME_Utils::readDataSensor("APRS"));
-                        //
                     }
                 } else {
                     fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;

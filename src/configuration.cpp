@@ -58,6 +58,8 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     ptt.reverse                   = data["pttTrigger"]["reverse"].as<bool>();
 
     bme.active                    = data["bme"]["active"].as<bool>();
+    bme.sendTelemetry             = data["bme"]["sendTelemetry"].as<bool>();
+    bme.heightCorrection          = data["bme"]["heightCorrection"].as<int>();
 
     notification.ledTx            = data["notification"]["ledTx"].as<bool>();
     notification.ledTxPin         = data["notification"]["ledTxPin"].as<int>();

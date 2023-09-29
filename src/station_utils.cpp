@@ -6,6 +6,7 @@
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "msg_utils.h"
+#include "bme_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -28,6 +29,9 @@ extern String               fourthNearTracker;
 
 extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTxTime;
+
+extern uint32_t             telemetryTx;
+extern uint32_t             lastTelemetryTx;
 
 extern bool                 sendUpdate;
 extern int                  updateCounter;
@@ -61,7 +65,6 @@ namespace STATION_Utils {
   String getFourthNearTracker() {
     return String(fourthNearTracker.substring(0,fourthNearTracker.indexOf(",")));
   }
-
 
   void deleteListenedTrackersbyTime() {
     String firstNearTrackermillis, secondNearTrackermillis, thirdNearTrackermillis, fourthNearTrackermillis;
@@ -382,13 +385,20 @@ namespace STATION_Utils {
     }
   }
 
-  void sendBeacon() {
+  void sendBeacon(String type) {
     String packet = currentBeacon->callsign + ">APLRT1";
     if (Config.path != "") {
       packet += "," + Config.path;
     }
-    packet += ":!" + currentBeacon->overlay;
-    packet += GPS_Utils::encondeGPS();
+    packet += ":!";
+    if (Config.bme.sendTelemetry && type == "Wx") {
+      packet += "L";
+      packet += GPS_Utils::encondeGPS("Wx");
+      packet += BME_Utils::readDataSensor("APRS");
+    } else {
+      packet += currentBeacon->overlay;
+      packet += GPS_Utils::encondeGPS("GPS");
+    }
 
     if (currentBeacon->comment != "") {
       updateCounter++;
@@ -421,6 +431,16 @@ namespace STATION_Utils {
     }
     lastTxTime = millis();
     sendUpdate = false;
+  }
+
+  void checkTelemetryTx() {
+    if (Config.bme.active && Config.bme.sendTelemetry) {
+      telemetryTx = millis() - lastTelemetryTx;
+      if (telemetryTx > 10*60*1000 && lastTx > 10*1000) {
+        sendBeacon("Wx");
+        lastTelemetryTx = millis();
+      } 
+    }
   }
 
   void saveCallsingIndex(int index) {

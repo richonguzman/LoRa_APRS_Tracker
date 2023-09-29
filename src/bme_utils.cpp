@@ -5,8 +5,7 @@
 #include <logger.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
-#define HEIGHT_CORRECTION 0             // in meters
-#define CORRECTION_FACTOR (8.2296)      // for meters
+#define CORRECTION_FACTOR (8.2296)      // for each meter
 
 extern Configuration    Config;
 extern logging::Logger  logger;
@@ -149,7 +148,7 @@ namespace BME_Utils {
     } else {
       tempStr = generateTempString(newTemp, type);
       humStr  = generateHumString(newHum, type);
-      presStr = generatePresString(newPress + (HEIGHT_CORRECTION/CORRECTION_FACTOR), type);
+      presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
       if (type == "OLED") {
         wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
       } else {
