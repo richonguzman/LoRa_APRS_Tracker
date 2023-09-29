@@ -28,6 +28,7 @@ extern String               thirdNearTracker;
 extern String               fourthNearTracker;
 
 extern uint32_t             lastDeleteListenedTracker;
+extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
 
 extern uint32_t             telemetryTx;
@@ -435,6 +436,7 @@ namespace STATION_Utils {
 
   void checkTelemetryTx() {
     if (Config.bme.active && Config.bme.sendTelemetry) {
+      lastTx = millis() - lastTxTime;
       telemetryTx = millis() - lastTelemetryTx;
       if (telemetryTx > 10*60*1000 && lastTx > 10*1000) {
         sendBeacon("Wx");

@@ -150,11 +150,11 @@ void loop() {
 
   int currentSpeed = (int) gps.speed.kmph();
 
-  lastTx = millis() - lastTxTime;
   if (gps_loc_update) {
     utils::checkStatus();
     STATION_Utils::checkTelemetryTx();
   }
+  lastTx = millis() - lastTxTime;
   if (!sendUpdate && gps_loc_update && currentBeacon->smartBeaconState) {
     GPS_Utils::calculateDistanceTraveled();
     if (!sendUpdate) {

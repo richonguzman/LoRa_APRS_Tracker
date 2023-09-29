@@ -8,6 +8,7 @@ extern Configuration    Config;
 extern bool             statusState;
 extern uint32_t         statusTime;
 extern uint32_t         lastTx;
+extern uint32_t         lastTxTime;
 
 extern bool             displayEcoMode; 
 extern uint32_t         displayTime;
@@ -85,6 +86,7 @@ namespace utils {
 
   void checkStatus() {
     if (statusState) {
+      lastTx = millis() - lastTxTime;
       uint32_t statusTx = millis() - statusTime;
       if (statusTx > 15*60*1000 && lastTx > 10*1000) {
         String packet = currentBeacon->callsign + ">APLRT1";
