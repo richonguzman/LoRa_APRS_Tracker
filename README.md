@@ -17,11 +17,6 @@ ____________________________________________________
 - Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
 ____________________________________________________
 
-# You can help this project continue to grow by supporting it at [Github Sponsors](https://github.com/sponsors/richonguzman) or [Paypal](http://paypal.me/richonguzman)
-
-____________________________________________________
-
-
 # WIKI
 
 ### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
@@ -39,6 +34,10 @@ ____________________________________________________
 ### 7. First Time Boot and GPS <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
 
 ### 8. Adding Leds, Buzzer and BME280 Modules <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Leds,-Buzzer-and-BME280-Modules" target="_blank">here</a>.
+
+____________________________________________________
+
+# You can help this project continue to grow by supporting it at [Github Sponsors](https://github.com/sponsors/richonguzman) or [Paypal](http://paypal.me/richonguzman)
 
 ____________________________________________________
 Timeline (Versions):
