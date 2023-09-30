@@ -44,7 +44,7 @@ ____________________________________________________
 
 
 
-
+![Alt text](https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/github-sponsors.png)
 
 
 
