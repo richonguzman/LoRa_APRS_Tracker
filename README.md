@@ -17,7 +17,7 @@ ____________________________________________________
 - Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
 - Led Notifications for Tx and Messages Received
 - Sound Notifications with YL44 Buzzer Module
-- Wx data with BME280 Module showed on screen and transmited as Wx Telemetry.
+- Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 ____________________________________________________
 
 # WIKI
@@ -40,7 +40,7 @@ ____________________________________________________
 
 ____________________________________________________
 
-# You can help this project continue to grow by supporting it at [Github Sponsors](https://github.com/sponsors/richonguzman) or [Paypal](http://paypal.me/richonguzman)
+## You can help this project continue to grow by supporting it at [Github Sponsors](https://github.com/sponsors/richonguzman) or [Paypal](http://paypal.me/richonguzman)
 
 ____________________________________________________
 Timeline (Versions):
