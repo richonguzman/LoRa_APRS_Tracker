@@ -79,11 +79,10 @@ ____________________________________________________
 
 ____________________________________________________
 ## This code was based on the work of :
-- Serge Y. Stroobandt : base91 GPS implementation and others ideas
-- https://github.com/aprs434/lora.tracker : ON4AA in the byte-saving part of the APRS 434 firmware
-- https://github.com/lora-aprs/LoRa_APRS_Tracker : OE5BPA LoRa Tracker
-- https://github.com/Mane76/LoRa_APRS_Tracker : Manfred DC2MH (Mane76) with the mods for multiple Callsigns and processor speed
-- https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : DL9SAU for the Kiss <> TNC2 lib
+- https://github.com/aprs434/lora.tracker : Serge - ON4AA on bae91 byte-saving
+- https://github.com/lora-aprs/LoRa_APRS_Tracker : Peter - OE5BPA LoRa Tracker
+- https://github.com/Mane76/LoRa_APRS_Tracker : Manfred - DC2MH (Mane76) mods for multiple Callsigns and processor speed
+- https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : Thomas - DL9SAU for the Kiss <> TNC2 lib
 ____________________________________________________
 
 # Hope You Enjoy this, 73 !!  CD2RXU , Valparaiso, Chile
