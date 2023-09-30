@@ -79,7 +79,7 @@ ____________________________________________________
 
 ____________________________________________________
 ## This code was based on the work of :
-- https://github.com/aprs434/lora.tracker : Serge - ON4AA on bae91 byte-saving
+- https://github.com/aprs434/lora.tracker : Serge - ON4AA on base91 byte-saving/encoding
 - https://github.com/lora-aprs/LoRa_APRS_Tracker : Peter - OE5BPA LoRa Tracker
 - https://github.com/Mane76/LoRa_APRS_Tracker : Manfred - DC2MH (Mane76) mods for multiple Callsigns and processor speed
 - https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : Thomas - DL9SAU for the Kiss <> TNC2 lib
