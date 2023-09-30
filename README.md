@@ -16,6 +16,11 @@ ____________________________________________________
 - Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
 ____________________________________________________
 
+# You can help this project continue to grow by supporting it at [Github Sponsors](https://github.com/sponsors/richonguzman) or [Paypal](http://paypal.me/richonguzman)
+
+____________________________________________________
+
+
 # WIKI
 
 ### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
@@ -37,6 +42,7 @@ ____________________________________________________
 ____________________________________________________
 Timeline (Versions):
 
+- 2023.09.30 Added Wx Telemetry Tx with BME280 Module attached to Tracker.
 - 2023.09.25 Wiki added.
 - 2023.09.16 Adding Led notification for Beacon Tx and for Message Received.
 - 2023.09.14 Adding buzzer sounds for BootUp, BeaconTx, MessageRx and more.
