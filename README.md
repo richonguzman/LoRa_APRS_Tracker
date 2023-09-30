@@ -45,7 +45,7 @@ ____________________________________________________
 [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/github-sponsors.png">](https://github.com/sponsors/richonguzman)     [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/paypalme.png">](http://paypal.me/richonguzman)
 
 ____________________________________________________
-Timeline (Versions):
+## Timeline (Versions):
 
 - 2023.09.30 Added  Wx Telemetry Tx with BME280 Module attached to Tracker.
 - 2023.09.25 Wiki added.
@@ -78,7 +78,7 @@ Timeline (Versions):
 
 
 ____________________________________________________
-This code was based on the work of :
+## This code was based on the work of :
 - Serge Y. Stroobandt : base91 GPS implementation and others ideas
 - https://github.com/aprs434/lora.tracker : ON4AA in the byte-saving part of the APRS 434 firmware
 - https://github.com/lora-aprs/LoRa_APRS_Tracker : OE5BPA LoRa Tracker
