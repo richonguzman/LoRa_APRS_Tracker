@@ -40,7 +40,7 @@ ____________________________________________________
 
 ____________________________________________________
 
-# You can support this project to continue to grow:
+## You can support this project to continue to grow:
 
 [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/github-sponsors.png">](https://github.com/sponsors/richonguzman)     [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/paypalme.png">](http://paypal.me/richonguzman)
 
