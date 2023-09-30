@@ -1,6 +1,7 @@
 # Richonguzman / CD2RXU LoRa APRS Tracker/Station
 
-This firmware is for using ESP32 based boards with LoRa Modules and GPS to live in the APRS world. 
+This firmware is for using ESP32 based boards with LoRa Modules and GPS to live in the APRS world.
+
 (NOTE: To use Tx/Rx capabilities of this **Tracker** you should have an Tx/Rx <a href="https://github.com/richonguzman/LoRa_APRS_iGate" target="_blank">LoRa iGate</a> near you)
 
 ____________________________________________________
