@@ -44,7 +44,6 @@ ____________________________________________________
 
 [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/github-sponsors.png">](https://github.com/sponsors/richonguzman)     [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/test-Wx-telemetry-Tx/images/paypalme.png">](http://paypal.me/richonguzman)
 
-
 ____________________________________________________
 Timeline (Versions):
 
