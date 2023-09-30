@@ -1,7 +1,6 @@
 # Richonguzman / CD2RXU LoRa APRS Tracker/Station
-NOTE: To take advantage of Tx/Rx capabilities of this **Tracker** you should have an Tx/Rx LoRa iGate (near you) like:
 
-https://github.com/richonguzman/LoRa_APRS_iGate
+This firmware is for using ESP32 based boards with LoRa Modules and GPS to live in the APRS world. (NOTE: To take advantage of Tx/Rx capabilities of this **Tracker** you should have an Tx/Rx LoRa iGate (near you) like <a href="https://github.com/richonguzman/LoRa_APRS_iGate" target="_blank">this firmware</a>.
 
 ____________________________________________________
 - NOW WE HAVE A MENU !!! (just pushing the central button IO38)
@@ -42,7 +41,7 @@ ____________________________________________________
 ____________________________________________________
 Timeline (Versions):
 
-- 2023.09.30 Added Wx Telemetry Tx with BME280 Module attached to Tracker.
+- 2023.09.30 Added  Wx Telemetry Tx with BME280 Module attached to Tracker.
 - 2023.09.25 Wiki added.
 - 2023.09.16 Adding Led notification for Beacon Tx and for Message Received.
 - 2023.09.14 Adding buzzer sounds for BootUp, BeaconTx, MessageRx and more.
