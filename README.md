@@ -12,9 +12,12 @@ ____________________________________________________
     - Changing Display Eco Mode (turn off after 4 seg).
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption.
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
-- OLED SCREEN shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
-- OLED SCREEN shows Recent Heard Trackers/Station/iGates Tx.
+- Oled Screen shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
+- Oled Screen shows Recent Heard Trackers/Station/iGates Tx.
 - Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
+- Led Notifications for Tx and Messages Received
+- Sound Notifications with YL44 Buzzer Module
+- Wx data with BME280 Module showed on screen and transmited as Wx Telemetry.
 ____________________________________________________
 
 # WIKI
