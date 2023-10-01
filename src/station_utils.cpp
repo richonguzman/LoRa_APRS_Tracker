@@ -393,7 +393,7 @@ namespace STATION_Utils {
     }
     packet += ":!";
     if (Config.bme.sendTelemetry && type == "Wx") {
-      packet += "L";
+      packet += "/";
       packet += GPS_Utils::encondeGPS("Wx");
       packet += BME_Utils::readDataSensor("APRS");
     } else {
