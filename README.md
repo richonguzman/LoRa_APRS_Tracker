@@ -49,7 +49,8 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2023.09.30 Added  Wx Telemetry Tx with BME280 Module attached to Tracker.
+- 2023.10.01 Added Wx Telemetry Tx with BME280 Module attached to Tracker.
+- 2023.09.28 Added Support for V.1 board with SX1268 LoRa Module
 - 2023.09.25 Wiki added.
 - 2023.09.16 Adding Led notification for Beacon Tx and for Message Received.
 - 2023.09.14 Adding buzzer sounds for BootUp, BeaconTx, MessageRx and more.
