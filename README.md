@@ -24,21 +24,21 @@ ____________________________________________________
 
 # WIKI
 
-### 1. Instalation Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
+### 1. Instalation Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Instalation-Guide" target="_blank">here</a>.
 
-### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
+### 2. Tracker Configuration and Explanation for each setting --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
 
-### 3. Supported Boards and Environment Selection <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Supported-Boards-and-Environment-Selection" target="_blank">here</a>.
+### 3. Supported Boards and Environment Selection --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Supported-Boards-and-Environment-Selection" target="_blank">here</a>.
 
-### 4. Upload Firmware and Filesystem <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
+### 4. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
 
-### 5. Tracker Menu Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
+### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
 
-### 6. Bluetooth Guide <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Bluetooth-Connection" target="_blank">here</a>.
+### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Bluetooth-Connection" target="_blank">here</a>.
 
-### 7. First Time Boot and GPS <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
+### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
 
-### 8. Adding Leds, Buzzer and BME280 Modules <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Leds,-Buzzer-and-BME280-Modules" target="_blank">here</a>.
+### 8. Adding Leds, Buzzer and BME280 Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Leds,-Buzzer-and-BME280-Modules" target="_blank">here</a>.
 
 ____________________________________________________
 
