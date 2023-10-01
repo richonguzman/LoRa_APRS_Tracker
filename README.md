@@ -26,7 +26,7 @@ ____________________________________________________
 
 ### 2. Tracker Configuration and Explanation for each setting <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
 
-### 3. Select Board Environment <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Select-Board-Environment" target="_blank">here</a>.
+### 3. Supported Boards and Environment Selection <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Supported-Boards-and-Environment-Selection" target="_blank">here</a>.
 
 ### 4. Upload Firmware and Filesystem <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
 
