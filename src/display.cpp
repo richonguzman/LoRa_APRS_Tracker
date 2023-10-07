@@ -24,6 +24,8 @@ extern int              menuDisplay;
 extern bool             symbolAvailable;
 extern bool             bluetoothConnected;
 
+int screenBrightness = 1; //from 1 to 255 to regulate brightness of oled scren
+
 const char* symbolArray[]        = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k", "C"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
 const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, 
@@ -76,7 +78,7 @@ void setup_display() {
   display.setCursor(0, 0);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
 }
@@ -107,7 +109,7 @@ void show_display(String header, int wait) {
   display.println(header);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
   delay(wait);
@@ -129,7 +131,7 @@ void show_display(String header, String line1, int wait) {
   display.println(line1);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
   delay(wait);
@@ -153,7 +155,7 @@ void show_display(String header, String line1, String line2, int wait) {
   display.println(line2);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
   delay(wait);
@@ -179,7 +181,7 @@ void show_display(String header, String line1, String line2, String line3, int w
   display.println(line3);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
   delay(wait);
@@ -207,7 +209,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.println(line4);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
   display.display();
   delay(wait);
@@ -237,7 +239,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.println(line5);
   #ifdef ssd1306
   display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(1);
+  display.ssd1306_command(screenBrightness);
   #endif
 
   if (menuDisplay==0 && Config.showSymbolOnScreen) {
