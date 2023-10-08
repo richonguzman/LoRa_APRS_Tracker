@@ -82,7 +82,6 @@ ____________________________________________________
 - 2023.05.12 Saving Messages to Internal Memory.
 - 2023.04.16 Sending and Receiving LoRa Packets.
 
-
 ____________________________________________________
 ## This code was based on the work of :
 - https://github.com/aprs434/lora.tracker : Serge - ON4AA on base91 byte-saving/encoding
