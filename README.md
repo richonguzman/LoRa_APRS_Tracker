@@ -4,7 +4,7 @@ This firmware is for using ESP32 based boards with LoRa Modules and GPS to live 
 
 ![Screenshot](https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/OledScreen.jpeg)
 
-(NOTE: To use Tx/Rx capabilities of this tracker you should have also an Tx/Rx <a href="https://github.com/richonguzman/LoRa_APRS_iGate" target="_blank">LoRa iGate</a> near you)
+__(NOTE: To use Tx/Rx capabilities of this tracker you should have also an Tx/Rx <a href="https://github.com/richonguzman/LoRa_APRS_iGate" target="_blank">LoRa iGate</a> near you)__
 
 ____________________________________________________
 
@@ -13,6 +13,7 @@ ____________________________________________________
 [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/github-sponsors.png">](https://github.com/sponsors/richonguzman)     [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/paypalme.png">](http://paypal.me/richonguzman)
 
 ____________________________________________________
+
 - NOW WE HAVE A MENU !!! (just pushing the central button IO38)
     - Saving, Reading and Deleting Messages.
     - Asking Weather Report
@@ -26,7 +27,6 @@ ____________________________________________________
 - Led Notifications for Tx and Messages Received
 - Sound Notifications with YL44 Buzzer Module
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
-
 
 ____________________________________________________
 
