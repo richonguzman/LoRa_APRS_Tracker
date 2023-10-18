@@ -213,7 +213,7 @@ namespace MSG_Utils {
                 String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
                 String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
                 show_display("<WEATHER>", "From --> " + Sender, place, summary, fifthLineWR, sixthLineWR);
-                menuDisplay = 21;
+                menuDisplay = 40;
                 menuTime = millis();
               } else {
                 show_display("< MSG Rx >", "From --> " + Sender, "", receivedMessage , 3000);

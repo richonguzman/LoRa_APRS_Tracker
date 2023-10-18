@@ -23,8 +23,7 @@ extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             symbolAvailable;
 extern bool             bluetoothConnected;
-
-int screenBrightness = 1; //from 1 to 255 to regulate brightness of oled scren
+extern int              screenBrightness; //from 1 to 255 to regulate brightness of oled scren
 
 const char* symbolArray[]        = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k", "C"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);

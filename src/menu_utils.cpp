@@ -27,21 +27,17 @@ namespace MENU_Utils {
 
     void showOnScreen() {
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==20) && !(menuDisplay==21) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==30) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
         }
         switch (menuDisplay) { // Graphic Menu is in here!!!!
-            case 1:
-                show_display("__MENU_1__", "", "1P -> Read Msg (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "LP -> Delete Msg", "2P -> Menu 2");
+            case 1:     // 1.Messages
+                show_display("__MENU____","  7.Emergency", "> 1.Messages", "  2.Configuration", "  3.Stations", "1P=Down 2P=Back LP=Go");
                 break;
-            case 2:
-                show_display("__MENU_2__", "", "1P -> Weather Report", "LP -> Listen Trackers", "2P -> Menu 3");
+            case 10:    // 1.Messages ---> Messages Read
+                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "", "1P=Down 2P=Back LP=Go");
                 break;
-            case 3:
-                show_display("__MENU_3__", "", "1P -> NOTHING YET", "LP -> Display EcoMode", "2P -> (Back) Tracking");
-                break;
-
-            case 10:            // Display Received/Saved APRS Messages
+            case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
                     String msgSender      = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
                     String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
@@ -50,13 +46,63 @@ namespace MENU_Utils {
                     show_display("MSG_APRS>", msgSender + "-->" + msgGate, msgText, "", "", "               Next>");
                 }
                 break;
+            case 11:    // 1.Messages ---> Messages Write
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", "1P=Down 2P=Back LP=Go");
+                break;
+            case 110:   // 1.Messages ---> Messages Write ---> Write
+                show_display("WRITE_MSG>", "", " aqui se escribe", "", "", "<Back Up/Down Select>");
+                break;
+            case 12:    // 1.Messages ---> Messages Delete
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "", "1P=Down 2P=Back LP=Go");
+                break;
+            case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
+                show_display("DELETE_MSG", "", "     DELETE ALL?", "", "", " Confirm = LP or '>'");
+                break;
 
-            case 20:            // Display Heared Tracker/Stations
+
+            case 2:     // 2.Configuration
+                show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", "1P=Down 2P=Back LP=Go");
+                break;
+            case 20:    // 2.Configuration ---> Display
+                show_display("__CONFIG__", "> Display","  Notifications","","","1P=Down 2P=Back LP=Go");
+                break;
+            case 200:   // 2.Configuration ---> Display ---> ECO Mode
+                show_display("_DISPLAY_", "> ECO Mode","  Brightness","","","1P=Down 2P=Back LP=Go");
+                break;
+            case 201:   // 2.Configuration ---> Display ---> Brightness
+                show_display("_DISPLAY_", "  ECO Mode","> Brightness","","","1P=Down 2P=Back LP=Go");
+                break;
+            case 21:    // 2.Configuration ---> Notifications
+                show_display("__CONFIG__", "  Display","> Notifications","","","1P=Down 2P=Back LP=Go");
+                break;
+
+            case 3:     //3.Stations
+                show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Status", "1P=Down 2P=Back LP=Go");
+                break;
+            case 30:    //3.Stations ---> Display Heared Tracker/Stations
                 show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
                 break;
-            case 21:
+
+
+            case 4:     //4.Weather
+                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Status", "  6.Winlink/Mail", "1P=Down 2P=Back LP=Go");
+                break;
+            case 40:
                 // waiting for Weather Report
                 break;
+
+            case 5:     //5.Status
+                show_display("__MENU____", "  4.Weather Report", "> 5.Status", "  6.Winlink/Mail", "  7.Emergency", "1P=Down 2P=Back LP=Go");
+                break;
+
+            case 6:     //6.Winlink
+                show_display("__MENU____", "  5.Status", "> 6.Winlink/Mail", "  7.Emergency", "  1.Messages", "1P=Down 2P=Back LP=Go");
+                break;
+
+            case 7:     //7.Emergency
+                show_display("__MENU____", "  6.Winlink/Mail", "> 7.Emergency", "  1.Messages", "  2.Configuration", "1P=Down 2P=Back LP=Go");
+                break;
+
 
             case 0:       ///////////// MAIN MENU //////////////
                 String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
