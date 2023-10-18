@@ -56,7 +56,10 @@ namespace BUTTON_Utils {
     } else if (menuDisplay == 11) {
       menuDisplay = 12;
       menuTime = millis();
-    }  else if (menuDisplay == 12) {
+    } else if (menuDisplay == 110) { //////
+      menuDisplay = 11;
+      menuTime = millis();
+    } else if (menuDisplay == 12) {
       menuDisplay = 10;
       menuTime = millis();
     } 
