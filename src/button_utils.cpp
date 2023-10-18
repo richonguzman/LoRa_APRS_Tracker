@@ -163,9 +163,9 @@ namespace BUTTON_Utils {
         show_display("_DISPLAY_", "", "   ECO MODE -> OFF", 1000);
       }
     } else if (menuDisplay == 201) {
-      if (screenBrightness ==1) {
+      if (screenBrightness <=1) {
         show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MAX", 1000);
-        screenBrightness = 255;
+        screenBrightness = 255;   
       } else {
         show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MIN", 1000);
         screenBrightness = 1;
