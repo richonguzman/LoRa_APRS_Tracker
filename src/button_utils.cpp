@@ -49,9 +49,8 @@ namespace BUTTON_Utils {
           messageLed = false;
         }
       } else {
-        menuDisplay = 10;
+        menuDisplay = 100;
         menuTime = millis();
-        messagesIterator = 0;
       }
     } else if (menuDisplay == 11) {
       menuDisplay = 12;
