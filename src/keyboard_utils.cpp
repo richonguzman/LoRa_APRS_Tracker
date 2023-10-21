@@ -4,12 +4,14 @@
 #define CARDKB_ADDR 0x5F // yes , this is for CARDKB from m5stack.com
 
 extern bool keyboardDetected;
+extern int  menuDisplay;
 
 namespace KEYBOARD_Utils {
 
   void processPressedKey(char key) {
     keyboardDetected = true;
-    Serial.print("keyboard: "); Serial.println(key);
+    Serial.print("menuDisplay = "); Serial.print(menuDisplay);
+    Serial.print(" --> keyboard: "); Serial.println(key);
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
 
     /*if (menuDisplay == 0 && key == 33) {                                  // Main Menu
