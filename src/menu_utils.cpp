@@ -22,20 +22,27 @@ extern int                  messagesIterator;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern int                  lowBatteryPercent;
+extern bool                 keyboardDetected;
 
 namespace MENU_Utils {
 
     void showOnScreen() {
+        String lastLine;
         uint32_t lastMenuTime = millis() - menuTime;
         if (!(menuDisplay==0) && !(menuDisplay==30) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
         }
+        if (keyboardDetected) {
+            lastLine = "<Back Up/Down Select>";
+        } else {
+            lastLine = "1P=Down 2P=Back LP=Go";
+        }
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1.Messages
-                show_display("__MENU____","  7.Emergency", "> 1.Messages", "  2.Configuration", "  3.Stations", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____","  7.Emergency", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
                 break;
             case 10:    // 1.Messages ---> Messages Read
-                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "", "1P=Down 2P=Back LP=Go");
+                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "", lastLine);
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
@@ -47,13 +54,13 @@ namespace MENU_Utils {
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", "1P=Down 2P=Back LP=Go");
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
                 show_display("WRITE_MSG>", "", " aqui se escribe", "", "", "<Back Up/Down Select>");
                 break;
             case 12:    // 1.Messages ---> Messages Delete
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "", "1P=Down 2P=Back LP=Go");
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
                 show_display("DELETE_MSG", "", "     DELETE ALL?", "", "", " Confirm = LP or '>'");
@@ -61,23 +68,23 @@ namespace MENU_Utils {
 
 
             case 2:     // 2.Configuration
-                show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
                 break;
             case 20:    // 2.Configuration ---> Display
-                show_display("__CONFIG__", "> Display","  Notifications","","","1P=Down 2P=Back LP=Go");
+                show_display("__CONFIG__", "> Display","  Notifications","","",lastLine);
                 break;
             case 200:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY_", "> ECO Mode","  Brightness","","","1P=Down 2P=Back LP=Go");
+                show_display("_DISPLAY_", "> ECO Mode","  Brightness","","",lastLine);
                 break;
             case 201:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY_", "  ECO Mode","> Brightness","","","1P=Down 2P=Back LP=Go");
+                show_display("_DISPLAY_", "  ECO Mode","> Brightness","","",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Notifications
-                show_display("__CONFIG__", "  Display","> Notifications","","","1P=Down 2P=Back LP=Go");
+                show_display("__CONFIG__", "  Display","> Notifications","","",lastLine);
                 break;
 
             case 3:     //3.Stations
-                show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Status", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Status", lastLine);
                 break;
             case 30:    //3.Stations ---> Display Heared Tracker/Stations
                 show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
@@ -85,22 +92,22 @@ namespace MENU_Utils {
 
 
             case 4:     //4.Weather
-                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Status", "  6.Winlink/Mail", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Status", "  6.Winlink/Mail", lastLine);
                 break;
             case 40:
                 // waiting for Weather Report
                 break;
 
             case 5:     //5.Status
-                show_display("__MENU____", "  4.Weather Report", "> 5.Status", "  6.Winlink/Mail", "  7.Emergency", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  4.Weather Report", "> 5.Status", "  6.Winlink/Mail", "  7.Emergency", lastLine);
                 break;
 
             case 6:     //6.Winlink
-                show_display("__MENU____", "  5.Status", "> 6.Winlink/Mail", "  7.Emergency", "  1.Messages", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  5.Status", "> 6.Winlink/Mail", "  7.Emergency", "  1.Messages", lastLine);
                 break;
 
             case 7:     //7.Emergency
-                show_display("__MENU____", "  6.Winlink/Mail", "> 7.Emergency", "  1.Messages", "  2.Configuration", "1P=Down 2P=Back LP=Go");
+                show_display("__MENU____", "  6.Winlink/Mail", "> 7.Emergency", "  1.Messages", "  2.Configuration", lastLine);
                 break;
 
 

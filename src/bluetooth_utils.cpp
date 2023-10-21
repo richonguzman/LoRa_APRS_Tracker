@@ -1,11 +1,12 @@
+#include <TinyGPS++.h>
 #include <esp_bt.h>
 #include "bluetooth_utils.h"
-#include "logger.h"
-#include "display.h"
-#include "lora_utils.h"
 #include "configuration.h"
-#include <TinyGPS++.h>
 #include "KISS_TO_TNC2.h"
+#include "lora_utils.h"
+#include "display.h"
+#include "logger.h"
+
 
 extern Configuration    Config;
 extern BluetoothSerial  SerialBT;

@@ -8,6 +8,7 @@
 #include <vector>
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
+#include "keyboard_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "button_utils.h"
@@ -73,15 +74,16 @@ uint32_t  menuTime            = millis();
 bool      symbolAvailable     = true;
 
 int       screenBrightness    = 1;
+bool      keyboardDetected    = false;
 
 logging::Logger               logger;
 
 void setup() {
   Serial.begin(115200);
 
-#ifndef DEBUG
+  #ifndef DEBUG
   logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
-#endif
+  #endif
 
   powerManagement.setup();
 
@@ -139,6 +141,8 @@ void loop() {
     userButton.tick();
   }
   utils::checkDisplayEcoMode();
+
+  KEYBOARD_Utils::read();
 
   GPS_Utils::getData();
   bool gps_time_update = gps.time.isUpdated();

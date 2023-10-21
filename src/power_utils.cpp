@@ -10,18 +10,18 @@ extern logging::Logger  logger;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
 // Currently there is no init for V0.7 boards(they only measure battery voltage).
   return true;
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   bool result = axp.begin(port, AXP192_SLAVE_ADDRESS);
   if (!result) {
     axp.setDCDC1Voltage(3300);
   }
   return result;
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
   if (result) {
     PMU.disableDC2();
@@ -39,103 +39,102 @@ bool PowerManagement::begin(TwoWire &port) {
     PMU.enableDC1();
   }
   return result;
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::activateLoRa() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_LDO2, AXP202_ON);
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   PMU.setALDO2Voltage(3300);
   PMU.enableALDO2();
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::deactivateLoRa() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   PMU.disableALDO2();
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::activateGPS() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_LDO3, AXP202_ON);
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   PMU.setALDO3Voltage(3300);
   PMU.enableALDO3(); 
-#endif
+    #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::deactivateGPS() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   PMU.disableALDO3();
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::activateOLED() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::decativateOLED() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::disableChgLed() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setChgLEDMode(AXP20X_LED_OFF);
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::enableChgLed() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::activateMeasurement() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.adc1Enable(AXP202_BATT_CUR_ADC1 | AXP202_BATT_VOL_ADC1, true);
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   PMU.enableBattDetection();
   PMU.enableVbusVoltageMeasure();
   PMU.enableBattVoltageMeasure();
   PMU.enableSystemVoltageMeasure();
-#endif
-
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void PowerManagement::deactivateMeasurement() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   axp.adc1Enable(AXP202_BATT_CUR_ADC1 | AXP202_BATT_VOL_ADC1, false);
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryVoltage() {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
 // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
 // the measured voltage is inaccurate du to known nonlinearity and ~100mV offset of the ESP32 A/D converter
   int adc_value;
@@ -146,61 +145,62 @@ double PowerManagement::getBatteryVoltage() {
   voltage += 0.1; // add 0.1V offset
   voltage = 2 * voltage; // multiply result by two because the voltage was measured after the 1:2 divider
   return voltage;
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.getBattVoltage() / 1000.0;
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   return PMU.getBattVoltage() / 1000.0;
-#endif
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryChargeDischargeCurrent() {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
   return 0;
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   if (axp.isChargeing()) {
     return axp.getBattChargeCurrent();
   }
   return -1.0 * axp.getBattDischargeCurrent();
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   return PMU.getBatteryPercent();
-#endif
+  #endif
 }
 
 bool PowerManagement::isBatteryConnected() {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
   if(getBatteryVoltage() > 1.0) {
     return true;
   } else {
     return false;
   }
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.isBatteryConnect();
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   return PMU.isBatteryConnect();
-#endif
+  #endif
 }
 
 bool PowerManagement::isChargeing() {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
   return 0;
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.isChargeing();
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   return PMU.isCharging();
-#endif
+  #endif
 }
 
 void PowerManagement::setup() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  Wire.end();
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
   Wire.begin(SDA, SCL);
   if (!begin(Wire)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
@@ -215,8 +215,8 @@ void PowerManagement::setup() {
     activateGPS();
   }
   activateMeasurement();
-#endif
-#ifdef TTGO_T_Beam_V1_2
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
   Wire.begin(SDA, SCL);
   if (begin(Wire)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
@@ -236,17 +236,17 @@ void PowerManagement::setup() {
   PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
   PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
   PMU.setSysPowerDownVoltage(2600);
-#endif
+  #endif
 }
 
 void PowerManagement::lowerCpuFrequency() {
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_LORA_V2_1)  || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_LORA_V2_1)  || defined(TTGO_T_Beam_V1_0_SX1268)
   if (setCpuFrequencyMhz(80)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
   } else {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency unchanged");
   }
-#endif
+  #endif
 }
 
 void PowerManagement::handleChargingLed() {
@@ -288,11 +288,11 @@ bool PowerManagement::getBatteryInfoIsConnected() {
 }
 
 void PowerManagement::batteryManager() {
-#ifdef TTGO_T_Beam_V0_7
+  #ifdef TTGO_T_Beam_V0_7
   obtainBatteryInfo();
-#endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_LORA_V2_1)  || defined(TTGO_T_Beam_V1_0_SX1268)
+  #endif
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_LORA_V2_1)  || defined(TTGO_T_Beam_V1_0_SX1268)
   obtainBatteryInfo();
   handleChargingLed();
-#endif
+  #endif
 }
