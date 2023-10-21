@@ -1,29 +1,247 @@
 #include "keyboard_utils.h"
+#include "button_utils.h"
+#include "display.h"
 #include <Wire.h>
+#include <logger.h>
+#include "msg_utils.h"
+#include "station_utils.h"
+#include "configuration.h"
 
-#define CARDKB_ADDR 0x5F // yes , this is for CARDKB from m5stack.com
+#define CARDKB_ADDR 0x5F    // yes , this is for CARDKB from m5stack.com
 
-extern bool keyboardDetected;
-extern int  menuDisplay;
+extern Configuration    Config;
+extern logging::Logger  logger;
+extern bool             sendUpdate;
+extern int              menuDisplay;
+extern uint32_t         menuTime;
+extern int              myBeaconsSize;
+extern int              myBeaconsIndex;
+extern bool             keyboardDetected;
+extern uint32_t         keyboardTime;
+extern bool             displayState;
+extern uint32_t         displayTime;
+extern bool             displayEcoMode;
+extern int              screenBrightness;
+extern bool             statusState;
+extern uint32_t         statusTime;
+extern int              messagesIterator;
+extern bool             messageLed;
 
 namespace KEYBOARD_Utils {
 
+  void upArrow() {
+    if (menuDisplay >= 1 && menuDisplay <= 7) {
+      menuDisplay--;
+      if (menuDisplay == 0) {
+        menuDisplay = 7;
+      }
+    }
+  }
+
+  void downArrow() {
+    if (menuDisplay == 0) {
+      if (displayState) {
+        sendUpdate = true;
+      } else {
+        display_toggle(true);
+        displayTime = millis();   
+        displayState = true;  
+      }
+    }    
+    if (menuDisplay >= 1 && menuDisplay <= 7) {       
+      menuDisplay++;
+      menuTime = millis();
+      if (menuDisplay == 8) {
+        menuDisplay = 1;
+      }
+    } 
+    else if (menuDisplay >= 10 && menuDisplay <= 12) {
+      menuDisplay++;
+      menuTime = millis();
+      if (menuDisplay == 13) {
+        menuDisplay = 10;
+      }
+    } else if (menuDisplay == 100) {
+      messagesIterator++;
+      if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
+        menuDisplay = 10;
+        menuTime = millis();
+        messagesIterator = 0;
+        if (Config.notification.ledMessage){
+          messageLed = false;
+        }
+      } else {
+        menuDisplay = 100;
+        menuTime = millis();
+      }
+    } else if (menuDisplay == 110) { //////
+      menuDisplay = 11;
+      menuTime = millis();
+    } 
+    
+    else if (menuDisplay >= 20 && menuDisplay <= 21) {
+      menuDisplay++;
+      menuTime = millis();
+      if (menuDisplay == 22) {
+        menuDisplay = 20;
+      }
+    } else if (menuDisplay >= 200 && menuDisplay <= 201) {
+      menuDisplay++;
+      menuTime = millis();
+      if (menuDisplay == 202) {
+        menuDisplay = 200;
+      } 
+    }
+    
+    else if (menuDisplay == 30) {
+      menuDisplay = 3;
+      menuTime = millis();
+    }
+    
+    else if (menuDisplay == 40) {
+      menuDisplay = 4;
+      menuTime = millis();
+    }
+  }
+
+  void leftArrow() {
+    if (menuDisplay >= 1 && menuDisplay <= 7) {               // Return to Main Menu
+      menuDisplay = 0;
+    } else if (menuDisplay >= 10 && menuDisplay <= 12) {      // Return to Menu : Messages
+      menuDisplay = 1;
+    } else if (menuDisplay==110 || menuDisplay==120) {
+      menuDisplay = int(menuDisplay/10);
+    }
+
+    else if (menuDisplay >= 20 && menuDisplay <= 21) {        // Return to Menu : Configuration
+      menuDisplay = 2;
+    } else if (menuDisplay >= 200 && menuDisplay <= 201) {
+      menuDisplay = 20;
+    }
+    
+    else if (menuDisplay == 30) {                             // Return to Menu : Stations
+      menuDisplay = 3;
+    }
+
+    else if (menuDisplay == 40) {                             // Return to Menu : Weather
+      menuDisplay = 4;
+    }   
+    /*        messageCallsign = "";
+              messageText = "";
+              winlinkMailNumber = "";*/
+  }
+
+  void rightArrow() {
+    if (menuDisplay == 0) {
+      if(myBeaconsIndex >= (myBeaconsSize-1)) {
+        myBeaconsIndex = 0;
+      } else {
+        myBeaconsIndex++;
+      }
+      display_toggle(true);
+      displayTime = millis();
+      statusState  = true;
+      statusTime = millis();
+      show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
+      STATION_Utils::saveCallsingIndex(myBeaconsIndex);
+    } else if (menuDisplay == 1) {
+      menuDisplay = 10;
+      menuTime = millis();
+    } else if (menuDisplay == 10) {
+      MSG_Utils::loadMessagesFromMemory();
+      if (MSG_Utils::warnNoMessages()) {
+        menuDisplay = 10;
+        menuTime = millis();
+      } else {
+        menuDisplay = 100;
+        menuTime = millis();
+      }
+    } else if (menuDisplay == 11) {
+      menuDisplay = 110;
+      menuTime = millis();
+    } else if (menuDisplay == 12) {
+      menuDisplay = 120;
+      menuTime = millis();
+    } else if (menuDisplay == 120) {
+      MSG_Utils::deleteFile();
+      show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
+      MSG_Utils::loadNumMessages();
+      menuDisplay = 12;
+    } 
+    
+    else if (menuDisplay == 2) {
+      menuDisplay = 20;
+      menuTime = millis();
+    } else if (menuDisplay == 20) {
+      menuDisplay = 200;
+      menuTime = millis();
+    } else if (menuDisplay == 21) {
+      show_display("_NOTIFIC_", "", "ALL NOTIFICATIONS OFF","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+    } else if (menuDisplay == 200) {
+      if (!displayEcoMode) {
+        displayEcoMode = true;
+        show_display("_DISPLAY_", "", "   ECO MODE -> ON", 1000);
+      } else {
+        displayEcoMode = false;
+        show_display("_DISPLAY_", "", "   ECO MODE -> OFF", 1000);
+      }
+    } else if (menuDisplay == 201) {
+      if (screenBrightness <=1) {
+        show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MAX", 1000);
+        screenBrightness = 255;   
+      } else {
+        show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MIN", 1000);
+        screenBrightness = 1;
+      }
+    }
+
+    else if (menuDisplay == 3) {
+      menuDisplay = 30;
+      menuTime = millis();
+    }
+
+    else if (menuDisplay == 4) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
+      MSG_Utils::sendMessage("CD2RXU-15","wrl");
+      menuTime = millis();
+    }
+
+    else if (menuDisplay == 5) {
+      show_display("__STATUS__", "still on", "development..", 1500);
+    }
+
+    else if (menuDisplay == 6) {
+      show_display("_WINLINK_", "still on", "development..", 1500);
+    }
+
+    else if (menuDisplay == 7) {
+      show_display("EMERGENCY", "still on", "development..", 1500);
+    }
+  }
+
   void processPressedKey(char key) {
     keyboardDetected = true;
-    Serial.print("menuDisplay = "); Serial.print(menuDisplay);
-    Serial.print(" --> keyboard: "); Serial.println(key);
+    menuTime = millis();
+    //
+    Serial.print("menuDisplay = "); Serial.println(menuDisplay);
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
 
-    /*if (menuDisplay == 0 && key == 33) {                                  // Main Menu
+    if (!displayState) {
+        display_toggle(true);
+        displayTime = millis();   
+        displayState = true;
+    }
+
+    if (menuDisplay == 0 && key == 33) {                                  // Main Menu
       menuDisplay = 1;
     } else if (key == 27) {     // ESC = volver a menu base
       menuDisplay = 0;
-      messagesIterator = 0;
+      /*messagesIterator = 0;
       messageText = "";
-      messageCallsign = "";
-    } else if (menuDisplay >= 1 && menuDisplay <= 9 && key >=49 && key <= 57) { // Menu number select
+      messageCallsign = "";*/
+    } else if (menuDisplay >= 1 && menuDisplay <= 7 && key >=49 && key <= 55) { // Menu number select
       menuDisplay = key - 48;
-    } else if (menuDisplay == 0 && key == 37) {
+    } /*else if (menuDisplay == 0 && key == 37) {
       handleNextGpsLocation(myGpsLocationsSize);
     } else if (menuDisplay == 0 && key == 41) {
       if (showCompass == false) {
@@ -279,342 +497,25 @@ namespace KEYBOARD_Utils {
       } else if (key == 180) { 
         winlinkBody = "";
       }
-    }
+    }*/
 
     else if (key == 181) {                        // Arrow Up
-      if (menuDisplay >= 1 && menuDisplay <= 9) {
-        menuDisplay--;
-        if (menuDisplay == 0) {
-          menuDisplay = 9;
-        }
-      } else if (menuDisplay == 11) {     // Menu Messages
-        menuDisplay = 10;
-      } else if (menuDisplay == 12) {
-        menuDisplay = 11;
-      } else if (menuDisplay == 101) {
-        menuDisplay = 100;
-      } else if (menuDisplay == 102) {
-        menuDisplay = 101;
-      } else if (menuDisplay == 103) {
-        menuDisplay = 102;
-      } else if (menuDisplay == 111) {
-        menuDisplay = 110;
-      } else if (menuDisplay == 121) {
-        menuDisplay = 120;
-      } else if (menuDisplay == 122) {
-        menuDisplay = 121;
-      }
+      upArrow();
+    }
 
-      else if (menuDisplay == 21) {     // Menu Status
-        menuDisplay = 20;
-      } else if (menuDisplay == 210) { 
-        menuDisplay = 214;
-      } else if (menuDisplay == 214) { 
-        menuDisplay = 213;
-      } else if (menuDisplay == 213) { 
-        menuDisplay = 212;
-      } else if (menuDisplay == 212) { 
-        menuDisplay = 211;
-      } else if (menuDisplay == 211) { 
-        menuDisplay = 210;
-      } 
-      
-      else if (menuDisplay == 31) {     // Menu Stations
-        menuDisplay = 30;
-      } else if (menuDisplay == 301) {
-        menuDisplay = 300;
-      } else if (menuDisplay == 302) {
-        menuDisplay = 301;
-      } else if (menuDisplay == 311) {
-        menuDisplay = 310;
-      } else if (menuDisplay == 312) {
-        menuDisplay = 311;
-      } else if (menuDisplay == 313) {
-        menuDisplay = 312;
-      }
-
-      else if (menuDisplay == 41) {     // Menu Waypoints
-        menuDisplay = 40;
-      } else if (menuDisplay == 42) {
-        menuDisplay = 41;
-      } else if (menuDisplay == 4111) {
-        menuDisplay = 4110;
-      } else if (menuDisplay == 4110) {
-        menuDisplay = 4109;
-      } else if (menuDisplay == 4109) {
-        menuDisplay = 4108;
-      } else if (menuDisplay == 4108) {
-        menuDisplay = 4107;
-      } else if (menuDisplay == 4107) {
-        menuDisplay = 4106;
-      } else if (menuDisplay == 4106) {
-        menuDisplay = 4105;
-      } else if (menuDisplay == 4105) {
-        menuDisplay = 4104;
-      } else if (menuDisplay == 4104) {
-        menuDisplay = 4103;
-      } else if (menuDisplay == 4103) {
-        menuDisplay = 4102;
-      } else if (menuDisplay == 4102) {
-        menuDisplay = 4101;
-      } else if (menuDisplay == 4101) {
-        menuDisplay = 4100;
-      } else if (menuDisplay == 4100) {
-        menuDisplay = 4111;
-      }
-
-      else if (menuDisplay >= 51 && menuDisplay <=53) {
-        menuDisplay--;
-      } else if (menuDisplay == 50) {
-        menuDisplay = 53;
-      }
-
-      else if (menuDisplay >= 71 && menuDisplay <=72) {
-        menuDisplay--;
-      }
-
-      else if (menuDisplay >= 800 && menuDisplay <= 808) {
-        menuDisplay--;
-        if (menuDisplay == 799) {
-          menuDisplay = 808;
-        }
-      } else if (menuDisplay == 8011) {
-        menuDisplay = 8010;
-      } else if (menuDisplay >= 8061 && menuDisplay <= 8062) {
-        menuDisplay--;
-      } else if (menuDisplay == 8084) { 
-        menuDisplay = 8083;
-      }
-    } 
-    
     else if (key == 182) {                        // Arrow Down
-      if (menuDisplay >= 1 && menuDisplay <= 9) {       
-        menuDisplay++;
-        if (menuDisplay == 10) {
-          menuDisplay = 1;
-        }
-      } else if (menuDisplay == 10) {     // Menu Messages
-        menuDisplay = 11;
-      } else if (menuDisplay == 11) {
-        menuDisplay = 12;
-      } else if (menuDisplay == 100) {
-        menuDisplay = 101;
-      } else if (menuDisplay == 101) {
-        menuDisplay = 102;
-      } else if (menuDisplay == 102) {
-        menuDisplay = 103;
-      } else if (menuDisplay == 110) {
-        menuDisplay = 111;
-      } else if (menuDisplay == 120) {
-        menuDisplay = 121;
-      } else if (menuDisplay == 121) {
-        menuDisplay = 122;
-      } 
-
-      else if (menuDisplay == 20) {     // Menu Status
-        menuDisplay = 21;
-      } else if (menuDisplay == 210) { 
-        menuDisplay = 211;
-      } else if (menuDisplay == 211) { 
-        menuDisplay = 212;
-      } else if (menuDisplay == 212) { 
-        menuDisplay = 213;
-      } else if (menuDisplay == 213) { 
-        menuDisplay = 214;
-      } else if (menuDisplay == 214) { 
-        menuDisplay = 210;
-      } 
-      
-      else if (menuDisplay == 30) {   // Menu Stations
-        menuDisplay = 31;
-      } else if (menuDisplay == 300) {
-        menuDisplay = 301;
-      } else if (menuDisplay == 301) {
-        menuDisplay = 302;
-      } else if (menuDisplay == 310) {
-        menuDisplay = 311;
-      } else if (menuDisplay == 311) {
-        menuDisplay = 312;
-      } else if (menuDisplay == 312) {
-        menuDisplay = 313;
-      }
-
-      else if (menuDisplay == 40) {     // Menu Waypoints
-        menuDisplay = 41;
-      } else if (menuDisplay == 41 && !recordingWaypoints) {
-        menuDisplay = 42;
-      } else if (menuDisplay == 4100) {
-        menuDisplay = 4101;
-      } else if (menuDisplay == 4101) {
-        menuDisplay = 4102;
-      } else if (menuDisplay == 4102) {
-        menuDisplay = 4103;
-      } else if (menuDisplay == 4103) {
-        menuDisplay = 4104;
-      } else if (menuDisplay == 4104) {
-        menuDisplay = 4105;
-      } else if (menuDisplay == 4105) {
-        menuDisplay = 4106;
-      } else if (menuDisplay == 4106) {
-        menuDisplay = 4107;
-      } else if (menuDisplay == 4107) {
-        menuDisplay = 4108;
-      } else if (menuDisplay == 4108) {
-        menuDisplay = 4109;
-      } else if (menuDisplay == 4109) {
-        menuDisplay = 4110;
-      } else if (menuDisplay == 4110) {
-        menuDisplay = 4111;
-      } else if (menuDisplay == 4111) {
-        menuDisplay = 4100;
-      }
-
-      else if (menuDisplay >= 50 && menuDisplay <=52) {
-        menuDisplay++;
-      } else if (menuDisplay == 53) {
-        menuDisplay = 50;
-      }
-
-      else if (menuDisplay >= 70 && menuDisplay <=71) {
-        menuDisplay++;
-      }
-
-      else if (menuDisplay >= 800 && menuDisplay <= 808) {       
-        menuDisplay++;
-        if (menuDisplay == 809) {
-          menuDisplay = 800;
-        }
-      } else if (menuDisplay == 8010) {
-        menuDisplay = 8011;
-      } else if (menuDisplay >= 8060 && menuDisplay <= 8061) {
-        menuDisplay++;
-      } else if (menuDisplay == 8083) { 
-        menuDisplay = 8084;
-      }
+      downArrow();      
     } 
 
     else if (key == 180) {                        // Arrow Left
-      if (menuDisplay >= 1 && menuDisplay <= 9) {   
-        menuDisplay = 0;    
-      } else if (menuDisplay >= 10 && menuDisplay <= 12) {      // Return to Menu : Messages
-        menuDisplay = 1;
-      } else if (menuDisplay >= 100 && menuDisplay <= 109) {
-        menuDisplay = 10;
-      } else if (menuDisplay >= 110 && menuDisplay <= 119) {
-        menuDisplay = 11;
-      } else if (menuDisplay >= 120 && menuDisplay <= 129) {
-        menuDisplay = 12;
-      } else if (menuDisplay >= 1200 && menuDisplay <= 1299) {
-        menuDisplay = 120;
-      } else if (menuDisplay == 1100) { 
-        menuDisplay = 110;
-        messageCallsign = "";
-      } else if (menuDisplay == 1101) {
-        messageText = "";
-        menuDisplay = 1100;
-      }
-
-      else if (menuDisplay >= 20 && menuDisplay <= 21) {        // Return to Menu : Status
-        menuDisplay = 2;
-      } else if (menuDisplay >= 210 && menuDisplay <= 219) {
-        menuDisplay = 21;
-      }
-    
-      else if (menuDisplay >= 30 && menuDisplay <= 31) {        // Return to Menu : Stations
-        menuDisplay = 3;
-      } else if (menuDisplay >= 300 && menuDisplay <= 309) {
-        menuDisplay = 30;
-      } else if (menuDisplay >= 310 && menuDisplay <= 319) {
-        menuDisplay = 31;
-      } else if (menuDisplay >= 3000 && menuDisplay <= 3009) {
-        menuDisplay = 300;
-      }
-    
-      else if (menuDisplay >= 40 && menuDisplay <= 42) {        // Return to Menu: Waypoints
-        menuDisplay = 4;
-      } else if (menuDisplay >= 400 && menuDisplay <= 409) {
-        menuDisplay = 40;
-      } else if (menuDisplay >= 410 && menuDisplay <= 419) {
-        menuDisplay = 41;
-      } else if (menuDisplay >= 420 && menuDisplay <= 429) {
-        menuDisplay = 42;
-      } else if (menuDisplay >= 4100 && menuDisplay <= 4199) {
-        menuDisplay = 41;
-      }
-
-      else if (menuDisplay >= 50 && menuDisplay <= 59) {      // Return to Menu : Weather
-        menuDisplay = 5;
-      } else if (menuDisplay == 530) {
-        menuDisplay = 53;
-        weatherOtherPlace = "";
-      } 
-      
-      else if (menuDisplay == 60) {
-        menuDisplay = 6;
-      } else if (menuDisplay >= 70 && menuDisplay <= 72) {
-        menuDisplay = 7;
-      } else if (menuDisplay == 700) {
-        messageText = "";
-        menuDisplay = 70;
-      }
-      
-      else if (menuDisplay >= 80 && menuDisplay <= 84) {
-        menuDisplay = 8;
-      } else if (menuDisplay >= 800 && menuDisplay <= 808) {
-        menuDisplay = 8;
-      } else if (menuDisplay >= 8010 && menuDisplay <= 8080) {
-        if (menuDisplay >= 8020 && menuDisplay <= 8050) {
-          winlinkMailNumber = "";
-        }
-        menuDisplay = int(menuDisplay/10);
-      } else if (menuDisplay == 90) {
-        menuDisplay = 9;
-      } 
+      leftArrow();
     }
 
     else if (key == 183) {                        // Arrow Right
-      if (menuDisplay == 1) { 
-        menuDisplay = 10;       // Menu : Messages
-      } else if (menuDisplay == 10) { 
-        menuDisplay = 100;      // Menu : Messages READ
-      } else if (menuDisplay == 100) {
-        loadMessagesFromMemory("APRS");
-        if (noMessageWarning) {
-          menuDisplay = 100;
-        } else {
-          menuDisplay = 1000;
-        }
-      }  else if (menuDisplay == 1000) {
-        messagesIterator++;
-        if (messagesIterator == numAPRSMessages) {
-          menuDisplay = 100;
-          messagesIterator = 0;
-        } else {
-          menuDisplay = 1000;
-        }
-      } else if (menuDisplay == 101) {
-        Serial.println("--> Messages : READ : APRS SUMMARY");
-      } else if (menuDisplay == 102) {
-        loadMessagesFromMemory("LoRa");
-        if (noMessageWarning) {
-          menuDisplay = 102;
-        } else {
-          menuDisplay = 1020;
-        }
-      } else if (menuDisplay == 1020) {
-        messagesIterator++;
-        if (messagesIterator == numLoraMessages) {
-          menuDisplay = 100;
-          messagesIterator = 0;
-        } else {
-          menuDisplay = 1020;
-        }
-      } else if (menuDisplay == 103) {
-        Serial.println("--> Messages : READ : DIRECT SUMMARY");
-      } else if (menuDisplay == 110) {
-        menuDisplay = 1100;
-      } 
-    
+      rightArrow();
+      
+
+      /*   
       else if (menuDisplay == 11) { 
         menuDisplay = 110;     // Menu : Messages WRITE
       } else if (menuDisplay == 12) { 
@@ -829,19 +730,26 @@ namespace KEYBOARD_Utils {
 
       else if (menuDisplay == 9) {  // Alerts Menu
         menuDisplay = 90;
-      }
-    }*/
+      }*/
+    }
   }
 
 
   void read() {
+    uint32_t lastKey = millis() - keyboardTime;
+    if (lastKey > 30*1000) {
+      keyboardDetected = false;
+    }
     Wire.requestFrom(CARDKB_ADDR, 1);
     while(Wire.available()) {
       char c = Wire.read();
       if (c != 0) {
+
         // just for debugging
         Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
         //
+
+        keyboardTime = millis();
         processPressedKey(c);      
       }
     }
