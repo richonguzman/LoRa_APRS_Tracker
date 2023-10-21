@@ -76,6 +76,8 @@ bool      symbolAvailable     = true;
 int       screenBrightness    = 1;
 bool      keyboardDetected    = false;
 uint32_t  keyboardTime        = millis();
+String    messageCallsign     = "";
+String    messageText         = "";
 
 logging::Logger               logger;
 

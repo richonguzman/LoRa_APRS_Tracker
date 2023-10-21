@@ -26,6 +26,8 @@ extern bool             statusState;
 extern uint32_t         statusTime;
 extern int              messagesIterator;
 extern bool             messageLed;
+extern String           messageCallsign;
+extern String           messageText;
 
 namespace KEYBOARD_Utils {
 
@@ -236,12 +238,58 @@ namespace KEYBOARD_Utils {
       menuDisplay = 1;
     } else if (key == 27) {     // ESC = volver a menu base
       menuDisplay = 0;
-      /*messagesIterator = 0;
+      messagesIterator = 0;
+      messageCallsign = "";
       messageText = "";
-      messageCallsign = "";*/
     } else if (menuDisplay >= 1 && menuDisplay <= 7 && key >=49 && key <= 55) { // Menu number select
       menuDisplay = key - 48;
-    } /*else if (menuDisplay == 0 && key == 37) {
+    } else if (menuDisplay == 110 && key != 180) {        // Writing Callsign of Message
+      if (messageCallsign.length() == 1) {
+        messageCallsign.trim();
+      }
+      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
+        messageCallsign += key;
+      } else if (key == 13) {     // Return Pressed
+        messageCallsign.trim();
+        if (menuDisplay == 110) {
+          menuDisplay = 111;
+        }
+      } else if (key == 8) {      // Delete Last Key
+        messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
+      }
+      messageCallsign.toUpperCase();
+      Serial.println(messageCallsign);
+    } else if (menuDisplay == 111 && key!= 180) {        // Writting Text of Message
+      if (messageText.length() == 1) {
+        messageText.trim();
+      }
+      if (key >= 32 && key <= 126) {
+        messageText += key;
+      } else if (key == 13) {     // Return Pressed: SENDING MESSAGE
+        messageText.trim();
+        if (messageText.length() > 67){
+          messageText = messageText.substring(0,67);
+        }
+        MSG_Utils::sendMessage(messageCallsign, messageText);
+        menuDisplay = 11;
+        messageCallsign = "";
+        messageText = "";
+      } else if (key == 8) {      // Delete Last Key
+        messageText = messageText.substring(0, messageText.length()-1);
+      }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /*else if (menuDisplay == 0 && key == 37) {
       handleNextGpsLocation(myGpsLocationsSize);
     } else if (menuDisplay == 0 && key == 41) {
       if (showCompass == false) {
@@ -251,47 +299,7 @@ namespace KEYBOARD_Utils {
       }
     }
 
-    else if ((menuDisplay == 1100 && key != 180) || (menuDisplay == 1110 && key != 180)) {        // Writing Callsign of Message
-      if (messageCallsign.length() == 1) {
-        messageCallsign.trim();
-      }
-      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
-        messageCallsign += key;
-      } else if (key == 13) {     // Return Pressed
-        messageCallsign.trim();
-        if (menuDisplay == 1100) {
-          menuDisplay = 1101;
-        } else if (menuDisplay == 1110) {
-          menuDisplay = 1111;
-        }
-      } else if (key == 8) {      // Delete Last Key
-        messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
-      }
-      messageCallsign.toUpperCase();
-      Serial.println(messageCallsign);
-    } else if ((menuDisplay == 1101 && key!= 180) || (menuDisplay == 1111 && key!= 180)) {        // Writting Text of Message
-      if (messageText.length() == 1) {
-        messageText.trim();
-      }
-      if (key >= 32 && key <= 126) {
-        messageText += key;
-      } else if (key == 13) {     // Return Pressed: SENDING MESSAGE
-        messageText.trim();
-        Serial.println(messageText.length());
-        if (messageText.length() > 67){
-          Serial.println(messageText.length());
-          messageText = messageText.substring(0,67);
-        }
-        Serial.println(messageText.length());
-        if (menuDisplay == 1101) {
-          sendMessage("APRS", messageCallsign, messageText);
-        } else if (menuDisplay == 1111) {
-          sendMessage("LoRa", messageCallsign, messageText);
-        }
-        menuDisplay = 11;
-        messageCallsign = "";
-        messageText = "";
-      } else if (key == 8) {      // Delete Last Key
+     else if (key == 8) {      // Delete Last Key
         messageText = messageText.substring(0, messageText.length()-1);
       }
       Serial.println(messageText);

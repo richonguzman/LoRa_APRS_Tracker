@@ -23,6 +23,8 @@ extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern int                  lowBatteryPercent;
 extern bool                 keyboardDetected;
+extern String               messageCallsign;
+extern String               messageText;
 
 namespace MENU_Utils {
 
@@ -57,7 +59,22 @@ namespace MENU_Utils {
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
-                show_display("WRITE_MSG>", "", " aqui se escribe", "", "", "<Back Up/Down Select>");
+                if (keyboardDetected) {
+                    show_display("WRITE_MSG>", "", "CALLSIGN = " + String(messageCallsign), "", "", "<Back          Enter>");
+                } else {
+                    show_display("WRITE_MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
+                }     
+                break;
+            case 111:
+                if (messageText.length() <= 67) {
+                    if (messageText.length() < 10) {
+                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, " -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                    } else {
+                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                    }     
+                } else {
+                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "", lastLine);
