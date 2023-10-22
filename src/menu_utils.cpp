@@ -4,8 +4,8 @@
 #include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
-#include "menu_utils.h"
 #include "power_utils.h"
+#include "menu_utils.h"
 #include "msg_utils.h"
 #include "bme_utils.h"
 #include "display.h"
@@ -89,18 +89,52 @@ namespace MENU_Utils {
             case 2:     // 2.Configuration
                 show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
                 break;
-            case 20:    // 2.Configuration ---> Display
-                show_display("__CONFIG__", "> Display","  Notifications","","",lastLine);
+            case 20:    // 2.Configuration ---> Callsign
+                show_display("_CONFIG___", "  Power Off", "> Callsign","  Display", "  Notifications",lastLine);
                 break;
-            case 200:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY_", "> ECO Mode","  Brightness","","",lastLine);
+            case 21:    // 2.Configuration ---> Display
+                show_display("_CONFIG___", "  Callsign", "> Display", "  Notifications", "  Reboot",lastLine);
                 break;
-            case 201:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY_", "  ECO Mode","> Brightness","","",lastLine);
+            case 22:    // 2.Configuration ---> Notifications
+                show_display("_CONFIG___", "  Display", "> Notifications", "  Reboot", "  Power Off", lastLine);
                 break;
-            case 21:    // 2.Configuration ---> Notifications
-                show_display("__CONFIG__", "  Display","> Notifications","","",lastLine);
+            case 23:    // 2.Configuration ---> Reboot
+                show_display("_CONFIG___", "  Notifications","> Reboot", "  Power Off", "  Callsign",lastLine);
                 break;
+            case 24:    // 2.Configuration ---> Power Off
+                show_display("_CONFIG___", "  Reboot", "> Power Off", "  Callsign", "  Display",lastLine);
+                break;
+        
+            case 200:   // 2.Configuration ---> Callsign
+                show_display("_CALLSIGN_", "","  Confirm Change?","","","<Back   Enter=Confirm");
+                break;
+
+            case 210:   // 2.Configuration ---> Display ---> ECO Mode
+                show_display("_DISPLAY__", "> ECO Mode","  Brightness","","",lastLine);
+                break;
+            case 211:   // 2.Configuration ---> Display ---> Brightness
+                show_display("_DISPLAY__", "  ECO Mode","> Brightness","","",lastLine);
+                break;
+
+            case 220:    // 2.Configuration ---> Notifications
+                show_display("_NOTIFIC__", "  blabla","  blabla2","","",lastLine);
+                break;
+
+            case 230:   // 2.Configuration ---> Reboot
+                if (keyboardDetected) {
+                    show_display("_REBOOT___", "","  Confirm Reboot?","","","<Back   Enter=Confirm");
+                } else {
+                    show_display("_REBOOT___", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
+                }
+                break;
+            case 240:   // 2.Configuration ---> Power Off
+                if (keyboardDetected) {
+                    show_display("POWER OFF?", ""," Confirm Power Off?","","","<Back   Enter=Confirm");
+                } else {
+                    show_display("POWER OFF?", "no Keyboard Detected"," Use PWR Button to","Power Off Tracker","",lastLine);
+                }
+                break;
+
 
             case 3:     //3.Stations
                 show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Status", lastLine);

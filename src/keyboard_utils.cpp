@@ -1,16 +1,18 @@
-#include "keyboard_utils.h"
-#include "button_utils.h"
-#include "display.h"
-#include <Wire.h>
 #include <logger.h>
-#include "msg_utils.h"
+#include <Wire.h>
+#include "keyboard_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
+#include "button_utils.h"
+#include "power_utils.h"
+#include "msg_utils.h"
+#include "display.h"
 
 #define CARDKB_ADDR 0x5F    // yes , this is for CARDKB from m5stack.com
 
 extern Configuration    Config;
 extern logging::Logger  logger;
+extern PowerManagement  powerManagement;
 extern bool             sendUpdate;
 extern int              menuDisplay;
 extern uint32_t         menuTime;
@@ -36,6 +38,24 @@ namespace KEYBOARD_Utils {
       menuDisplay--;
       if (menuDisplay == 0) {
         menuDisplay = 7;
+      }
+    } else if (menuDisplay >= 10 && menuDisplay <= 12) {
+      menuDisplay--;
+      menuTime = millis();
+      if (menuDisplay == 9) {
+        menuDisplay = 12;
+      }
+    } else if (menuDisplay >= 20 && menuDisplay <= 24) {
+      menuDisplay--;
+      menuTime = millis();
+      if (menuDisplay == 19) {
+        menuDisplay = 24;
+      }
+    } else if (menuDisplay >= 210 && menuDisplay <= 211) {
+      menuDisplay--;
+      menuTime = millis();
+      if (menuDisplay == 209) {
+        menuDisplay = 211;
       }
     }
   }
@@ -81,17 +101,17 @@ namespace KEYBOARD_Utils {
       menuTime = millis();
     } 
     
-    else if (menuDisplay >= 20 && menuDisplay <= 21) {
+    else if (menuDisplay >= 20 && menuDisplay <= 24) {
       menuDisplay++;
       menuTime = millis();
-      if (menuDisplay == 22) {
+      if (menuDisplay == 25) {
         menuDisplay = 20;
       }
-    } else if (menuDisplay >= 200 && menuDisplay <= 201) {
+    } else if (menuDisplay >= 210 && menuDisplay <= 211) {
       menuDisplay++;
       menuTime = millis();
-      if (menuDisplay == 202) {
-        menuDisplay = 200;
+      if (menuDisplay == 212) {
+        menuDisplay = 210;
       } 
     }
     
@@ -119,10 +139,8 @@ namespace KEYBOARD_Utils {
       menuDisplay = 110;
     }
 
-    else if (menuDisplay >= 20 && menuDisplay <= 21) {        // Return to Menu : Configuration
-      menuDisplay = 2;
-    } else if (menuDisplay >= 200 && menuDisplay <= 201) {
-      menuDisplay = 20;
+    else if ((menuDisplay >= 20 && menuDisplay <= 29) || (menuDisplay >= 200 && menuDisplay <= 290)) {
+      menuDisplay = int(menuDisplay/10);
     }
     
     else if (menuDisplay == 30) {                             // Return to Menu : Stations
@@ -132,9 +150,7 @@ namespace KEYBOARD_Utils {
     else if (menuDisplay == 40) {                             // Return to Menu : Weather
       menuDisplay = 4;
     }   
-    /*        messageCallsign = "";
-              messageText = "";
-              winlinkMailNumber = "";*/
+    /*               winlinkMailNumber = "";*/
   }
 
   void rightArrow() {
@@ -150,8 +166,8 @@ namespace KEYBOARD_Utils {
       statusTime = millis();
       show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
       STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-    } else if (menuDisplay == 1) {
-      menuDisplay = 10;
+    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=12) || (menuDisplay>=20 && menuDisplay<=29))  {
+      menuDisplay = menuDisplay*10;
       menuTime = millis();
     } else if (menuDisplay == 10) {
       MSG_Utils::loadMessagesFromMemory();
@@ -162,12 +178,6 @@ namespace KEYBOARD_Utils {
         menuDisplay = 100;
         menuTime = millis();
       }
-    } else if (menuDisplay == 11) {
-      menuDisplay = 110;
-      menuTime = millis();
-    } else if (menuDisplay == 12) {
-      menuDisplay = 120;
-      menuTime = millis();
     } else if (menuDisplay == 120) {
       MSG_Utils::deleteFile();
       show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
@@ -175,51 +185,37 @@ namespace KEYBOARD_Utils {
       menuDisplay = 12;
     } 
     
-    else if (menuDisplay == 2) {
-      menuDisplay = 20;
-      menuTime = millis();
-    } else if (menuDisplay == 20) {
-      menuDisplay = 200;
-      menuTime = millis();
-    } else if (menuDisplay == 21) {
-      show_display("_NOTIFIC_", "", "ALL NOTIFICATIONS OFF","STILL IN DEVELOPMENT!", 2000); /////////////////////////
-    } else if (menuDisplay == 200) {
+    else if (menuDisplay == 210) {
       if (!displayEcoMode) {
         displayEcoMode = true;
-        show_display("_DISPLAY_", "", "   ECO MODE -> ON", 1000);
+        show_display("_DISPLAY__", "", "   ECO MODE -> ON", 1000);
       } else {
         displayEcoMode = false;
-        show_display("_DISPLAY_", "", "   ECO MODE -> OFF", 1000);
+        show_display("_DISPLAY__", "", "   ECO MODE -> OFF", 1000);
       }
-    } else if (menuDisplay == 201) {
+    } else if (menuDisplay == 211) {
       if (screenBrightness <=1) {
-        show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MAX", 1000);
+        show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MAX", 1000);
         screenBrightness = 255;   
       } else {
-        show_display("__SCREEN__", "", "SCREEN BRIGHTNESS MIN", 1000);
+        show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
         screenBrightness = 1;
       }
-    }
-
-    else if (menuDisplay == 3) {
-      menuDisplay = 30;
-      menuTime = millis();
-    }
+    } else if (menuDisplay == 220) {
+      show_display("_NOTIFIC_", "", "ALL NOTIFICATIONS OFF","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+    } 
 
     else if (menuDisplay == 4) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
       MSG_Utils::sendMessage("CD2RXU-15","wrl");
       menuTime = millis();
     }
-
     else if (menuDisplay == 5) {
       show_display("__STATUS__", "still on", "development..", 1500);
     }
-
     else if (menuDisplay == 6) {
       show_display("_WINLINK_", "still on", "development..", 1500);
     }
-
     else if (menuDisplay == 7) {
       show_display("EMERGENCY", "still on", "development..", 1500);
     }
@@ -229,45 +225,42 @@ namespace KEYBOARD_Utils {
     keyboardDetected = true;
     menuTime = millis();
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
-
     if (!displayState) {
         display_toggle(true);
         displayTime = millis();   
         displayState = true;
     }
-
-    if (menuDisplay == 0 && key == 33) {                                  // Main Menu
+    if (menuDisplay == 0 && key == 33) {              // Main Menu
       menuDisplay = 1;
-    } else if (key == 27) {     // ESC = volver a menu base
+    } else if (key == 27) {                           // ESC = return to Main Menu
       menuDisplay = 0;
       messagesIterator = 0;
       messageCallsign = "";
       messageText = "";
     } else if (menuDisplay >= 1 && menuDisplay <= 7 && key >=49 && key <= 55) { // Menu number select
       menuDisplay = key - 48;
-    } else if (menuDisplay == 110 && key != 180) {        // Writing Callsign of Message
+    } else if (menuDisplay == 110 && key != 180) {    // Writing Callsign of Message
       if (messageCallsign.length() == 1) {
         messageCallsign.trim();
       }
       if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
         messageCallsign += key;
-      } else if (key == 13) {     // Return Pressed
+      } else if (key == 13) {                         // Return Pressed
         messageCallsign.trim();
         if (menuDisplay == 110) {
           menuDisplay = 111;
         }
-      } else if (key == 8) {      // Delete Last Key
+      } else if (key == 8) {                          // Delete Last Key
         messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
       }
       messageCallsign.toUpperCase();
-      Serial.println(messageCallsign);
-    } else if (menuDisplay == 111 && key!= 180) {        // Writting Text of Message
+    } else if (menuDisplay == 111 && key!= 180) {     // Writting Text of Message
       if (messageText.length() == 1) {
         messageText.trim();
       }
       if (key >= 32 && key <= 126) {
         messageText += key;
-      } else if (key == 13) {     // Return Pressed: SENDING MESSAGE
+      } else if (key == 13) {                         // Return Pressed: SENDING MESSAGE
         messageText.trim();
         if (messageText.length() > 67){
           messageText = messageText.substring(0,67);
@@ -276,21 +269,43 @@ namespace KEYBOARD_Utils {
         menuDisplay = 11;
         messageCallsign = "";
         messageText = "";
-      } else if (key == 8) {      // Delete Last Key
+      } else if (key == 8) {                          // Delete Last Key
         messageText = messageText.substring(0, messageText.length()-1);
       }
+    } else if (key==13) {
+      if (menuDisplay==200) {
+        if(myBeaconsIndex >= (myBeaconsSize-1)) {
+          myBeaconsIndex = 0;
+        } else {
+          myBeaconsIndex++;
+        }
+        display_toggle(true);
+        displayTime = millis();
+        statusState  = true;
+        statusTime = millis();
+        show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
+        STATION_Utils::saveCallsingIndex(myBeaconsIndex);
+        menuDisplay = 0;
+      } else if (menuDisplay==230) {
+        show_display("", "", "   REBOOTING ...", 2000);
+        ESP.restart();
+      } else if (menuDisplay==240) {
+        show_display("", "", "   POWER OFF ...", 2000);
+        powerManagement.shutdown();
+      }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    else if (key == 181) {  // Arrow Up
+      upArrow();
+    }
+    else if (key == 182) {  // Arrow Down
+      downArrow();      
+    }
+    else if (key == 180) {  // Arrow Left
+      leftArrow();
+    }
+    else if (key == 183) {  // Arrow Right
+      rightArrow();
+    }
     /*else if (menuDisplay == 0 && key == 37) {
       handleNextGpsLocation(myGpsLocationsSize);
     } else if (menuDisplay == 0 && key == 41) {
@@ -321,33 +336,6 @@ namespace KEYBOARD_Utils {
       show_display("_DELETING_", "", "ALL LoRa DM DELETED", 1500);
       loadNumMessages();
       menuDisplay = 1;
-    } else if (menuDisplay == 400 && key == 13) {  // start/stop saving waypoints
-      if (recordingWaypoints) {
-        recordingWaypoints = false;
-        send_update = true;
-      } else {
-        recordingWaypoints = true;
-        send_update = true;
-      }
-      menuDisplay = 40;
-    } else if (menuDisplay == 420 && key == 13) {
-      deleteFile(gpsMyWaypointsFilePath);
-      menuDisplay = 42;
-    } else if (menuDisplay == 530) {
-      if (weatherOtherPlace.length() == 1) {
-        weatherOtherPlace.trim();
-      }
-      if ((key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 32)) {
-        weatherOtherPlace += key;
-      } else if (key == 13) {     // Return Pressed: SENDING MESSAGE
-        weatherOtherPlace.trim();
-        sendMessage("APRS", "WRCLP", "wl " + weatherOtherPlace);
-        weatherOtherPlace = "";
-        menuDisplay = 53;
-      } else if (key == 8) {      // Delete Last Key
-        weatherOtherPlace = weatherOtherPlace.substring(0, weatherOtherPlace.length()-1);
-      }
-      Serial.println(weatherOtherPlace);
     } else if (menuDisplay == 700 && key != 180) {
       if (messageText.length() == 1) {
         messageText.trim();
@@ -508,44 +496,8 @@ namespace KEYBOARD_Utils {
         winlinkBody = "";
       }
     }*/
-
-    else if (key == 181) {                        // Arrow Up
-      upArrow();
-    }
-
-    else if (key == 182) {                        // Arrow Down
-      downArrow();      
-    } 
-
-    else if (key == 180) {                        // Arrow Left
-      leftArrow();
-    }
-
-    else if (key == 183) {                        // Arrow Right
-      rightArrow();
-      
-
-      /*   
-      else if (menuDisplay == 11) { 
-        menuDisplay = 110;     // Menu : Messages WRITE
-      } else if (menuDisplay == 12) { 
-        menuDisplay = 120;     // Menu : Messages DELETE
-      }
-
-      else if (menuDisplay == 111) {
-        //Serial.println("--> Messages : WRITE : DIRECT MSG");
-        menuDisplay = 1110;
-      } else if (menuDisplay == 120) {
-        //Serial.println("--> Messages : DELETE : ALL");
-        menuDisplay = 1200;
-      } else if (menuDisplay == 121) {
-        //Serial.println("--> Messages : DELETE : (ONLY) ALL APRS MSG");
-        menuDisplay = 1210;
-      } else if (menuDisplay == 122) {
-        //Serial.println("--> Messages : DELETE : (ONLY) ALL DIRECT MSG");
-        menuDisplay = 1220;
-      }
-
+  }
+      /* 
       else if (menuDisplay == 2) {    // Status Menu
         menuDisplay = 20;
       } else if (menuDisplay == 20) {
@@ -569,101 +521,6 @@ namespace KEYBOARD_Utils {
         menuDisplay = 21;
       }
 
-      else if (menuDisplay == 3) {  // Stations Menu
-        menuDisplay = 30;
-      } else if (menuDisplay == 30) {
-        menuDisplay = 300;
-      } else if (menuDisplay == 31) {
-        menuDisplay = 310;
-      } else if (menuDisplay == 300) {
-        menuDisplay = 3000;
-      } else if (menuDisplay == 301) {
-        Serial.println("--> Menu : 3.Stations: Lora Trackers: WHOISTHERE");
-      } else if (menuDisplay == 302) {
-        Serial.println("--> Menu : 3.Stations: Lora Trackers: RUTHERE Callsign");
-      } else if (menuDisplay == 310) {
-        Serial.println("--> Menu : 3.Stations: Lora iGates: WHICHIGATE?");
-      } else if (menuDisplay == 311) {
-        Serial.println("--> Menu : 3.Stations: Lora iGates: RUTHERE iGate?");
-      } else if (menuDisplay == 312) {
-        Serial.println("--> Menu : 3.Stations: Lora iGates: Latest TRACKERS/Stations iGate?");
-      } else if (menuDisplay == 313) {
-        Serial.println("--> Menu : 3.Stations: Lora iGates: DidYouHear Callsign?");
-      } 
-
-      else if (menuDisplay == 4) {  // Waypoints Menu
-        menuDisplay = 40;
-      } else if (menuDisplay == 40) { // Menu Waypoints: Save Waypoints
-        //Serial.println("Start Saving Waypoint");
-        menuDisplay = 400;
-      } else if (menuDisplay == 41) { // Menu Waypoints: Follow Route
-        if (recordingWaypoints) {
-          menuDisplay = 4100;
-        } else {
-          Serial.println("Follow Route");
-        }//menuDisplay = 410;
-      } else if (menuDisplay == 42) { // Menu Waypoints: Delete
-        menuDisplay = 420;
-      } else if (menuDisplay >= 4100 && menuDisplay <= 4199) {
-        if (menuDisplay == 4100) {
-          waypointComment = pointOfInterest[0];
-        } else if (menuDisplay == 4101) {
-          waypointComment = pointOfInterest[1];
-        } else if (menuDisplay == 4102) {
-          waypointComment = pointOfInterest[2];
-        } else if (menuDisplay == 4103) {
-          waypointComment = pointOfInterest[3];
-        } else if (menuDisplay == 4104) {
-          waypointComment = pointOfInterest[4];
-        } else if (menuDisplay == 4105) {
-          waypointComment = pointOfInterest[5];
-        } else if (menuDisplay == 4106) {
-          waypointComment = pointOfInterest[6];
-        } else if (menuDisplay == 4107) {
-          waypointComment = pointOfInterest[7];
-        } else if (menuDisplay == 4108) {
-          waypointComment = pointOfInterest[8];
-        } else if (menuDisplay == 4109) {
-        waypointComment = pointOfInterest[9];
-        } else if (menuDisplay == 4110) {
-          waypointComment = pointOfInterest[10];
-        } else if (menuDisplay == 4111) {
-          waypointComment = pointOfInterest[11];
-        }
-        send_update = true;
-        menuDisplay = 41;
-      }
-
-      else if (menuDisplay == 5) {  // Weather Menu
-        menuDisplay = 50;
-      } else if (menuDisplay == 50) {
-        sendMessage("APRS", "WRCLP", "wrl");
-      } else if (menuDisplay == 51) {
-        Serial.println("asking for 24 hrs Weather Forecast");
-        //sendMessage("APRS", "WRCLP", "wrl 24");
-      } else if (menuDisplay == 52) {
-        Serial.println("asking for 5 days Weather Forecast");
-        //sendMessage("APRS", "WRCLP", "wrl 5days");
-      } else if (menuDisplay == 53) {
-        menuDisplay = 530;
-      } 
-
-      else if (menuDisplay == 6) {    // SMS Menu
-        menuDisplay = 60;
-      } 
-      
-      else if (menuDisplay == 7) {  // News/Bulletin Menu
-        menuDisplay = 70;
-      } else if (menuDisplay == 70) {
-        menuDisplay = 700;
-      } else if (menuDisplay == 71) {
-        Serial.println("CHECK NEWS");
-        show_display("__INFO____", "", "NOT READY YET", "i'm coding ...", 1500);
-      } else if (menuDisplay == 72) {
-        Serial.println("CHECK BULLETIN");
-        show_display("__INFO____", "", "NOT READY YET", "i'm coding ...", 1500);
-      } 
-      
       else if (menuDisplay == 8) {  // Winlink/Mail Menu Login 
         if (winlinkStatus == 5) {
           menuDisplay = 800;
@@ -737,13 +594,7 @@ namespace KEYBOARD_Utils {
         winlinkBody = "";
         menuDisplay = 8082;
       }
-
-      else if (menuDisplay == 9) {  // Alerts Menu
-        menuDisplay = 90;
-      }*/
-    }
-  }
-
+      */
 
   void read() {
     uint32_t lastKey = millis() - keyboardTime;

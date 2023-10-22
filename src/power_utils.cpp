@@ -296,3 +296,12 @@ void PowerManagement::batteryManager() {
   handleChargingLed();
   #endif
 }
+
+void PowerManagement::shutdown() {
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+  axp.shutdown();
+  #endif
+  #ifdef TTGO_T_Beam_V1_2
+  PMU.shutdown();
+  #endif
+}

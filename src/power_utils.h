@@ -30,6 +30,7 @@ public:
   String getBatteryInfoCurrent();
   bool getBatteryInfoIsConnected();
   void batteryManager();
+  void shutdown();
   bool isChargeing();
 
 private:
