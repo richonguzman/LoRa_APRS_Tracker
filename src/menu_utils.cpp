@@ -33,6 +33,8 @@ namespace MENU_Utils {
         uint32_t lastMenuTime = millis() - menuTime;
         if (!(menuDisplay==0) && !(menuDisplay==30) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
+            messageCallsign = "";
+            messageText = "";
         }
         if (keyboardDetected) {
             lastLine = "<Back Up/Down Select>";
@@ -68,9 +70,9 @@ namespace MENU_Utils {
             case 111:
                 if (messageText.length() <= 67) {
                     if (messageText.length() < 10) {
-                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, " -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
                     show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");

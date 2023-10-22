@@ -111,8 +111,12 @@ namespace KEYBOARD_Utils {
       menuDisplay = 0;
     } else if (menuDisplay >= 10 && menuDisplay <= 12) {      // Return to Menu : Messages
       menuDisplay = 1;
-    } else if (menuDisplay==110 || menuDisplay==120) {
-      menuDisplay = int(menuDisplay/10);
+    } else if (menuDisplay==110) {
+      messageCallsign = "";
+      menuDisplay = 11;
+    } else if (menuDisplay==111) {
+      messageText = "";
+      menuDisplay = 110;
     }
 
     else if (menuDisplay >= 20 && menuDisplay <= 21) {        // Return to Menu : Configuration
@@ -224,8 +228,6 @@ namespace KEYBOARD_Utils {
   void processPressedKey(char key) {
     keyboardDetected = true;
     menuTime = millis();
-    //
-    Serial.print("menuDisplay = "); Serial.println(menuDisplay);
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
 
     if (!displayState) {
