@@ -31,7 +31,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.10.23";
+String    versionDate         = "2023.10.24";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -74,7 +74,8 @@ uint32_t  menuTime            = millis();
 bool      symbolAvailable     = true;
 
 int       screenBrightness    = 1;
-bool      keyboardDetected    = false;
+bool      keyboardConnected   = false;
+bool      keyDetected         = false;
 uint32_t  keyboardTime        = millis();
 String    messageCallsign     = "";
 String    messageText         = "";
@@ -125,6 +126,7 @@ void setup() {
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+    KEYBOARD_Utils::setup();
   }
 
   powerManagement.lowerCpuFrequency();
@@ -145,7 +147,9 @@ void loop() {
   }
   utils::checkDisplayEcoMode();
 
-  KEYBOARD_Utils::read();
+  if (keyboardConnected) {
+    KEYBOARD_Utils::read();
+  }
 
   GPS_Utils::getData();
   bool gps_time_update = gps.time.isUpdated();

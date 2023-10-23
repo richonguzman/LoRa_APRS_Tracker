@@ -11,6 +11,7 @@ namespace KEYBOARD_Utils {
   void rightArrow();
   void processPressedKey(char key);  
   void read();
+  void setup();
 }
 
 #endif

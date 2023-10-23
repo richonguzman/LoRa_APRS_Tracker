@@ -18,7 +18,8 @@ extern int              menuDisplay;
 extern uint32_t         menuTime;
 extern int              myBeaconsSize;
 extern int              myBeaconsIndex;
-extern bool             keyboardDetected;
+extern bool             keyboardConnected;
+extern bool             keyDetected;
 extern uint32_t         keyboardTime;
 extern bool             displayState;
 extern uint32_t         displayTime;
@@ -226,7 +227,7 @@ namespace KEYBOARD_Utils {
   }
 
   void processPressedKey(char key) {
-    keyboardDetected = true;
+    keyDetected = true;
     menuTime = millis();
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
     if (!displayState) {
@@ -315,7 +316,7 @@ namespace KEYBOARD_Utils {
   void read() {
     uint32_t lastKey = millis() - keyboardTime;
     if (lastKey > 30*1000) {
-      keyboardDetected = false;
+      keyDetected = false;
     }
     Wire.requestFrom(CARDKB_ADDR, 1);
     while(Wire.available()) {
@@ -328,6 +329,16 @@ namespace KEYBOARD_Utils {
         keyboardTime = millis();
         processPressedKey(c);      
       }
+    }
+  }
+
+  void setup() {
+    Wire.beginTransmission(CARDKB_ADDR);
+    if (Wire.endTransmission() == 0) {
+      keyboardConnected = true;
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Keyboard Connected to I2C");
+    } else {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "No Keyboard Connected to I2C");
     }
   }
 

@@ -22,7 +22,7 @@ extern int                  messagesIterator;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern int                  lowBatteryPercent;
-extern bool                 keyboardDetected;
+extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
 
@@ -36,7 +36,7 @@ namespace MENU_Utils {
             messageCallsign = "";
             messageText = "";
         }
-        if (keyboardDetected) {
+        if (keyDetected) {
             lastLine = "<Back Up/Down Select>";
         } else {
             lastLine = "1P=Down 2P=Back LP=Go";
@@ -78,7 +78,7 @@ namespace MENU_Utils {
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
-                if (keyboardDetected) {
+                if (keyDetected) {
                     show_display("WRITE_MSG>", "", "CALLSIGN = " + String(messageCallsign), "", "", "<Back          Enter>");
                 } else {
                     show_display("WRITE_MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
@@ -146,15 +146,15 @@ namespace MENU_Utils {
                 break;
 
             case 240:   // 2.Configuration ---> Reboot
-                if (keyboardDetected) {
-                    show_display("_REBOOT?__", "","  Confirm Reboot...","","","<Back   Enter=Confirm");
+                if (keyDetected) {
+                    show_display("_REBOOT?__", "","Confirm Reboot...","","","<Back   Enter=Confirm");
                 } else {
                     show_display("_REBOOT?__", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
                 }
                 break;
             case 250:   // 2.Configuration ---> Power Off
-                if (keyboardDetected) {
-                    show_display("POWER_OFF?", ""," Confirm Power Off...","","","<Back   Enter=Confirm");
+                if (keyDetected) {
+                    show_display("POWER_OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
                 } else {
                     show_display("POWER_OFF?", "no Keyboard Detected"," Use PWR Button to","Power Off Tracker","",lastLine);
                 }
