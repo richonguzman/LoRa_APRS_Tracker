@@ -14,39 +14,39 @@ ____________________________________________________
 
 ____________________________________________________
 
-- NOW WE HAVE A MENU !!! (just pushing the central button IO38)
-    - Saving, Reading and Deleting Messages.
+- Tracker with complete MENU !!! (see Wiki to know how to access it)
+    - Read, Write and Delete Messages.
     - Asking Weather Report
     - Listening to other Trackers arround.
-    - Changing Display Eco Mode (turn off after 4 seg).
+    - Changing Display Eco Mode (turn off after 4 seg) and Screen Brightness.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption.
 - All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
 - Oled Screen shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
 - Oled Screen shows Recent Heard Trackers/Station/iGates Tx.
 - Bluetooth capabilities to connect Android + APRSDroid and use it as TNC.
-- Led Notifications for Tx and Messages Received
-- Sound Notifications with YL44 Buzzer Module
+- Led Notifications for Tx and Messages Received.
+- Sound Notifications with YL44 Buzzer Module.
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 
 ____________________________________________________
 
 # WIKI
 
-### 1. Installation Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Installation-Guide" target="_blank">here</a>.
+### 1. Installation Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1.-Installation-Guide" target="_blank">here</a>
 
-### 2. Tracker Configuration and Explanation for each setting --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>.
+### 2. Tracker Configuration and Explanation for each setting --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">here</a>
 
-### 3. Supported Boards and Environment Selection --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Supported-Boards-and-Environment-Selection" target="_blank">here</a>.
+### 3. Supported Boards and Environment Selection --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/3.-Supported-Boards-and-Environment-Selection" target="_blank">here</a>
 
-### 4. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>.
+### 4. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/4.-Upload-Firmware-and-Filesystem" target="_blank">here</a>
 
-### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>.
+### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/5.-Menu-Guide" target="_blank">here</a>
 
-### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Bluetooth-Connection" target="_blank">here</a>.
+### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/6.-Bluetooth-Connection" target="_blank">here</a>
 
-### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
+### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>
 
-### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules" target="_blank">here</a>.
+### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules" target="_blank">here</a>
 
 ____________________________________________________
 ## Timeline (Versions):
