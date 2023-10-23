@@ -15,8 +15,8 @@ ____________________________________________________
 ____________________________________________________
 
 - Tracker with complete MENU !!! (see Wiki to know how to access it)
-    - Read, Write and Delete Messages.
-    - Asking Weather Report
+    - Read, Write and Delete Messages with I2C Keyboard.
+    - Asking Weather Report.
     - Listening to other Trackers arround.
     - Changing Display Eco Mode (turn off after 4 seg) and Screen Brightness.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption.
