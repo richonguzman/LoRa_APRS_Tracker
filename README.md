@@ -46,11 +46,13 @@ ____________________________________________________
 
 ### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/7.-First-Time-Boot-and-GPS" target="_blank">here</a>.
 
-### 8. Adding Leds, Buzzer and BME280 Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Leds,-Buzzer-and-BME280-Modules" target="_blank">here</a>.
+### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/8.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules" target="_blank">here</a>.
 
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2023.10.23 COMPLETE New Menu for Keyboard add-on.
+- 2023.10.22 Added Keyboard Support over I2C (CARDKB from https://m5stack.com)
 - 2023.10.07 Screen Brightness control added.
 - 2023.10.01 Added Wx Telemetry Tx with BME280 Module attached to Tracker.
 - 2023.09.28 Added Support for V.1 board with SX1268 LoRa Module
