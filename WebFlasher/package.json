@@ -21,6 +21,8 @@
     "@picocss/pico": "^1.5.10",
     "esptool-js": "^0.3.0",
     "ng-terminal": "^6.0.0-beta",
+    "ngx-cookie-service": "^16.0.1",
+    "ngx-serial": "^1.0.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"

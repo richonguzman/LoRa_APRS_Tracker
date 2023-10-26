@@ -1,19 +1,20 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {FormArray, FormControl, FormGroup, Validators} from '@angular/forms';
-import {ESPLoader, LoaderOptions, Transport} from 'esptool-js';
 import {NgTerminal} from "ng-terminal";
 import {SerialPortService} from "./serial-port.service";
+import {debounceTime, filter, Subscription} from "rxjs";
+import {CookieService} from "ngx-cookie-service";
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
 
   serialPortIsConnected = false;
 
-  @ViewChild('term', {static: false}) term?: NgTerminal;
+  @ViewChild('term') term?: NgTerminal;
 
   form = new FormGroup({
       'beacons': new FormArray<FormGroup<{
@@ -84,18 +85,47 @@ export class AppComponent implements OnInit {
     }
   );
 
-  constructor(private readonly serialPortService: SerialPortService) {
+  private readonly subscriptions = new Subscription();
+
+  constructor(private readonly serialPortService: SerialPortService,
+              private readonly cookieService: CookieService) {
   }
 
   ngOnInit(): void {
     this.addBeaconFormGroup();
+
+    if (this.cookieService.check('config')) {
+      const jsonData = JSON.parse(this.cookieService.get('config'));
+      this.setFormData(jsonData);
+    }
+
+    this.subscriptions.add(this.form.valueChanges
+      .pipe(
+        filter(() => this.form.valid),
+        debounceTime(1000),
+      )
+      .subscribe(() => {
+        this.cookieService.set('config', JSON.stringify(this.form.value));
+      }))
+
+    this.subscriptions.add(this.serialPortService.dataReceived$.subscribe({
+      next: data => {
+        this.term?.write(data);
+        this.term?.write("\n");
+
+        if (data[0] == 'g') {
+          const jsonData = JSON.parse(data.substring(1));
+          this.setFormData(jsonData);
+        }
+      }
+    }));
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
   }
 
   addBeaconFormGroup() {
-    if (this.form.controls.beacons.length >= 3) {
-      return;
-    }
-
     this.form.controls.beacons.push(new FormGroup({
       'callsign': new FormControl('F4HVV-9', [Validators.required, Validators.minLength(1), Validators.maxLength(9)]),
       'symbol': new FormControl('>', [Validators.required, Validators.minLength(1), Validators.maxLength(1)]),
@@ -116,14 +146,45 @@ export class AppComponent implements OnInit {
   }
 
   removeBeacon(index: number): void {
-    this.form.controls.beacons.removeAt(index);
+    if (this.form.controls.beacons.at(index)) {
+      this.form.controls.beacons.removeAt(index);
+    }
   }
 
-  async connectSerial() {
-
+  connectSerial() {
+    this.subscriptions.add(this.serialPortService.connectSerial().subscribe({
+      next: () => {
+        this.serialPortIsConnected = true;
+        this.serialPortService.sendData("g\n");
+      }
+    }));
   }
 
-  public async disconnectSerial() {
+  disconnectSerial() {
+    this.subscriptions.add(this.serialPortService.disconnectSerial().subscribe({
+      next: () => {
+        this.serialPortIsConnected = false;
+      }
+    }));
+  }
 
+  saveSettings() {
+    this.serialPortService.sendData(`s${JSON.stringify(this.form.value)}`);
+  }
+
+  private setFormData(jsonData: any): void {
+    this.form.reset();
+
+    while (this.form.controls.beacons.controls.length > 0) {
+      this.removeBeacon(0);
+    }
+
+    for (let i = 0; i < jsonData.beacons.length; i++) {
+      this.addBeaconFormGroup();
+    }
+
+    console.log(jsonData);
+
+    this.form.patchValue(jsonData);
   }
 }

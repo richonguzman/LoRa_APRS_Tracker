@@ -160,10 +160,11 @@ void loop() {
       String serialReceived = Serial.readString();
       Serial.println(Config.writeConfigFile(serialReceived) ? F("s1") : F("s0"));
     } else if (action == 'g') { // get config
+      Serial.print('g');
       Serial.println(Config.readRawConfigFile());
     } else if (action == 't') { // tx lora
       LoRa_Utils::sendNewPacket(Serial.readString());
-      Serial.println(F("s1"));
+      Serial.println(F("t1"));
     }
   }
 

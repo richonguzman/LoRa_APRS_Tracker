@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import {ESPLoader, LoaderOptions, Transport} from "esptool-js";
 import {NgTerminal} from "ng-terminal";
+import {NgxSerial} from "ngx-serial";
+import {fromPromise} from "rxjs/internal/observable/innerFrom";
+import {EMPTY, empty, Observable, Subject, tap} from "rxjs";
 
 @Injectable({
   providedIn: 'root'
@@ -11,9 +14,40 @@ export class SerialPortService {
   private transport?: Transport;
   private esploader?: ESPLoader;
 
-  constructor() { }
+  private port?: any;
+  private readonly serial: NgxSerial;
+  private readonly _dataReceived = new Subject<string>();
 
-  async connectSerial(term?: NgTerminal) {
+  constructor() {
+    this.serial = new NgxSerial((data: string) => {
+      console.log('Received', data);
+      this._dataReceived.next(data);
+    }, {
+      baudRate: 115200
+    });
+  }
+
+  get dataReceived$(): Observable<string> {
+    return this._dataReceived.asObservable();
+  }
+
+  connectSerial(): Observable<void> {
+    return fromPromise(this.serial.connect((port: any) => {
+      this.port = port;
+    }));
+  }
+
+  sendData(data: string): Observable<void> {
+    if (!this.serial) {
+      return EMPTY;
+    }
+
+    console.log('Send', data);
+
+    return fromPromise(this.serial.sendData(data));
+  }
+
+  async connectSerialFlahser(term?: NgTerminal) {
     if (!this.device) {
       this.device = await (navigator as any).serial.requestPort({});
       if (!this.device) {
@@ -78,7 +112,7 @@ export class SerialPortService {
     }
   }
 
-  async disconnectSerial(term?: NgTerminal) {
+  async disconnectSerialFlash(term?: NgTerminal) {
     await this.transport?.disconnect();
     await this.transport?.waitForUnlock(1500);
 
@@ -86,5 +120,16 @@ export class SerialPortService {
     this.transport = undefined;
 
     term?.underlying?.clear();
+  }
+
+  disconnectSerial(): Observable<void>{
+    this.port = null;
+
+    if (this.serial) {
+      return fromPromise(this.serial.close(() => {
+      }));
+    }
+
+    return EMPTY;
   }
 }

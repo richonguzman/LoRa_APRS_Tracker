@@ -1,15 +1,13 @@
 <header>
-  <h1>APRS LoRa Tracker</h1>
+  <h1>LoRa Tracker - Settings</h1>
 </header>
 
 <main class="container">
   <div>
-    <h2>Flash</h2>
+    <h2>Connect device with Serial Port</h2>
 
-    <button (click)="connectSerial()" *ngIf="!serialPortIsConnected">Connect serial</button>
+    <button (click)="connectSerial()" *ngIf="!serialPortIsConnected">Connect serial to retrieve current config</button>
     <button (click)="disconnectSerial()" *ngIf="serialPortIsConnected" class="warning">Disconnect serial</button>
-
-    <ng-terminal #term *ngIf="serialPortIsConnected"></ng-terminal>
   </div>
 
   <div>
@@ -19,11 +17,11 @@
       Some help <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">on the Wiki page</a>
     </p>
 
-    <form ngForm [formGroup]="form">
+    <form ngForm [formGroup]="form" (submit)="saveSettings()">
       <div>
         <fieldset *ngFor="let beaconForm of form.controls.beacons.controls; let index = index"
                   [formGroup]="beaconForm">
-          <legend>Beacon {{ index + 1 }}/3</legend>
+          <legend>Beacon {{ index + 1 }}</legend>
 
           <div class="grid">
             <label for="callsign">
@@ -105,7 +103,7 @@
           <button type="button" (click)="removeBeacon(index)" class="outline warning">Remove the beacon</button>
         </fieldset>
 
-        <button type="button" *ngIf="form.controls.beacons.length < 3" (click)="addBeaconFormGroup()">Add a new beacon</button>
+        <button type="button" (click)="addBeaconFormGroup()">Add a new beacon</button>
       </div>
 
       <fieldset [formGroup]="form.controls.lora" class="grid">
@@ -373,6 +371,11 @@
     <div *ngIf="form.valid">
       <h3>JSON data</h3>
       <pre>{{ form.value | json }}</pre>
+    </div>
+
+    <div>
+      <h3>Serial port received</h3>
+      <ng-terminal #term></ng-terminal>
     </div>
   </div>
 </main>

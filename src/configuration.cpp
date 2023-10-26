@@ -107,6 +107,11 @@ void Configuration::validateConfigFile(const String& currentBeaconCallsign) {
 }
 
 bool Configuration::writeConfigFile(const String& json) {
+  if (json[0] != '{' || json[json.length() - 1] != '}') {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Malformed JSON received");
+    return false;
+  }
+
   File configFile = SPIFFS.open(_filePath.c_str(), "w");
   if (!configFile) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Failed to open file");
@@ -136,6 +141,9 @@ String Configuration::readRawConfigFile() {
 
   String json = configFile.readString();
   configFile.close();
+  json.replace('\n', ' ');
+  json.replace('\r', ' ');
+  json.replace('\t', ' ');
   return json;
 }
 
