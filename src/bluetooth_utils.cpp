@@ -133,7 +133,7 @@ namespace BLUETOOTH_Utils {
   }
 
   void sendPacket(const String& packet) {
-    if (bluetoothActive && !packet.isEmpty()) {
+    if (bluetoothActive && !packet.isEmpty() && bluetoothConnected) {
       if (useKiss) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT RX Kiss", "%s", serialReceived.c_str());
         SerialBT.println(encode_kiss(packet));

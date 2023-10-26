@@ -22,6 +22,9 @@ extern uint32_t             menuTime;
 extern bool                 messageLed;
 extern uint32_t             messageLedTime;
 
+extern bool             displayState;
+extern uint32_t         displayTime;
+
 extern bool                 digirepeaterActive;
 
 extern APRSPacket           lastReceivedPacket;
@@ -163,13 +166,24 @@ namespace MSG_Utils {
       return;
     }
     if (packet.text.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
-      //Serial.println(packet.text); // only for debug
-      lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
+      String packetTrimmed = packet.text.substring(3);
+      lastReceivedPacket = APRSPacketLib::processReceivedPacket(packetTrimmed,packet.rssi, packet.snr, packet.freqError);
+
+      Serial.print('r'); // rx Lora
+      Serial.println(packetTrimmed);
+
+      if (Config.displayEcoMode && Config.displayMessageInEcoMode) {
+        display_toggle(true);
+        displayTime = millis();
+        displayState = true;
+        show_display("<  Rx  >", "From --> " + lastReceivedPacket.sender, "", packetTrimmed , 1000);
+      }
+
       if (lastReceivedPacket.sender!=currentBeacon->callsign) {
         if (Config.bluetoothType==0) {
-          BLE_Utils::sendToPhone(packet.text.substring(3));
+          BLE_Utils::sendToPhone(packetTrimmed);
         } else {
-          BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+          BLUETOOTH_Utils::sendPacket(packetTrimmed);
         }        
 
         if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {

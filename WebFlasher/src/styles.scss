@@ -1,0 +1,33 @@
+// Import Pico
+@import "@picocss/pico/scss/pico";
+
+body {
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 18px;
+}
+
+fieldset legend {
+  font-size: 25px;
+}
+
+.warning {
+  border-color: darkorange;
+}
+
+.outline.warning {
+  border-color: darkorange;
+  color: darkorange;
+
+  &:hover {
+    background-color: darkorange;
+    color: white;
+  }
+}
+
+.warning:not(.outline) {
+  background-color: darkorange;
+  color: white;
+}

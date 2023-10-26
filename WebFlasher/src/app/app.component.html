@@ -1,0 +1,378 @@
+<header>
+  <h1>APRS LoRa Tracker</h1>
+</header>
+
+<main class="container">
+  <div>
+    <h2>Flash</h2>
+
+    <button (click)="connectSerial()" *ngIf="!serialPortIsConnected">Connect serial</button>
+    <button (click)="disconnectSerial()" *ngIf="serialPortIsConnected" class="warning">Disconnect serial</button>
+
+    <ng-terminal #term *ngIf="serialPortIsConnected"></ng-terminal>
+  </div>
+
+  <div>
+    <h2>Settings</h2>
+
+    <p>
+      Some help <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/2.-Tracker-Configuration" target="_blank">on the Wiki page</a>
+    </p>
+
+    <form ngForm [formGroup]="form">
+      <div>
+        <fieldset *ngFor="let beaconForm of form.controls.beacons.controls; let index = index"
+                  [formGroup]="beaconForm">
+          <legend>Beacon {{ index + 1 }}/3</legend>
+
+          <div class="grid">
+            <label for="callsign">
+              Callsign
+              <input type="text" id="callsign" minlength="1" maxlength="9" formControlName="callsign">
+            </label>
+
+            <label for="symbol">
+              Symbol
+              <input type="text" id="symbol" minlength="1" maxlength="1" formControlName="symbol">
+            </label>
+
+            <label for="overlay">
+              Overlay
+              <input type="text" id="overlay" minlength="1" maxlength="1" formControlName="overlay">
+            </label>
+          </div>
+
+          <label for="comment">
+            Comment
+            <input type="text" id="comment" maxlength="40" formControlName="comment">
+          </label>
+
+          <fieldset [formGroup]="beaconForm.controls.smart_beacon">
+            <legend>Smart beacon</legend>
+
+            <label for="active">
+              Active
+              <input type="checkbox" role="switch" id="active" formControlName="active">
+            </label>
+
+            <div *ngIf="beaconForm.controls.smart_beacon.controls.active.value">
+              <div class="grid">
+                <label for="slowRate">
+                  Slow rate
+                  <input type="number" id="slowRate" min="1" max="86400" formControlName="slowRate">
+                </label>
+
+                <label for="slowSpeed">
+                  Slow speed
+                  <input type="number" id="slowSpeed" min="1" max="1000" formControlName="slowSpeed">
+                </label>
+
+                <label for="fastRate">
+                  Fast rate
+                  <input type="number" id="fastRate" min="1" max="86400" formControlName="fastRate">
+                </label>
+
+                <label for="fastSpeed">
+                  Fast speed
+                  <input type="number" id="fastSpeed" min="1" max="1000" formControlName="fastSpeed">
+                </label>
+              </div>
+
+              <div class="grid">
+                <label for="minTxDist">
+                  Min TX Distance
+                  <input type="number" id="minTxDist" min="1" max="1000" formControlName="minTxDist">
+                </label>
+
+                <label for="minDeltaBeacon">
+                  Min delta beacon
+                  <input type="number" id="minDeltaBeacon" min="1" max="86400" formControlName="minDeltaBeacon">
+                </label>
+
+                <label for="turnMinDeg">
+                  Turn min deg
+                  <input type="number" id="turnMinDeg" min="0" max="360" formControlName="turnMinDeg">
+                </label>
+
+                <label for="turnSlope">
+                  Turn slope
+                  <input type="number" id="turnSlope" min="0" max="360" formControlName="turnSlope">
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          <button type="button" (click)="removeBeacon(index)" class="outline warning">Remove the beacon</button>
+        </fieldset>
+
+        <button type="button" *ngIf="form.controls.beacons.length < 3" (click)="addBeaconFormGroup()">Add a new beacon</button>
+      </div>
+
+      <fieldset [formGroup]="form.controls.lora" class="grid">
+        <legend>LoRa</legend>
+
+        <label for="frequency">
+          Frequency
+          <input type="number" id="frequency" min="100000000" max="3000000000" formControlName="frequency">
+        </label>
+
+        <label for="spreadingFactor">
+          Spreading Factor
+          <select id="spreadingFactor" formControlName="spreadingFactor">
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </label>
+
+        <label for="signalBandwidth">
+          Bandwidth
+          <select id="signalBandwidth" formControlName="signalBandwidth">
+            <option value="125000">125 kHz</option>
+            <option value="250000">250 kHz</option>
+            <option value="500000">500 kHz</option>
+          </select>
+        </label>
+
+        <label for="codingRate4">
+          Coding rate 4
+          <select id="codingRate4" formControlName="codingRate4">
+            <option value="5">4:5</option>
+            <option value="6">4:6</option>
+            <option value="7">4:7</option>
+            <option value="8">4:8</option>
+          </select>
+        </label>
+
+        <label for="power">
+          Power dBm
+          <input type="number" id="power" min="0" max="20" formControlName="power">
+        </label>
+      </fieldset>
+
+      <fieldset [formGroup]="form.controls.other">
+        <legend>Other</legend>
+
+        <div class="grid">
+          <label for="sendAltitude">
+            Send Altitude
+            <input type="checkbox" role="switch" id="sendAltitude" formControlName="sendAltitude">
+          </label>
+
+          <label for="sendBatteryInfo">
+            Send Battery Info
+            <input type="checkbox" role="switch" id="sendBatteryInfo" formControlName="sendBatteryInfo">
+          </label>
+        </div>
+
+        <div class="grid">
+          <label for="showSymbolOnScreen">
+            Show Symbol On Screen
+            <input type="checkbox" role="switch" id="showSymbolOnScreen" formControlName="showSymbolOnScreen">
+          </label>
+
+          <label for="displayEcoMode">
+            Display Eco Mode
+            <input type="checkbox" role="switch" id="displayEcoMode" formControlName="displayEcoMode">
+          </label>
+        </div>
+
+        <div class="grid">
+          <label for="bluetooth">
+            Bluetooth
+            <input type="checkbox" role="switch" id="bluetooth" formControlName="bluetooth">
+          </label>
+
+          <label for="disableGps">
+            Disable GPS
+            <input type="checkbox" role="switch" id="disableGps" formControlName="disableGps">
+          </label>
+        </div>
+
+        <label for="simplifiedTrackerMode">
+          Simplified Tracker Mode
+          <input type="checkbox" role="switch" id="simplifiedTrackerMode" formControlName="simplifiedTrackerMode">
+        </label>
+
+        <div class="grid">
+          <label for="path">
+            Path
+            <input type="text" id="path" minlength="1" maxlength="9" formControlName="path">
+          </label>
+
+          <label for="sendCommentAfterXBeacons">
+            Send Comment After X Beacons
+            <input type="number" id="sendCommentAfterXBeacons" min="1" max="86400" formControlName="sendCommentAfterXBeacons">
+          </label>
+
+          <label for="displayTimeout">
+            Display Timeout
+            <input type="number" id="displayTimeout" min="0" max="86400" formControlName="displayTimeout">
+          </label>
+        </div>
+
+        <div class="grid">
+          <label for="standingUpdateTime">
+            Standing Update Time
+            <input type="number" id="standingUpdateTime" min="0" max="86400" formControlName="standingUpdateTime">
+          </label>
+
+          <label for="nonSmartBeaconRate">
+            Non-Smart Beacon Rate
+            <input type="number" id="nonSmartBeaconRate" min="1" max="86400" formControlName="nonSmartBeaconRate">
+          </label>
+        </div>
+
+        <div class="grid">
+          <label for="rememberStationTime">
+            Remember Station Time
+            <input type="number" id="rememberStationTime" min="1" max="86400" formControlName="rememberStationTime">
+          </label>
+
+          <label for="maxDistanceToTracker">
+            Max Distance To Tracker
+            <input type="number" id="maxDistanceToTracker" min="1" max="1000" formControlName="maxDistanceToTracker">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset [formGroup]="form.controls.pttTrigger">
+        <legend>PTT Trigger</legend>
+
+        <label for="activePtt">
+          Active
+          <input type="checkbox" role="switch" id="activePtt" formControlName="active">
+        </label>
+
+        <div *ngIf="form.controls.pttTrigger.controls.active.value">
+          <label for="reverse">
+            Reverse
+            <input type="checkbox" role="switch" id="reverse" formControlName="reverse">
+          </label>
+
+          <div class="grid">
+            <label for="io_pin">
+              IO Pin
+              <input type="number" id="io_pin" min="0" max="40" formControlName="io_pin">
+            </label>
+
+            <label for="preDelay">
+              Pre-Delay
+              <input type="number" id="preDelay" min="0" max="10000" formControlName="preDelay">
+            </label>
+
+            <label for="postDelay">
+              Post-Delay
+              <input type="number" id="postDelay" min="0" max="10000" formControlName="postDelay">
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset [formGroup]="form.controls.bme">
+        <legend>BME</legend>
+
+        <label for="activeBme">
+          Active
+          <input type="checkbox" role="switch" id="activeBme" formControlName="active">
+        </label>
+
+        <div *ngIf="form.controls.bme.controls.active.value">
+          <label for="sendTelemetry">
+            Send Telemetry
+            <input type="checkbox" role="switch" id="sendTelemetry" formControlName="sendTelemetry">
+          </label>
+
+          <label for="heightCorrection">
+            Height Correction
+            <input type="number" id="heightCorrection" min="0" max="65535" formControlName="heightCorrection">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset [formGroup]="form.controls.notification">
+        <legend>Notification</legend>
+
+        <label for="ledTx">
+          LED Tx
+          <input type="checkbox" role="switch" id="ledTx" formControlName="ledTx">
+        </label>
+
+        <label for="ledTxPin" *ngIf="form.controls.notification.controls.ledTx.value">
+          LED Tx Pin
+          <input type="number" id="ledTxPin" min="0" max="40" formControlName="ledTxPin">
+        </label>
+
+        <label for="ledMessage">
+          LED Message
+          <input type="checkbox" role="switch" id="ledMessage" formControlName="ledMessage">
+        </label>
+
+        <label for="ledMessagePin" *ngIf="form.controls.notification.controls.ledMessage.value">
+          LED Message Pin
+          <input type="number" id="ledMessagePin" min="0" max="40" formControlName="ledMessagePin">
+        </label>
+
+        <label for="buzzerActive">
+          Buzzer Active
+          <input type="checkbox" role="switch" id="buzzerActive" formControlName="buzzerActive">
+        </label>
+
+        <div *ngIf="form.controls.notification.controls.buzzerActive.value">
+          <div class="grid">
+            <label for="buzzerPinTone">
+              Buzzer Pin Tone
+              <input type="number" id="buzzerPinTone" min="0" max="40" formControlName="buzzerPinTone">
+            </label>
+
+            <label for="buzzerPinVcc">
+              Buzzer Pin Vcc
+              <input type="number" id="buzzerPinVcc" min="0" max="40" formControlName="buzzerPinVcc">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label for="bootUpBeep">
+              Boot Up Beep
+              <input type="checkbox" role="switch" id="bootUpBeep" formControlName="bootUpBeep">
+            </label>
+
+            <label for="txBeep">
+              TX Beep
+              <input type="checkbox" role="switch" id="txBeep" formControlName="txBeep">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label for="messageRxBeep">
+              Message RX Beep
+              <input type="checkbox" role="switch" id="messageRxBeep" formControlName="messageRxBeep">
+            </label>
+
+            <label for="stationBeep">
+              Station Beep
+              <input type="checkbox" role="switch" id="stationBeep" formControlName="stationBeep">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label for="lowBatteryBeep">
+              Low Battery Beep
+              <input type="checkbox" role="switch" id="lowBatteryBeep" formControlName="lowBatteryBeep">
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <button type="submit" [disabled]="form.invalid">Save</button>
+    </form>
+
+    <div *ngIf="form.valid">
+      <h3>JSON data</h3>
+      <pre>{{ form.value | json }}</pre>
+    </div>
+  </div>
+</main>

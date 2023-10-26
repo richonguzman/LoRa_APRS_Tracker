@@ -98,7 +98,7 @@ namespace LoRa_Utils {
     if (Config.notification.buzzerActive && Config.notification.txBeep) {
       NOTIFICATION_Utils::beaconTxBeep();
     }
-    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
       //Serial.println(F("success!"));

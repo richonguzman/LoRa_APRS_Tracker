@@ -9,7 +9,8 @@ extern logging::Logger logger;
 Configuration::Configuration() {
     _filePath = "/tracker_config.json";
     if (!SPIFFS.begin(false)) {
-      Serial.println("SPIFFS Mount Failed");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "SPIFFS mount failed");
+      Serial.println("SPIFFS Mount Failed"); // why Serial instead of logger ?
       return;
     }
     readFile(SPIFFS, _filePath.c_str());
@@ -20,7 +21,8 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     File configFile = fs.open(fileName, "r");
     DeserializationError error = deserializeJson(data, configFile);
     if (error) {
-        Serial.println("Failed to read file, using default configuration");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Config", "Failed to read file, using default configuration");
+      Serial.println("Failed to read file, using default configuration"); // why Serial instead of logger ?
     }
 
     JsonArray BeaconsArray = data["beacons"];
@@ -102,6 +104,39 @@ void Configuration::validateConfigFile(const String& currentBeaconCallsign) {
         delay(1000);
     }
   }
+}
+
+bool Configuration::writeConfigFile(const String& json) {
+  File configFile = SPIFFS.open(_filePath.c_str(), "w");
+  if (!configFile) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Failed to open file");
+    return false;
+  }
+
+  if (configFile.print(json) != json.length()) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Failed to write all json in file");
+    configFile.close();
+    return false;
+  }
+
+  configFile.close();
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Config", "New config written, reload it");
+
+  readFile(SPIFFS, _filePath.c_str());
+
+  return true;
+}
+String Configuration::readRawConfigFile() {
+  File configFile = SPIFFS.open(_filePath.c_str(), "r");
+  if (!configFile) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Failed to open file");
+    return F("{}");
+  }
+
+  String json = configFile.readString();
+  configFile.close();
+  return json;
 }
 
 bool Configuration::validateMicE(const String& currentBeaconMicE) {

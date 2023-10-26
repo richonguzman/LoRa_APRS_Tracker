@@ -154,6 +154,19 @@ void setup() {
 }
 
 void loop() {
+  if (Serial.available() > 0) {
+    int action = Serial.read();
+    if (action == 's') { // set config
+      String serialReceived = Serial.readString();
+      Serial.println(Config.writeConfigFile(serialReceived) ? F("s1") : F("s0"));
+    } else if (action == 'g') { // get config
+      Serial.println(Config.readRawConfigFile());
+    } else if (action == 't') { // tx lora
+      LoRa_Utils::sendNewPacket(Serial.readString());
+      Serial.println(F("s1"));
+    }
+  }
+
   currentBeacon = &Config.beacons[myBeaconsIndex];
   if (statusState) {
     Config.validateConfigFile(currentBeacon->callsign);

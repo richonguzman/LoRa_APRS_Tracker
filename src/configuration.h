@@ -2,6 +2,7 @@
 #define CONFIGURATION_H_
 
 #include <Arduino.h>
+#include <FS.h>
 #include <vector>
 
 class Beacon {
@@ -77,6 +78,7 @@ public:
   bool    showSymbolOnScreen;
   int     sendCommentAfterXBeacons;
   bool    displayEcoMode;
+  bool    displayMessageInEcoMode = true; // TODO
   int     displayTimeout;
   String  path;
   int     nonSmartBeaconRate;
@@ -91,6 +93,8 @@ public:
 
   Configuration();
   void validateConfigFile(const String& currentBeaconCallsign);
+  String readRawConfigFile();
+  bool writeConfigFile(const String& json);
   bool validateMicE(const String& currentBeaconMicE);
 
 private:
