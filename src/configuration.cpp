@@ -6,6 +6,9 @@
 
 extern logging::Logger logger;
 
+extern bool             displayState;
+extern uint32_t         displayTime;
+
 Configuration::Configuration() {
     _filePath = "/tracker_config.json";
     if (!SPIFFS.begin(false)) {
@@ -127,6 +130,10 @@ bool Configuration::writeConfigFile(const String& json) {
   configFile.close();
 
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Config", "New config written, reload it");
+  display_toggle(true);
+  displayTime = millis();
+  displayState = true;
+  show_display("Config", "New config saved", "Will reload...", 2500);
 
   readFile(SPIFFS, _filePath.c_str());
 

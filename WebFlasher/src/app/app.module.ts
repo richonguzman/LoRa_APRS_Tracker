@@ -4,16 +4,29 @@ import {BrowserModule} from '@angular/platform-browser';
 import {AppComponent} from './app.component';
 import {ReactiveFormsModule} from "@angular/forms";
 import {NgTerminalModule} from "ng-terminal";
-import {SerialPortService} from "./serial-port.service";
+import {SerialPortService} from "./shared/services/serial-port.service";
+import {NotifierModule} from "angular-notifier";
+import { SettingsFormComponent } from './settings-form/settings-form.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    SettingsFormComponent
   ],
   imports: [
     BrowserModule,
     ReactiveFormsModule,
-    NgTerminalModule
+    NgTerminalModule,
+    NotifierModule.withConfig({
+      behaviour: {
+        autoHide: 2500
+      },
+      position: {
+        horizontal: {
+          position: 'middle'
+        }
+      }
+    }),
   ],
   providers: [
     SerialPortService

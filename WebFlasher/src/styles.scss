@@ -1,5 +1,23 @@
+$notifier-info-background-color: #4d4d4d;
+$notifier-info-font-color: #fff;
+$notifier-success-font-color: #fff;
+$notifier-error-font-color: #fff;
+
 // Import Pico
 @import "@picocss/pico/scss/pico";
+@import 'node_modules/angular-notifier/styles';
+
+.notifier__notification--info .notifier__notification-message {
+  color: $notifier-info-font-color;
+}
+
+.notifier__notification--success .notifier__notification-message {
+  color: $notifier-success-font-color;
+}
+
+.notifier__notification--error .notifier__notification-message {
+  color: $notifier-error-font-color;
+}
 
 body {
   padding: 20px;
@@ -7,10 +25,6 @@ body {
 
 h2 {
   margin-bottom: 18px;
-}
-
-fieldset legend {
-  font-size: 25px;
 }
 
 .warning {
@@ -34,4 +48,8 @@ fieldset legend {
 
 .hidden {
   display: none !important;
+}
+
+.mb {
+  margin-bottom: 32px;
 }
