@@ -2,6 +2,7 @@
 #include "lora_utils.h"
 #include "display.h"
 #include "utils.h"
+#include "APRSPacketLib.h"
 
 extern Beacon           *currentBeacon;
 extern Configuration    Config;
@@ -89,12 +90,7 @@ namespace utils {
       lastTx = millis() - lastTxTime;
       uint32_t statusTx = millis() - statusTime;
       if (statusTx > 15*60*1000 && lastTx > 10*1000) {
-        String packet = currentBeacon->callsign + ">APLRT1";
-        if (Config.path != "") {
-          packet += "," + Config.path;
-        }
-        packet += ":>https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate;
-        LoRa_Utils::sendNewPacket(packet);
+        LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, "https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate));
         statusState = false;
         lastTx = millis();
       }

@@ -12,6 +12,8 @@
 #include "logger.h"
 #include "utils.h"
 
+#include "APRSPacketLib.h"
+
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
@@ -387,18 +389,12 @@ namespace STATION_Utils {
   }
 
   void sendBeacon(String type) {
-    String packet = currentBeacon->callsign + ">APLRT1";
-    if (Config.path != "") {
-      packet += "," + Config.path;
-    }
-    packet += ":!";
+    String packet;
     if (Config.bme.sendTelemetry && type == "Wx") {
-      packet += "/";
-      packet += GPS_Utils::encondeGPS("Wx");
+      packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", GPS_Utils::encondeGPS("Wx"));
       packet += BME_Utils::readDataSensor("APRS");
     } else {
-      packet += currentBeacon->overlay;
-      packet += GPS_Utils::encondeGPS("GPS");
+      packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, GPS_Utils::encondeGPS("GPS"));
     }
 
     if (currentBeacon->comment != "") {
