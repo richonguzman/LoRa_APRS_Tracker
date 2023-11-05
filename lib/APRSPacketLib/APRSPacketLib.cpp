@@ -43,7 +43,6 @@ namespace APRSPacketLib {
         aprsPacket.addressee = "";
         aprsPacket.message = "";
       }
-      Serial.println("Struct APRS PACKET procesado");
       return aprsPacket;
     }
 
