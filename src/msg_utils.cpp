@@ -10,6 +10,8 @@
 #include "display.h"
 #include "logger.h"
 
+#include "APRSPacketLib.h"
+
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern std::vector<String>  loadedAPRSMessages;
@@ -32,6 +34,8 @@ int      numAPRSMessages             = 0;
 bool     noMessageWarning            = false;
 String   lastHeardTracker            = "NONE";
 uint32_t lastDeleteListenedTracker   = millis();
+
+APRSPacket aprsPacket;
 
 namespace MSG_Utils {
 
@@ -166,8 +170,29 @@ namespace MSG_Utils {
       return;
     }
     String Sender, AddresseeAndMessage, Addressee, receivedMessage, ackMessage;
+
+    /*
+    String sender;
+    */
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
+      aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
+      Serial.println(aprsPacket.sender);
+      Serial.println(aprsPacket.type);
+      /*
+      if (aprsPacket.sender != currentBeacon->callsign) {                  // avoid listening yourself by digirepeating
+        if (aprsPacket.type == "message") {
+
+
+
+
+
+        }
+       
+      
+      
+      
+      */
       Sender = packetReceived.substring(3,packetReceived.indexOf(">"));
       if (Sender != currentBeacon->callsign) {                          // avoid listening yourself by digirepeating
         if (packetReceived.indexOf("::") > 10) {                        // its a Message!
