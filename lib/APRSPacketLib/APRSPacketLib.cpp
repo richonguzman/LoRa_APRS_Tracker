@@ -30,18 +30,31 @@ namespace APRSPacketLib {
         temp2.trim();
         aprsPacket.addressee = temp2;
         aprsPacket.message = temp.substring(temp.indexOf(":")+1);
+        aprsPacket.latitude = 0;
+        aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
         aprsPacket.type = "gps";
         aprsPacket.addressee = "";
         aprsPacket.message = "";
+        
+
+
+
+
+        aprsPacket.latitude = 10;
+        aprsPacket.longitude = 10;
       } else if (receivedPacket.indexOf(":>") > 10) {
         aprsPacket.type = "status";
         aprsPacket.addressee = "";
         aprsPacket.message = "";
+        aprsPacket.latitude = 0;
+        aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
         aprsPacket.type = "telemetry";
         aprsPacket.addressee = "";
         aprsPacket.message = "";
+        aprsPacket.latitude = 0;
+        aprsPacket.longitude = 0;
       }
       return aprsPacket;
     }
