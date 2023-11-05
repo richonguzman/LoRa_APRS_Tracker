@@ -172,11 +172,9 @@ namespace MSG_Utils {
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
       aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
-      //
-      Serial.println(packetReceived); // only for debug
-      //
+      //Serial.println(packetReceived); // only for debug
       if (aprsPacket.type=="message" && aprsPacket.sender!=currentBeacon->callsign && aprsPacket.addressee==currentBeacon->callsign) {
-        if (aprsPacket.message.indexOf("{")>0) {  // ack?
+        if (aprsPacket.message.indexOf("{")>0) {
           String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
           ackMessage.trim();
           delay(4000);

@@ -108,7 +108,6 @@ namespace APRSPacketLib {
             aprsPacket.latitude = decodeEncodedLatitude(receivedPacket);
             aprsPacket.longitude = decodeEncodedLongitude(receivedPacket);
           } else {
-            Serial.println(" gps no codificado");
             aprsPacket.latitude = decodeLatitude(receivedPacket);
             aprsPacket.longitude = decodeLongitude(receivedPacket);
           }
