@@ -15,6 +15,7 @@ struct APRSPacket {
 namespace APRSPacketLib {
 
 String generateStatusPacket(String callsign, String tocall, String path, String status);
+char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
 String generateGPSBeaconPacket(String callsign, String tocall, String path, String overlay, String gpsData);
 float decodeEncodedLatitude(String receivedPacket);
 float decodeEncodedLongitude(String receivedPacket);

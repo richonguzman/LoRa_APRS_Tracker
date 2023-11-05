@@ -185,7 +185,7 @@ namespace MSG_Utils {
         }
         if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
           NOTIFICATION_Utils::messageBeep();
-        }            
+        }
         if (aprsPacket.message.indexOf("ping")==0 || aprsPacket.message.indexOf("Ping")==0 || aprsPacket.message.indexOf("PING")==0) {
           delay(4000);
           sendMessage(aprsPacket.sender, "pong, 73!");
@@ -222,6 +222,9 @@ namespace MSG_Utils {
         lastHeardTracker = aprsPacket.sender;
         if (!Config.simplifiedTrackerMode) {
           GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
+          if (Config.notification.buzzerActive && Config.notification.stationBeep) {
+            NOTIFICATION_Utils::stationHeardBeep();
+          }
         }
       }
     }

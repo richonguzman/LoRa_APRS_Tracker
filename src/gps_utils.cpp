@@ -8,6 +8,8 @@
 #include "logger.h"
 #include "utils.h"
 
+#include "APRSPacketLib.h"
+
 extern Configuration    Config;
 extern HardwareSerial   neo6m_gps;
 extern TinyGPSPlus      gps;
@@ -122,11 +124,13 @@ namespace GPS_Utils {
 
     char helper_base91[] = {"0000\0"};
     int i;
-    utils::ax25_base91enc(helper_base91, 4, aprs_lat);
+    //utils::ax25_base91enc(helper_base91, 4, aprs_lat);
+    APRSPacketLib::ax25_base91enc(helper_base91, 4, aprs_lat);
     for (i=0; i<4; i++) {
       encodedData += helper_base91[i];
     }
-    utils::ax25_base91enc(helper_base91, 4, aprs_lon);
+    //utils::ax25_base91enc(helper_base91, 4, aprs_lon);
+    APRSPacketLib::ax25_base91enc(helper_base91, 4, aprs_lon);
     for (i=0; i<4; i++) {
       encodedData += helper_base91[i];
     }
@@ -156,13 +160,15 @@ namespace GPS_Utils {
       encodedData +=char(Alt2+33);
       encodedData +=char(0x30+33);
     } else {                      // ... just send Course and Speed
-      utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+      //utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+      APRSPacketLib::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
       if (sendStandingUpdate) {
         encodedData += " ";
       } else {
         encodedData += helper_base91[0];
       }
-      utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+      //utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+      APRSPacketLib::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
       encodedData += helper_base91[0];
       encodedData += "\x47";
     }
