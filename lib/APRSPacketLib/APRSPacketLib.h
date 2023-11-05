@@ -16,6 +16,10 @@ namespace APRSPacketLib {
 
 String generateStatusPacket(String callsign, String tocall, String path, String status);
 String generateGPSBeaconPacket(String callsign, String tocall, String path, String overlay, String gpsData);
+float decodeEncodedLatitude(String receivedPacket);
+float decodeEncodedLongitude(String receivedPacket);
+float decodeLatitude(String receivedPacket);
+float decodeLongitude(String receivedPacket);
 APRSPacket processReceivedPacket(String receivedPacket);
 
 }

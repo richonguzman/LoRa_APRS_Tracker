@@ -172,7 +172,9 @@ namespace MSG_Utils {
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
       aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
-      //Serial.println(packetReceived);
+      //
+      Serial.println(packetReceived); // only for debug
+      //
       if (aprsPacket.type=="message" && aprsPacket.sender!=currentBeacon->callsign && aprsPacket.addressee==currentBeacon->callsign) {
         if (aprsPacket.message.indexOf("{")>0) {  // ack?
           String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
@@ -221,23 +223,7 @@ namespace MSG_Utils {
       } else if (aprsPacket.type == "gps") {
         lastHeardTracker = aprsPacket.sender;
         if (!Config.simplifiedTrackerMode) {
-          int encodedBytePosition = 0;
-          if (packetReceived.indexOf(":!") > 10) {
-            encodedBytePosition = packetReceived.indexOf(":!") + 14;
-          }
-          if (packetReceived.indexOf(":=") > 10) {
-            encodedBytePosition = packetReceived.indexOf(":=") + 14;
-          }
-          if (encodedBytePosition != 0) {
-            if (Config.notification.buzzerActive && Config.notification.stationBeep) {
-              NOTIFICATION_Utils::stationHeardBeep();
-            }
-            if (String(packetReceived[encodedBytePosition]) == "G" || String(packetReceived[encodedBytePosition]) == "Q" || String(packetReceived[encodedBytePosition]) == "[" || String(packetReceived[encodedBytePosition]) == "H") {
-              GPS_Utils::decodeEncodedGPS(packetReceived, aprsPacket.sender);
-            } else {
-              GPS_Utils::getReceivedGPS(packetReceived, aprsPacket.sender); 
-            }
-          }
+          GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
         }
       }
     }
