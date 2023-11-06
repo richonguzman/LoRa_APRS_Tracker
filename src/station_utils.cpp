@@ -396,7 +396,6 @@ namespace STATION_Utils {
     } else {
       packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
     }
-
     if (currentBeacon->comment != "") {
       updateCounter++;
       if (updateCounter >= Config.sendCommentAfterXBeacons) {
@@ -404,7 +403,6 @@ namespace STATION_Utils {
         updateCounter = 0;
       } 
     }
-
     if (Config.sendBatteryInfo) {
       String batteryVoltage = powerManagement.getBatteryInfoVoltage();
       String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
@@ -415,11 +413,9 @@ namespace STATION_Utils {
       packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
       #endif
     }
-
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", packet.c_str());
     show_display("<<< TX >>>", "", packet,100);
     LoRa_Utils::sendNewPacket(packet);
-
+    
     if (currentBeacon->smartBeaconState) {
       lastTxLat       = gps.location.lat();
       lastTxLng       = gps.location.lng();

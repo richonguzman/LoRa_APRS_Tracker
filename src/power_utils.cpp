@@ -244,7 +244,7 @@ void PowerManagement::lowerCpuFrequency() {
   if (setCpuFrequencyMhz(80)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
   } else {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency unchanged");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
   }
   #endif
 }

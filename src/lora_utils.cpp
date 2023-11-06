@@ -78,6 +78,9 @@ namespace LoRa_Utils {
 
   void sendNewPacket(const String &newPacket) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Send data: %s", newPacket.c_str());
+    /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa","Send data: %s", newPacket.c_str());*/
 
     if (Config.ptt.active) {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);

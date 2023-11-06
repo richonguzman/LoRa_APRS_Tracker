@@ -54,14 +54,6 @@ namespace utils {
     return locator;
   }
 
-  /*char *ax25_base91enc(char *s, uint8_t n, uint32_t v) {
-    for(s += n, *s = '\0'; n; n--) {
-      *(--s) = v % 91 + 33;
-      v /= 91;
-    }
-    return(s);
-  }*/
-
   static String padding(unsigned int number, unsigned int width) {
       String result;
       String num(number);
