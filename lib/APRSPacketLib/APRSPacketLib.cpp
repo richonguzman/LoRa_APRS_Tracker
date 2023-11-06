@@ -19,52 +19,41 @@ namespace APRSPacketLib {
       return(s);
     }
 
-    String encondeGPS(String type) {
+    String encondeGPS(float latitude, float longitude, float course, float speed, String symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, String packetType) {
       String encodedData;
-      float Tlat, Tlon;
-      float Tspeed=0, Tcourse=0;
-      Tlat    = gps.location.lat();
-      Tlon    = gps.location.lng();
-      Tcourse = gps.course.deg();
-      Tspeed  = gps.speed.knots();
-
       uint32_t aprs_lat, aprs_lon;
-      aprs_lat = 900000000 - Tlat * 10000000;
+      aprs_lat = 900000000 - latitude * 10000000;
       aprs_lat = aprs_lat / 26 - aprs_lat / 2710 + aprs_lat / 15384615;
-      aprs_lon = 900000000 + Tlon * 10000000 / 2;
+      aprs_lon = 900000000 + longitude * 10000000 / 2;
       aprs_lon = aprs_lon / 26 - aprs_lon / 2710 + aprs_lon / 15384615;
 
       String Ns, Ew, helper;
-      if(Tlat < 0) { Ns = "S"; } else { Ns = "N"; }
-      if(Tlat < 0) { Tlat= -Tlat; }
+      if(latitude < 0) { Ns = "S"; } else { Ns = "N"; }
+      if(latitude < 0) { latitude= -latitude; }
 
-      if(Tlon < 0) { Ew = "W"; } else { Ew = "E"; }
-      if(Tlon < 0) { Tlon= -Tlon; }
+      if(longitude < 0) { Ew = "W"; } else { Ew = "E"; }
+      if(longitude < 0) { longitude= -longitude; }
 
       char helper_base91[] = {"0000\0"};
       int i;
-      //utils::ax25_base91enc(helper_base91, 4, aprs_lat);
-      APRSPacketLib::ax25_base91enc(helper_base91, 4, aprs_lat);
+      ax25_base91enc(helper_base91, 4, aprs_lat);
       for (i=0; i<4; i++) {
         encodedData += helper_base91[i];
       }
-      //utils::ax25_base91enc(helper_base91, 4, aprs_lon);
-      APRSPacketLib::ax25_base91enc(helper_base91, 4, aprs_lon);
+      ax25_base91enc(helper_base91, 4, aprs_lon);
       for (i=0; i<4; i++) {
         encodedData += helper_base91[i];
       }
-      if (type=="Wx") {
+      if (packetType=="Wx") {
         encodedData += "_";
       } else {
-        encodedData += currentBeacon->symbol;
+        encodedData += symbol;
       }
 
-      if (Config.sendAltitude) {      // Send Altitude or... (APRS calculates Speed also)
+      if (sendAltitude) {           // Send Altitude or... (APRS calculates Speed also)
         int Alt1, Alt2;
-        int Talt;
-        Talt = gps.altitude.feet();
-        if(Talt>0) {
-          double ALT=log(Talt)/log(1.002);
+        if(altitude>0) {
+          double ALT=log(altitude)/log(1.002);
           Alt1= int(ALT/91);
           Alt2=(int)ALT%91;
         } else {
@@ -79,15 +68,13 @@ namespace APRSPacketLib {
         encodedData +=char(Alt2+33);
         encodedData +=char(0x30+33);
       } else {                      // ... just send Course and Speed
-        //utils::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
-        APRSPacketLib::ax25_base91enc(helper_base91, 1, (uint32_t) Tcourse/4 );
+        ax25_base91enc(helper_base91, 1, (uint32_t) course/4 );
         if (sendStandingUpdate) {
           encodedData += " ";
         } else {
           encodedData += helper_base91[0];
         }
-        //utils::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
-        APRSPacketLib::ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(Tspeed)/0.07696));
+        ax25_base91enc(helper_base91, 1, (uint32_t) (log1p(speed)/0.07696));
         encodedData += helper_base91[0];
         encodedData += "\x47";
       }
