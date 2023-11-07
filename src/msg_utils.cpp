@@ -24,6 +24,8 @@ extern uint32_t             menuTime;
 extern bool                 messageLed;
 extern uint32_t             messageLedTime;
 
+extern bool                 digirepeaterActive;
+
 String   firstNearTracker            = "";
 String   secondNearTracker           = "";
 String   thirdNearTracker            = "";
@@ -171,8 +173,21 @@ namespace MSG_Utils {
     }
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
-      aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
       //Serial.println(packetReceived); // only for debug
+      aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
+      
+      if (digirepeaterActive) {
+        Serial.print("Checking Packet before repeating ---> ");
+        String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
+        if (digiRepeatedPacket == "X") {
+          Serial.println("Packet from " + aprsPacket.sender + " won't be repeated (missing WIDE1-X)");
+        } else {
+          Serial.println(digiRepeatedPacket);
+        }
+        /// this is the place where the validated and reformated packet will be Tx through LoRa
+
+      }
+
       if (aprsPacket.type=="message" && aprsPacket.sender!=currentBeacon->callsign && aprsPacket.addressee==currentBeacon->callsign) {
         if (aprsPacket.message.indexOf("{")>0) {
           String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);

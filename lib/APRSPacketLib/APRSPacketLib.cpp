@@ -11,6 +11,37 @@ namespace APRSPacketLib {
       return packet;
     }
 
+    String generateDigiRepeatedPacket(APRSPacket packet, String callsign) {
+      if (packet.path.indexOf("WIDE1-")>=0) {
+        String hop = packet.path.substring(packet.path.indexOf("WIDE1-")+6, packet.path.indexOf("WIDE1-")+7);
+        if (hop.toInt()>=1 && hop.toInt()<=7) {
+          if (hop.toInt()==1) {
+            packet.path.replace("WIDE1-1", callsign + "*");
+          } else {
+            packet.path.replace("WIDE1-" + hop , callsign + "*,WIDE1-" + String(hop.toInt()-1));
+          }
+          String repeatedPacket = packet.sender + ">" + packet.tocall + "," + packet.path;
+          if (packet.type == "gps") {
+            repeatedPacket += ":!";
+          } else if (packet.type == "status") {
+            repeatedPacket += ":>";
+          } else if (packet.type == "telemetry") {
+            repeatedPacket += ":T#";
+          } else if (packet.type == "message") { 
+            for(int i = packet.addressee.length(); i < 9; i++) {
+              packet.addressee += ' ';
+            }
+            repeatedPacket += "::" + packet.addressee + ":";
+          } 
+          return repeatedPacket + packet.message;          
+        } else {
+          return "X";
+        }
+      } else {
+        return "X";
+      }
+    }
+
     char *ax25_base91enc(char *s, uint8_t n, uint32_t v) {
       for(s += n, *s = '\0'; n; n--) {
         *(--s) = v % 91 + 33;
@@ -153,25 +184,34 @@ namespace APRSPacketLib {
     APRSPacket processReceivedPacket(String receivedPacket) {
       APRSPacket aprsPacket;
       aprsPacket.sender = receivedPacket.substring(0,receivedPacket.indexOf(">"));
+      String temp00 = receivedPacket.substring(receivedPacket.indexOf(">")+1,receivedPacket.indexOf(":"));
+      if (temp00.indexOf(",") > 2) {
+        aprsPacket.tocall = temp00.substring(0,temp00.indexOf(","));
+        aprsPacket.path = temp00.substring(temp00.indexOf(",")+1,temp00.indexOf(":"));
+      } else {
+        aprsPacket.tocall = temp00;
+        aprsPacket.path = "";
+      }
       if (receivedPacket.indexOf("::") > 10) {
         aprsPacket.type = "message";
-        String temp = receivedPacket.substring(receivedPacket.indexOf("::")+2);
-        String temp2 = temp.substring(0,temp.indexOf(":"));
+        String temp1 = receivedPacket.substring(receivedPacket.indexOf("::")+2);
+        String temp2 = temp1.substring(0,temp1.indexOf(":"));
         temp2.trim();
         aprsPacket.addressee = temp2;
-        aprsPacket.message = temp.substring(temp.indexOf(":")+1);
+        aprsPacket.message = temp1.substring(temp1.indexOf(":")+1);
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
         aprsPacket.type = "gps";
         aprsPacket.addressee = "";
-        aprsPacket.message = "";
         int encodedBytePosition = 0;
         if (receivedPacket.indexOf(":!") > 10) {
           encodedBytePosition = receivedPacket.indexOf(":!") + 14;
+          aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":!")+2);
         }
         if (receivedPacket.indexOf(":=") > 10) {
           encodedBytePosition = receivedPacket.indexOf(":=") + 14;
+          aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":=")+2);
         }
         if (encodedBytePosition != 0) {
           if (String(receivedPacket[encodedBytePosition]) == "G" || String(receivedPacket[encodedBytePosition]) == "Q" || String(receivedPacket[encodedBytePosition]) == "[" || String(receivedPacket[encodedBytePosition]) == "H") {
@@ -191,13 +231,13 @@ namespace APRSPacketLib {
       } else if (receivedPacket.indexOf(":>") > 10) {
         aprsPacket.type = "status";
         aprsPacket.addressee = "";
-        aprsPacket.message = "";
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":>")+2);
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
         aprsPacket.type = "telemetry";
         aprsPacket.addressee = "";
-        aprsPacket.message = "";
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":T#")+3);
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
       }

@@ -33,7 +33,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.11.05";
+String    versionDate         = "2023.11.07";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -81,6 +81,8 @@ bool      keyDetected         = false;
 uint32_t  keyboardTime        = millis();
 String    messageCallsign     = "";
 String    messageText         = "";
+
+bool      digirepeaterActive  = false; // defaul = false (needs to be activated in the EMERGENCY of the Tracker MENU)
 
 logging::Logger               logger;
 
