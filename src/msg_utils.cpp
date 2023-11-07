@@ -3,7 +3,6 @@
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "configuration.h"
-#include "station_utils.h"
 #include "lora_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
@@ -15,7 +14,6 @@
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern std::vector<String>  loadedAPRSMessages;
-extern TinyGPSPlus          gps;
 extern Configuration        Config;
 
 extern int                  menuDisplay;
