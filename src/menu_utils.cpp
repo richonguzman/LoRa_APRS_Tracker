@@ -25,6 +25,10 @@ extern int                  lowBatteryPercent;
 extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
+extern bool                 digirepeaterActive;
+extern bool                 sosActive;
+
+String digi, sos;
 
 namespace MENU_Utils {
 
@@ -171,12 +175,32 @@ namespace MENU_Utils {
                 break;
 
             case 60:    // 6. Emergency ---> Digirepeater
-                show_display("EMERGENCY_", "", "> Digirepeater", "  S.O.S.","",lastLine);
+                if (digirepeaterActive) {
+                    digi = "ON";
+                } else {
+                    digi = "OFF";
+                }
+                if (sosActive) {
+                    sos = "ON";
+                } else {
+                    sos = "OFF";
+                }
+                show_display("EMERGENCY_", "", "> Digirepeater (" + digi + ")", "  S.O.S. (" + sos + ")","",lastLine);
                 break;
             case 61:    // 6. Emergency ---> S.O.S.
-                show_display("EMERGENCY_", "", "  Digirepeater", "> S.O.S.","",lastLine);
+                if (digirepeaterActive) {
+                    digi = "ON";
+                } else {
+                    digi = "OFF";
+                }
+                if (sosActive) {
+                    sos = "ON";
+                } else {
+                    sos = "OFF";
+                }
+                show_display("EMERGENCY_", "", "  Digirepeater (" + digi + ")", "> S.O.S. (" + sos + ")","",lastLine);
                 break;
-            
+
             case 0:       ///////////// MAIN MENU //////////////
                 String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 

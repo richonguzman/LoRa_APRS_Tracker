@@ -12,6 +12,7 @@ int startUpSoundDuration[]  = {100, 100, 100, 200};
 //int shutDownSoundDuration[] = {60, 60, 200};
 
 extern Configuration    Config;
+extern bool             digirepeaterActive;
 
 namespace NOTIFICATION_Utils {
 
@@ -27,6 +28,9 @@ namespace NOTIFICATION_Utils {
   void beaconTxBeep() {
     digitalWrite(Config.notification.buzzerPinVcc, HIGH);
     playTone(1320,100);
+    if (digirepeaterActive) {
+      playTone(1560,100);
+    }
     digitalWrite(Config.notification.buzzerPinVcc, LOW);
   }
 

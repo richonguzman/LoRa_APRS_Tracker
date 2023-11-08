@@ -82,7 +82,8 @@ uint32_t  keyboardTime        = millis();
 String    messageCallsign     = "";
 String    messageText         = "";
 
-bool      digirepeaterActive  = false; // defaul = false (needs to be activated in the EMERGENCY of the Tracker MENU)
+bool      digirepeaterActive  = false;
+bool      sosActive           = false;
 
 logging::Logger               logger;
 

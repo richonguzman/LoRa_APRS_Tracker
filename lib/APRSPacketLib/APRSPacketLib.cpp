@@ -21,18 +21,23 @@ namespace APRSPacketLib {
             packet.path.replace("WIDE1-" + hop , callsign + "*,WIDE1-" + String(hop.toInt()-1));
           }
           String repeatedPacket = packet.sender + ">" + packet.tocall + "," + packet.path;
-          if (packet.type == "gps") {
-            repeatedPacket += ":!";
-          } else if (packet.type == "status") {
-            repeatedPacket += ":>";
-          } else if (packet.type == "telemetry") {
-            repeatedPacket += ":T#";
-          } else if (packet.type == "message") { 
-            for(int i = packet.addressee.length(); i < 9; i++) {
-              packet.addressee += ' ';
-            }
-            repeatedPacket += "::" + packet.addressee + ":";
-          } 
+          switch (packet.type) { 
+            case 0: // gps
+              repeatedPacket += ":!";
+              break;
+            case 1: // message
+              for(int i = packet.addressee.length(); i < 9; i++) {
+                packet.addressee += ' ';
+              }
+              repeatedPacket += "::" + packet.addressee + ":";
+              break;
+            case 2: // status
+              repeatedPacket += ":>";
+              break;
+            case 3: // telemetry
+              repeatedPacket += ":T#";
+              break;
+          }
           return repeatedPacket + packet.message;          
         } else {
           return "X";
@@ -121,9 +126,7 @@ namespace APRSPacketLib {
       return packet;
     }
 
-    float decodeEncodedLatitude(String receivedPacket) {
-      String packet = receivedPacket.substring(receivedPacket.indexOf(":!")+3);
-      String encodedLatitude = packet.substring(0,4);
+    float decodeEncodedLatitude(String encodedLatitude) {
       int Y1 = int(encodedLatitude[0]);
       int Y2 = int(encodedLatitude[1]);
       int Y3 = int(encodedLatitude[2]);
@@ -131,24 +134,15 @@ namespace APRSPacketLib {
       return (90.0 - ((((Y1-33) * pow(91,3)) + ((Y2-33) * pow(91,2)) + ((Y3-33) * 91) + Y4-33) / 380926.0));
     }
 
-    float decodeEncodedLongitude(String receivedPacket) {
-      String packet = receivedPacket.substring(receivedPacket.indexOf(":!")+3);
-      String encodedLongtitude = packet.substring(4,8);
-      int X1 = int(encodedLongtitude[0]);
-      int X2 = int(encodedLongtitude[1]);
-      int X3 = int(encodedLongtitude[2]);
-      int X4 = int(encodedLongtitude[3]);
+    float decodeEncodedLongitude(String encodedLongitude) {
+      int X1 = int(encodedLongitude[0]);
+      int X2 = int(encodedLongitude[1]);
+      int X3 = int(encodedLongitude[2]);
+      int X4 = int(encodedLongitude[3]);
       return (-180.0 + ((((X1-33) * pow(91,3)) + ((X2-33) * pow(91,2)) + ((X3-33) * 91) + X4-33) / 190463.0));
     }
 
-    float decodeLatitude(String receivedPacket) {
-      String gpsData;
-      if (receivedPacket.indexOf(":!") > 10) {
-        gpsData = receivedPacket.substring(receivedPacket.indexOf(":!")+2);
-      } else if (receivedPacket.indexOf(":=") > 10) {
-        gpsData = receivedPacket.substring(receivedPacket.indexOf(":=")+2);
-      }
-      String Latitude         = gpsData.substring(0,8);
+    float decodeLatitude(String Latitude) {
       String firstLatPart     = Latitude.substring(0,2);
       String secondLatPart    = Latitude.substring(2,4);
       String thirdLatPart     = Latitude.substring(Latitude.indexOf(".")+1,Latitude.indexOf(".")+3);
@@ -161,14 +155,7 @@ namespace APRSPacketLib {
       }
     }
 
-    float decodeLongitude(String receivedPacket) {
-      String gpsData;
-      if (receivedPacket.indexOf(":!") > 10) {
-        gpsData = receivedPacket.substring(receivedPacket.indexOf(":!")+2);
-      } else if (receivedPacket.indexOf(":=") > 10) {
-        gpsData = receivedPacket.substring(receivedPacket.indexOf(":=")+2);
-      }
-      String Longitude          = gpsData.substring(9,18);
+    float decodeLongitude(String Longitude) {
       String firstLngPart       = Longitude.substring(0,3);
       String secondLngPart      = Longitude.substring(3,5);
       String thirdLngPart       = Longitude.substring(Longitude.indexOf(".")+1,Longitude.indexOf(".")+3);
@@ -182,6 +169,11 @@ namespace APRSPacketLib {
     }
 
     APRSPacket processReceivedPacket(String receivedPacket) {
+      /*  Packet type:
+          gps       = 0
+          message   = 1
+          status    = 2
+          telemetry = 3   */
       APRSPacket aprsPacket;
       aprsPacket.sender = receivedPacket.substring(0,receivedPacket.indexOf(">"));
       String temp00 = receivedPacket.substring(receivedPacket.indexOf(">")+1,receivedPacket.indexOf(":"));
@@ -192,8 +184,26 @@ namespace APRSPacketLib {
         aprsPacket.tocall = temp00;
         aprsPacket.path = "";
       }
-      if (receivedPacket.indexOf("::") > 10) {
-        aprsPacket.type = "message";
+      if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
+        aprsPacket.type = 0;
+        aprsPacket.addressee = "";
+        String gpsChar = "";
+        if (receivedPacket.indexOf(":!") > 10) {
+          gpsChar = ":!";
+        } else {
+          gpsChar = ":=";
+        }
+        int encodedBytePosition = receivedPacket.indexOf(gpsChar) + 14;
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(gpsChar)+2);
+        if (String(receivedPacket[encodedBytePosition]) == "G" || String(receivedPacket[encodedBytePosition]) == "Q" || String(receivedPacket[encodedBytePosition]) == "[" || String(receivedPacket[encodedBytePosition]) == "H") {
+          aprsPacket.latitude = decodeEncodedLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+3, receivedPacket.indexOf(gpsChar)+7));
+          aprsPacket.longitude = decodeEncodedLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+7, receivedPacket.indexOf(gpsChar)+11));
+        } else {
+          aprsPacket.latitude = decodeLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+2,receivedPacket.indexOf(gpsChar)+10));
+          aprsPacket.longitude = decodeLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+11,receivedPacket.indexOf(gpsChar)+20));
+        }
+      } else if (receivedPacket.indexOf("::") > 10) {
+        aprsPacket.type = 1;
         String temp1 = receivedPacket.substring(receivedPacket.indexOf("::")+2);
         String temp2 = temp1.substring(0,temp1.indexOf(":"));
         temp2.trim();
@@ -201,41 +211,14 @@ namespace APRSPacketLib {
         aprsPacket.message = temp1.substring(temp1.indexOf(":")+1);
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
-      } else if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
-        aprsPacket.type = "gps";
-        aprsPacket.addressee = "";
-        int encodedBytePosition = 0;
-        if (receivedPacket.indexOf(":!") > 10) {
-          encodedBytePosition = receivedPacket.indexOf(":!") + 14;
-          aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":!")+2);
-        }
-        if (receivedPacket.indexOf(":=") > 10) {
-          encodedBytePosition = receivedPacket.indexOf(":=") + 14;
-          aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":=")+2);
-        }
-        if (encodedBytePosition != 0) {
-          if (String(receivedPacket[encodedBytePosition]) == "G" || String(receivedPacket[encodedBytePosition]) == "Q" || String(receivedPacket[encodedBytePosition]) == "[" || String(receivedPacket[encodedBytePosition]) == "H") {
-            aprsPacket.latitude = decodeEncodedLatitude(receivedPacket);
-            aprsPacket.longitude = decodeEncodedLongitude(receivedPacket);
-          } else {
-            aprsPacket.latitude = decodeLatitude(receivedPacket);
-            aprsPacket.longitude = decodeLongitude(receivedPacket);
-          }
-          //
-          Serial.print(aprsPacket.sender);
-          Serial.print(" GPS : ");
-          Serial.print(aprsPacket.latitude); Serial.print(" N ");
-          Serial.print(aprsPacket.longitude);Serial.println(" E");
-          //
-        }
       } else if (receivedPacket.indexOf(":>") > 10) {
-        aprsPacket.type = "status";
+        aprsPacket.type = 2;
         aprsPacket.addressee = "";
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":>")+2);
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
-        aprsPacket.type = "telemetry";
+        aprsPacket.type = 3;
         aprsPacket.addressee = "";
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":T#")+3);
         aprsPacket.latitude = 0;

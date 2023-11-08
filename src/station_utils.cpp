@@ -183,7 +183,7 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > secondDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = newTrackerInfo;
@@ -193,7 +193,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance < firstDistance) {
               secondNearTracker = firstNearTracker;
               firstNearTracker  = newTrackerInfo;
@@ -223,7 +223,7 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -237,7 +237,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = newTrackerInfo;
@@ -250,7 +250,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance <= firstDistance) {
               thirdNearTracker  = secondNearTracker;
               secondNearTracker = firstNearTracker;
@@ -285,7 +285,7 @@ namespace STATION_Utils {
       } else {
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -304,7 +304,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = fourthNearTracker;
@@ -321,7 +321,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               thirdNearTracker  = fourthNearTracker;
               fourthNearTracker = newTrackerInfo;
@@ -338,7 +338,7 @@ namespace STATION_Utils {
           }
         } else if (callsign == fourthNearTrackerCallsign) {
           if (distance != fourthDistance) {
-            Serial.print("Distance Updated for : "); Serial.println(callsign);
+            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               fourthNearTracker = newTrackerInfo;
             } else if (distance > secondDistance && distance <= thirdDistance) {

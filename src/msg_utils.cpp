@@ -170,74 +170,74 @@ namespace MSG_Utils {
       return;
     }
     if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
-      BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
       //Serial.println(packetReceived); // only for debug
       aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
-      
-      if (digirepeaterActive) {
-        Serial.print("Checking Packet before repeating ---> ");
-        String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
-        if (digiRepeatedPacket == "X") {
-          Serial.println("Packet from " + aprsPacket.sender + " won't be repeated (missing WIDE1-X)");
-        } else {
-          Serial.println(digiRepeatedPacket);
-        }
-        /// this is the place where the validated and reformated packet will be Tx through LoRa
+      if (aprsPacket.sender!=currentBeacon->callsign) {
+        BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
 
-      }
+        if (digirepeaterActive) {
+          String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
+          if (digiRepeatedPacket == "X") {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");
+          } else {
+            delay(500);
+            LoRa_Utils::sendNewPacket(digiRepeatedPacket);
+          }
+        }
 
-      if (aprsPacket.type=="message" && aprsPacket.sender!=currentBeacon->callsign && aprsPacket.addressee==currentBeacon->callsign) {
-        if (aprsPacket.message.indexOf("{")>0) {
-          String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
-          ackMessage.trim();
-          delay(4000);
-          sendMessage(aprsPacket.sender, ackMessage);
-          aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1, aprsPacket.message.indexOf("{"));
-        } else {
-          aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1);
-        }
-        if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
-          NOTIFICATION_Utils::messageBeep();
-        }
-        if (aprsPacket.message.indexOf("ping")==0 || aprsPacket.message.indexOf("Ping")==0 || aprsPacket.message.indexOf("PING")==0) {
-          delay(4000);
-          sendMessage(aprsPacket.sender, "pong, 73!");
-        }
-        if (aprsPacket.sender == "CD2RXU-15" && aprsPacket.message.indexOf("WX")==0) {                   // WX = WeatherReport
-          Serial.println("Weather Report Received");
-          String wxCleaning     = aprsPacket.message.substring(aprsPacket.message.indexOf("WX ")+3);
-          String place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
-          String placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
-          String summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
-          String sumCleaning    = placeCleaning.substring(placeCleaning.indexOf(",")+2);
-          String temperature    = sumCleaning.substring(0,sumCleaning.indexOf("P"));
-          String tempCleaning   = sumCleaning.substring(sumCleaning.indexOf("P")+1);
-          String pressure       = tempCleaning.substring(0,tempCleaning.indexOf("H"));
-          String presCleaning   = tempCleaning.substring(tempCleaning.indexOf("H")+1);
-          String humidity       = presCleaning.substring(0,presCleaning.indexOf("W"));
-          String humCleaning    = presCleaning.substring(presCleaning.indexOf("W")+1);
-          String windSpeed      = humCleaning.substring(0,humCleaning.indexOf(","));
-          String windCleaning   = humCleaning.substring(humCleaning.indexOf(",")+1);
-          String windDegrees    = windCleaning.substring(windCleaning.indexOf(",")+1,windCleaning.indexOf("\n"));
-
-          String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
-          String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
-          show_display("<WEATHER>", "From --> " + aprsPacket.sender, place, summary, fifthLineWR, sixthLineWR);
-          menuDisplay = 40;
-          menuTime = millis();
-        } else {
-          show_display("< MSG Rx >", "From --> " + aprsPacket.sender, "", aprsPacket.message , 3000);
+        if (aprsPacket.type==0) {
+          lastHeardTracker = aprsPacket.sender;
           if (!Config.simplifiedTrackerMode) {
-            saveNewMessage("APRS", aprsPacket.sender, aprsPacket.message);
+            GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
+            if (Config.notification.buzzerActive && Config.notification.stationBeep && !digirepeaterActive) {
+              NOTIFICATION_Utils::stationHeardBeep();
+            }
           }
-        } 
-      } else if (aprsPacket.type == "gps") {
-        lastHeardTracker = aprsPacket.sender;
-        if (!Config.simplifiedTrackerMode) {
-          GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
-          if (Config.notification.buzzerActive && Config.notification.stationBeep) {
-            NOTIFICATION_Utils::stationHeardBeep();
+        } else if (aprsPacket.type==1 && aprsPacket.addressee==currentBeacon->callsign) {
+          if (aprsPacket.message.indexOf("{")>0) {
+            String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
+            ackMessage.trim();
+            delay(4000);
+            sendMessage(aprsPacket.sender, ackMessage);
+            aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1, aprsPacket.message.indexOf("{"));
+          } else {
+            aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1);
           }
+          if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
+            NOTIFICATION_Utils::messageBeep();
+          }
+          if (aprsPacket.message.indexOf("ping")==0 || aprsPacket.message.indexOf("Ping")==0 || aprsPacket.message.indexOf("PING")==0) {
+            delay(4000);
+            sendMessage(aprsPacket.sender, "pong, 73!");
+          }
+          if (aprsPacket.sender == "CD2RXU-15" && aprsPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
+            Serial.println("Weather Report Received");
+            String wxCleaning     = aprsPacket.message.substring(aprsPacket.message.indexOf("WX ")+3);
+            String place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
+            String placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
+            String summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
+            String sumCleaning    = placeCleaning.substring(placeCleaning.indexOf(",")+2);
+            String temperature    = sumCleaning.substring(0,sumCleaning.indexOf("P"));
+            String tempCleaning   = sumCleaning.substring(sumCleaning.indexOf("P")+1);
+            String pressure       = tempCleaning.substring(0,tempCleaning.indexOf("H"));
+            String presCleaning   = tempCleaning.substring(tempCleaning.indexOf("H")+1);
+            String humidity       = presCleaning.substring(0,presCleaning.indexOf("W"));
+            String humCleaning    = presCleaning.substring(presCleaning.indexOf("W")+1);
+            String windSpeed      = humCleaning.substring(0,humCleaning.indexOf(","));
+            String windCleaning   = humCleaning.substring(humCleaning.indexOf(",")+1);
+            String windDegrees    = windCleaning.substring(windCleaning.indexOf(",")+1,windCleaning.indexOf("\n"));
+
+            String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
+            String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
+            show_display("<WEATHER>", "From --> " + aprsPacket.sender, place, summary, fifthLineWR, sixthLineWR);
+            menuDisplay = 40;
+            menuTime = millis();
+          } else {
+            show_display("< MSG Rx >", "From --> " + aprsPacket.sender, "", aprsPacket.message , 3000);
+            if (!Config.simplifiedTrackerMode) {
+              saveNewMessage("APRS", aprsPacket.sender, aprsPacket.message);
+            }
+          } 
         }
       }
     }

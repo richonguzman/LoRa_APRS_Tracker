@@ -31,6 +31,8 @@ extern int              messagesIterator;
 extern bool             messageLed;
 extern String           messageCallsign;
 extern String           messageText;
+extern bool             digirepeaterActive;
+extern bool             sosActive;
 
 namespace KEYBOARD_Utils {
 
@@ -218,12 +220,26 @@ namespace KEYBOARD_Utils {
     else if (menuDisplay == 6) {
       menuDisplay = 60;
     } else if (menuDisplay == 60) {
-      show_display("EMERGENCY_", "Digirepeater still", "on development..", 2000); /////////////////////////
+      if (digirepeaterActive) {
+        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> OFF","", 2000); /////////////////////////
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater OFF");
+        digirepeaterActive = false;
+      } else {
+        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> ON","", 2000); /////////////////////////
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater ON");
+        digirepeaterActive = true;
+      }
     } else if (menuDisplay == 61) {
-      show_display("EMERGENCY_", "S.O.S. still", "on development..", 2000); /////////////////////////
-    }
-
-    
+      if (sosActive) {
+        show_display("EMERGENCY_", "","       S.O.S.","   Status --> OFF","", 2000);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode OFF");
+        sosActive = false;
+      } else {
+        show_display("EMERGENCY_", "","       S.O.S.","   Status --> ON","", 2000);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
+        sosActive = true;
+      }
+    }    
   }
 
   void processPressedKey(char key) {

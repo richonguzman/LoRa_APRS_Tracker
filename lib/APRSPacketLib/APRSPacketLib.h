@@ -9,7 +9,7 @@ struct APRSPacket {
   String  path;
   String  addressee;
   String  message;
-  String  type;
+  int     type;
   float   latitude;
   float   longitude;
 };
