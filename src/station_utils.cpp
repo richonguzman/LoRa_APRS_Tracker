@@ -5,7 +5,6 @@
 #include "configuration.h"
 #include "power_utils.h"
 #include "lora_utils.h"
-#include "msg_utils.h"
 #include "bme_utils.h"
 #include "gps_utils.h"
 #include "display.h"
@@ -21,7 +20,6 @@ extern TinyGPSPlus          gps;
 extern PowerManagement      powerManagement;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
-extern String               fourthLine;
 extern int                  myBeaconsIndex;
 
 extern String               firstNearTracker;
