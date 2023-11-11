@@ -27,10 +27,29 @@ extern String               messageCallsign;
 extern String               messageText;
 extern bool                 digirepeaterActive;
 extern bool                 sosActive;
+extern bool                 bluetoothActive;
+extern bool                 displayEcoMode;
+extern bool                 screenBrightness;
 
-String digi, sos;
+//String digi, sos, bt;
 
 namespace MENU_Utils {
+
+    String checkProcessActive(bool process) {
+        if (process) {
+            return "ON";
+        } else {
+            return "OFF";
+        }
+    }
+
+    String checkScreenBrightness(int bright) {
+        if (bright == 255) {
+            return "MAX";
+        } else {
+            return "MIN";
+        }
+    }
 
     void showOnScreen() {
         String lastLine;
@@ -106,57 +125,70 @@ namespace MENU_Utils {
                 show_display("DELETE_MSG", "", "     DELETE ALL?", "", "", " Confirm = LP or '>'");
                 break;
 
-
             
             case 20:    // 2.Configuration ---> Callsign
-                show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  Status",lastLine);
+                show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Callsign Change", "> Display", "  Status", "  Notifications",lastLine);
+                show_display("_CONFIG___", "  Callsign Change", "> Display", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
-            case 22:    // 2.Configuration ---> Status
-                show_display("_CONFIG___", "  Display", "> Status", "  Notifications", "  Reboot", lastLine);
+            case 22:    // 2.Configuration ---> Bluetooth
+                show_display("_CONFIG___", "  Display",  "> Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
-            case 23:    // 2.Configuration ---> Notifications
-                show_display("_CONFIG___", "  Status","> Notifications", "  Reboot", "  Power Off",lastLine);
+            case 23:    // 2.Configuration ---> Status
+                show_display("_CONFIG___", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
-            case 24:    // 2.Configuration ---> Reboot
+            case 24:    // 2.Configuration ---> Notifications
+                show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
+                break;
+            case 25:    // 2.Configuration ---> Reboot
                 show_display("_CONFIG___", "  Notifications", "> Reboot", "  Power Off", "  Callsign Change",lastLine);
                 break;
-            case 25:    // 2.Configuration ---> Power Off
+            case 26:    // 2.Configuration ---> Power Off
                 show_display("_CONFIG___", "  Reboot", "> Power Off", "  Callsign Change", "  Display",lastLine);
                 break;
-        
+
             case 200:   // 2.Configuration ---> Callsign
                 show_display("_CALLSIGN_", "","  Confirm Change?","","","<Back   Enter=Confirm");
                 break;
 
             case 210:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY__", "", "> ECO Mode","  Brightness","",lastLine);
+                show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
                 break;
             case 211:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY__", "", "  ECO Mode","> Brightness","",lastLine);
+                show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
                 break;
 
-            case 220:    // 2.Configuration ---> Status
+            case 220:
+                if (bluetoothActive) {
+                    bluetoothActive = false;
+                    show_display("BLUETOOTH", "", " Bluetooth --> OFF", 1000);
+                } else {
+                    bluetoothActive = true;
+                    show_display("BLUETOOTH", "", " Bluetooth --> ON", 1000);
+                }
+                menuDisplay = 22;
+                break;
+
+            case 230:    // 2.Configuration ---> Status
                 show_display("_STATUS___", "", "> Write","  Select","",lastLine);
                 break;
-            case 221:    // 2.Configuration ---> Status
+            case 231:    // 2.Configuration ---> Status
                 show_display("_STATUS___", "", "  Write","> Select","",lastLine);
                 break;
 
-            case 230:    // 2.Configuration ---> Notifications
+            case 240:    // 2.Configuration ---> Notifications
                 show_display("_NOTIFIC__", "> Turn Off Sound/Led","","","",lastLine);
                 break;
 
-            case 240:   // 2.Configuration ---> Reboot
+            case 250:   // 2.Configuration ---> Reboot
                 if (keyDetected) {
                     show_display("_REBOOT?__", "","Confirm Reboot...","","","<Back   Enter=Confirm");
                 } else {
                     show_display("_REBOOT?__", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
                 }
                 break;
-            case 250:   // 2.Configuration ---> Power Off
+            case 260:   // 2.Configuration ---> Power Off
                 if (keyDetected) {
                     show_display("POWER_OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
                 } else {
@@ -175,7 +207,7 @@ namespace MENU_Utils {
                 break;
 
             case 60:    // 6. Emergency ---> Digirepeater
-                if (digirepeaterActive) {
+                /*if (digirepeaterActive) {
                     digi = "ON";
                 } else {
                     digi = "OFF";
@@ -184,11 +216,11 @@ namespace MENU_Utils {
                     sos = "ON";
                 } else {
                     sos = "OFF";
-                }
-                show_display("EMERGENCY_", "", "> DigiRepeater  (" + digi + ")", "  S.O.S.        (" + sos + ")","",lastLine);
+                }*/
+                show_display("EMERGENCY_", "", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
             case 61:    // 6. Emergency ---> S.O.S.
-                if (digirepeaterActive) {
+                /*if (digirepeaterActive) {
                     digi = "ON";
                 } else {
                     digi = "OFF";
@@ -197,8 +229,8 @@ namespace MENU_Utils {
                     sos = "ON";
                 } else {
                     sos = "OFF";
-                }
-                show_display("EMERGENCY_", "", "  DigiRepeater  (" + digi + ")", "> S.O.S.        (" + sos + ")","",lastLine);
+                }*/
+                show_display("EMERGENCY_", "", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
 
             case 0:       ///////////// MAIN MENU //////////////

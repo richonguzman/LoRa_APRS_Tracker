@@ -47,10 +47,10 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 10) {
         menuDisplay = 12;
       }
-    } else if (menuDisplay >= 20 && menuDisplay <= 25) {
+    } else if (menuDisplay >= 20 && menuDisplay <= 26) {
       menuDisplay--;
       if (menuDisplay < 20) {
-        menuDisplay = 25;
+        menuDisplay = 26;
       }
     } else if (menuDisplay >= 210 && menuDisplay <= 211) {
       menuDisplay--;
@@ -106,9 +106,9 @@ namespace KEYBOARD_Utils {
       menuDisplay = 11;
     } 
     
-    else if (menuDisplay >= 20 && menuDisplay <= 25) {
+    else if (menuDisplay >= 20 && menuDisplay <= 26) {
       menuDisplay++;
-      if (menuDisplay > 25) {
+      if (menuDisplay > 26) {
         menuDisplay = 20;
       }
     } else if (menuDisplay >= 210 && menuDisplay <= 211) {
@@ -201,11 +201,11 @@ namespace KEYBOARD_Utils {
         show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
         screenBrightness = 1;
       }
-    } else if (menuDisplay == 220) {
-      show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
-    } else if (menuDisplay == 221) {
-      show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
     } else if (menuDisplay == 230) {
+      show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+    } else if (menuDisplay == 231) {
+      show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+    } else if (menuDisplay == 240) {
       show_display("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
     } 
 

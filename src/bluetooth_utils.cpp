@@ -13,6 +13,7 @@ extern BluetoothSerial  SerialBT;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 extern bool             bluetoothConnected;
+extern bool             bluetoothActive;
 
 namespace BLUETOOTH_Utils {
   String serialReceived;
@@ -20,7 +21,7 @@ namespace BLUETOOTH_Utils {
   bool useKiss = false;
 
   void setup() {
-    if (!Config.bluetooth) {
+    if (!bluetoothActive) {
       btStop();
       esp_bt_controller_disable();
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
@@ -136,7 +137,7 @@ namespace BLUETOOTH_Utils {
   }
 
   void sendPacket(const String& packet) {
-    if (Config.bluetooth && !packet.isEmpty()) {
+    if (bluetoothActive && !packet.isEmpty()) {
       if (useKiss) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT RX Kiss", "%s", serialReceived.c_str());
 

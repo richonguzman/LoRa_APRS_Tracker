@@ -5,7 +5,9 @@
 
 namespace MENU_Utils {
 
-void showOnScreen();
+    String checkProcessActive(bool process);
+    String checkScreenBrightness(int bright);
+    void showOnScreen();
 
 }
 
