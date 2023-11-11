@@ -185,7 +185,7 @@ namespace MENU_Utils {
                 } else {
                     sos = "OFF";
                 }
-                show_display("EMERGENCY_", "", "> Digirepeater (" + digi + ")", "  S.O.S. (" + sos + ")","",lastLine);
+                show_display("EMERGENCY_", "", "> DigiRepeater  (" + digi + ")", "  S.O.S.        (" + sos + ")","",lastLine);
                 break;
             case 61:    // 6. Emergency ---> S.O.S.
                 if (digirepeaterActive) {
@@ -198,7 +198,7 @@ namespace MENU_Utils {
                 } else {
                     sos = "OFF";
                 }
-                show_display("EMERGENCY_", "", "  Digirepeater (" + digi + ")", "> S.O.S. (" + sos + ")","",lastLine);
+                show_display("EMERGENCY_", "", "  DigiRepeater  (" + digi + ")", "> S.O.S.        (" + sos + ")","",lastLine);
                 break;
 
             case 0:       ///////////// MAIN MENU //////////////
