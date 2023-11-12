@@ -1,9 +1,8 @@
-#include "ble_utils.h"
 #include <NimBLEDevice.h>
-//#include "lora_utils.h"
+#include "ble_utils.h"
 #include "msg_utils.h"
-#include "logger.h"
 #include "display.h"
+#include "logger.h"
 
 #define SERVICE_UUID        "0000180A-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_UUID "00002A29-0000-1000-8000-00805F9B34FB"
@@ -58,6 +57,13 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
       }
     }
   }
+
+  /*void onRead(NimBLECharacteristic* pCharacteristic) {
+    Serial.println("Read request received");
+    // Handle read operation, for example, set the value to be read
+    pCharacteristic->setValue("Hello, ESP32!");
+  }*/
+
 };
 
 
@@ -83,7 +89,7 @@ namespace BLE_Utils {
     if (!sendBleToLoRa) {
       return;
     }
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT TX", "%s", bleLoRaPacket.c_str());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", bleLoRaPacket.c_str());
     show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
 
     MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
@@ -91,6 +97,18 @@ namespace BLE_Utils {
     bleMsgAddresse = "";
     bleMsgTxt = "";
     sendBleToLoRa = false;
+  }
+
+  void sendToPhone(const String& packet) {
+    if (!packet.isEmpty()) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
+      String receivedPacketString = "";
+      for (int i=0; i<packet.length()-1;i++) {
+        receivedPacketString += packet[i];
+      }
+      pCharacteristic->setValue(receivedPacketString);
+      pCharacteristic->notify();
+    }
   }
 
 }
