@@ -24,6 +24,7 @@
 #include "utils.h"
 
 #include "APRSPacketLib.h"
+#include "ble_utils.h"
 
 
 Configuration                 Config;
@@ -126,7 +127,8 @@ void setup() {
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
-  BLUETOOTH_Utils::setup();
+  //BLUETOOTH_Utils::setup();
+  BLE_Utils::setup();
 
   if (!Config.simplifiedTrackerMode) {
     userButton.attachClick(BUTTON_Utils::singlePress);
@@ -165,7 +167,7 @@ void loop() {
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   MSG_Utils::ledNotification();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
-  BLUETOOTH_Utils::sendToLoRa();
+  //BLUETOOTH_Utils::sendToLoRa();
 
   int currentSpeed = (int) gps.speed.kmph();
 
