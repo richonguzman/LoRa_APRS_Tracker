@@ -1,6 +1,7 @@
 #include "ble_utils.h"
 #include <NimBLEDevice.h>
-#include "lora_utils.h"
+//#include "lora_utils.h"
+#include "msg_utils.h"
 #include "logger.h"
 #include "display.h"
 
@@ -13,6 +14,9 @@ NimBLECharacteristic* pCharacteristic;
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
 extern String           bleLoRaPacket;
+extern int              bleMsgCompose;
+extern String           bleMsgAddresse;
+extern String           bleMsgTxt;
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic* pChar) {
@@ -22,24 +26,36 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     for (int i=0; i<receivedData.length()-2;i++) {
       receivedString += receivedData[i];
     }
-    if (receivedString == "hola") {
-      Serial.println("hola tambien");
-      pCharacteristic->setValue("hola tambien");
-      pCharacteristic->notify();
-    } else if (receivedString=="/send message") {
-      Serial.println("Send Message To...");
-      pCharacteristic->setValue("Send Message To...");
-      pCharacteristic->notify();
-    } else if (receivedString=="CD2RXU-7") {
-      Serial.println("Sending message to CD2RXU-7...");
-      pCharacteristic->setValue("Sending message to CD2RXU-7...");
-      pCharacteristic->notify();
-    } else if (receivedString=="test") {
-      Serial.println("Sending message TEST...");
-      pCharacteristic->setValue("Sending TEST message");
-      pCharacteristic->notify();
-      bleLoRaPacket = "CD2RXU-7>APLRT1,WIDE1-1::XQ3OP-7  :Test con Bluetooth BLE";
-      sendBleToLoRa = true;
+    if (bleMsgCompose > 0) {
+      switch (bleMsgCompose) {
+      case 1:
+        Serial.println("Adressee : " + receivedString);
+        bleMsgAddresse = receivedString;
+        bleMsgCompose = 2;
+        pCharacteristic->setValue("Adressee : " + receivedString);
+        pCharacteristic->notify();
+        pCharacteristic->setValue("Message ...");
+        pCharacteristic->notify();
+        break;
+      case 2:
+        Serial.println("Message : " + receivedString);
+        bleMsgTxt = receivedString;
+        pCharacteristic->setValue("Msg -> " + bleMsgAddresse + " : " + receivedString);
+        pCharacteristic->notify();
+        sendBleToLoRa = true;
+        break;
+      }
+    } else {
+      if (receivedString == "hola") {
+        Serial.println("hola tambien");
+        pCharacteristic->setValue("hola tambien");
+        pCharacteristic->notify();
+      } else if (receivedString=="/msg") {
+        bleMsgCompose = 1;
+        Serial.println("Send Message To...");
+        pCharacteristic->setValue("Send Message To...");
+        pCharacteristic->notify();
+      }
     }
   }
 };
@@ -67,12 +83,13 @@ namespace BLE_Utils {
     if (!sendBleToLoRa) {
       return;
     }
-
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT TX", "%s", bleLoRaPacket.c_str());
-    show_display("BT Tx >>", "", bleLoRaPacket, 1000);
+    show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
 
-    LoRa_Utils::sendNewPacket(bleLoRaPacket);
-
+    MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
+    bleMsgCompose = 0;
+    bleMsgAddresse = "";
+    bleMsgTxt = "";
     sendBleToLoRa = false;
   }
 

@@ -59,6 +59,9 @@ bool      bluetoothConnected  = false;
 bool      bluetoothActive     = Config.bluetooth;
 bool      sendBleToLoRa       = false;
 String    bleLoRaPacket       = "";
+int       bleMsgCompose       = 0;
+String    bleMsgAddresse      = "";
+String    bleMsgTxt           = "";
 
 bool      messageLed          = false;
 uint32_t  messageLedTime      = millis();
