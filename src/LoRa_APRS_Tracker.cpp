@@ -57,6 +57,8 @@ bool      statusState         = true;
 uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
 bool      bluetoothActive     = Config.bluetooth;
+bool      sendBleToLoRa       = false;
+String    bleLoRaPacket       = "";
 
 bool      messageLed          = false;
 uint32_t  messageLedTime      = millis();
@@ -168,6 +170,7 @@ void loop() {
   MSG_Utils::ledNotification();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
   //BLUETOOTH_Utils::sendToLoRa();
+  BLE_Utils::sendToLoRa();
 
   int currentSpeed = (int) gps.speed.kmph();
 

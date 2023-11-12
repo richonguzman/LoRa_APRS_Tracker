@@ -6,6 +6,7 @@
 namespace BLE_Utils {
 
     void setup();
+    void sendToLoRa();
 
 }
 
