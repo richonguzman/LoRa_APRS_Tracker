@@ -40,8 +40,6 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
       pCharacteristic->notify();
       bleLoRaPacket = "CD2RXU-7>APLRT1,WIDE1-1::XQ3OP-7  :Test con Bluetooth BLE";
       sendBleToLoRa = true;
-      //pCharacteristic->setValue("TEST message sended!");
-      //pCharacteristic->notify();
     }
   }
 };
