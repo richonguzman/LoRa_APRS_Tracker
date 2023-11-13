@@ -307,10 +307,10 @@ namespace KEYBOARD_Utils {
         show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
         STATION_Utils::saveCallsingIndex(myBeaconsIndex);
         menuDisplay = 0;
-      } else if (menuDisplay==240) {
+      } else if (menuDisplay==250) {
         show_display("", "", "    REBOOTING ...", 2000);
         ESP.restart();
-      } else if (menuDisplay==250) {
+      } else if (menuDisplay==260) {
         show_display("", "", "    POWER OFF ...", 2000);
         powerManagement.shutdown();
       }
