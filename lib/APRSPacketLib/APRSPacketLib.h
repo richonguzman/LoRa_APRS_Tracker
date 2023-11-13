@@ -16,7 +16,9 @@ struct APRSPacket {
 
 namespace APRSPacketLib {
 
+String generateBasePacket(String callsign, String tocall, String path);
 String generateStatusPacket(String callsign, String tocall, String path, String status);
+String generateMessagePacket(String callsign, String tocall, String path, String addressee, String message);
 String generateDigiRepeatedPacket(APRSPacket packet, String callsign);
 char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
 String encondeGPS(float latitude, float longitude, float course, float speed, String symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, String packetType);

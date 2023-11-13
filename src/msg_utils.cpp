@@ -147,23 +147,15 @@ namespace MSG_Utils {
   }
 
   void sendMessage(String station, String textMessage) {
-    String messageToSend;
-    for(int i = station.length(); i < 9; i++) {
-      station += ' ';
-    }
-    messageToSend = currentBeacon->callsign + ">APLRT1";
-    if (Config.path != "") {
-      messageToSend += "," + Config.path;
-    }
-    messageToSend += "::" + station + ":" + textMessage;
+    String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);  
     if (textMessage.indexOf("ack")== 0) {
       show_display("<<ACK Tx>>", 500);
     } else if (station.indexOf("CD2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {
       show_display("<WEATHER>","", "--- Sending Query ---",  1000);
     } else {
-      show_display("MSG Tx >>", "", messageToSend, 1000);
+      show_display("MSG Tx >>", "", newPacket, 1000);
     }
-    LoRa_Utils::sendNewPacket(messageToSend);
+    LoRa_Utils::sendNewPacket(newPacket);
   }
 
   void checkReceivedMessage(String packetReceived) {
@@ -196,7 +188,7 @@ namespace MSG_Utils {
             }
           }
         } else if (aprsPacket.type==1 && aprsPacket.addressee==currentBeacon->callsign) {
-          if (aprsPacket.message.indexOf("{")>0) {
+          if (aprsPacket.message.indexOf("{")>=0) {
             String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
             ackMessage.trim();
             delay(4000);

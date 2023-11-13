@@ -2,13 +2,23 @@
 
 namespace APRSPacketLib {
 
-    String generateStatusPacket(String callsign, String tocall, String path, String status) {
+    String generateBasePacket(String callsign, String tocall, String path) {
       String packet = callsign + ">" + tocall;
       if (path != "") {
         packet += "," + path;
       }
-      packet += ":>"  + status;
       return packet;
+    }
+
+    String generateStatusPacket(String callsign, String tocall, String path, String status) {
+      return generateBasePacket(callsign,tocall,path) + ":>"  + status;
+    }
+
+    String generateMessagePacket(String callsign, String tocall, String path, String addressee, String message) {
+      for(int i = addressee.length(); i < 9; i++) {
+        addressee += ' ';
+      }      
+      return generateBasePacket(callsign,tocall,path) + "::" + addressee + ":" + message;
     }
 
     String generateDigiRepeatedPacket(APRSPacket packet, String callsign) {
@@ -118,12 +128,7 @@ namespace APRSPacketLib {
     }
 
     String generateGPSBeaconPacket(String callsign, String tocall, String path, String overlay, String gps) {
-      String packet = callsign + ">" + tocall;
-      if (path != "") {
-        packet += "," + path;
-      }
-      packet += ":!" + overlay + gps;
-      return packet;
+      return generateBasePacket(callsign,tocall,path) + ":!" + overlay + gps;
     }
 
     float decodeEncodedLatitude(String encodedLatitude) {
