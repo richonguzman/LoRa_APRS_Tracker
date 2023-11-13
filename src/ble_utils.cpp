@@ -4,8 +4,8 @@
 #include "display.h"
 #include "logger.h"
 
-#define SERVICE_UUID        "0000180A-0000-1000-8000-00805F9B34FB"
-#define CHARACTERISTIC_UUID "00002A29-0000-1000-8000-00805F9B34FB"
+#define SERVICE_UUID        "6ba1b218-15a8-461f-9fa8-5dcae273eafd"
+#define CHARACTERISTIC_UUID "ed9da18c-a800-4f66-a670-aa7547e34453"
 
 NimBLEServer* pServer;
 NimBLECharacteristic* pCharacteristic;

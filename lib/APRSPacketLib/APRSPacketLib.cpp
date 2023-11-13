@@ -203,9 +203,27 @@ namespace APRSPacketLib {
         if (String(receivedPacket[encodedBytePosition]) == "G" || String(receivedPacket[encodedBytePosition]) == "Q" || String(receivedPacket[encodedBytePosition]) == "[" || String(receivedPacket[encodedBytePosition]) == "H") {
           aprsPacket.latitude = decodeEncodedLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+3, receivedPacket.indexOf(gpsChar)+7));
           aprsPacket.longitude = decodeEncodedLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+7, receivedPacket.indexOf(gpsChar)+11));
+          // revisar si es codificado con Speed+Course o Altitude+Course+Speed
+          // tambien conseguir Symbol
+        
+        
         } else {
+
+          // revisar si tiene Course, Speed, Altitude
           aprsPacket.latitude = decodeLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+2,receivedPacket.indexOf(gpsChar)+10));
           aprsPacket.longitude = decodeLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+11,receivedPacket.indexOf(gpsChar)+20));
+          if (receivedPacket.substring(25,26) == "/" && receivedPacket.substring(30,33) == "/A=") {
+            Serial.println("es GPS no codificado y tiene CSA");
+            // 20 a 21 es symbol
+            // 21 a 24 es Course
+          } else {
+            aprsPacket.course = 0;
+            aprsPacket.speed = 0;
+            aprsPacket.altitude = 0;
+          }
+          // como conseguir Symbol
+          
+          // sino es estacion fija (digi?/igate?)
         }
       } else if (receivedPacket.indexOf("::") > 10) {
         aprsPacket.type = 1;

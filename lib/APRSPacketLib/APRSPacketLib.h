@@ -10,8 +10,12 @@ struct APRSPacket {
   String  addressee;
   String  message;
   int     type;
+  String  symbol;
   float   latitude;
   float   longitude;
+  int     course;
+  int     speed;
+  int     altitude;
 };
 
 namespace APRSPacketLib {
