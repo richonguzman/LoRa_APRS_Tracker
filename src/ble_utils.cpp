@@ -4,12 +4,19 @@
 #include "display.h"
 #include "logger.h"
 
-  #define SERVICE_UUID        "00000001-ba2a-46c9-ae49-01b0961f68bb"
-  #define CHARACTERISTIC_UUID "00000003-ba2a-46c9-ae49-01b0961f68bb"
-//#define CHARACTERISTIC_UUID "00000002-ba2a-46c9-ae49-01b0961f68bb"
+#define SERVICE_UUID        "00000001-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_TX "00000002-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_RX "00000003-ba2a-46c9-ae49-01b0961f68bb"
 
-NimBLEServer* pServer;
-NimBLECharacteristic* pCharacteristic;
+BLEServer *pServer;
+BLECharacteristic *pCharacteristicTx;
+BLECharacteristic *pCharacteristicRx;
+
+
+//BLEServer* pServer;
+//NimBLECharacteristic* pCharacteristicTx;
+//NimBLECharacteristic* pCharacteristicRx;
+//bool deviceConnected = false;
 
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
@@ -17,9 +24,21 @@ extern String           bleLoRaPacket;
 extern int              bleMsgCompose;
 extern String           bleMsgAddresse;
 extern String           bleMsgTxt;
+extern bool             bleConnected;
 
-class MyCallbacks : public NimBLECharacteristicCallbacks {
-  void onWrite(NimBLECharacteristic* pChar) {
+
+class MyServerCallbacks : public BLECharacteristicCallbacks {
+    void onConnect(BLEServer* pServer) {
+      bleConnected = true;
+    }
+
+    void onDisconnect(BLEServer* pServer) {
+      bleConnected = false;
+    }
+};
+
+class MyCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* pChar) {
     std::string receivedData = pChar->getValue();       // Read the data from the characteristic
     //Serial.print("Received message: "); Serial.println(receivedData.c_str());
     String receivedString = "";
@@ -28,33 +47,33 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     }
     if (bleMsgCompose > 0) {
       switch (bleMsgCompose) {
-      case 1:
-        Serial.println("Adressee : " + receivedString);
-        bleMsgAddresse = receivedString;
-        bleMsgCompose = 2;
-        pCharacteristic->setValue("Adressee : " + receivedString);
-        pCharacteristic->notify();
-        pCharacteristic->setValue("Message ...");
-        pCharacteristic->notify();
-        break;
-      case 2:
-        Serial.println("Message : " + receivedString);
-        bleMsgTxt = receivedString;
-        pCharacteristic->setValue("Msg -> " + bleMsgAddresse + " : " + receivedString);
-        pCharacteristic->notify();
-        sendBleToLoRa = true;
-        break;
+        case 1:
+          Serial.println("Adressee : " + receivedString);
+          bleMsgAddresse = receivedString;
+          bleMsgCompose = 2;
+          pCharacteristicTx->setValue("Adressee : " + receivedString);
+          pCharacteristicTx->notify();
+          pCharacteristicTx->setValue("Message ...");
+          pCharacteristicTx->notify();
+          break;
+        case 2:
+          Serial.println("Message : " + receivedString);
+          bleMsgTxt = receivedString;
+          pCharacteristicTx->setValue("Msg -> " + bleMsgAddresse + " : " + receivedString);
+          pCharacteristicTx->notify();
+          sendBleToLoRa = true;
+          break;
       }
     } else {
       if (receivedString == "hola") {
         Serial.println("hola tambien");
-        pCharacteristic->setValue("hola tambien");
-        pCharacteristic->notify();
+        pCharacteristicTx->setValue("hola tambien");
+        pCharacteristicTx->notify();
       } else if (receivedString=="/msg") {
         bleMsgCompose = 1;
         Serial.println("Send Message To...");
-        pCharacteristic->setValue("Send Message To...");
-        pCharacteristic->notify();
+        pCharacteristicTx->setValue("Send Message To...");
+        pCharacteristicTx->notify();
       }
     }
   }
@@ -71,17 +90,32 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 namespace BLE_Utils {
 
   void setup() {
-    NimBLEDevice::init("LoRa APRS Tracker");
-    NimBLEServer* pServer = NimBLEDevice::createServer();
-    NimBLEService* pService = pServer->createService(SERVICE_UUID);
-    pCharacteristic = pService->createCharacteristic(
-                        CHARACTERISTIC_UUID,
-                        NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
+    BLEDevice::init("LoRa APRS Tracker");
+    BLEServer* pServer = BLEDevice::createServer();
+    BLEService* pService = pServer->createService(SERVICE_UUID);
 
-    pCharacteristic->setCallbacks(new MyCallbacks());
+
+    pCharacteristicTx = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID_TX,
+                      NIMBLE_PROPERTY::NOTIFY
+                    );
+
+    // Create the BLE Characteristic for RX
+    pCharacteristicRx = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID_RX,
+                        NIMBLE_PROPERTY::WRITE
+                      );
+
+
+    /*pCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID,
+                        NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);*/
+
+    pCharacteristicRx->setCallbacks(new MyCallbacks());
+
     pService->start();
 
-    NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->start();
 
@@ -92,25 +126,27 @@ namespace BLE_Utils {
     if (!sendBleToLoRa) {
       return;
     }
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", bleLoRaPacket.c_str());
-    show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
+    if (bleConnected) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", bleLoRaPacket.c_str());
+      show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
 
-    MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
-    bleMsgCompose = 0;
-    bleMsgAddresse = "";
-    bleMsgTxt = "";
-    sendBleToLoRa = false;
+      MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
+      bleMsgCompose = 0;
+      bleMsgAddresse = "";
+      bleMsgTxt = "";
+      sendBleToLoRa = false;
+    }
   }
 
   void sendToPhone(const String& packet) {
-    if (!packet.isEmpty()) {
+    if (!packet.isEmpty() && bleConnected) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
       String receivedPacketString = "";
       for (int i=0; i<packet.length()-1;i++) {
         receivedPacketString += packet[i];
       }
-      pCharacteristic->setValue(receivedPacketString);
-      pCharacteristic->notify();
+      pCharacteristicTx->setValue(receivedPacketString);
+      pCharacteristicTx->notify();
     }
   }
 
