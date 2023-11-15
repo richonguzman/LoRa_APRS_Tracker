@@ -169,7 +169,7 @@ namespace MSG_Utils {
         //BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
         BLE_Utils::sendToPhone(packetReceived.substring(3));
 
-        if (digirepeaterActive) {
+        if (digirepeaterActive && aprsPacket.addressee!=currentBeacon->callsign) {
           String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
           if (digiRepeatedPacket == "X") {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");

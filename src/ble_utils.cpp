@@ -4,8 +4,9 @@
 #include "display.h"
 #include "logger.h"
 
-#define SERVICE_UUID        "6ba1b218-15a8-461f-9fa8-5dcae273eafd"
-#define CHARACTERISTIC_UUID "ed9da18c-a800-4f66-a670-aa7547e34453"
+  #define SERVICE_UUID        "00000001-ba2a-46c9-ae49-01b0961f68bb"
+  #define CHARACTERISTIC_UUID "00000003-ba2a-46c9-ae49-01b0961f68bb"
+//#define CHARACTERISTIC_UUID "00000002-ba2a-46c9-ae49-01b0961f68bb"
 
 NimBLEServer* pServer;
 NimBLECharacteristic* pCharacteristic;
@@ -73,7 +74,9 @@ namespace BLE_Utils {
     NimBLEDevice::init("LoRa APRS Tracker");
     NimBLEServer* pServer = NimBLEDevice::createServer();
     NimBLEService* pService = pServer->createService(SERVICE_UUID);
-    pCharacteristic = pService->createCharacteristic(CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
+    pCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID,
+                        NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY);
 
     pCharacteristic->setCallbacks(new MyCallbacks());
     pService->start();
