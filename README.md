@@ -1,4 +1,4 @@
-# Richonguzman / CD2RXU LoRa APRS Tracker/Station
+# Richonguzman / CA2RXU LoRa APRS Tracker/Station
 
 This firmware is for using ESP32 based boards with LoRa Modules and GPS to live in the APRS world.
 
@@ -93,4 +93,4 @@ ____________________________________________________
 - https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : Thomas - DL9SAU for the Kiss <> TNC2 lib
 ____________________________________________________
 
-# Hope You Enjoy this, 73 !!  CD2RXU , Valparaiso, Chile
+# Hope You Enjoy this, 73 !!  CA2RXU , Valparaiso, Chile

@@ -24,12 +24,14 @@ extern bool             bleConnected;
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
       bleConnected = true;
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "Connected");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
+      //delay(1000);
     }
 
     void onDisconnect(NimBLEServer* pServer) {
       bleConnected = false;
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "Disconnected");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
+      pServer->startAdvertising();
     }
 };
 
@@ -92,7 +94,7 @@ namespace BLE_Utils {
                         );
     pCharacteristicRx = pService->createCharacteristic(
                           CHARACTERISTIC_UUID_RX,
-                          NIMBLE_PROPERTY::WRITE
+                          NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
                         );
 
     pCharacteristicRx->setCallbacks(new MyCallbacks());
@@ -130,6 +132,7 @@ namespace BLE_Utils {
       }
       pCharacteristicTx->setValue(receivedPacketString);
       pCharacteristicTx->notify();
+      delay(3);
     }
   }
 
