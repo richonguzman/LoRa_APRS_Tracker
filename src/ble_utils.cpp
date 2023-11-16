@@ -103,7 +103,12 @@ namespace BLE_Utils {
 
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
-    pAdvertising->start();
+    pServer->getAdvertising()->setScanResponse(true);
+    pServer->getAdvertising()->setMinPreferred(0x06);
+    //pServer->getAdvertising()->setMaxPreferred(0x12);
+    pServer->getAdvertising()->setMaxPreferred(0x0C); //12x1.25 = 15 ms (Apple BLE MIDI spec)
+
+    pAdvertising->start(); //    pServer->getAdvertising()->start();
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "Waiting for BLE central to connect...");
   }
