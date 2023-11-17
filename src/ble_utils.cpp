@@ -5,8 +5,8 @@
 #include "logger.h"
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
-#define CHARACTERISTIC_UUID_TX  "00000002-ba2a-46c9-ae49-01b0961f68bb"
-#define CHARACTERISTIC_UUID_RX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_RX  "00000002-ba2a-46c9-ae49-01b0961f68bb"
 
 BLEServer *pServer;
 BLECharacteristic *pCharacteristicTx;
