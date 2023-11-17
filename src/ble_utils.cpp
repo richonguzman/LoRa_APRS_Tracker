@@ -135,9 +135,24 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length()-1;i++) {
         receivedPacketString += packet[i];
       }
-      pCharacteristicTx->setValue(receivedPacketString);
-      pCharacteristicTx->notify();
-      delay(3);
+      //pCharacteristicTx->setValue(receivedPacketString.c_str());
+      //pCharacteristicTx->setValue((const uint8_t*)receivedPacketStrin, strlen(receivedPacketStrin));
+      //pCharacteristicTx->setValue((uint8_t *)receivedPacketString.c_str(), 20);
+      //pCharacteristicTx->setValue((uint8_t *)receivedPacketString.c_str(), receivedPacketString.length());
+      
+      int parts = (receivedPacketString.length()/20) + 1;
+      for(int n=0;n<parts;n++) {   
+        pCharacteristicTx->setValue(receivedPacketString.substring(n*20, 20)); 
+        pCharacteristicTx->notify();
+        delay(10);                                                                                // Bluetooth stack will go into congestion, if too many packets are sent
+      }
+      
+      
+      
+      
+      
+      //pCharacteristicTx->notify();
+      //delay(3);
     }
   }
 
