@@ -3,6 +3,7 @@
 #include "msg_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "KISS_TO_TNC2.h"
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -132,7 +133,7 @@ namespace BLE_Utils {
     if (!packet.isEmpty()) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
       String receivedPacketString = "";
-      for (int i=0; i<packet.length()-1;i++) {
+      for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
       //pCharacteristicTx->setValue(receivedPacketString.c_str());
@@ -147,6 +148,14 @@ namespace BLE_Utils {
         delay(10);                                                                                // Bluetooth stack will go into congestion, if too many packets are sent
       }*/
 
+      pCharacteristicTx->setValue((byte)0xc0);
+      pCharacteristicTx->notify();
+      delay(3);
+      pCharacteristicTx->setValue(byte(0x00));
+      pCharacteristicTx->notify();
+      delay(3);
+
+
       for(int n=0;n<receivedPacketString.length();n++) {   
         uint8_t _c = receivedPacketString[n];
         pCharacteristicTx->setValue(&_c, 1);
@@ -154,6 +163,8 @@ namespace BLE_Utils {
         delay(3);
       }
       
+      pCharacteristicTx->setValue((byte)0xc0);
+      pCharacteristicTx->notify();
       
       
       
