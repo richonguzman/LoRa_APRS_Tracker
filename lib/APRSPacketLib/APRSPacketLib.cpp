@@ -173,6 +173,14 @@ namespace APRSPacketLib {
       }
     }
 
+    int decodeSpeed(String speed) {
+      return speed.toInt() * 1.852;
+    }
+
+    int decodeAltitude(String altitude) {
+      return altitude.toInt() * 0.3048;
+    }
+
     APRSPacket processReceivedPacket(String receivedPacket) {
       /*  Packet type:
           gps       = 0
@@ -205,25 +213,27 @@ namespace APRSPacketLib {
           aprsPacket.longitude = decodeEncodedLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+7, receivedPacket.indexOf(gpsChar)+11));
           // revisar si es codificado con Speed+Course o Altitude+Course+Speed
           // tambien conseguir Symbol
-        
+
+          /*aprsPacket.symbol
+          aprsPacket.course
+          aprsPacket.speed
+          aprsPacket.altitude*/
+          Serial.println(aprsPacket.latitude);
+          Serial.println(aprsPacket.longitude);
         
         } else {
-
-          // revisar si tiene Course, Speed, Altitude
           aprsPacket.latitude = decodeLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+2,receivedPacket.indexOf(gpsChar)+10));
           aprsPacket.longitude = decodeLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+11,receivedPacket.indexOf(gpsChar)+20));
-          if (receivedPacket.substring(25,26) == "/" && receivedPacket.substring(30,33) == "/A=") {
-            Serial.println("es GPS no codificado y tiene CSA");
-            // 20 a 21 es symbol
-            // 21 a 24 es Course
+          aprsPacket.symbol = receivedPacket.substring(receivedPacket.indexOf(gpsChar)+20,receivedPacket.indexOf(gpsChar)+21);
+          if (receivedPacket.substring(receivedPacket.indexOf(gpsChar)+24,receivedPacket.indexOf(gpsChar)+25) == "/" && receivedPacket.substring(receivedPacket.indexOf(gpsChar)+28,receivedPacket.indexOf(gpsChar)+31) == "/A=") {
+            aprsPacket.course = receivedPacket.substring(receivedPacket.indexOf(gpsChar)+21,receivedPacket.indexOf(gpsChar)+24).toInt();
+            aprsPacket.speed = decodeSpeed(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+25,receivedPacket.indexOf(gpsChar)+28));
+            aprsPacket.altitude = decodeAltitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+31,receivedPacket.indexOf(gpsChar)+39));
           } else {
             aprsPacket.course = 0;
             aprsPacket.speed = 0;
             aprsPacket.altitude = 0;
           }
-          // como conseguir Symbol
-          
-          // sino es estacion fija (digi?/igate?)
         }
       } else if (receivedPacket.indexOf("::") > 10) {
         aprsPacket.type = 1;
