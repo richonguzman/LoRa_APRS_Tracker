@@ -26,7 +26,6 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
       bleConnected = true;
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
-      //delay(1000);
     }
 
     void onDisconnect(NimBLEServer* pServer) {
@@ -39,7 +38,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
-    //Serial.print("Received message: "); Serial.println(receivedData.c_str());
+    Serial.print("Received message: "); Serial.println(receivedData.c_str());
     String receivedString = "";
     for (int i=0; i<receivedData.length()-2;i++) {
       receivedString += receivedData[i];
@@ -148,29 +147,38 @@ namespace BLE_Utils {
         delay(10);                                                                                // Bluetooth stack will go into congestion, if too many packets are sent
       }*/
 
-      pCharacteristicTx->setValue((byte)0xc0);
+      pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
       pCharacteristicTx->notify();
       delay(3);
-      pCharacteristicTx->setValue(byte(0x00));
+      pCharacteristicTx->setValue((byte)KissCommandCode::Data);
       pCharacteristicTx->notify();
       delay(3);
 
 
       for(int n=0;n<receivedPacketString.length();n++) {   
         uint8_t _c = receivedPacketString[n];
-        pCharacteristicTx->setValue(&_c, 1);
-        pCharacteristicTx->notify();
-        delay(3);
+        if (_c == KissSpecialCharacter::Fend) {
+          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+          pCharacteristicTx->notify();
+          delay(3);
+          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfend);
+          pCharacteristicTx->notify();
+          delay(3);
+        } else if (_c == KissSpecialCharacter::Fesc) {
+          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+          pCharacteristicTx->notify();
+          delay(3);
+          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfesc);
+          pCharacteristicTx->notify();
+          delay(3);
+        } else {
+          pCharacteristicTx->setValue(&_c, 1);
+          pCharacteristicTx->notify();
+          delay(3);
+        }       
       }
-      
-      pCharacteristicTx->setValue((byte)0xc0);
+      pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
       pCharacteristicTx->notify();
-      
-      
-      
-      
-      //pCharacteristicTx->notify();
-      //delay(3);
     }
   }
 
