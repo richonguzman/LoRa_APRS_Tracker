@@ -209,7 +209,7 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  if (Config.disableGps) {
+  if (Config.disableGPS) {
     deactivateGPS();
   } else {
     activateGPS();
@@ -225,7 +225,7 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  if (Config.disableGps) {
+  if (Config.disableGPS) {
     deactivateGPS();
   } else {
     activateGPS();

@@ -87,7 +87,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     sendAltitude                  = data["other"]["sendAltitude"].as<bool>();
     sendBatteryInfo               = data["other"]["sendBatteryInfo"].as<bool>();
     bluetooth                     = data["other"]["bluetooth"].as<bool>();
-    disableGps                    = data["other"]["disableGps"].as<bool>();
+    disableGPS                    = data["other"]["disableGPS"].as<bool>();
 
     configFile.close();
 }

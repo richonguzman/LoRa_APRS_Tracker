@@ -32,7 +32,7 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
   void setup() {
-    if (Config.disableGps) {
+    if (Config.disableGPS) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
@@ -47,7 +47,7 @@ namespace GPS_Utils {
   }
 
   void getData() {
-    if (Config.disableGps) {
+    if (Config.disableGPS) {
       return;
     }
     while (neo6m_gps.available() > 0) {
@@ -89,7 +89,7 @@ namespace GPS_Utils {
   }
 
   void checkStartUpFrames() {
-    if (Config.disableGps) {
+    if (Config.disableGPS) {
       return;
     }
     if ((millis() > 8000 && gps.charsProcessed() < 10)) {

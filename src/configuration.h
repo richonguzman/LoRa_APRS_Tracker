@@ -86,7 +86,7 @@ public:
   bool    sendAltitude;
   bool    sendBatteryInfo;
   bool    bluetooth;
-  bool    disableGps;
+  bool    disableGPS;
 
   Configuration();
   void validateConfigFile(String currentBeaconCallsign);
