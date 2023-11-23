@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-enum KissSpecialCharacter {
+/*enum KissSpecialCharacter {
     Fend = 0xc0,
     Fesc = 0xdb,
     Tfend = 0xdc,
@@ -21,7 +21,7 @@ enum KissCommandCode {
     RebootRequested = 0x08,
     Telemetry = 0x09,
     NoCmd = 0x80
-  };
+  };*/
 
 namespace BLE_Utils {
 

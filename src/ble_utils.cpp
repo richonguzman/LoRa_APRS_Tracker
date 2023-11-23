@@ -1,9 +1,14 @@
 #include <NimBLEDevice.h>
 #include "ble_utils.h"
 #include "msg_utils.h"
+#include "lora_utils.h"
 #include "display.h"
 #include "logger.h"
 #include "KISS_TO_TNC2.h"
+#include "ax25_utils.h"
+
+#include <iostream>
+#include <string>
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -20,6 +25,7 @@ extern int              bleMsgCompose;
 extern String           bleMsgAddresse;
 extern String           bleMsgTxt;
 extern bool             bleConnected;
+extern String           BLEToLoRaPacket;
 
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
@@ -38,7 +44,13 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
-    Serial.print("Received message: "); Serial.println(receivedData.c_str());
+    
+    const std::byte* byteArray = reinterpret_cast<const std::byte*>(receivedData.data());
+
+    BLEToLoRaPacket = AX25_Utils::processAX25(byteArray);
+
+    
+    /*Serial.print("Received message: "); Serial.println(receivedData.c_str());
     String receivedString = "";
     for (int i=0; i<receivedData.length()-2;i++) {
       receivedString += receivedData[i];
@@ -73,7 +85,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
         pCharacteristicTx->setValue("Send Message To...");
         pCharacteristicTx->notify();
       }
-    }
+    }*/
   }
 };
 
@@ -121,10 +133,12 @@ namespace BLE_Utils {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", bleLoRaPacket.c_str());
     show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
 
-    MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
+    LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
+    /*MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
     bleMsgCompose = 0;
     bleMsgAddresse = "";
-    bleMsgTxt = "";
+    bleMsgTxt = "";*/
+    BLEToLoRaPacket = "";
     sendBleToLoRa = false;
   }
 

@@ -63,6 +63,7 @@ String    bleLoRaPacket       = "";
 int       bleMsgCompose       = 0;
 String    bleMsgAddresse      = "";
 String    bleMsgTxt           = "";
+String    BLEToLoRaPacket     = "";
 
 bool      messageLed          = false;
 uint32_t  messageLedTime      = millis();
