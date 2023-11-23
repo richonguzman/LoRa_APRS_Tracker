@@ -29,7 +29,7 @@ namespace AX25_Utils {
     if (frameSize <14) {          // not a AX.25 frame
       return false;
     }
-    if (frame[0] != 0xc0 && frame[1] != 0x00 && frame[frameSize-1] == 0xc0) { // not a kiss encapsulated packet
+    if (frame[0] != KissSpecialCharacter::Fend && frame[1] != KissCommandCode::Data && frame[frameSize-1] == KissSpecialCharacter::Fend) { // not a kiss encapsulated packet
       return false;
     }
     int payloadFrameStart = 0;

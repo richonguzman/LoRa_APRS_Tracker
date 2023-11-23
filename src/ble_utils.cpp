@@ -45,47 +45,15 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
     
-    const std::byte* byteArray = reinterpret_cast<const std::byte*>(receivedData.data());
+    const char* charData = receivedData.c_str();
+    size_t size = receivedData.size();
+    unsigned char* byteArray = new unsigned char[size];
+    for (size_t i=0;i<size;++i) {
+      byteArray[i] = static_cast<unsigned char>(charData[i]);
+    }
 
     BLEToLoRaPacket = AX25_Utils::processAX25(byteArray);
-
-    
-    /*Serial.print("Received message: "); Serial.println(receivedData.c_str());
-    String receivedString = "";
-    for (int i=0; i<receivedData.length()-2;i++) {
-      receivedString += receivedData[i];
-    }
-    if (bleMsgCompose > 0) {
-      switch (bleMsgCompose) {
-        case 1:
-          Serial.println("Adressee : " + receivedString);
-          bleMsgAddresse = receivedString;
-          bleMsgCompose = 2;
-          pCharacteristicTx->setValue("Adressee : " + receivedString);
-          pCharacteristicTx->notify();
-          pCharacteristicTx->setValue("Message ...");
-          pCharacteristicTx->notify();
-          break;
-        case 2:
-          Serial.println("Message : " + receivedString);
-          bleMsgTxt = receivedString;
-          pCharacteristicTx->setValue("Msg -> " + bleMsgAddresse + " : " + receivedString);
-          pCharacteristicTx->notify();
-          sendBleToLoRa = true;
-          break;
-      }
-    } else {
-      if (receivedString == "hola") {
-        Serial.println("hola tambien");
-        pCharacteristicTx->setValue("hola tambien");
-        pCharacteristicTx->notify();
-      } else if (receivedString=="/msg") {
-        bleMsgCompose = 1;
-        Serial.println("Send Message To...");
-        pCharacteristicTx->setValue("Send Message To...");
-        pCharacteristicTx->notify();
-      }
-    }*/
+    delete[] byteArray;
   }
 };
 
@@ -117,8 +85,7 @@ namespace BLE_Utils {
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pServer->getAdvertising()->setScanResponse(true);
     pServer->getAdvertising()->setMinPreferred(0x06);
-    //pServer->getAdvertising()->setMaxPreferred(0x12);
-    pServer->getAdvertising()->setMaxPreferred(0x0C); //12x1.25 = 15 ms (Apple BLE MIDI spec)
+    pServer->getAdvertising()->setMaxPreferred(0x0C);
 
     pAdvertising->start(); //    pServer->getAdvertising()->start();
 
@@ -134,10 +101,6 @@ namespace BLE_Utils {
     show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
 
     LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
-    /*MSG_Utils::sendMessage(bleMsgAddresse,bleMsgTxt);
-    bleMsgCompose = 0;
-    bleMsgAddresse = "";
-    bleMsgTxt = "";*/
     BLEToLoRaPacket = "";
     sendBleToLoRa = false;
   }
