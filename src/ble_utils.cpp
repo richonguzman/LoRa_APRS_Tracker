@@ -53,6 +53,9 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     }
 
     BLEToLoRaPacket = AX25_Utils::processAX25(byteArray);
+    //
+    Serial.println(BLEToLoRaPacket); //just validation
+    //
     delete[] byteArray;
   }
 };
@@ -97,8 +100,8 @@ namespace BLE_Utils {
       return;
     }
 
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", bleLoRaPacket.c_str());
-    show_display("BLE Tx >>", "", bleLoRaPacket, 1000);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
+    show_display("BLE Tx >>", "", BLEToLoRaPacket, 1000);
 
     LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
     BLEToLoRaPacket = "";
