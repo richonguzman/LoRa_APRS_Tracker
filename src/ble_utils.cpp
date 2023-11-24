@@ -45,6 +45,11 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
     
+    for (int i=0; i<receivedData.size(); i++) {
+      Serial.print(receivedData[i],HEX);
+    }
+
+
     const char* charData = receivedData.c_str();
     size_t size = receivedData.size();
     unsigned char* byteArray = new unsigned char[size];
@@ -56,6 +61,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     //
     Serial.println(BLEToLoRaPacket); //just validation
     //
+    sendBleToLoRa = true;
     delete[] byteArray;
   }
 };
