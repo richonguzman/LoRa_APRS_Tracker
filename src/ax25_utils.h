@@ -4,13 +4,13 @@
 #include <Arduino.h>
 
 struct AX25Frame {  // Define AX.25 frame structure
-  char tocall[7];   // destination
-  char sender[7];   // source;
-  char path1[7];    // if present
-  char path2[7];    // if present
-  char control;
-  char pid;
-  char payload[64]; // how to validate this size?
+  String tocall;   // destination
+  String sender;   // source;
+  String path1;    // if present
+  String path2;    // if present
+  String control;
+  String pid;
+  String payload; // how to validate this size?
 };
 
 enum KissSpecialCharacter {
@@ -35,9 +35,9 @@ enum KissCommandCode {
 
 namespace AX25_Utils {
 
-  String decodeFrame(char frame[]);
-  bool decodeAX25(byte* frame, int frameSize, AX25Frame* decodedFrame);
-  String processAX25(byte* frame);
+  String decodeFrame(String frame);
+  bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame);
+  String processAX25(String frame);
 
 }
 

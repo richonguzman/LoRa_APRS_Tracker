@@ -4,7 +4,7 @@ namespace AX25_Utils {
 
   AX25Frame decodedFrame;
 
-  String decodeFrame(char frame[]) {
+  String decodeFrame(String frame) {
     String packet = "";
     for (int a=0;a<6;a++) {
       uint16_t shiftedValue = frame[a] >> 1;
@@ -25,7 +25,7 @@ namespace AX25_Utils {
     return packet;
   }
 
-  bool decodeAX25(byte* frame, int frameSize, AX25Frame* decodedFrame) {
+  bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
     if (frameSize <14) {          // not a AX.25 frame
       return false;
     }
@@ -38,22 +38,24 @@ namespace AX25_Utils {
         payloadFrameStart = i+1;
       }
     }
-    memcpy(decodedFrame->tocall, frame + 2, 7);        // Extract destination address
-    memcpy(decodedFrame->sender, frame + 9, 7);        // Extract source address
+    decodedFrame->tocall = frame.substring(2,9);//, frame[2], 7);        // Extract destination address
+    decodedFrame->sender = frame.substring(9,16);        // Extract source address
     if (payloadFrameStart >= 21) {                     // is there path1?
-      memcpy(decodedFrame->path1, frame + 16, 7);   
+      decodedFrame->path1 = frame.substring(16,23);
     }
     if (payloadFrameStart >= 28) {                     // is there path2?
-      memcpy(decodedFrame->path2, frame + 23, 7);   
+      decodedFrame->path2 = frame.substring(23,30);
     }
-    decodedFrame->control = frame[payloadFrameStart-1];                                            // Extract control information  // 0x03
-    decodedFrame->pid = frame[payloadFrameStart];                                                  // Extract pid information      // 0xF0                                
-    memcpy(decodedFrame->payload, frame + payloadFrameStart + 1, frameSize-payloadFrameStart-2);   // Extract payload
+    decodedFrame->control = frame.substring(payloadFrameStart-1,payloadFrameStart);   // Extract control information  // 0x03
+    decodedFrame->pid = frame.substring(payloadFrameStart,payloadFrameStart+1);       // Extract pid information      // 0xF0                                
+    decodedFrame->payload = frame.substring(payloadFrameStart+2);                     // Extract payload
     return true;      // Successfully decoded
   }
 
-  String processAX25(byte* frame) {
-    if (decodeAX25(frame, sizeof(frame), &decodedFrame)) {
+  String processAX25(String frame) {
+    Serial.println(frame);
+    Serial.println(frame.length());
+    if (decodeAX25(frame, frame.length(), &decodedFrame)) {
       String packetToLoRa = "";
       packetToLoRa = decodeFrame(decodedFrame.sender) + ">" + decodeFrame(decodedFrame.tocall);
 

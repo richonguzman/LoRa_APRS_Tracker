@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+//#include <cstring>
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -43,52 +44,51 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
-    std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
-    
-    /*for (int i=0; i<receivedData.size(); i++) {
-      Serial.print(receivedData[i],HEX);
-    }*/
+    //std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
 
-    String receivedString = "";
-    for (int i=0; i<receivedData.length()-2;i++) {
+    const char * receivedData = pCharacteristic->getValue().c_str();
+    size_t receivedLength = strlen(receivedData) + 1;       // Read the data from the characteristic
+  
+    char * receivedString = (char*) malloc(receivedLength);
+
+    if (!receivedString) {
+      Serial.println("Memory allocation failed!");
+      return;
+    }
+    strcpy(receivedString, receivedData);
+
+
+    /*String receivedString = "";
+    for (int i=0; i<receivedData.length();i++) {
       receivedString += receivedData[i];
     }
 
-    int strLength = receivedString.length();
-    byte *byteArray = (byte *)malloc(strLength);
+    // LA1HSA-4>APFII0,WIDE1-1:@152201h5955.23N/01056.93E$/A=000620Testing..!w!G!
+    //unsigned char byteArray[]  = {0xc0, 0x00, 0x82, 0xA0, 0x8C, 0x92, 0x92, 0x60, 0xE0, 0x98, 0x82, 0x62, 0x90, 0xA6, 0x82, 0x68, 0xAE, 0x92, 0x88, 0x8A, 0x62, 0x40, 0x63, 0x03, 0xF0, 0x40, 0x31, 0x35, 0x32, 0x32, 0x30, 0x31, 0x68, 0x35, 0x39, 0x35, 0x35, 0x2E, 0x32, 0x33, 0x4E, 0x2F, 0x30, 0x31, 0x30, 0x35, 0x36, 0x2E, 0x39, 0x33, 0x45, 0x24, 0x2F, 0x41, 0x3D, 0x30, 0x30, 0x30, 0x36, 0x32, 0x30, 0x54, 0x65, 0x73, 0x74, 0x69, 0x6E, 0x67, 0x2E, 0x2E, 0x21, 0x77, 0x21, 0x47, 0x21, 0xc0};
 
-    if (byteArray != NULL) {
-      receivedString.getBytes(byteArray, strLength);  // Use the getBytes() function to fill the byte array from the string
+    //int arrayLength = sizeof(byteArray) / sizeof(byteArray[0]); // Calculate the length of the byte array
+    //Serial.println(arrayLength);
 
-      // Print the contents of the byte array
-      /*for (int i = 0; i < strLength; i++) {
-        Serial.print(myByteArray[i]);
-        Serial.print(" ");
-      }*/
+    //std::string receivedString(reinterpret_cast<char*>(byteArray), arrayLength);
 
-      // Free the dynamically allocated memory
-      
-    } else {
-      Serial.println("Memory allocation failed!");
+    //char* receivedString = reinterpret_cast<char*>(byteArray);
+
+
+    char receivedString[arrayLength + 1];  // +1 for the null terminator
+    for (int i = 0; i < arrayLength; i++) {
+      receivedString[i] = static_cast<char>(receivedString[i]);
     }
+    receivedString[arrayLength] = '\0';*/
 
+    //Serial.println(receivedString);
 
-
-
-    /*const char* charData = receivedData.c_str();
-    size_t size = receivedData.size();
-    unsigned char* byteArray = new unsigned char[size];
-    for (size_t i=0;i<size;++i) {
-      byteArray[i] = static_cast<unsigned char>(charData[i]);
-    }*/
-
-    BLEToLoRaPacket = AX25_Utils::processAX25(byteArray);
+    BLEToLoRaPacket = AX25_Utils::processAX25(receivedString);
     //
+    ///BLEToLoRaPacket = "CD2RXU-7>APLRT1:>test";
     Serial.println(BLEToLoRaPacket); //just validation
     //
     sendBleToLoRa = true;
-    free(byteArray);
-    //delete[] byteArray;
+    free(receivedString);
   }
 };
 
