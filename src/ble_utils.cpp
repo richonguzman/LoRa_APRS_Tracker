@@ -45,24 +45,50 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
     
-    for (int i=0; i<receivedData.size(); i++) {
+    /*for (int i=0; i<receivedData.size(); i++) {
       Serial.print(receivedData[i],HEX);
+    }*/
+
+    String receivedString = "";
+    for (int i=0; i<receivedData.length()-2;i++) {
+      receivedString += receivedData[i];
+    }
+
+    int strLength = receivedString.length();
+    byte *byteArray = (byte *)malloc(strLength);
+
+    if (byteArray != NULL) {
+      receivedString.getBytes(byteArray, strLength);  // Use the getBytes() function to fill the byte array from the string
+
+      // Print the contents of the byte array
+      /*for (int i = 0; i < strLength; i++) {
+        Serial.print(myByteArray[i]);
+        Serial.print(" ");
+      }*/
+
+      // Free the dynamically allocated memory
+      
+    } else {
+      Serial.println("Memory allocation failed!");
     }
 
 
-    const char* charData = receivedData.c_str();
+
+
+    /*const char* charData = receivedData.c_str();
     size_t size = receivedData.size();
     unsigned char* byteArray = new unsigned char[size];
     for (size_t i=0;i<size;++i) {
       byteArray[i] = static_cast<unsigned char>(charData[i]);
-    }
+    }*/
 
     BLEToLoRaPacket = AX25_Utils::processAX25(byteArray);
     //
     Serial.println(BLEToLoRaPacket); //just validation
     //
     sendBleToLoRa = true;
-    delete[] byteArray;
+    free(byteArray);
+    //delete[] byteArray;
   }
 };
 
