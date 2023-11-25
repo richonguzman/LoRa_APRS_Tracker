@@ -8,7 +8,7 @@ import {Settings} from "../shared/models/settings.interface";
 @Component({
   selector: 'app-settings-form',
   templateUrl: './settings-form.component.html',
-  styleUrls: ['./settings-form.component.css']
+  styleUrls: ['./settings-form.component.scss']
 })
 export class SettingsFormComponent implements OnInit, OnDestroy {
 
