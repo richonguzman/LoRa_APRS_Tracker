@@ -6,7 +6,7 @@ namespace APRSPacketLib {
     String r = "";
     if (n>-1 && n<0) {
       r = "-";
-    }   
+    }
     int v = n;
     r += v;
     r += '.';
@@ -46,7 +46,7 @@ namespace APRSPacketLib {
     String degrees = doubleToString(lon,6);
     String east_west, longitude, convDeg3;
     float convDeg, convDeg2;
-    
+
     if (abs(degrees.toFloat()) < 100) {
       longitude += "0";
     }
@@ -76,7 +76,7 @@ namespace APRSPacketLib {
     altoff=alt_m+10000;
     buf[0]=(altoff/8281)+33;
     altoff=altoff%8281;
-    buf[1]=(altoff/91)+33;	
+    buf[1]=(altoff/91)+33;
     buf[2]=(altoff%91)+33;
     buf[3]='}';
   }
@@ -101,13 +101,13 @@ namespace APRSPacketLib {
     }
     uint32_t course_hun = course_deg/100;
     DC28=(speed_kt-ten*10)*10 + course_hun + 32;
-    buf[1]=DC28;				
+    buf[1]=DC28;
 
     SE28=(course_deg-course_hun*100) + 28;
 	  buf[2]=SE28;
   }
 
-  void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon) { 
+  void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon) {
     uint32_t d28;               // degrees
     uint32_t deg = lon->degrees;
     if (deg<=9) {
@@ -120,7 +120,7 @@ namespace APRSPacketLib {
       d28=28+(deg-100);
     }
     buf[0] = d28;
-    
+
     uint32_t m28;               // minutes
     uint32_t min = lon->minutes;
     if (min<=9) {
@@ -129,7 +129,7 @@ namespace APRSPacketLib {
       m28=28+min;
     }
     buf[1]=m28;
-    
+
     uint32_t h28;
     h28=28+lon->minuteHundredths;
     buf[2]=h28;
@@ -210,7 +210,7 @@ namespace APRSPacketLib {
     miceInfoFieldArray[7] = symbolOverlayArray[0];
     strncpy(symbolOverlayArray,overlay.c_str(),1);
     miceInfoFieldArray[8] = symbolOverlayArray[0];
-    
+
     encodeMiceAltitude(&miceInfoFieldArray[9], (uint32_t)altitude); // altitude = gps.altitude.meters()
     miceInfoFieldArray[13] = 0x00;      // por repetidor?
     String miceInformationField = (char*)miceInfoFieldArray;
@@ -238,7 +238,7 @@ namespace APRSPacketLib {
   String generateMessagePacket(String callsign, String tocall, String path, String addressee, String message) {
     for(int i = addressee.length(); i < 9; i++) {
       addressee += ' ';
-    }      
+    }
     return generateBasePacket(callsign,tocall,path) + "::" + addressee + ":" + message;
   }
 
@@ -252,7 +252,7 @@ namespace APRSPacketLib {
           packet.path.replace("WIDE1-" + hop , callsign + "*,WIDE1-" + String(hop.toInt()-1));
         }
         String repeatedPacket = packet.sender + ">" + packet.tocall + "," + packet.path;
-        switch (packet.type) { 
+        switch (packet.type) {
           case 0: // gps
             repeatedPacket += ":!";
             break;
@@ -275,7 +275,7 @@ namespace APRSPacketLib {
             repeatedPacket += ":;";
             break;
         }
-        return repeatedPacket + packet.message;          
+        return repeatedPacket + packet.message;
       } else {
         return "X";
       }
@@ -419,7 +419,7 @@ namespace APRSPacketLib {
   int decodeCourse(String course) {
     if (course == "..." || course == "000") {
       return 0;
-    } else { 
+    } else {
       return course.toInt();
     }
   }
@@ -499,7 +499,7 @@ namespace APRSPacketLib {
     float decimalLatitude = degrees + (minute/60.0) + (minuteHundredths/10000.0);
     if (northSouth=="N") {
       return decimalLatitude;
-    } else { 
+    } else {
       return -decimalLatitude;
     }
   }
@@ -512,7 +512,7 @@ namespace APRSPacketLib {
     float decimalLongitude = degrees + (minute/60.0) + (minuteHundredths/10000.0);
     if (westEast=="W") {
       return -decimalLongitude;
-    } else { 
+    } else {
       return decimalLongitude;
     }
   }
@@ -544,7 +544,7 @@ namespace APRSPacketLib {
     String westEast = "E";
     if (int(destinationField[4]) > 57) {
       offset = true;
-    } 
+    }
     if (int(destinationField[5]) > 57) {
       westEast = "W";
     }
@@ -559,7 +559,7 @@ namespace APRSPacketLib {
       temp = '0' + temp;
     }
     longitudeString = temp;
-    
+
     int m28 = (int)informationField[1] - 28;
     if (m28 >= 60) {
       m28 -= 60;
@@ -569,7 +569,7 @@ namespace APRSPacketLib {
       temp = '0' + temp;
     }
     longitudeString += temp + ".";
-        
+
     int h28 = (int)informationField[2] - 28;
     temp = String(h28);
     for(int i = temp.length(); i < 2; i++) {
@@ -671,12 +671,12 @@ namespace APRSPacketLib {
       aprsPacket.longitude = decodeMiceLongitude(aprsPacket.tocall, aprsPacket.message);
       aprsPacket.speed = decodeMiceSpeed(aprsPacket.message);
       aprsPacket.course = decodeMiceCourse(aprsPacket.message);
-      aprsPacket.altitude = decodeMiceAltitude(aprsPacket.message);      
+      aprsPacket.altitude = decodeMiceAltitude(aprsPacket.message);
     } else if (receivedPacket.indexOf(":;") > 10) {
       aprsPacket.type = 5;
       aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
     }
-        
+
     if (aprsPacket.type!=1) {
       aprsPacket.addressee = "";
     }
@@ -688,7 +688,7 @@ namespace APRSPacketLib {
       aprsPacket.course = 0;
       aprsPacket.speed = 0;
       aprsPacket.altitude = 0;
-    }    
+    }
     if (aprsPacket.type!=4) {
       aprsPacket.miceType = "";
     }

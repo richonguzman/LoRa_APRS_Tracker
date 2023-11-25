@@ -270,7 +270,7 @@ namespace KEYBOARD_Utils {
     }    
   }
 
-  void processPressedKey(char key) {
+  void processPressedKey(int key) {
     keyDetected = true;
     menuTime = millis();
     /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
@@ -374,7 +374,7 @@ namespace KEYBOARD_Utils {
     }
     Wire.requestFrom(CARDKB_ADDR, 1);
     while(Wire.available()) {
-      char c = Wire.read();
+      int c = Wire.read();
       if (c != 0) {
 
         // just for debugging

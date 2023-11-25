@@ -9,7 +9,7 @@ namespace KEYBOARD_Utils {
   void downArrow();
   void leftArrow();
   void rightArrow();
-  void processPressedKey(char key);  
+  void processPressedKey(int key);  
   void read();
   void setup();
 }

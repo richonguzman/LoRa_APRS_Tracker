@@ -387,7 +387,7 @@ namespace STATION_Utils {
     }
   }
 
-  void sendBeacon(String type) {
+  void sendBeacon(const String& type) {
     String packet;
     if (Config.bme.sendTelemetry && type == "Wx") {
       if (miceActive) {
@@ -465,7 +465,7 @@ namespace STATION_Utils {
       while (fileCallsignIndex.available()) {
         String firstLine = fileCallsignIndex.readStringUntil('\n');
         myBeaconsIndex = firstLine.toInt();
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine.c_str());
       }
       fileCallsignIndex.close();
     }

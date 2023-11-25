@@ -16,7 +16,7 @@ void orderListenedTrackersByDistance(const String& callsign, float distance, flo
 void checkSmartBeaconInterval(int speed);
 void checkStandingUpdateTime();
 void checkSmartBeaconState();
-void sendBeacon(String type);
+void sendBeacon(const String& type);
 void checkTelemetryTx();
 void saveCallsingIndex(int index);
 void loadCallsignIndex();
