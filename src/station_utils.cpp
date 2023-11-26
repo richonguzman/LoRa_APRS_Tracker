@@ -420,7 +420,7 @@ namespace STATION_Utils {
       packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
       #endif
     }
-    show_display("<<< TX >>>", "", packet,100);
+    show_display("<<< TX >>>", packet,100);
     LoRa_Utils::sendNewPacket(packet);
     
     if (currentBeacon->smartBeaconState) {
