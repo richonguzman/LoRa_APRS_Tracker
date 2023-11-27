@@ -44,9 +44,11 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
-    //std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
-
-    const char * receivedData = pCharacteristic->getValue().c_str();
+    std::string receivedD = pCharacteristic->getValue();       // Read the data from the characteristic
+    
+    Serial.println(receivedD.c_str());
+    const char * receivedData = receivedD.c_str();
+    Serial.println(receivedData);
     size_t receivedLength = strlen(receivedData) + 1;       // Read the data from the characteristic
   
     char * receivedString = (char*) malloc(receivedLength);
