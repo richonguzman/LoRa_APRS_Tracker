@@ -48,7 +48,7 @@ namespace AX25_Utils {
     }
     decodedFrame->control = frame.substring(payloadFrameStart-1,payloadFrameStart);   // Extract control information  // 0x03
     decodedFrame->pid = frame.substring(payloadFrameStart,payloadFrameStart+1);       // Extract pid information      // 0xF0                                
-    decodedFrame->payload = frame.substring(payloadFrameStart+2);                     // Extract payload
+    decodedFrame->payload = frame.substring(payloadFrameStart+1,frameSize-1);           // Extract payload
     return true;      // Successfully decoded
   }
 
