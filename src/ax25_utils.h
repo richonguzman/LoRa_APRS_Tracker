@@ -37,7 +37,9 @@ namespace AX25_Utils {
 
   String decodeFrame(String frame);
   bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame);
-  String processAX25(String frame);
+  String AX25FrameToLoRaPacket(String frame);
+  String encodeFrame(String frame);
+  String LoRaPacketToAX25Frame(String packet);
 
 }
 

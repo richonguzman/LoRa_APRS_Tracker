@@ -52,7 +52,7 @@ namespace AX25_Utils {
     return true;      // Successfully decoded
   }
 
-  String processAX25(String frame) {
+  String AX25FrameToLoRaPacket(String frame) {
     Serial.println(frame);
     Serial.println(frame.length());
     if (decodeAX25(frame, frame.length(), &decodedFrame)) {
@@ -71,6 +71,79 @@ namespace AX25_Utils {
     } else {
       return "";
     }
-  } 
+  }
+
+///
+  String encodeFrame(String frame) { /// NOT READY YET!!!
+    String packet = "";
+    for (int a=0;a<6;a++) {
+      uint16_t shiftedValue = frame[a] >> 1;
+      if (shiftedValue == 32) { // space or null
+        a=10;
+      } else {
+        Serial.print(char(shiftedValue));
+        packet += char(shiftedValue);
+      }
+    }
+    uint16_t ssid = frame[6] >> 1;
+    if (isdigit(char(ssid))) {
+      Serial.print("-");
+      Serial.print(char(ssid));
+      packet += "-";
+      packet += char(ssid);
+    }
+    return packet;
+  }
+
+
+  String LoRaPacketToAX25Frame(String packet) {
+    String decodedPacket = "";
+    //String sender =  packet.substring(3,packet.indexOf(">"));
+    //String tocall = "";
+    String payload = packet.substring(packet.indexOf(":")+1);
+    String temp1 = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
+
+    /*
+    CD2RXU-7>APLRT1,WIDE1-1,WIDE2-2:GPS
+    */
+
+    // 1 A sacar primer tocall
+    if (temp1.indexOf(",")) {
+      decodedPacket = encodeFrame(temp1.substring(0,temp1.indexOf(",")));
+      temp1 = temp1.substring(temp1.indexOf(",")+1);
+    } else {
+      decodedPacket = encodeFrame(temp1);
+      temp1 = "";
+    }
+    // 2 sender
+    decodedPacket += encodeFrame(packet.substring(3,packet.indexOf(">")));
+
+    // 1 B resto pasa a los paths--> 3 paths
+    if (temp1.length() > 0) { // si hay mas paths
+
+
+
+    }
+    
+
+    // 4 payload
+    decodedPacket += packet.substring(packet.indexOf(":")+1);
+
+   
+
+  
+
+    // aqui separamos lo que recibimos
+    
+    // decodificar entre ","
+    return "0";
+
+
+
+
+
+
+
+  }
 
 }

@@ -45,7 +45,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     for (int i=0; i<receivedData.length();i++) {
       receivedString += receivedData[i];
     }
-    BLEToLoRaPacket = AX25_Utils::processAX25(receivedString);
+    BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
     Serial.println(BLEToLoRaPacket); //just validation
     sendBleToLoRa = true;
   }
@@ -105,6 +105,8 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
+      String test1 = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
+      Serial.println(test1);
       //pCharacteristicTx->setValue(receivedPacketString.c_str());
       //pCharacteristicTx->setValue((const uint8_t*)receivedPacketStrin, strlen(receivedPacketStrin));
       //pCharacteristicTx->setValue((uint8_t *)receivedPacketString.c_str(), 20);
@@ -114,7 +116,7 @@ namespace BLE_Utils {
       for(int n=0;n<parts;n++) {   
         pCharacteristicTx->setValue(receivedPacketString.substring(n*20, 20)); 
         pCharacteristicTx->notify();
-        delay(10);                                                                                // Bluetooth stack will go into congestion, if too many packets are sent
+        delay(10);                          // Bluetooth stack will go into congestion, if too many packets are sent
       }*/
 
       pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
