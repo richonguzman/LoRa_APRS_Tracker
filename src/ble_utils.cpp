@@ -21,10 +21,6 @@ BLECharacteristic *pCharacteristicRx;
 
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
-extern String           bleLoRaPacket;
-extern int              bleMsgCompose;
-extern String           bleMsgAddresse;
-extern String           bleMsgTxt;
 extern bool             bleConnected;
 extern String           BLEToLoRaPacket;
 
@@ -46,19 +42,11 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
     std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
     String receivedString = "";
-    for (int i=0; i<receivedData.length();i++) { // Remove the two first bytes and the last
+    for (int i=0; i<receivedData.length();i++) {
       receivedString += receivedData[i];
-      //Serial.print(receivedData[i],HEX); Serial.print(" "); // Small mod by LA1HSA to output HEX values
     }
-    /*Serial.println();
-    Serial.print("receivedString: ");
-    Serial.println(receivedString);*/
-
     BLEToLoRaPacket = AX25_Utils::processAX25(receivedString);
-    //
-    ///BLEToLoRaPacket = "CD2RXU-7>APLRT1:>test";
     Serial.println(BLEToLoRaPacket); //just validation
-    //
     sendBleToLoRa = true;
   }
 };
@@ -72,7 +60,6 @@ namespace BLE_Utils {
     pServer->setCallbacks(new MyServerCallbacks());
 
     BLEService *pService = pServer->createService(SERVICE_UUID);
-
 
     pCharacteristicTx = pService->createCharacteristic(
                           CHARACTERISTIC_UUID_TX,
@@ -93,7 +80,7 @@ namespace BLE_Utils {
     pServer->getAdvertising()->setMinPreferred(0x06);
     pServer->getAdvertising()->setMaxPreferred(0x0C);
 
-    pAdvertising->start(); //    pServer->getAdvertising()->start();
+    pAdvertising->start();
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "Waiting for BLE central to connect...");
   }
