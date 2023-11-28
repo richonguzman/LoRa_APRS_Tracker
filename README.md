@@ -51,6 +51,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2023.11.28 Adding BLE TNC Tx from aprs.fi app for iOS.
 - 2023.11.07 DigiRepeater Mode added in Emergency Menu.
 - 2023.10.23 COMPLETE New Menu for Keyboard add-on.
 - 2023.10.22 Added Keyboard Support over I2C (CARDKB from https://m5stack.com)
