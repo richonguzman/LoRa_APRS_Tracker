@@ -27,6 +27,7 @@ namespace BLE_Utils {
 
     void setup();
     void sendToLoRa();
+    void txBLE(uint8_t p);
     void txToPhoneOverBLE(String frame);
     void sendToPhone(const String& packet);
 

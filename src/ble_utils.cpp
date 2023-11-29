@@ -98,37 +98,53 @@ namespace BLE_Utils {
     sendBleToLoRa = false;
   }
 
+  void txBLE(uint8_t p) {
+    uint8_t _c = p;
+    pCharacteristicTx->setValue(&_c,1);
+    pCharacteristicTx->notify();
+    delay(3);
+  }
+
   void txToPhoneOverBLE(String frame) {
-    pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
+    txBLE((byte)KissSpecialCharacter::Fend);
+    txBLE((byte)KissCommandCode::Data);
+
+    /*pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
     pCharacteristicTx->notify();
     delay(3);
     pCharacteristicTx->setValue((byte)KissCommandCode::Data);
     pCharacteristicTx->notify();
-    delay(3);
+    delay(3);*/
     for(int n=0;n<frame.length();n++) {   
       uint8_t _c = frame[n];
       if (_c == KissSpecialCharacter::Fend) {
-        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+        txBLE((byte)KissSpecialCharacter::Fesc);
+        txBLE((byte)KissSpecialCharacter::Tfend);
+        /*pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
         pCharacteristicTx->notify();
         delay(3);
         pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfend);
         pCharacteristicTx->notify();
-        delay(3);
+        delay(3);*/
       } else if (_c == KissSpecialCharacter::Fesc) {
-        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+        txBLE((byte)KissSpecialCharacter::Fesc);
+        txBLE((byte)KissSpecialCharacter::Tfesc);
+        /*pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
         pCharacteristicTx->notify();
         delay(3);
         pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfesc);
         pCharacteristicTx->notify();
-        delay(3);
+        delay(3);*/
       } else {
+        //txBLE(&_c, 1);
         pCharacteristicTx->setValue(&_c, 1);
         pCharacteristicTx->notify();
         delay(3);
       }       
     }
-    pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
-    pCharacteristicTx->notify();
+    txBLE((byte)KissSpecialCharacter::Fend);
+    /*pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
+    pCharacteristicTx->notify();*/
   }
 
   void sendToPhone(const String& packet) {
