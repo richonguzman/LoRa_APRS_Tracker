@@ -84,7 +84,7 @@ namespace AX25_Utils {
     return frame;
   }
 
-  String encodeFrame(String frame) {
+  String encodeFrame(String frame, int type) {
     Serial.println(frame);//
     String packet = "";
     String address;
@@ -108,7 +108,11 @@ namespace AX25_Utils {
       //Serial.print(c<<1, HEX);
     }
     Serial.println(packet.length());//
-    packet += char(0x64);
+    if (type == 0) {
+      packet += char(0xE0);
+    } else if (type == 1) {
+      packet += char(0x65);
+    }
     //packet += char(ssid << 1);
     return packet;
   }
@@ -121,14 +125,14 @@ namespace AX25_Utils {
     //Serial.println(temp);
     Serial.println(encodedPacket.length());//
     if (temp.indexOf(",")>0) {    // tocall
-      encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")));
+      encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")),0);
       temp = temp.substring(temp.indexOf(",")+1);
     } else {
-      encodedPacket = encodeFrame(temp);
+      encodedPacket = encodeFrame(temp,0);
       temp = "";
     }
     Serial.println(encodedPacket.length());//
-    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")));    // sender
+    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")),1);    // sender
     Serial.println(encodedPacket.length());//
     /*if (temp.length() > 0) { // si hay mas paths
 
