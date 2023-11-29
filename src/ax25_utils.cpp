@@ -104,11 +104,11 @@ namespace AX25_Utils {
     for (int j=0;j<6;j++) {
       //Serial.println(address[j]);
       char c = address[j];
-      packet += c<<1;
+      packet += char(c<<1);
       //Serial.print(c<<1, HEX);
     }
     Serial.println(packet.length());//
-    packet += ssid << 1;
+    packet += char(ssid << 1);
     return packet;
   }
 
