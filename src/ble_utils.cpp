@@ -98,6 +98,39 @@ namespace BLE_Utils {
     sendBleToLoRa = false;
   }
 
+  void txToPhoneOverBLE(String frame) {
+    pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
+    pCharacteristicTx->notify();
+    delay(3);
+    pCharacteristicTx->setValue((byte)KissCommandCode::Data);
+    pCharacteristicTx->notify();
+    delay(3);
+    for(int n=0;n<frame.length();n++) {   
+      uint8_t _c = frame[n];
+      if (_c == KissSpecialCharacter::Fend) {
+        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+        pCharacteristicTx->notify();
+        delay(3);
+        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfend);
+        pCharacteristicTx->notify();
+        delay(3);
+      } else if (_c == KissSpecialCharacter::Fesc) {
+        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
+        pCharacteristicTx->notify();
+        delay(3);
+        pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfesc);
+        pCharacteristicTx->notify();
+        delay(3);
+      } else {
+        pCharacteristicTx->setValue(&_c, 1);
+        pCharacteristicTx->notify();
+        delay(3);
+      }       
+    }
+    pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
+    pCharacteristicTx->notify();
+  }
+
   void sendToPhone(const String& packet) {
     if (!packet.isEmpty()) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
@@ -105,40 +138,9 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
-      String AX25Packet = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
-      Serial.println(AX25Packet);
-
-      pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
-      pCharacteristicTx->notify();
-      delay(3);
-      pCharacteristicTx->setValue((byte)KissCommandCode::Data);
-      pCharacteristicTx->notify();
-      delay(3);
-
-      for(int n=0;n<AX25Packet.length();n++) {   
-        uint8_t _c = AX25Packet[n];
-        if (_c == KissSpecialCharacter::Fend) {
-          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
-          pCharacteristicTx->notify();
-          delay(3);
-          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfend);
-          pCharacteristicTx->notify();
-          delay(3);
-        } else if (_c == KissSpecialCharacter::Fesc) {
-          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
-          pCharacteristicTx->notify();
-          delay(3);
-          pCharacteristicTx->setValue((byte)KissSpecialCharacter::Tfesc);
-          pCharacteristicTx->notify();
-          delay(3);
-        } else {
-          pCharacteristicTx->setValue(&_c, 1);
-          pCharacteristicTx->notify();
-          delay(3);
-        }       
-      }
-      pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
-      pCharacteristicTx->notify();
+      String AX25Frame = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
+      Serial.println(AX25Frame);
+      txToPhoneOverBLE(AX25Frame);      
     }
   }
 
