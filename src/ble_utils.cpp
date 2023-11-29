@@ -118,6 +118,10 @@ namespace BLE_Utils {
         txBLE((byte)KissSpecialCharacter::Tfesc);
       } else {
         pCharacteristicTx->setValue(&_c, 1);
+        //
+        Serial.print(_c, HEX);
+        Serial.print(" ");
+        //
         pCharacteristicTx->notify();
         delay(3);
       }       
@@ -132,6 +136,7 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
+      //Serial.println(receivedPacketString);
       String AX25Frame = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
       Serial.println(AX25Frame);
       txToPhoneOverBLE(AX25Frame);      

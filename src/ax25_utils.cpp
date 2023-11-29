@@ -85,6 +85,7 @@ namespace AX25_Utils {
   }
 
   String encodeFrame(String frame) {
+    Serial.println(frame);//
     String packet = "";
     String address;
     int ssid;
@@ -98,10 +99,15 @@ namespace AX25_Utils {
       address = frameCleaning(frame);
       ssid = 0;
     }
+    Serial.println(address);//
+    Serial.println(address.length());//
     for (int j=0;j<6;j++) {
+      //Serial.println(address[j]);
       char c = address[j];
       packet += c<<1;
+      //Serial.print(c<<1, HEX);
     }
+    Serial.println(packet.length());//
     packet += ssid << 1;
     return packet;
   }
@@ -109,24 +115,30 @@ namespace AX25_Utils {
   String LoRaPacketToAX25Frame(String packet) {
     String encodedPacket = "";
     String payload = packet.substring(packet.indexOf(":")+1);
+    //Serial.println(payload);
     String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
-
-    if (temp.indexOf(",")!=-1) {    // tocall
+    //Serial.println(temp);
+    Serial.println(encodedPacket.length());//
+    if (temp.indexOf(",")>0) {    // tocall
       encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")));
       temp = temp.substring(temp.indexOf(",")+1);
     } else {
       encodedPacket = encodeFrame(temp);
       temp = "";
     }
-    encodedPacket += encodeFrame(packet.substring(3,packet.indexOf(">")));    // sender
-
-    if (temp.length() > 0) { // si hay mas paths
+    Serial.println(encodedPacket.length());//
+    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")));    // sender
+    Serial.println(encodedPacket.length());//
+    /*if (temp.length() > 0) { // si hay mas paths
 
     // aqui el encode para los restantes path
-    }
+    }*/
     encodedPacket += char(0x03);
     encodedPacket += char(0xF0);
+    Serial.println(encodedPacket.length());//
     encodedPacket += packet.substring(packet.indexOf(":")+1);   // payload
+    Serial.println(encodedPacket.length());//
+    Serial.println(encodedPacket);//
     return encodedPacket;
   }
 
