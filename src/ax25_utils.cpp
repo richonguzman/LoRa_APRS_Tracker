@@ -73,77 +73,61 @@ namespace AX25_Utils {
     }
   }
 
-///
-  String encodeFrame(String frame) { /// NOT READY YET!!!
-    String packet = "";
-    for (int a=0;a<6;a++) {
-      uint16_t shiftedValue = frame[a] >> 1;
-      if (shiftedValue == 32) { // space or null
-        a=10;
-      } else {
-        Serial.print(char(shiftedValue));
-        packet += char(shiftedValue);
+  String frameCleaning(String frame) {
+    if (frame.length()>6) {
+        frame = frame.substring(0,6);
+    } else if (frame.length()<6) {
+      for (int i=0;frame.length()<6;i++) { 
+        frame += " ";
       }
     }
-    uint16_t ssid = frame[6] >> 1;
-    if (isdigit(char(ssid))) {
-      Serial.print("-");
-      Serial.print(char(ssid));
-      packet += "-";
-      packet += char(ssid);
+    return frame;
+  }
+
+  String encodeFrame(String frame) {
+    String packet = "";
+    String address;
+    int ssid;
+    if (frame.indexOf("-")>0) {
+      address = frameCleaning(frame.substring(0,frame.indexOf("-")));
+      int ssid = frame.substring(frame.indexOf("-")+1).toInt();
+      if (ssid>15) {
+        ssid = 0;   //String binaryString = "011" + generateSSIDBinary(ssid,4) + "0"; // ssid =  C + RR + SSSS + 0 = 011 + ssss + 0     
+      }
+    } else {
+      address = frameCleaning(frame);
+      ssid = 0;
     }
+    for (int j=0;j<6;j++) {
+      char c = address[j];
+      packet += c<<1;
+    }
+    packet += ssid << 1;
     return packet;
   }
 
-
   String LoRaPacketToAX25Frame(String packet) {
-    String decodedPacket = "";
-    //String sender =  packet.substring(3,packet.indexOf(">"));
-    //String tocall = "";
+    String encodedPacket = "";
     String payload = packet.substring(packet.indexOf(":")+1);
-    String temp1 = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
+    String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
 
-    /*
-    CD2RXU-7>APLRT1,WIDE1-1,WIDE2-2:GPS
-    */
-
-    // 1 A sacar primer tocall
-    if (temp1.indexOf(",")) {
-      decodedPacket = encodeFrame(temp1.substring(0,temp1.indexOf(",")));
-      temp1 = temp1.substring(temp1.indexOf(",")+1);
+    if (temp.indexOf(",")!=-1) {    // tocall
+      encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")));
+      temp = temp.substring(temp.indexOf(",")+1);
     } else {
-      decodedPacket = encodeFrame(temp1);
-      temp1 = "";
+      encodedPacket = encodeFrame(temp);
+      temp = "";
     }
-    // 2 sender
-    decodedPacket += encodeFrame(packet.substring(3,packet.indexOf(">")));
+    encodedPacket += encodeFrame(packet.substring(3,packet.indexOf(">")));    // sender
 
-    // 1 B resto pasa a los paths--> 3 paths
-    if (temp1.length() > 0) { // si hay mas paths
+    if (temp.length() > 0) { // si hay mas paths
 
-
-
+    // aqui el encode para los restantes path
     }
-    
-
-    // 4 payload
-    decodedPacket += packet.substring(packet.indexOf(":")+1);
-
-   
-
-  
-
-    // aqui separamos lo que recibimos
-    
-    // decodificar entre ","
-    return "0";
-
-
-
-
-
-
-
+    encodedPacket += char(0x03);
+    encodedPacket += char(0xF0);
+    encodedPacket += packet.substring(packet.indexOf(":")+1);   // payload
+    return encodedPacket;
   }
 
 }

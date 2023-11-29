@@ -105,19 +105,8 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
-      String test1 = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
-      Serial.println(test1);
-      //pCharacteristicTx->setValue(receivedPacketString.c_str());
-      //pCharacteristicTx->setValue((const uint8_t*)receivedPacketStrin, strlen(receivedPacketStrin));
-      //pCharacteristicTx->setValue((uint8_t *)receivedPacketString.c_str(), 20);
-      //pCharacteristicTx->setValue((uint8_t *)receivedPacketString.c_str(), receivedPacketString.length());
-      
-      /*int parts = (receivedPacketString.length()/20) + 1;
-      for(int n=0;n<parts;n++) {   
-        pCharacteristicTx->setValue(receivedPacketString.substring(n*20, 20)); 
-        pCharacteristicTx->notify();
-        delay(10);                          // Bluetooth stack will go into congestion, if too many packets are sent
-      }*/
+      String AX25Packet = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
+      Serial.println(AX25Packet);
 
       pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fend);
       pCharacteristicTx->notify();
@@ -126,9 +115,8 @@ namespace BLE_Utils {
       pCharacteristicTx->notify();
       delay(3);
 
-
-      for(int n=0;n<receivedPacketString.length();n++) {   
-        uint8_t _c = receivedPacketString[n];
+      for(int n=0;n<AX25Packet.length();n++) {   
+        uint8_t _c = AX25Packet[n];
         if (_c == KissSpecialCharacter::Fend) {
           pCharacteristicTx->setValue((byte)KissSpecialCharacter::Fesc);
           pCharacteristicTx->notify();
