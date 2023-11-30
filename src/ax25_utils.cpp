@@ -85,7 +85,7 @@ namespace AX25_Utils {
   }
 
   String encodeFrame(String frame, int type) {
-    Serial.println(frame);//
+    //Serial.println(frame);//
     String packet = "";
     String address;
     int ssid;
@@ -99,15 +99,15 @@ namespace AX25_Utils {
       address = frameCleaning(frame);
       ssid = 0;
     }
-    Serial.println(address);//
-    Serial.println(address.length());//
+    //Serial.println(address);//
+    //Serial.println(address.length());//
     for (int j=0;j<6;j++) {
       //Serial.println(address[j]);
       char c = address[j];
       packet += char(c<<1);
       //Serial.print(c<<1, HEX);
     }
-    Serial.println(packet.length());//
+    //Serial.println(packet.length());//
     if (type == 0) {
       packet += char(0xE0);
     } else if (type == 1) {
@@ -123,7 +123,7 @@ namespace AX25_Utils {
     //Serial.println(payload);
     String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
     //Serial.println(temp);
-    Serial.println(encodedPacket.length());//
+    //Serial.println(encodedPacket.length());//
     if (temp.indexOf(",")>0) {    // tocall
       encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")),0);
       temp = temp.substring(temp.indexOf(",")+1);
@@ -131,19 +131,19 @@ namespace AX25_Utils {
       encodedPacket = encodeFrame(temp,0);
       temp = "";
     }
-    Serial.println(encodedPacket.length());//
+    //Serial.println(encodedPacket.length());//
     encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")),1);    // sender
-    Serial.println(encodedPacket.length());//
+    //Serial.println(encodedPacket.length());//
     /*if (temp.length() > 0) { // si hay mas paths
 
     // aqui el encode para los restantes path
     }*/
     encodedPacket += char(0x03);
     encodedPacket += char(0xF0);
-    Serial.println(encodedPacket.length());//
+    //Serial.println(encodedPacket.length());//
     encodedPacket += packet.substring(packet.indexOf(":")+1);   // payload
-    Serial.println(encodedPacket.length());//
-    Serial.println(encodedPacket);//
+    //Serial.println(encodedPacket.length());//
+    //Serial.println(encodedPacket);//
     return encodedPacket;
   }
 
