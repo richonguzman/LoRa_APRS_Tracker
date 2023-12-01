@@ -104,7 +104,7 @@ namespace AX25_Utils {
     int ssid;
     if (frame.indexOf("-")>0) {
       address = frameCleaning(frame.substring(0,frame.indexOf("-")));
-      int ssid = frame.substring(frame.indexOf("-")+1).toInt();
+      ssid = frame.substring(frame.indexOf("-")+1).toInt();
       if (ssid>15) {
         ssid = 0;   //String binaryString = "011" + generateSSIDBinary(ssid,4) + "0"; // ssid =  C + RR + SSSS + 0 = 011 + ssss + 0     
       }
@@ -124,9 +124,6 @@ namespace AX25_Utils {
       concatenatedBinary = "011" + intToBinaryString(ssid,4) + "1";
     }
     long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
-    //char hexString[3];
-    //sprintf(hexString, "%02X", (int)decimalValue);
-
     packet += (char)decimalValue;
     return packet;
   }
