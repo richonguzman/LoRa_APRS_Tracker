@@ -124,10 +124,10 @@ namespace AX25_Utils {
       concatenatedBinary = "011" + intToBinaryString(ssid,4) + "1";
     }
     long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
-    char hexString[3];
-    sprintf(hexString, "%02X", (int)decimalValue);
+    //char hexString[3];
+    //sprintf(hexString, "%02X", (int)decimalValue);
 
-    packet += hexString;
+    packet += (char)decimalValue;
     return packet;
   }
 
