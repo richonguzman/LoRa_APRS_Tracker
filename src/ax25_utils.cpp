@@ -15,7 +15,7 @@ namespace AX25_Utils {
         packet += char(shiftedValue);
       }
     }
-        uint16_t ssid = frame[6] >> 1;// & 0x0f;
+    uint16_t ssid = frame[6] >> 1;// & 0x0f;
     if (isdigit(char(ssid))) {
       Serial.print("-");
       Serial.print(char(ssid));
@@ -84,8 +84,8 @@ namespace AX25_Utils {
     return frame;
   }
 
-  String intToBinaryString(int value, int bitLength) {
-    String result = "";
+  std::string intToBinaryString(int value, int bitLength) {
+    std::string result = "";
     for (int i = bitLength - 1; i >= 0; i--) {
       result += ((value >> i) & 1) ? '1' : '0';
     }
@@ -99,7 +99,8 @@ namespace AX25_Utils {
   String encodeFrame(String frame, int type) {
     //Serial.println(frame);//
     String packet = "";
-    String address, concatenatedBinary;
+    String address;
+    std::string concatenatedBinary;
     int ssid;
     if (frame.indexOf("-")>0) {
       address = frameCleaning(frame.substring(0,frame.indexOf("-")));
@@ -122,7 +123,11 @@ namespace AX25_Utils {
     } else if (type == 2) {
       concatenatedBinary = "011" + intToBinaryString(ssid,4) + "1";
     }
-    packet += binaryStringToUint8(concatenatedBinary);
+    long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
+    char hexString[3];
+    sprintf(hexString, "%02X", (int)decimalValue);
+
+    packet += hexString;
     return packet;
   }
 

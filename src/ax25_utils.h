@@ -39,7 +39,7 @@ namespace AX25_Utils {
   bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame);
   String AX25FrameToLoRaPacket(String frame);
   String frameCleaning(String frame);
-  String intToBinaryString(int value, int bitLength);
+  std::string intToBinaryString(int value, int bitLength);
   uint8_t binaryStringToUint8(String binaryString);
   String encodeFrame(String frame);
   String LoRaPacketToAX25Frame(String packet);
