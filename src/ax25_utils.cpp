@@ -15,13 +15,11 @@ namespace AX25_Utils {
         packet += char(shiftedValue);
       }
     }
-    uint16_t ssid = frame[6] >> 1;
-    if (isdigit(char(ssid))) {
-      Serial.print("-");
-      Serial.print(char(ssid));
-      packet += "-";
-      packet += char(ssid);
-    }
+    uint16_t ssid = (frame[6] >> 1) & 0x0f;
+    Serial.print("-");
+    Serial.print(char(ssid));
+    packet += "-";
+    packet += char(ssid);
     return packet;
   }
 
@@ -84,10 +82,22 @@ namespace AX25_Utils {
     return frame;
   }
 
+  String intToBinaryString(int value, int bitLength) {
+    String result = "";
+    for (int i = bitLength - 1; i >= 0; i--) {
+      result += ((value >> i) & 1) ? '1' : '0';
+    }
+    return result;
+  }
+
+  uint8_t binaryStringToUint8(String binaryString) {
+    return strtol(binaryString.c_str(), nullptr, 2);
+  }
+
   String encodeFrame(String frame, int type) {
     //Serial.println(frame);//
     String packet = "";
-    String address;
+    String address, concatenatedBinary;
     int ssid;
     if (frame.indexOf("-")>0) {
       address = frameCleaning(frame.substring(0,frame.indexOf("-")));
@@ -99,31 +109,25 @@ namespace AX25_Utils {
       address = frameCleaning(frame);
       ssid = 0;
     }
-    //Serial.println(address);//
-    //Serial.println(address.length());//
     for (int j=0;j<6;j++) {
-      //Serial.println(address[j]);
       char c = address[j];
       packet += char(c<<1);
-      //Serial.print(c<<1, HEX);
     }
-    //Serial.println(packet.length());//
     if (type == 0) {
-      packet += char(0xE0);
+      concatenatedBinary = "111" + intToBinaryString(ssid,4) + "0";
     } else if (type == 1) {
-      packet += char(0x65);
+      concatenatedBinary = "011" + intToBinaryString(ssid,4) + "0";
+    } else if (type == 2) {
+      concatenatedBinary = "011" + intToBinaryString(ssid,4) + "1";
     }
-    //packet += char(ssid << 1);
+    packet += binaryStringToUint8(concatenatedBinary);
     return packet;
   }
 
   String LoRaPacketToAX25Frame(String packet) {
     String encodedPacket = "";
     String payload = packet.substring(packet.indexOf(":")+1);
-    //Serial.println(payload);
     String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
-    //Serial.println(temp);
-    //Serial.println(encodedPacket.length());//
     if (temp.indexOf(",")>0) {    // tocall
       encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")),0);
       temp = temp.substring(temp.indexOf(",")+1);
@@ -131,19 +135,13 @@ namespace AX25_Utils {
       encodedPacket = encodeFrame(temp,0);
       temp = "";
     }
-    //Serial.println(encodedPacket.length());//
-    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")),1);    // sender
-    //Serial.println(encodedPacket.length());//
-    /*if (temp.length() > 0) { // si hay mas paths
-
+    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")),2);    // sender
+    /*if (temp.length() > 0) { // si hay mas paths / digirepeaters
     // aqui el encode para los restantes path
     }*/
     encodedPacket += char(0x03);
     encodedPacket += char(0xF0);
-    //Serial.println(encodedPacket.length());//
     encodedPacket += packet.substring(packet.indexOf(":")+1);   // payload
-    //Serial.println(encodedPacket.length());//
-    //Serial.println(encodedPacket);//
     return encodedPacket;
   }
 
