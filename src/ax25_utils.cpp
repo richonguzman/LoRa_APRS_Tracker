@@ -92,12 +92,7 @@ namespace AX25_Utils {
     return result;
   }
 
-  uint8_t binaryStringToUint8(String binaryString) {
-    return strtol(binaryString.c_str(), nullptr, 2);
-  }
-
-  String encodeFrame(String frame, int type) {
-    //Serial.println(frame);//
+  String encodeAX25Address(String frame, int type, bool lastAddress) {
     String packet = "";
     String address;
     std::string concatenatedBinary;
@@ -116,36 +111,56 @@ namespace AX25_Utils {
       char c = address[j];
       packet += char(c<<1);
     }
-    if (type == 0) {
-      concatenatedBinary = "111" + intToBinaryString(ssid,4) + "0";
-    } else if (type == 1) {
-      concatenatedBinary = "011" + intToBinaryString(ssid,4) + "0";
-    } else if (type == 2) {
-      concatenatedBinary = "011" + intToBinaryString(ssid,4) + "1";
+    std::string firstSSIDBit = std::to_string(type); //type=0 (sender or path not repeated) type=1 (tocall or path bein repeated)
+    std::string lastSSIDBit = "0";
+    if (lastAddress) {
+      lastSSIDBit = "1";            // address is the last from AX.25 Frame
     }
+    concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit;
     long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
-    packet += (char)decimalValue;
+    packet += (char)decimalValue;   //SSID (HRRSSSSC)
     return packet;
   }
 
   String LoRaPacketToAX25Frame(String packet) {
     String encodedPacket = "";
+    String tocall = "";
+    String sender = packet.substring(0,packet.indexOf(">"));
+    bool lastAddress = false;
     String payload = packet.substring(packet.indexOf(":")+1);
     String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
-    if (temp.indexOf(",")>0) {    // tocall
-      encodedPacket = encodeFrame(temp.substring(0,temp.indexOf(",")),0);
+
+    if (temp.indexOf(",")>0) {    
+      tocall = temp.substring(0,temp.indexOf(","));
       temp = temp.substring(temp.indexOf(",")+1);
     } else {
-      encodedPacket = encodeFrame(temp,0);
+      tocall = temp;
       temp = "";
+      lastAddress = true;
     }
-    encodedPacket += encodeFrame(packet.substring(0,packet.indexOf(">")),2);    // sender
-    /*if (temp.length() > 0) { // si hay mas paths / digirepeaters
-    // aqui el encode para los restantes path
-    }*/
+    encodedPacket = encodeAX25Address(tocall, 1, false);                          // tocall
+    encodedPacket += encodeAX25Address(sender, 0, lastAddress);                   // sender
+
+    while (temp.length() > 0) {
+      int repeatedPath = 0;
+      String address = "";
+      if (temp.indexOf(",")>0) {
+        address = temp.substring(0,temp.indexOf(","));
+        temp = temp.substring(temp.indexOf(",")+1);
+      } else {
+        address = temp;
+        temp = "";
+        lastAddress = true;        
+      }
+      if (address.indexOf("*")>0) {
+        repeatedPath = 1;
+      }
+      encodedPacket += encodeAX25Address(address, repeatedPath, lastAddress);     // path
+    }
+
     encodedPacket += char(0x03);
     encodedPacket += char(0xF0);
-    encodedPacket += packet.substring(packet.indexOf(":")+1);   // payload
+    encodedPacket += packet.substring(packet.indexOf(":")+1);                     // payload
     return encodedPacket;
   }
 
