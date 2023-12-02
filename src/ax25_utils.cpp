@@ -116,9 +116,9 @@ namespace AX25_Utils {
     if (lastAddress) {
       lastSSIDBit = "1";            // address is the last from AX.25 Frame
     }
-    concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit;
+    concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit; // ( CRRSSSSX / HRRSSSSX )
     long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
-    packet += (char)decimalValue;   //SSID (HRRSSSSC)
+    packet += (char)decimalValue;   //SSID 
     return packet;
   }
 
