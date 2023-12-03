@@ -93,8 +93,7 @@ namespace BLE_Utils {
   }
 
   void txBLE(uint8_t p) {
-    uint8_t _c = p;
-    pCharacteristicTx->setValue(&_c,1);
+    pCharacteristicTx->setValue(&p,1);
     pCharacteristicTx->notify();
     delay(3);
   }
@@ -103,17 +102,15 @@ namespace BLE_Utils {
     txBLE((byte)KissSpecialCharacter::Fend);
     txBLE((byte)KissCommandCode::Data);
     for(int n=0;n<frame.length();n++) {   
-      uint8_t _c = frame[n];
-      if (_c == KissSpecialCharacter::Fend) {
+      uint8_t byteCharacter = frame[n];
+      if (byteCharacter == KissSpecialCharacter::Fend) {
         txBLE((byte)KissSpecialCharacter::Fesc);
         txBLE((byte)KissSpecialCharacter::Tfend);
-      } else if (_c == KissSpecialCharacter::Fesc) {
+      } else if (byteCharacter == KissSpecialCharacter::Fesc) {
         txBLE((byte)KissSpecialCharacter::Fesc);
         txBLE((byte)KissSpecialCharacter::Tfesc);
       } else {
-        pCharacteristicTx->setValue(&_c, 1);
-        pCharacteristicTx->notify();
-        delay(3);
+        txBLE(byteCharacter);
       }       
     }
     txBLE((byte)KissSpecialCharacter::Fend);

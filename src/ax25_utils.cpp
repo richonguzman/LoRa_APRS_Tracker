@@ -26,10 +26,7 @@ namespace AX25_Utils {
   }
 
   bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
-    if (frameSize <14) {          // not a AX.25 frame
-      return false;
-    }
-    if (frame[0] != KissSpecialCharacter::Fend && frame[1] != KissCommandCode::Data && frame[frameSize-1] == KissSpecialCharacter::Fend) { // not a kiss encapsulated packet
+    if ((frameSize <14) || (frame[0] != KissSpecialCharacter::Fend && frame[1] != KissCommandCode::Data && frame[frameSize-1] != KissSpecialCharacter::Fend)) {
       return false;
     }
     int payloadFrameStart = 0;
