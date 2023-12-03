@@ -38,18 +38,18 @@ namespace AX25_Utils {
         payloadFrameStart = i+1;
       }
     }
-    decodedFrame->tocall = frame.substring(2,9);//, frame[2], 7);        // Extract destination address
-    decodedFrame->sender = frame.substring(9,16);        // Extract source address
-    if (payloadFrameStart >= 21) {                     // is there path1?
+    decodedFrame->tocall = frame.substring(2,9);      // Extract destination address
+    decodedFrame->sender = frame.substring(9,16);     // Extract source address
+    if (payloadFrameStart >= 21) {                    // is there path1?
       decodedFrame->path1 = frame.substring(16,23);
     }
-    if (payloadFrameStart >= 28) {                     // is there path2?
+    if (payloadFrameStart >= 28) {                    // is there path2?
       decodedFrame->path2 = frame.substring(23,30);
     }
     decodedFrame->control = frame.substring(payloadFrameStart-1,payloadFrameStart);   // Extract control information  // 0x03
     decodedFrame->pid = frame.substring(payloadFrameStart,payloadFrameStart+1);       // Extract pid information      // 0xF0                                
-    decodedFrame->payload = frame.substring(payloadFrameStart+1,frameSize-1);           // Extract payload
-    return true;      // Successfully decoded
+    decodedFrame->payload = frame.substring(payloadFrameStart+1,frameSize-1);         // Extract payload
+    return true;
   }
 
   String AX25FrameToLoRaPacket(String frame) {

@@ -1,15 +1,10 @@
 #include <NimBLEDevice.h>
 #include "ble_utils.h"
-//#include "msg_utils.h"
 #include "lora_utils.h"
 #include "display.h"
 #include "logger.h"
 #include "KISS_TO_TNC2.h"
 #include "ax25_utils.h"
-
-//#include <iostream>
-//#include <string>
-//#include <cstring>
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -40,13 +35,12 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *pCharacteristic) {
-    std::string receivedData = pCharacteristic->getValue();       // Read the data from the characteristic
+    std::string receivedData = pCharacteristic->getValue();
     String receivedString = "";
     for (int i=0; i<receivedData.length();i++) {
       receivedString += receivedData[i];
     }
     BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
-    Serial.println(BLEToLoRaPacket); //just validation
     sendBleToLoRa = true;
   }
 };
@@ -118,10 +112,6 @@ namespace BLE_Utils {
         txBLE((byte)KissSpecialCharacter::Tfesc);
       } else {
         pCharacteristicTx->setValue(&_c, 1);
-        //
-        Serial.print(_c, HEX);
-        Serial.print(" ");
-        //
         pCharacteristicTx->notify();
         delay(3);
       }       
@@ -136,9 +126,7 @@ namespace BLE_Utils {
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];
       }
-      //Serial.println(receivedPacketString);
       String AX25Frame = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
-      Serial.println(AX25Frame);
       txToPhoneOverBLE(AX25Frame);      
     }
   }
