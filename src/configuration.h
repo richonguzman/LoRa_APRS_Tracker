@@ -85,7 +85,8 @@ public:
   int     standingUpdateTime;
   bool    sendAltitude;
   bool    sendBatteryInfo;
-  bool    bluetooth;
+  int     bluetoothType;
+  bool    bluetoothActive;
   bool    disableGPS;
 
   Configuration();
