@@ -16,18 +16,18 @@ BLECharacteristic *pCharacteristicRx;
 
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
-extern bool             bleConnected;
+extern bool             bluetoothConnected;
 extern String           BLEToLoRaPacket;
 
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
-      bleConnected = true;
+      bluetoothConnected = true;
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
     }
 
     void onDisconnect(NimBLEServer* pServer) {
-      bleConnected = false;
+      bluetoothConnected = false;
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
       pServer->startAdvertising();
     }
@@ -47,7 +47,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 
 
 namespace BLE_Utils {
-
+  
   void setup() {
     BLEDevice::init("LoRa APRS Tracker");
     pServer = BLEDevice::createServer();

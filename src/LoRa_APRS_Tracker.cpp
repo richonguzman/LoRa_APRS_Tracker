@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <LoRa.h>
 #include <vector>
+#include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
@@ -19,13 +20,10 @@
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "bme_utils.h"
+#include "ble_utils.h"
 #include "display.h"
 #include "SPIFFS.h"
 #include "utils.h"
-
-#include "APRSPacketLib.h"
-#include "ble_utils.h"
-
 
 Configuration                 Config;
 PowerManagement               powerManagement;
@@ -34,7 +32,7 @@ TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 
-String    versionDate         = "2023.12.02";
+String    versionDate         = "2023.12.03";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -56,9 +54,8 @@ bool	    sendStandingUpdate  = false;
 bool      statusState         = true;
 uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
-bool      bluetoothActive     = Config.bluetooth;
+bool      bluetoothActive     = Config.bluetoothActive;
 bool      sendBleToLoRa       = false;
-bool      bleConnected        = false;
 String    BLEToLoRaPacket     = "";
 
 bool      messageLed          = false;
@@ -130,8 +127,11 @@ void setup() {
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
-  //BLUETOOTH_Utils::setup();
-  BLE_Utils::setup();
+  if (Config.bluetoothType==0) {
+    BLE_Utils::setup();
+  } else {
+    BLUETOOTH_Utils::setup();
+  }
 
   if (!Config.simplifiedTrackerMode) {
     userButton.attachClick(BUTTON_Utils::singlePress);
@@ -170,8 +170,11 @@ void loop() {
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   MSG_Utils::ledNotification();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
-  //BLUETOOTH_Utils::sendToLoRa();
-  BLE_Utils::sendToLoRa();
+  if (Config.bluetoothType==0) {
+    BLE_Utils::sendToLoRa();
+  } else {
+    BLUETOOTH_Utils::sendToLoRa();
+  }
 
   int currentSpeed = (int) gps.speed.kmph();
 
