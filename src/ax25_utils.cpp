@@ -26,7 +26,7 @@ namespace AX25_Utils {
   }
 
   bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
-    if ((frameSize <14) || (frame[0] != KissSpecialCharacter::Fend && frame[1] != KissCommandCode::Data && frame[frameSize-1] != KissSpecialCharacter::Fend)) {
+    if ((frameSize <14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize-1] != KissChar::Fend)) {
       return false;
     }
     int payloadFrameStart = 0;

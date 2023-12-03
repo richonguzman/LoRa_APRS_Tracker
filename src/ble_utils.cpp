@@ -1,10 +1,9 @@
 #include <NimBLEDevice.h>
-#include "ble_utils.h"
+#include "ax25_utils.h"
 #include "lora_utils.h"
+#include "ble_utils.h"
 #include "display.h"
 #include "logger.h"
-#include "KISS_TO_TNC2.h"
-#include "ax25_utils.h"
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -49,7 +48,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 namespace BLE_Utils {
   
   void setup() {
-    BLEDevice::init("LoRa APRS Tracker");
+    BLEDevice::init("LoRa Tracker/TNC");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
 
@@ -99,21 +98,21 @@ namespace BLE_Utils {
   }
 
   void txToPhoneOverBLE(String frame) {
-    txBLE((byte)KissSpecialCharacter::Fend);
-    txBLE((byte)KissCommandCode::Data);
+    txBLE((byte)KissChar::Fend);
+    txBLE((byte)KissCmd::Data);
     for(int n=0;n<frame.length();n++) {   
       uint8_t byteCharacter = frame[n];
-      if (byteCharacter == KissSpecialCharacter::Fend) {
-        txBLE((byte)KissSpecialCharacter::Fesc);
-        txBLE((byte)KissSpecialCharacter::Tfend);
-      } else if (byteCharacter == KissSpecialCharacter::Fesc) {
-        txBLE((byte)KissSpecialCharacter::Fesc);
-        txBLE((byte)KissSpecialCharacter::Tfesc);
+      if (byteCharacter == KissChar::Fend) {
+        txBLE((byte)KissChar::Fesc);
+        txBLE((byte)KissChar::Tfend);
+      } else if (byteCharacter == KissChar::Fesc) {
+        txBLE((byte)KissChar::Fesc);
+        txBLE((byte)KissChar::Tfesc);
       } else {
         txBLE(byteCharacter);
       }       
     }
-    txBLE((byte)KissSpecialCharacter::Fend);
+    txBLE((byte)KissChar::Fend);
   }
 
   void sendToPhone(const String& packet) {

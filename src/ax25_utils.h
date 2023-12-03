@@ -13,14 +13,14 @@ struct AX25Frame {  // Define AX.25 frame structure
   String payload; // how to validate this size?
 };
 
-enum KissSpecialCharacter {
+enum KissChar {
     Fend = 0xc0,
     Fesc = 0xdb,
     Tfend = 0xdc,
     Tfesc = 0xdd
   };
 
-enum KissCommandCode {
+enum KissCmd {
     Data = 0x00,
     TxDelay = 0x01,
     P = 0x02,

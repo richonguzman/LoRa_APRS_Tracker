@@ -35,6 +35,15 @@ extern bool                 screenBrightness;
 
 namespace MENU_Utils {
 
+    String checkBTType() {
+        if (Config.bluetoothType == 0) {
+            return "BLE iPhone";
+        } else {
+            return "BT Android";
+        }
+    }
+
+
     String checkProcessActive(bool process) {
         if (process) {
             return "ON";
@@ -127,16 +136,16 @@ namespace MENU_Utils {
 
             
             case 20:    // 2.Configuration ---> Callsign
-                show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")",lastLine);
+                show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Callsign Change", "> Display", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                show_display("_CONFIG___", "  Callsign Change", "> Display", "  " + checkBTType() + " ("+ checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Bluetooth
-                show_display("_CONFIG___", "  Display",  "> Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
+                show_display("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
             case 23:    // 2.Configuration ---> Status
-                show_display("_CONFIG___", "  Bluetooth  (" +  checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
+                show_display("_CONFIG___", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
             case 24:    // 2.Configuration ---> Notifications
                 show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
