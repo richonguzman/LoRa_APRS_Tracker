@@ -166,8 +166,11 @@ namespace MSG_Utils {
       //Serial.println(packetReceived); // only for debug
       aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
       if (aprsPacket.sender!=currentBeacon->callsign) {
-        //BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
-        BLE_Utils::sendToPhone(packetReceived.substring(3));
+        if (Config.bluetoothType==0) {
+          BLE_Utils::sendToPhone(packetReceived.substring(3));
+        } else {
+          BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
+        }        
 
         if (digirepeaterActive && aprsPacket.addressee!=currentBeacon->callsign) {
           String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
