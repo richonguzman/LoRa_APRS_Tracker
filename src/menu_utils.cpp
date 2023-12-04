@@ -31,8 +31,6 @@ extern bool                 bluetoothActive;
 extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 
-//String digi, sos, bt;
-
 namespace MENU_Utils {
 
     String checkBTType() {
