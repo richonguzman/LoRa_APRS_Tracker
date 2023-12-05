@@ -10,7 +10,7 @@ extern logging::Logger  logger;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
-  #ifdef TTGO_T_Beam_V0_7
+  #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
 // Currently there is no init for V0.7 boards(they only measure battery voltage).
   return true;
   #endif
@@ -134,7 +134,7 @@ void PowerManagement::deactivateMeasurement() {
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryVoltage() {
-  #ifdef TTGO_T_Beam_V0_7
+  #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
 // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
 // the measured voltage is inaccurate du to known nonlinearity and ~100mV offset of the ESP32 A/D converter
   int adc_value;
@@ -156,7 +156,7 @@ double PowerManagement::getBatteryVoltage() {
 
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryChargeDischargeCurrent() {
-  #ifdef TTGO_T_Beam_V0_7
+  #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
   return 0;
   #endif
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
@@ -171,7 +171,7 @@ double PowerManagement::getBatteryChargeDischargeCurrent() {
 }
 
 bool PowerManagement::isBatteryConnected() {
-  #ifdef TTGO_T_Beam_V0_7
+  #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
   if(getBatteryVoltage() > 1.0) {
     return true;
   } else {
@@ -187,7 +187,7 @@ bool PowerManagement::isBatteryConnected() {
 }
 
 bool PowerManagement::isChargeing() {
-  #ifdef TTGO_T_Beam_V0_7
+  #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
   return 0;
   #endif
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)

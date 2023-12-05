@@ -48,7 +48,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 namespace BLE_Utils {
   
   void setup() {
-    BLEDevice::init("LoRa Tracker/TNC");
+    BLEDevice::init("LoRa Tracker/TNC 2");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
 

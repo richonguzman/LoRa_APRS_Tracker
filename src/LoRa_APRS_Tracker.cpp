@@ -30,9 +30,11 @@ PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268)
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
+#endif
 
-String    versionDate         = "2023.12.03";
+String    versionDate         = "2023.12.04";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -134,16 +136,19 @@ void setup() {
   }
 
   if (!Config.simplifiedTrackerMode) {
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268)
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+    #endif
     KEYBOARD_Utils::setup();
   }
 
   powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
-  menuDisplay = BUTTON_PIN == -1 ? 20 : 0;
+  //menuDisplay = BUTTON_PIN == -1 ? 20 : 0;
+  menuDisplay = 0;
 }
 
 void loop() {
@@ -154,7 +159,9 @@ void loop() {
 
   powerManagement.batteryManager();
   if (!Config.simplifiedTrackerMode) {
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268)
     userButton.tick();
+    #endif
   }
   utils::checkDisplayEcoMode();
 
