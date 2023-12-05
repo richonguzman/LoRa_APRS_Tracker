@@ -214,29 +214,9 @@ namespace MENU_Utils {
                 break;
 
             case 60:    // 6. Emergency ---> Digirepeater
-                /*if (digirepeaterActive) {
-                    digi = "ON";
-                } else {
-                    digi = "OFF";
-                }
-                if (sosActive) {
-                    sos = "ON";
-                } else {
-                    sos = "OFF";
-                }*/
                 show_display("EMERGENCY_", "", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
             case 61:    // 6. Emergency ---> S.O.S.
-                /*if (digirepeaterActive) {
-                    digi = "ON";
-                } else {
-                    digi = "OFF";
-                }
-                if (sosActive) {
-                    sos = "ON";
-                } else {
-                    sos = "OFF";
-                }*/
                 show_display("EMERGENCY_", "", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
 
@@ -317,10 +297,10 @@ namespace MENU_Utils {
                 if (powerManagement.getBatteryInfoIsConnected()) {
                     String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                     String batteryCharge = powerManagement.getBatteryInfoCurrent();
-                    #ifdef TTGO_T_Beam_V0_7
+                    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
-                    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+                    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
                     if (batteryCharge.toInt() == 0) {
                         sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
                     } else if (batteryCharge.toInt() > 0) {

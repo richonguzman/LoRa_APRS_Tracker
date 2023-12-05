@@ -2,13 +2,13 @@
 #define POWER_UTILS_H_
 
 #include <Arduino.h>
-#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS)
+#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
 // The V0.7 boards have no power managment components connected to TwoWire. 
 // Battery charging is controlled by a TP5400 IC indepemdetly from the ESP32.
 // Wire.h must be included to maitain software compatibility with V1.0 and 1.2 boards.
 #include <Wire.h>
 #endif
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
 #include <axp20x.h>
 #endif
 #ifdef TTGO_T_Beam_V1_2
@@ -56,7 +56,7 @@ private:
 
   bool isBatteryConnected();
 
-  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA_V2_1) || defined(TTGO_T_Beam_V1_0_SX1268)
+  #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
   AXP20X_Class axp;
   #endif
   #ifdef TTGO_T_Beam_V1_2

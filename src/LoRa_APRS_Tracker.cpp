@@ -147,7 +147,6 @@ void setup() {
   powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
-  //menuDisplay = BUTTON_PIN == -1 ? 20 : 0;
   menuDisplay = 0;
 }
 
