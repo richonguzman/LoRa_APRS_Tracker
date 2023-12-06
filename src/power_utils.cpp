@@ -7,6 +7,7 @@
 
 extern Configuration    Config;
 extern logging::Logger  logger;
+extern bool             disableGPS;
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
@@ -208,7 +209,7 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  if (Config.disableGPS) {
+  if (disableGPS) {
     deactivateGPS();
   } else {
     activateGPS();
@@ -224,7 +225,7 @@ void PowerManagement::setup() {
   }
   activateLoRa();
   activateOLED();
-  if (Config.disableGPS) {
+  if (disableGPS) {
     deactivateGPS();
   } else {
     activateGPS();
@@ -284,9 +285,6 @@ bool PowerManagement::getBatteryInfoIsConnected() {
 }
 
 void PowerManagement::batteryManager() {
-  /*#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1)
-  obtainBatteryInfo();
-  #endif*/
   obtainBatteryInfo();
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) 
   handleChargingLed();

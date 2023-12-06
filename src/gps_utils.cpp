@@ -15,7 +15,7 @@ extern HardwareSerial   neo6m_gps;
 extern TinyGPSPlus      gps;
 extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
-
+extern bool             disableGPS;
 extern bool             sendUpdate;
 extern bool		          sendStandingUpdate;
 
@@ -32,7 +32,12 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
   void setup() {
-    if (Config.disableGPS) {
+    #ifdef TTGO_T_LORA_V2_1_TNC
+    disableGPS = true;
+    #else
+    disableGPS = Config.disableGPS;
+    #endif
+    if (disableGPS) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
@@ -47,7 +52,7 @@ namespace GPS_Utils {
   }
 
   void getData() {
-    if (Config.disableGPS) {
+    if (disableGPS) {
       return;
     }
     while (neo6m_gps.available() > 0) {
@@ -89,7 +94,7 @@ namespace GPS_Utils {
   }
 
   void checkStartUpFrames() {
-    if (Config.disableGPS) {
+    if (disableGPS) {
       return;
     }
     if ((millis() > 8000 && gps.charsProcessed() < 10)) {

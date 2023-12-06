@@ -34,7 +34,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2023.12.04";
+String    versionDate         = "2023.12.06";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -88,6 +88,7 @@ String    messageText         = "";
 
 bool      digirepeaterActive  = false;
 bool      sosActive           = false;
+bool      disableGPS;
 
 logging::Logger               logger;
 
