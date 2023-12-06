@@ -233,9 +233,13 @@ namespace MENU_Utils {
                     }
                 }
 
+                #ifdef TTGO_T_LORA_V2_1_TNC
+                secondRowMainMenu = "";
+                thirdRowMainMenu = "    LoRa APRS TNC";
+                fourthRowMainMenu = "";
+                #else
                 const auto time_now = now();
                 secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
-
                 if (time_now % 10 < 5) {
                     thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                 } else {
@@ -291,6 +295,7 @@ namespace MENU_Utils {
                 if (MSG_Utils::getNumAPRSMessages() > 0){
                     fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
                 }
+                #endif
 
                 fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
 
