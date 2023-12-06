@@ -30,6 +30,7 @@ extern bool                 sosActive;
 extern bool                 bluetoothActive;
 extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
+extern bool                 disableGPS;
 
 namespace MENU_Utils {
 
@@ -238,62 +239,68 @@ namespace MENU_Utils {
                 thirdRowMainMenu = "    LoRa APRS TNC";
                 fourthRowMainMenu = "";
                 #else
-                const auto time_now = now();
-                secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
-                if (time_now % 10 < 5) {
-                    thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
+                if (disableGPS) {
+                    secondRowMainMenu = "";
+                    thirdRowMainMenu = "    LoRa APRS TNC";
+                    fourthRowMainMenu = "";
                 } else {
-                    thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
-                }
-
-                for(int i = thirdRowMainMenu.length(); i < 18; i++) {
-                    thirdRowMainMenu += " ";
-                }
-
-                if (gps.hdop.hdop() > 5) {
-                    hdopState = "X";
-                } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
-                    hdopState = "-";
-                } else if (gps.hdop.hdop() <= 2) {
-                    hdopState = "+";
-                }
-
-                if (gps.satellites.value() > 9) {
-                    thirdRowMainMenu += String(gps.satellites.value()) + hdopState;
-                } else {
-                    thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
-                }
-
-                String fourthRowAlt = String(gps.altitude.meters(),0);
-                fourthRowAlt.trim();
-                for (int a=fourthRowAlt.length();a<4;a++) {
-                    fourthRowAlt = "0" + fourthRowAlt;
-                }
-                String fourthRowSpeed = String(gps.speed.kmph(),0);
-                fourthRowSpeed.trim();
-                for (int b=fourthRowSpeed.length(); b<3;b++) {
-                    fourthRowSpeed = " " + fourthRowSpeed;
-                }
-                String fourthRowCourse = String(gps.course.deg(),0);
-                if (fourthRowSpeed == "  0") {
-                    fourthRowCourse = "---";
-                } else {
-                    fourthRowCourse.trim();
-                    for(int c=fourthRowCourse.length();c<3;c++) {
-                        fourthRowCourse = "0" + fourthRowCourse;
-                    }
-                }
-                if (Config.bme.active) {
+                    const auto time_now = now();
+                    secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
-                        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                        thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                     } else {
-                        fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
+                        thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                     }
-                } else {
-                    fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
-                }               
-                if (MSG_Utils::getNumAPRSMessages() > 0){
-                    fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
+
+                    for(int i = thirdRowMainMenu.length(); i < 18; i++) {
+                        thirdRowMainMenu += " ";
+                    }
+
+                    if (gps.hdop.hdop() > 5) {
+                        hdopState = "X";
+                    } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
+                        hdopState = "-";
+                    } else if (gps.hdop.hdop() <= 2) {
+                        hdopState = "+";
+                    }
+
+                    if (gps.satellites.value() > 9) {
+                        thirdRowMainMenu += String(gps.satellites.value()) + hdopState;
+                    } else {
+                        thirdRowMainMenu += " " + String(gps.satellites.value()) + hdopState;
+                    }
+
+                    String fourthRowAlt = String(gps.altitude.meters(),0);
+                    fourthRowAlt.trim();
+                    for (int a=fourthRowAlt.length();a<4;a++) {
+                        fourthRowAlt = "0" + fourthRowAlt;
+                    }
+                    String fourthRowSpeed = String(gps.speed.kmph(),0);
+                    fourthRowSpeed.trim();
+                    for (int b=fourthRowSpeed.length(); b<3;b++) {
+                        fourthRowSpeed = " " + fourthRowSpeed;
+                    }
+                    String fourthRowCourse = String(gps.course.deg(),0);
+                    if (fourthRowSpeed == "  0") {
+                        fourthRowCourse = "---";
+                    } else {
+                        fourthRowCourse.trim();
+                        for(int c=fourthRowCourse.length();c<3;c++) {
+                            fourthRowCourse = "0" + fourthRowCourse;
+                        }
+                    }
+                    if (Config.bme.active) {
+                        if (time_now % 10 < 5) {
+                            fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                        } else {
+                            fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
+                        }
+                    } else {
+                        fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                    }               
+                    if (MSG_Utils::getNumAPRSMessages() > 0){
+                        fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
+                    }
                 }
                 #endif
 
