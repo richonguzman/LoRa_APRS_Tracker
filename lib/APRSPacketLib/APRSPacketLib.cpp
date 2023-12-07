@@ -47,6 +47,12 @@ namespace APRSPacketLib {
             case 3: // telemetry
               repeatedPacket += ":T#";
               break;
+            case 4: // mic-e
+              repeatedPacket += ":'";
+              break;
+            case 5: // object
+              repeatedPacket += ":;";
+              break;
           }
           return repeatedPacket + packet.message;          
         } else {
@@ -210,7 +216,9 @@ namespace APRSPacketLib {
           gps       = 0
           message   = 1
           status    = 2
-          telemetry = 3   */
+          telemetry = 3
+          mic-e     = 4
+          object    = 5   */
       APRSPacket aprsPacket;
       aprsPacket.sender = receivedPacket.substring(0,receivedPacket.indexOf(">"));
       String temp00 = receivedPacket.substring(receivedPacket.indexOf(">")+1,receivedPacket.indexOf(":"));
@@ -276,17 +284,22 @@ namespace APRSPacketLib {
         aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":>") > 10) {
         aprsPacket.type = 2;
-        aprsPacket.addressee = "";
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":>")+2);
-        aprsPacket.latitude = 0;
-        aprsPacket.longitude = 0;
       } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
         aprsPacket.type = 3;
-        aprsPacket.addressee = "";
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":T#")+3);
+      } else if (receivedPacket.indexOf(":'") > 10) {
+        aprsPacket.type = 4;
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":'")+2);
+      } else if (receivedPacket.indexOf(":;") > 10) {
+        aprsPacket.type = 5;
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
+      }
+      if (aprsPacket.type==2 || aprsPacket.type==3 || aprsPacket.type==4 || aprsPacket.type==5) {
+        aprsPacket.addressee = "";
         aprsPacket.latitude = 0;
         aprsPacket.longitude = 0;
-      }
+      } 
       return aprsPacket;
     }
 
