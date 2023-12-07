@@ -181,16 +181,8 @@ namespace MSG_Utils {
             LoRa_Utils::sendNewPacket(digiRepeatedPacket);
           }
         }
-
-        if (aprsPacket.type==0) {
-          lastHeardTracker = aprsPacket.sender;
-          if (!Config.simplifiedTrackerMode) {
-            GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
-            if (Config.notification.buzzerActive && Config.notification.stationBeep && !digirepeaterActive) {
-              NOTIFICATION_Utils::stationHeardBeep();
-            }
-          }
-        } else if (aprsPacket.type==1 && aprsPacket.addressee==currentBeacon->callsign) {
+        lastHeardTracker = aprsPacket.sender;
+        if (aprsPacket.type==1 && aprsPacket.addressee==currentBeacon->callsign) {
           if (aprsPacket.message.indexOf("{")>=0) {
             String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
             ackMessage.trim();
@@ -235,6 +227,13 @@ namespace MSG_Utils {
               saveNewMessage("APRS", aprsPacket.sender, aprsPacket.message);
             }
           } 
+        } else {
+          if (aprsPacket.type==0 && !Config.simplifiedTrackerMode) {
+            GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
+          }
+          if (Config.notification.buzzerActive && Config.notification.stationBeep && !digirepeaterActive) {
+            NOTIFICATION_Utils::stationHeardBeep();
+          }
         }
       }
     }
