@@ -51,7 +51,8 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2023.12.07 Added LoRa32 v2.1 board as Tracker (with external GPS module), as Bluetooth TNC(Android/Apple) and ESP32 as DIY Tracker (with GPS Module).
+- 2023.12.07 Added TTGO Lilygo LoRa32 v2.1 board as Bluetooth TNC(Android/Apple) , as a Tracker (with external GPS module).
+- 2023.12.07 Added ESP32 as DIY Tracker (with external GPS Module).
 - 2023.12.06 T-Beam V1.2 as default board.
 - 2023.12.05 Updated packets recognition (+Objects + Mic-E).
 - 2023.11.28 Adding BLE connection to use it as TNC with APRS.fi app for iOS.
