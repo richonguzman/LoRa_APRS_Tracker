@@ -48,7 +48,7 @@ namespace APRSPacketLib {
               repeatedPacket += ":T#";
               break;
             case 4: // mic-e
-              repeatedPacket += ":'";
+              repeatedPacket += ":`";
               break;
             case 5: // object
               repeatedPacket += ":;";
@@ -288,9 +288,9 @@ namespace APRSPacketLib {
       } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
         aprsPacket.type = 3;
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":T#")+3);
-      } else if (receivedPacket.indexOf(":'") > 10) {
+      } else if (receivedPacket.indexOf(":`") > 10) {
         aprsPacket.type = 4;
-        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":'")+2);
+        aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":`")+2);
       } else if (receivedPacket.indexOf(":;") > 10) {
         aprsPacket.type = 5;
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
