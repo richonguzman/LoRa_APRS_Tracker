@@ -20,7 +20,7 @@ bool enableInterrupt = true;
 namespace LoRa_Utils {
 
   void setFlag(void) {
-    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
     transmissionFlag = true;
     #endif
   }
@@ -93,15 +93,9 @@ namespace LoRa_Utils {
       NOTIFICATION_Utils::beaconTxBeep();
     }
     #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
-    //Serial.print("Transmiting... ");
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
-      /*Serial.println(F("success!"));
-
-      Serial.print(F("[SX1268] Datarate:\t")); // print measured data rate
-      Serial.print(radio.getDataRate());
-      Serial.println(F(" bps"));*/
-
+      //Serial.println(F("success!"));
     } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
       Serial.println(F("too long!"));
     } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
@@ -137,10 +131,9 @@ namespace LoRa_Utils {
         int inChar = LoRa.read();
         loraPacket += (char)inChar;
       }
-
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
     }
-     #endif
+    #endif
     #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
     if (transmissionFlag) {
       transmissionFlag = false;
@@ -148,17 +141,14 @@ namespace LoRa_Utils {
       int state = radio.readData(loraPacket);
       if (state == RADIOLIB_ERR_NONE) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
-        //Serial.print(F("[SX1268] Data:\t\t")); Serial.println(loraPacket);
       } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
         // timeout occurred while waiting for a packet
-        //Serial.println(F("timeout!"));
       } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
         Serial.println(F("CRC error!"));
       } else {
         Serial.print(F("failed, code "));
         Serial.println(state);
       }
-      //radio.startReceive();
     }
     #endif
     return loraPacket;
