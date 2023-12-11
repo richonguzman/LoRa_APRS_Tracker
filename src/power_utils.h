@@ -2,7 +2,7 @@
 #define POWER_UTILS_H_
 
 #include <Arduino.h>
-#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
+#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
 // The V0.7 boards have no power managment components connected to TwoWire. 
 // Battery charging is controlled by a TP5400 IC indepemdetly from the ESP32.
 // Wire.h must be included to maitain software compatibility with V1.0 and 1.2 boards.

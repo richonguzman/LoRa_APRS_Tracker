@@ -11,7 +11,7 @@
 extern logging::Logger logger;
 extern Configuration Config;
 
-#if defined(TTGO_T_Beam_V1_0_SX1268)
+#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
 SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 bool transmissionFlag = true;
 bool enableInterrupt = true;
@@ -26,7 +26,7 @@ namespace LoRa_Utils {
   }
 
   void setup() {
-    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
     float freq = (float)Config.loramodule.frequency/1000000;
@@ -92,7 +92,7 @@ namespace LoRa_Utils {
     if (Config.notification.buzzerActive && Config.notification.txBeep) {
       NOTIFICATION_Utils::beaconTxBeep();
     }
-    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
     //Serial.print("Transmiting... ");
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
@@ -141,7 +141,7 @@ namespace LoRa_Utils {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
     }
      #endif
-    #if defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
     if (transmissionFlag) {
       transmissionFlag = false;
       radio.startReceive();
