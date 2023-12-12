@@ -15,8 +15,8 @@ namespace AX25_Utils {
         packet += char(shiftedValue);
       }
     }
-    uint16_t ssid = frame[6] >> 1;// & 0x0f;
-    if (isdigit(char(ssid))) {
+    byte ssid = (frame[6]>>1) & 0x0f;
+    if (isdigit(int(ssid))) {
       Serial.print("-");
       Serial.print(char(ssid));
       packet += "-";
