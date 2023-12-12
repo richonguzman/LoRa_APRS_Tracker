@@ -172,14 +172,11 @@ namespace BME_Utils {
       #endif
       presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
       if (type == "OLED") {
-        wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
-
         #ifndef BMPSensor
         wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
         #else
         wx = "T: " + tempStr + "C " + "P: " + presStr + "hPa";
         #endif
-        
       } else {
         #ifndef BMPSensor
         wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
