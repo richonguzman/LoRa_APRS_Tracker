@@ -5,7 +5,8 @@
 #include <logger.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
-#define CORRECTION_FACTOR (8.2296)      // for each meter
+#define HEIGHT_CORRECTION 0             // in meters
+#define CORRECTION_FACTOR (8.2296)      // for meters
 
 extern Configuration    Config;
 extern logging::Logger  logger;
@@ -13,7 +14,11 @@ extern logging::Logger  logger;
 
 namespace BME_Utils {
 
+  #ifndef BMPSensor
   Adafruit_BME280   bme;
+  #else
+  Adafruit_BMP280   bme;
+  #endif
 
   void setup() {
     if (Config.bme.active) {
@@ -24,10 +29,18 @@ namespace BME_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME280 Active in config but not found! Check Wiring");
         while (1);
       } else {
+        #ifndef BMPSensor
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
+        #else
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
+        #endif
       }
     } else {
+      #ifndef BMPSensor
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module not active in 'tracker_conf.json'");
+      #else
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module not active in 'tracker_conf.json'");
+      #endif
     }
   }
 
@@ -134,7 +147,12 @@ namespace BME_Utils {
   String readDataSensor(String type) {
     String wx, tempStr, humStr, presStr;
     float newTemp   = bme.readTemperature();
-    float newHum    = bme.readHumidity();
+    float newHum;
+    #ifndef BMPSensor
+    newHum = bme.readHumidity();
+    #else
+    newHum = 0;
+    #endif
     float newPress  = (bme.readPressure() / 100.0F);
     
     if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
@@ -147,12 +165,27 @@ namespace BME_Utils {
       return wx;
     } else {
       tempStr = generateTempString(newTemp, type);
-      humStr  = generateHumString(newHum, type);
+      #ifndef BMPSensor
+      humStr  = generateHumString(newHum,type);
+      #else
+      humStr  = "-99";
+      #endif
       presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
       if (type == "OLED") {
         wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
+
+        #ifndef BMPSensor
+        wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
+        #else
+        wx = "T: " + tempStr + "C " + "P: " + presStr + "hPa";
+        #endif
+        
       } else {
+        #ifndef BMPSensor
         wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
+        #else
+        wx = ".../...g...t" + tempStr + "r...p...P...h..b" + presStr;
+        #endif
       }
       return wx;
     }
