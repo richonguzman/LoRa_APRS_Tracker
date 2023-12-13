@@ -5,21 +5,16 @@ namespace AX25_Utils {
   AX25Frame decodedFrame;
 
   String decodeFrame(String frame) {
-    for (int k=0; k<7; k++) {
-      Serial.print(frame[k],HEX); Serial.print(" ");
-    }
-
     String packet = "";
     for (int a=0;a<6;a++) {
       uint16_t shiftedValue = frame[a] >> 1;
-      if (shiftedValue == 32) { // space or null
+      if (shiftedValue == 32) {
         a=10;
       } else {
         Serial.print(char(shiftedValue));
         packet += char(shiftedValue);
       }
     }
-    
     byte ssid = (frame[6]>>1) & 0x0f;
     if (String(ssid) != "0") {
       packet += "-" + String(ssid);
@@ -137,8 +132,8 @@ namespace AX25_Utils {
       temp = "";
       lastAddress = true;
     }
-    encodedPacket = encodeAX25Address(tocall, 1, false);                          // tocall
-    encodedPacket += encodeAX25Address(sender, 0, lastAddress);                   // sender
+    encodedPacket = encodeAX25Address(tocall, 1, false);
+    encodedPacket += encodeAX25Address(sender, 0, lastAddress);
 
     while (temp.length() > 0) {
       int repeatedPath = 0;
@@ -154,12 +149,12 @@ namespace AX25_Utils {
       if (address.indexOf("*")>0) {
         repeatedPath = 1;
       }
-      encodedPacket += encodeAX25Address(address, repeatedPath, lastAddress);     // path
+      encodedPacket += encodeAX25Address(address, repeatedPath, lastAddress);
     }
 
     encodedPacket += char(0x03);
     encodedPacket += char(0xF0);
-    encodedPacket += packet.substring(packet.indexOf(":")+1);                     // payload
+    encodedPacket += packet.substring(packet.indexOf(":")+1);
     return encodedPacket;
   }
 
