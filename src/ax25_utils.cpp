@@ -20,12 +20,12 @@ namespace AX25_Utils {
       }
     }
     byte ssid = (frame[6]>>1) & 0x0f;
-    if (isdigit(int(ssid))) {
-      Serial.print("-");
-      Serial.print(char(ssid));
-      packet += "-";
-      packet += char(ssid);
-    }
+    //if (isdigit(int(ssid))) {
+      //Serial.print("-");
+      //Serial.print(char(ssid));
+    packet += "-";
+    packet += String(ssid);
+  //  }
     return packet;
   }
 
