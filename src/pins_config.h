@@ -19,13 +19,12 @@
 #define GPS_RX          12
 #define GPS_TX          34
 #define BUTTON_PIN      -1
-#define LORA_SCK        5       // GPIO5    - SX1276 SCK
-#define LORA_MISO       19      // GPIO19   - SX1276 MISO
-#define LORA_MOSI       27      // GPIO27   - SX1276 MOSI
-#define LORA_CS         18      // GPIO18   - SX1276 CS ----->NSS
-#define LORA_RST        23      // GPIO14   - SX1276 RST
-#define LORA_IRQ        26      // GPIO26   - SX1276 IRQ ---->DIO0
-//#define greenLed        25      // Green Led
+#define LORA_SCK        5
+#define LORA_MISO       19
+#define LORA_MOSI       27
+#define LORA_CS         18  // CS  --> NSS
+#define LORA_RST        23
+#define LORA_IRQ        26  // IRQ --> DIO0
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
