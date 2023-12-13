@@ -38,6 +38,9 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     String receivedString = "";
     for (int i=0; i<receivedData.length();i++) {
       receivedString += receivedData[i];
+      //
+      Serial.print(receivedData[i],HEX); Serial.print(" ");
+      //
     }
     BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
     sendBleToLoRa = true;
