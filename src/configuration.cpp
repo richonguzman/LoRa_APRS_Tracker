@@ -63,7 +63,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
     notification.ledTx            = data["notification"]["ledTx"].as<bool>();
     notification.ledTxPin         = data["notification"]["ledTxPin"].as<int>();
-    notification.ledMessage       = data["notification"]["ledTx"].as<bool>();
+    notification.ledMessage       = data["notification"]["ledMessage"].as<bool>();
 		notification.ledMessagePin    = data["notification"]["ledMessagePin"].as<int>();
 		notification.buzzerActive     = data["notification"]["buzzerActive"].as<bool>();
 		notification.buzzerPinTone    = data["notification"]["buzzerPinTone"].as<int>();
