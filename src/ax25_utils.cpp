@@ -19,13 +19,11 @@ namespace AX25_Utils {
         packet += char(shiftedValue);
       }
     }
+    
     byte ssid = (frame[6]>>1) & 0x0f;
-    //if (isdigit(int(ssid))) {
-      //Serial.print("-");
-      //Serial.print(char(ssid));
-    packet += "-";
-    packet += String(ssid);
-  //  }
+    if (String(ssid) != "0") {
+      packet += "-" + String(ssid);
+    }
     return packet;
   }
 
