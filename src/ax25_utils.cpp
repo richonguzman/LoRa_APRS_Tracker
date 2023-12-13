@@ -5,6 +5,10 @@ namespace AX25_Utils {
   AX25Frame decodedFrame;
 
   String decodeFrame(String frame) {
+    for (int k=0; k<7; k++) {
+      Serial.print(frame[k],HEX); Serial.print(" ");
+    }
+
     String packet = "";
     for (int a=0;a<6;a++) {
       uint16_t shiftedValue = frame[a] >> 1;
