@@ -242,7 +242,7 @@ namespace APRSPacketLib {
     return generateBasePacket(callsign,tocall,path) + "::" + addressee + ":" + message;
   }
 
-  String generateDigiRepeatedPacket(APRSPacket packet, String callsign) {
+  String generateDigiRepeatedPacket(APRSPacket packet, const String& callsign) {
     if (packet.path.indexOf("WIDE1-")>=0) {
       String hop = packet.path.substring(packet.path.indexOf("WIDE1-")+6, packet.path.indexOf("WIDE1-")+7);
       if (hop.toInt()>=1 && hop.toInt()<=7) {

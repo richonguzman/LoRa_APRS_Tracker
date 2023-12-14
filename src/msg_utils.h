@@ -13,10 +13,10 @@ namespace MSG_Utils {
     void    loadMessagesFromMemory();
     void    ledNotification();
     void    deleteFile();
-    void    saveNewMessage(String typeMessage, String station, String newMessage);
+    void    saveNewMessage(const String& typeMessage, const String& station, String newMessage);
     void    sendMessage(String station, const String& textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
-    
+
 }
 
 #endif
