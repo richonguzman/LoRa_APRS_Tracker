@@ -87,7 +87,7 @@ namespace BLE_Utils {
       return;
     }
 
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "---> %s", BLEToLoRaPacket.c_str());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
     show_display("BLE Tx >>", "", BLEToLoRaPacket, 1000);
 
     LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
@@ -121,7 +121,7 @@ namespace BLE_Utils {
 
   void sendToPhone(const String& packet) {
     if (!packet.isEmpty()) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "---> %s", packet.c_str());
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
       String receivedPacketString = "";
       for (int i=0; i<packet.length();i++) {
         receivedPacketString += packet[i];

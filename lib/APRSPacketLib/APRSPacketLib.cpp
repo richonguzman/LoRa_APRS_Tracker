@@ -191,7 +191,7 @@ namespace APRSPacketLib {
     return miceLongitudeStruct;
   }
 
-  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, float latitude, float longitude, float course, float speed, int altitude, String comment) {
+  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, float latitude, float longitude, float course, float speed, int altitude) {
     gpsLatitudeStruct latitudeStruct = gpsDecimalToDegreesMiceLatitude(latitude);
     gpsLongitudeStruct longitudeStruct = gpsDecimalToDegreesMiceLongitude(longitude);
 
@@ -200,7 +200,7 @@ namespace APRSPacketLib {
     miceDestinationArray[6] = 0x00;     // por repetidor?
     String miceDestination = (char*)miceDestinationArray;
 
-    uint8_t miceInfoFieldArray[15];
+    uint8_t miceInfoFieldArray[14];
     miceInfoFieldArray[0] = 0x60; //  0x60 for ` and 0x27 for '
     miceLongitudeEncoding(&miceInfoFieldArray[1], &longitudeStruct);
     miceCourseSpeedEncoding(&miceInfoFieldArray[4], (uint32_t)speed, (uint32_t)course); //speed= gps.speed.knots(), course = gps.course.deg());
@@ -211,12 +211,11 @@ namespace APRSPacketLib {
     strncpy(symbolOverlayArray,overlay.c_str(),1);
     miceInfoFieldArray[8] = symbolOverlayArray[0];
     
-    miceInfoFieldArray[9] = 0x60;
-    miceAltiduteEncoding(&miceInfoFieldArray[10], (uint32_t)altitude); // altitude = gps.altitude.meters()
-    miceInfoFieldArray[14] = 0x00;      // por repetidor?
+    miceAltiduteEncoding(&miceInfoFieldArray[9], (uint32_t)altitude); // altitude = gps.altitude.meters()
+    miceInfoFieldArray[13] = 0x00;      // por repetidor?
     String miceInformationField = (char*)miceInfoFieldArray;
 
-    return callsign + ">" + miceDestination + ":" + miceInformationField + comment;
+    return callsign + ">" + miceDestination + ":" + miceInformationField;
 }
 
   String generateBasePacket(String callsign, String tocall, String path) {
