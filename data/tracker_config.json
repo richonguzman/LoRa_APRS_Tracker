@@ -4,8 +4,9 @@
 			"callsign": "NOCALL-7",
 			"symbol": "[",
 			"overlay": "/",
+			"micE": "",
 			"comment": "",
-			"smart_beacon": {
+			"smartBeacon": {
 				"active": true,
 				"slowRate": 120,
 				"slowSpeed": 3,
@@ -15,14 +16,15 @@
 				"minDeltaBeacon": 20,
 				"turnMinDeg": 12,
 				"turnSlope": 60
-			}
+			}			
 		},
 		{
 			"callsign": "NOCALL-7",
 			"symbol": ">",
 			"overlay": "/",
+			"micE": "",
 			"comment": "",
-			"smart_beacon": {
+			"smartBeacon": {
 				"active": true,
 				"slowRate": 120,
 				"slowSpeed": 10,
@@ -38,8 +40,9 @@
 			"callsign": "NOCALL-7",
 			"symbol": "j",
 			"overlay": "/",
+			"micE": "",
 			"comment": "",
-			"smart_beacon": {
+			"smartBeacon": {
 				"active": true,
 				"slowRate": 120,
 				"slowSpeed": 5,

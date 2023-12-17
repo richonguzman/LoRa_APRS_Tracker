@@ -90,6 +90,8 @@ bool      digirepeaterActive  = false;
 bool      sosActive           = false;
 bool      disableGPS;
 
+bool      miceActive          = false;
+
 logging::Logger               logger;
 
 void setup() {
@@ -155,6 +157,7 @@ void loop() {
   currentBeacon = &Config.beacons[myBeaconsIndex];
   if (statusState) {
     Config.validateConfigFile(currentBeacon->callsign);
+    miceActive = Config.validateMicE(currentBeacon->micE);
   }
 
   powerManagement.batteryManager();

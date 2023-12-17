@@ -10,6 +10,7 @@ public:
   String callsign;
   String symbol;
   String overlay;
+  String micE;
   String comment;
   bool  smartBeaconState;
   int   slowRate;
@@ -91,6 +92,7 @@ public:
 
   Configuration();
   void validateConfigFile(String currentBeaconCallsign);
+  bool validateMicE(String currentBeaconMicE);
 
 private:
   void readFile(fs::FS &fs, const char *fileName) ;
