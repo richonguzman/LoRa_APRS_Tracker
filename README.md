@@ -51,6 +51,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2023.12.17 Added Mic-E Message Type encoding.
 - 2023.12.11 Added support for EByte 400M30S 1Watt LoRa module for DIY ESP32 Tracker.
 - 2023.12.07 Added TTGO Lilygo LoRa32 v2.1 board as Bluetooth TNC(Android/Apple) and as a Tracker (with external GPS module).
 - 2023.12.07 Added ESP32 as DIY Tracker (with external GPS Module) with LoRa SX1278 module.
