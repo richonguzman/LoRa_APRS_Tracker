@@ -16,9 +16,38 @@ struct APRSPacket {
   int     course;
   int     speed;
   int     altitude;
+  String  miceType;
+};
+
+struct gpsLatitudeStruct {
+	uint8_t degrees;
+	uint8_t minutes;
+	uint8_t minuteHundredths;
+	uint8_t north;
+};
+
+struct gpsLongitudeStruct {
+	uint8_t degrees;
+	uint8_t minutes;
+	uint8_t minuteHundredths;
+	uint8_t east;
 };
 
 namespace APRSPacketLib {
+
+  String double2string(double n, int ndec);
+  String processLatitudeAPRS(double lat);
+  String processLongitudeAPRS(double lon);
+
+  void miceCourseSpeedEncoding(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
+  void miceAltiduteEncoding(uint8_t *buf, uint32_t alt_m);
+  void miceLongitudeEncoding(uint8_t *buf, gpsLongitudeStruct *lon);
+  void miceDestinationFieldEncoding(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon);
+
+  gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude);
+  gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude);
+
+  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, float latitude, float longitude, float course, float speed, int altitude, String comment);
 
   String generateBasePacket(String callsign, String tocall, String path);
   String generateStatusPacket(String callsign, String tocall, String path, String status);

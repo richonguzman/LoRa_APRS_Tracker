@@ -392,7 +392,11 @@ namespace STATION_Utils {
       packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
       packet += BME_Utils::readDataSensor("APRS");
     } else {
-      packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+      //packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+      //
+      //packet = APRSPacketLib::generateMiceGPSBeacon("110", currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters(), currentBeacon->comment);
+      packet = APRSPacketLib::generateMiceGPSBeacon("110", currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters(), "test Mic-E");
+      //
     }
     if (currentBeacon->comment != "") {
       updateCounter++;

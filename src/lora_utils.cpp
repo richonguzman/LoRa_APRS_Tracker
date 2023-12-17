@@ -77,7 +77,7 @@ namespace LoRa_Utils {
   }
 
   void sendNewPacket(const String &newPacket) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Send data: %s", newPacket.c_str());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
     /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa","Send data: %s", newPacket.c_str());*/
@@ -131,7 +131,7 @@ namespace LoRa_Utils {
         int inChar = LoRa.read();
         loraPacket += (char)inChar;
       }
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", loraPacket.c_str());
     }
     #endif
     #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
@@ -140,7 +140,7 @@ namespace LoRa_Utils {
       radio.startReceive();
       int state = radio.readData(loraPacket);
       if (state == RADIOLIB_ERR_NONE) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa","Receive data: %s", loraPacket.c_str());
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", loraPacket.c_str());
       } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
         // timeout occurred while waiting for a packet
       } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
