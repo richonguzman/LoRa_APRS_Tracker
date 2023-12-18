@@ -5,21 +5,21 @@
 
 namespace STATION_Utils {
 
-String getFirstNearTracker();
-String getSecondNearTracker();
-String getThirdNearTracker();
-String getFourthNearTracker();
+    String getFirstNearTracker();
+    String getSecondNearTracker();
+    String getThirdNearTracker();
+    String getFourthNearTracker();
 
-void deleteListenedTrackersbyTime();
-void checkListenedTrackersByTimeAndDelete();
-void orderListenedTrackersByDistance(String callsign, float distance, float course);
-void checkSmartBeaconInterval(int speed);
-void checkStandingUpdateTime();
-void checkSmartBeaconState();
-void sendBeacon(String type);
-void checkTelemetryTx();
-void saveCallsingIndex(int index);
-void loadCallsignIndex();
+    void deleteListenedTrackersbyTime();
+    void checkListenedTrackersByTimeAndDelete();
+    void orderListenedTrackersByDistance(String callsign, float distance, float course);
+    void checkSmartBeaconInterval(int speed);
+    void checkStandingUpdateTime();
+    void checkSmartBeaconState();
+    void sendBeacon(String type);
+    void checkTelemetryTx();
+    void saveCallsingIndex(int index);
+    void loadCallsignIndex();
 
 }
 

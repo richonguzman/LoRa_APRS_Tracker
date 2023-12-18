@@ -48,7 +48,6 @@ namespace AX25_Utils {
 
   String AX25FrameToLoRaPacket(String frame) {
     //Serial.println(frame);
-    //Serial.println(frame.length());
     if (decodeAX25(frame, frame.length(), &decodedFrame)) {
       String packetToLoRa = "";
       packetToLoRa = decodeFrame(decodedFrame.sender) + ">" + decodeFrame(decodedFrame.tocall);

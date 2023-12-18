@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 namespace MENU_Utils {
+    
     String checkBTType();
     String checkProcessActive(bool process);
     String checkScreenBrightness(int bright);

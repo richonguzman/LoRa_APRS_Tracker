@@ -5,9 +5,9 @@
 
 namespace BUTTON_Utils {
 
-void singlePress();
-void longPress();
-void doublePress();
+    void singlePress();
+    void longPress();
+    void doublePress();
 
 }
 #endif

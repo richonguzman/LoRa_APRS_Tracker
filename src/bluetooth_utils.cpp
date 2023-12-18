@@ -25,7 +25,6 @@ namespace BLUETOOTH_Utils {
       btStop();
       esp_bt_controller_disable();
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
-
       return;
     }
 
@@ -46,7 +45,6 @@ namespace BLUETOOTH_Utils {
         delay(1000);
       }
     }
-
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth init done!");
   }
 
@@ -130,9 +128,7 @@ namespace BLUETOOTH_Utils {
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT TX", "%s", serialReceived.c_str());
     show_display("BT Tx >>", "", serialReceived, 1000);
-
     LoRa_Utils::sendNewPacket(serialReceived);
-
     shouldSendToLoRa = false;
   }
 
@@ -140,11 +136,9 @@ namespace BLUETOOTH_Utils {
     if (bluetoothActive && !packet.isEmpty()) {
       if (useKiss) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT RX Kiss", "%s", serialReceived.c_str());
-
         SerialBT.println(encode_kiss(packet));
       } else {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT RX TNC2", "%s", serialReceived.c_str());
-
         SerialBT.println(packet);
       }
     }

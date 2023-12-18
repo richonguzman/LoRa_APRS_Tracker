@@ -5,17 +5,17 @@
 
 namespace MSG_Utils {
 
-bool    warnNoMessages();
-int     getNumAPRSMessages();
-void    loadNumMessages();
-void    loadMessagesFromMemory();
-void    ledNotification();
-void    deleteFile();
-void    sendMessage(String station, String textMessage);
-void    checkReceivedMessage(String packetReceived);
-
-String getLastHeardTracker();
-
+    bool    warnNoMessages();
+    String  getLastHeardTracker();
+    int     getNumAPRSMessages();
+    void    loadNumMessages();
+    void    loadMessagesFromMemory();
+    void    ledNotification();
+    void    deleteFile();
+    void    saveNewMessage(String typeMessage, String station, String newMessage);
+    void    sendMessage(String station, String textMessage);
+    void    checkReceivedMessage(String packetReceived);
+    
 }
 
 #endif

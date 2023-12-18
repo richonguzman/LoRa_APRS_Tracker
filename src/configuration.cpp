@@ -33,15 +33,15 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         bcn.micE              = BeaconsArray[i]["micE"].as<String>();
         bcn.comment           = BeaconsArray[i]["comment"].as<String>();
 
-        bcn.smartBeaconState  = BeaconsArray[i]["smart_beacon"]["active"].as<bool>();
-        bcn.slowRate          = BeaconsArray[i]["smart_beacon"]["slowRate"].as<int>();
-        bcn.slowSpeed         = BeaconsArray[i]["smart_beacon"]["slowSpeed"].as<int>();
-        bcn.fastRate          = BeaconsArray[i]["smart_beacon"]["fastRate"].as<int>();
-        bcn.fastSpeed         = BeaconsArray[i]["smart_beacon"]["fastSpeed"].as<int>();
-        bcn.minTxDist         = BeaconsArray[i]["smart_beacon"]["minTxDist"].as<int>();
-        bcn.minDeltaBeacon    = BeaconsArray[i]["smart_beacon"]["minDeltaBeacon"].as<int>();
-        bcn.turnMinDeg        = BeaconsArray[i]["smart_beacon"]["turnMinDeg"].as<int>();
-        bcn.turnSlope         = BeaconsArray[i]["smart_beacon"]["turnSlope"].as<int>();      
+        bcn.smartBeaconState  = BeaconsArray[i]["smartBeacon"]["active"].as<bool>();
+        bcn.slowRate          = BeaconsArray[i]["smartBeacon"]["slowRate"].as<int>();
+        bcn.slowSpeed         = BeaconsArray[i]["smartBeacon"]["slowSpeed"].as<int>();
+        bcn.fastRate          = BeaconsArray[i]["smartBeacon"]["fastRate"].as<int>();
+        bcn.fastSpeed         = BeaconsArray[i]["smartBeacon"]["fastSpeed"].as<int>();
+        bcn.minTxDist         = BeaconsArray[i]["smartBeacon"]["minTxDist"].as<int>();
+        bcn.minDeltaBeacon    = BeaconsArray[i]["smartBeacon"]["minDeltaBeacon"].as<int>();
+        bcn.turnMinDeg        = BeaconsArray[i]["smartBeacon"]["turnMinDeg"].as<int>();
+        bcn.turnSlope         = BeaconsArray[i]["smartBeacon"]["turnSlope"].as<int>();      
 
         beacons.push_back(bcn);
     }

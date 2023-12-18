@@ -1,16 +1,15 @@
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
+#include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "configuration.h"
 #include "lora_utils.h"
+#include "ble_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
-
-#include "APRSPacketLib.h"
-#include "ble_utils.h"
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;

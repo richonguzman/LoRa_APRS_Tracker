@@ -5,13 +5,13 @@
 
 namespace GPS_Utils {
 
-void setup();
-void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude);
-void getData();
-void setDateFromData();
-void calculateDistanceTraveled();
-void calculateHeadingDelta(int speed);
-void checkStartUpFrames();
+    void setup();
+    void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude);
+    void getData();
+    void setDateFromData();
+    void calculateDistanceTraveled();
+    void calculateHeadingDelta(int speed);
+    void checkStartUpFrames();
 
 }
 

@@ -20,16 +20,16 @@ extern String           BLEToLoRaPacket;
 
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
-    void onConnect(NimBLEServer* pServer) {
-      bluetoothConnected = true;
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
-    }
+  void onConnect(NimBLEServer* pServer) {
+    bluetoothConnected = true;
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
+  }
 
-    void onDisconnect(NimBLEServer* pServer) {
-      bluetoothConnected = false;
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
-      pServer->startAdvertising();
-    }
+  void onDisconnect(NimBLEServer* pServer) {
+    bluetoothConnected = false;
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
+    pServer->startAdvertising();
+  }
 };
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
@@ -86,10 +86,8 @@ namespace BLE_Utils {
     if (!sendBleToLoRa) {
       return;
     }
-
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
     show_display("BLE Tx >>", "", BLEToLoRaPacket, 1000);
-
     LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
     BLEToLoRaPacket = "";
     sendBleToLoRa = false;

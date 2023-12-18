@@ -4,13 +4,13 @@
 #include <Arduino.h>
 
 struct AX25Frame {  // Define AX.25 frame structure
-  String tocall;   // destination
-  String sender;   // source;
-  String path1;    // if present
-  String path2;    // if present
+  String tocall;    // destination
+  String sender;    // source
+  String path1;     // if present
+  String path2;     // if present
   String control;
   String pid;
-  String payload; // how to validate this size?
+  String payload;
 };
 
 enum KissChar {

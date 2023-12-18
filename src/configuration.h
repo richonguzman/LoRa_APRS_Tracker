@@ -2,8 +2,8 @@
 #define CONFIGURATION_H_
 
 #include <Arduino.h>
-#include <FS.h>
 #include <vector>
+#include <FS.h>
 
 class Beacon {
 public:

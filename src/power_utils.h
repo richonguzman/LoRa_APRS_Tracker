@@ -34,8 +34,6 @@ public:
   bool isChargeing();
 
 private:
-  
-
   void activateLoRa();
   void deactivateLoRa();
 

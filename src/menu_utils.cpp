@@ -11,7 +11,6 @@
 #include "display.h"
 #include "utils.h"
 
-
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
@@ -41,7 +40,6 @@ namespace MENU_Utils {
             return "BT Android";
         }
     }
-
 
     String checkProcessActive(bool process) {
         if (process) {

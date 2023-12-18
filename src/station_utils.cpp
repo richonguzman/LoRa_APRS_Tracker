@@ -1,6 +1,7 @@
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
 #include <vector>
+#include "APRSPacketLib.h"
 #include "station_utils.h"
 #include "configuration.h"
 #include "power_utils.h"
@@ -10,8 +11,6 @@
 #include "display.h"
 #include "logger.h"
 #include "utils.h"
-
-#include "APRSPacketLib.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
