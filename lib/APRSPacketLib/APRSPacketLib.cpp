@@ -456,13 +456,17 @@ namespace APRSPacketLib {
     int altitude;
     String temp;
     if (informationField.indexOf("`")==8 && informationField.indexOf("}")==12) {
-      temp = informationField.substring(9,12); // completar decoding de los 3 bytes
-      Serial.println(temp);
-      altitude = 12;
+      temp = informationField.substring(9,12);
     } else if (informationField.indexOf("}")==11) {
-      temp = informationField.substring(8,11); // completar decoding de los 3 bytes
-      Serial.println(temp);
-      altitude = 11;
+      temp = informationField.substring(8,11);
+    } else {
+      temp = "";
+    }
+    if (temp.length()!=0) {
+      int a = int(temp[0]) - 33;
+      int b = int(temp[1]) - 33;
+      int c = int(temp[2]) - 33;
+      altitude = (a*pow(91,2) + b*91 + c) - 10000;
     } else {
       altitude = 0;
     }
@@ -598,16 +602,15 @@ namespace APRSPacketLib {
       aprsPacket.latitude = decodeMiceLatitude(aprsPacket.tocall);
       //Serial.println(aprsPacket.latitude);
 
-      aprsPacket.altitude = decodeMiceAltitude(aprsPacket.message); // completar decoding
-      Serial.println(aprsPacket.altitude);
+      aprsPacket.altitude = decodeMiceAltitude(aprsPacket.message);
 
       /*
       decodeMiceLongitud(aprsPacket.tocall, aprsPacket.message);
       decodeMiceCourseSpeed(aprsPacket.tocall, aprsPacket.message);
       ---------decodeMiceAltitude(aprsPacket.tocall, aprsPacket.message);
 
-      tocall entrega LAT, North, longitude offset , West (y miceType)
-      message es longitud, curso, velocidad y altura
+      tocall entrega longitude offset , West
+      message es longitud, curso, velocidad
       */
       
     } else if (receivedPacket.indexOf(":;") > 10) {
