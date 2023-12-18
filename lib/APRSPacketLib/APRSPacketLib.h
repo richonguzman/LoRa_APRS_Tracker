@@ -62,6 +62,10 @@ namespace APRSPacketLib {
   float decodeLongitude(String receivedPacket);
   int decodeSpeed(String speed);
   int decodeAltitude(String altitude);
+  String decodeMiceMsgType(String tocall);
+  float gpsDegreesToDecimalLatitude(String latitude);
+  float decodeMiceLatitude(String tocall);
+
   APRSPacket processReceivedPacket(String receivedPacket);
 
 }

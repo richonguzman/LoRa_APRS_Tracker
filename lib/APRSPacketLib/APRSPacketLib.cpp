@@ -432,6 +432,55 @@ namespace APRSPacketLib {
     return altitude.toInt() * 0.3048;
   }
 
+  String decodeMiceMsgType(String tocall) {
+    String miceType;
+    for (int i=0; i<3; i++) {
+      if (int(tocall[i]) > 57) {
+        miceType += "1";
+      } else {
+        miceType += "0";
+      }
+    }
+    return miceType;
+  }
+
+
+  float gpsDegreesToDecimalLatitude(String latitude) {
+    int degrees = latitude.substring(0,2).toInt();
+    int minute = latitude.substring(2,4).toInt();
+    int minuteHundredths = latitude.substring(5,7).toInt();
+    String northSouth = latitude.substring(7);
+    float decimalLat = degrees + (minute/60.0) + (minuteHundredths/10000.0);
+    if (northSouth=="N") {
+      return decimalLat;
+    } else { 
+      return -decimalLat;
+    }
+  }
+
+  float decodeMiceLatitude(String tocall) {
+    String gpsLat;
+    String northSouth;
+    for (int i=0; i<=5; i++) {
+      if (int(tocall[i]) > 57) {
+        gpsLat += char(int(tocall[i]) - 32);
+      } else {
+        gpsLat += char(int(tocall[i]));
+      }
+      if (i==3) {
+        gpsLat += ".";
+        if (int(tocall[i]) > 57) {
+          northSouth = "N";
+        } else {
+          northSouth = "S";
+        }
+      }
+    }
+    gpsLat += northSouth;
+    //float decimalLatitude = gpsDegreesToDecimalLatitude(gpsLat);
+    return gpsDegreesToDecimalLatitude(gpsLat);
+  }
+
   APRSPacket processReceivedPacket(String receivedPacket) {
     /*  Packet type:
         gps       = 0
@@ -442,12 +491,12 @@ namespace APRSPacketLib {
         object    = 5   */
     APRSPacket aprsPacket;
     aprsPacket.sender = receivedPacket.substring(0,receivedPacket.indexOf(">"));
-    String temp00 = receivedPacket.substring(receivedPacket.indexOf(">")+1,receivedPacket.indexOf(":"));
-    if (temp00.indexOf(",") > 2) {
-      aprsPacket.tocall = temp00.substring(0,temp00.indexOf(","));
-      aprsPacket.path = temp00.substring(temp00.indexOf(",")+1,temp00.indexOf(":"));
+    String temp0 = receivedPacket.substring(receivedPacket.indexOf(">")+1,receivedPacket.indexOf(":"));
+    if (temp0.indexOf(",") > 2) {
+      aprsPacket.tocall = temp0.substring(0,temp0.indexOf(","));
+      aprsPacket.path = temp0.substring(temp0.indexOf(",")+1,temp0.indexOf(":"));
     } else {
-      aprsPacket.tocall = temp00;
+      aprsPacket.tocall = temp0;
       aprsPacket.path = "";
     }
     if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
@@ -517,8 +566,25 @@ namespace APRSPacketLib {
         aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":'")+2);
       }
       // DECODING Mic-E received packet
+      aprsPacket.miceType = decodeMiceMsgType(aprsPacket.tocall);
+      Serial.println(aprsPacket.miceType);
+
+      aprsPacket.latitude = decodeMiceLatitude(aprsPacket.tocall);
+      Serial.println(aprsPacket.latitude);
+
+
+
+      /*
+      decodeMiceLongitud(aprsPacket.tocall, aprsPacket.message);
+      decodeMiceCourseSpeed(aprsPacket.tocall, aprsPacket.message);
+      decodeMiceAltitude(aprsPacket.tocall, aprsPacket.message);
+
+      tocall entrega LAT, North, longitude offset , West (y miceType)
+      
+      message es longitud, curso, velocidad y altura
+      
+      */
       aprsPacket.miceType = "110";
-      // aprsPacket.miceType = "111"; //or any other decoded
     } else if (receivedPacket.indexOf(":;") > 10) {
       aprsPacket.type = 5;
       aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
