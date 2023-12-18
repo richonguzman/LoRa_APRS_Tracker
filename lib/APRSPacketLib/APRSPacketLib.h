@@ -39,8 +39,8 @@ namespace APRSPacketLib {
   String processLatitudeAPRS(double lat);
   String processLongitudeAPRS(double lon);
 
-  void miceCourseSpeedEncoding(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
   void miceAltiduteEncoding(uint8_t *buf, uint32_t alt_m);
+  void miceCourseSpeedEncoding(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
   void miceLongitudeEncoding(uint8_t *buf, gpsLongitudeStruct *lon);
   void miceDestinationFieldEncoding(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon);
 
