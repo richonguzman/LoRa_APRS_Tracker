@@ -11,6 +11,7 @@ struct APRSPacket {
   String  message;
   int     type;
   String  symbol;
+  String  overlay;
   float   latitude;
   float   longitude;
   int     course;
@@ -63,6 +64,12 @@ namespace APRSPacketLib {
   int decodeSpeed(String speed);
   int decodeAltitude(String altitude);
   String decodeMiceMsgType(String tocall);
+
+
+  String decodeMiceSymbol(String informationField);
+  String decodeMiceOverlay(String informationField);
+  int decodeMiceAltitude(String informationField);
+
   float gpsDegreesToDecimalLatitude(String latitude);
   float decodeMiceLatitude(String tocall);
 

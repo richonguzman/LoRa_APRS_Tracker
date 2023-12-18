@@ -444,6 +444,30 @@ namespace APRSPacketLib {
     return miceType;
   }
 
+  String decodeMiceSymbol(String informationField) {
+    return informationField.substring(6,7);
+  }
+
+  String decodeMiceOverlay(String informationField) {
+    return informationField.substring(7,8);
+  }
+
+  int decodeMiceAltitude(String informationField) {
+    int altitude;
+    String temp;
+    if (informationField.indexOf("`")==8 && informationField.indexOf("}")==12) {
+      temp = informationField.substring(9,12); // completar decoding de los 3 bytes
+      Serial.println(temp);
+      altitude = 12;
+    } else if (informationField.indexOf("}")==11) {
+      temp = informationField.substring(8,11); // completar decoding de los 3 bytes
+      Serial.println(temp);
+      altitude = 11;
+    } else {
+      altitude = 0;
+    }
+    return altitude;
+  }
 
   float gpsDegreesToDecimalLatitude(String latitude) {
     int degrees = latitude.substring(0,2).toInt();
@@ -501,7 +525,6 @@ namespace APRSPacketLib {
     }
     if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
       aprsPacket.type = 0;
-      aprsPacket.addressee = "";
       String gpsChar = "";
       if (receivedPacket.indexOf(":!") > 10) {
         gpsChar = ":!";
@@ -514,6 +537,7 @@ namespace APRSPacketLib {
         aprsPacket.latitude = decodeEncodedLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+3, receivedPacket.indexOf(gpsChar)+7));
         aprsPacket.longitude = decodeEncodedLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+7, receivedPacket.indexOf(gpsChar)+11));
         aprsPacket.symbol = receivedPacket.substring(receivedPacket.indexOf(gpsChar)+11, receivedPacket.indexOf(gpsChar)+12);
+        //aprsPacket.overlay = ???
         if (receivedPacket.substring(receivedPacket.indexOf(gpsChar)+12, receivedPacket.indexOf(gpsChar)+13) == " ") {
           aprsPacket.course = 0;
           aprsPacket.speed = 0;
@@ -533,6 +557,7 @@ namespace APRSPacketLib {
         aprsPacket.latitude = decodeLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+2,receivedPacket.indexOf(gpsChar)+10));
         aprsPacket.longitude = decodeLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+11,receivedPacket.indexOf(gpsChar)+20));
         aprsPacket.symbol = receivedPacket.substring(receivedPacket.indexOf(gpsChar)+20,receivedPacket.indexOf(gpsChar)+21);
+        //aprsPacket.overlay = ???
         if (receivedPacket.substring(receivedPacket.indexOf(gpsChar)+24,receivedPacket.indexOf(gpsChar)+25) == "/" && receivedPacket.substring(receivedPacket.indexOf(gpsChar)+28,receivedPacket.indexOf(gpsChar)+31) == "/A=") {
           aprsPacket.course = decodeCourse(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+21,receivedPacket.indexOf(gpsChar)+24));
           aprsPacket.speed = decodeSpeed(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+25,receivedPacket.indexOf(gpsChar)+28));
@@ -567,34 +592,57 @@ namespace APRSPacketLib {
       }
       // DECODING Mic-E received packet
       aprsPacket.miceType = decodeMiceMsgType(aprsPacket.tocall);
-      //Serial.println(aprsPacket.miceType);
+      aprsPacket.symbol = decodeMiceSymbol(aprsPacket.message);
+      aprsPacket.overlay = decodeMiceOverlay(aprsPacket.message);
+      
       aprsPacket.latitude = decodeMiceLatitude(aprsPacket.tocall);
       //Serial.println(aprsPacket.latitude);
+
+      aprsPacket.altitude = decodeMiceAltitude(aprsPacket.message); // completar decoding
+      Serial.println(aprsPacket.altitude);
 
       /*
       decodeMiceLongitud(aprsPacket.tocall, aprsPacket.message);
       decodeMiceCourseSpeed(aprsPacket.tocall, aprsPacket.message);
-      decodeMiceAltitude(aprsPacket.tocall, aprsPacket.message);
+      ---------decodeMiceAltitude(aprsPacket.tocall, aprsPacket.message);
 
       tocall entrega LAT, North, longitude offset , West (y miceType)
-      
       message es longitud, curso, velocidad y altura
-      
       */
       
     } else if (receivedPacket.indexOf(":;") > 10) {
       aprsPacket.type = 5;
       aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
     }
-    // cambiar para cuando es 4 y si saca info de GPS del Mic-E
-    if (aprsPacket.type==2 || aprsPacket.type==3 || aprsPacket.type==4 || aprsPacket.type==5) {
+        
+    if (aprsPacket.type!=1) {
       aprsPacket.addressee = "";
+    }
+    if (aprsPacket.type!=0 && aprsPacket.type!=4) {
+      aprsPacket.symbol = "";
+      aprsPacket.overlay = "";
       aprsPacket.latitude = 0;
       aprsPacket.longitude = 0;
-    } 
+      aprsPacket.course = 0;
+      aprsPacket.speed = 0;
+      aprsPacket.altitude = 0;
+    }    
     if (aprsPacket.type!=4) {
       aprsPacket.miceType = "";
     }
+
+    /*
+    1) 
+    overlay
+
+    4)
+    longitud
+    course
+    speed
+    altitude
+    symbol
+    overlay
+    */
     return aprsPacket;
   }
 
