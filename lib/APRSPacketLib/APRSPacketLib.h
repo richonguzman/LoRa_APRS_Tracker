@@ -35,14 +35,14 @@ struct gpsLongitudeStruct {
 
 namespace APRSPacketLib {
 
-  String double2string(double n, int ndec);
-  String processLatitudeAPRS(double lat);
-  String processLongitudeAPRS(double lon);
+  String doubleToString(double n, int ndec);
+  String gpsDecimalToDegreesLatitude(double lat);
+  String gpsDecimalToDegreesLongitude(double lon);
 
-  void miceAltiduteEncoding(uint8_t *buf, uint32_t alt_m);
-  void miceCourseSpeedEncoding(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
-  void miceLongitudeEncoding(uint8_t *buf, gpsLongitudeStruct *lon);
-  void miceDestinationFieldEncoding(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon);
+  void encodeMiceAltitude(uint8_t *buf, uint32_t alt_m);
+  void encodeMiceCourseSpeed(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
+  void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon);
+  void encodeMiceDestinationField(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon);
 
   gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude);
   gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude);

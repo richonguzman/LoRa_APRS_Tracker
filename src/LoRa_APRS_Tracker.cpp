@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
-#include <LoRa.h>
 #include <vector>
 #include "APRSPacketLib.h"
 #include "notification_utils.h"

@@ -2,7 +2,7 @@
 
 namespace APRSPacketLib {
 
-  String double2string(double n, int ndec) {
+  String doubleToString(double n, int ndec) {
     String r = "";
     if (n>-1 && n<0) {
       r = "-";
@@ -19,8 +19,8 @@ namespace APRSPacketLib {
     return r;
   }
 
-  String processLatitudeAPRS(double lat) {
-    String degrees = double2string(lat,6);
+  String gpsDecimalToDegreesLatitude(double lat) {
+    String degrees = doubleToString(lat,6);
     String north_south, latitude, convDeg3;
     float convDeg, convDeg2;
 
@@ -42,8 +42,8 @@ namespace APRSPacketLib {
     return latitude;
   }
 
-  String processLongitudeAPRS(double lon) {
-    String degrees = double2string(lon,6);
+  String gpsDecimalToDegreesLongitude(double lon) {
+    String degrees = doubleToString(lon,6);
     String east_west, longitude, convDeg3;
     float convDeg, convDeg2;
     
@@ -68,7 +68,7 @@ namespace APRSPacketLib {
     return longitude;
   }
 
-  void miceAltiduteEncoding(uint8_t *buf, uint32_t alt_m) {
+  void encodeMiceAltitude(uint8_t *buf, uint32_t alt_m) {
     if (alt_m>40000) {
       alt_m = 0;
     }
@@ -81,7 +81,7 @@ namespace APRSPacketLib {
     buf[3]='}';
   }
 
-  void miceCourseSpeedEncoding(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg) {
+  void encodeMiceCourseSpeed(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg) {
     uint32_t SP28,DC28,SE28; //three bytes are output
 
     uint32_t ten = speed_kt / 10;
@@ -107,7 +107,7 @@ namespace APRSPacketLib {
 	  buf[2]=SE28;
   }
 
-  void miceLongitudeEncoding(uint8_t *buf, gpsLongitudeStruct *lon) { 
+  void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon) { 
     uint32_t d28;               // degrees
     uint32_t deg = lon->degrees;
     if (deg<=9) {
@@ -135,7 +135,7 @@ namespace APRSPacketLib {
     buf[2]=h28;
   }
 
-  void miceDestinationFieldEncoding(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon) {
+  void encodeMiceDestinationField(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon) {
     uint32_t temp;
     temp = lat->degrees/10;             // degrees
     buf[0] = (temp + 0x30);
@@ -161,7 +161,7 @@ namespace APRSPacketLib {
 
   gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude) {
     gpsLatitudeStruct miceLatitudeStruct;
-    String lat = processLatitudeAPRS(latitude);
+    String lat = gpsDecimalToDegreesLatitude(latitude);
     char latitudeArray[10];
     strncpy(latitudeArray,lat.c_str(),8);
     miceLatitudeStruct.degrees= 10*(latitudeArray[0]-'0')+latitudeArray[1]-'0';
@@ -177,7 +177,7 @@ namespace APRSPacketLib {
 
   gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude) {
     gpsLongitudeStruct miceLongitudeStruct;
-    String lng = processLongitudeAPRS(longitude);
+    String lng = gpsDecimalToDegreesLongitude(longitude);
     char longitudeArray[10];
     strncpy(longitudeArray,lng.c_str(),9);
     miceLongitudeStruct.degrees= 100*(longitudeArray[0]-'0')+10*(longitudeArray[1]-'0')+longitudeArray[2]-'0';
@@ -196,14 +196,14 @@ namespace APRSPacketLib {
     gpsLongitudeStruct longitudeStruct = gpsDecimalToDegreesMiceLongitude(longitude);
 
     uint8_t miceDestinationArray[7];
-    miceDestinationFieldEncoding(miceMsgType, &miceDestinationArray[0], &latitudeStruct, &longitudeStruct);
+    encodeMiceDestinationField(miceMsgType, &miceDestinationArray[0], &latitudeStruct, &longitudeStruct);
     miceDestinationArray[6] = 0x00;     // por repetidor?
     String miceDestination = (char*)miceDestinationArray;
 
     uint8_t miceInfoFieldArray[14];
     miceInfoFieldArray[0] = 0x60; //  0x60 for ` and 0x27 for '
-    miceLongitudeEncoding(&miceInfoFieldArray[1], &longitudeStruct);
-    miceCourseSpeedEncoding(&miceInfoFieldArray[4], (uint32_t)speed, (uint32_t)course); //speed= gps.speed.knots(), course = gps.course.deg());
+    encodeMiceLongitude(&miceInfoFieldArray[1], &longitudeStruct);
+    encodeMiceCourseSpeed(&miceInfoFieldArray[4], (uint32_t)speed, (uint32_t)course); //speed= gps.speed.knots(), course = gps.course.deg());
 
     char symbolOverlayArray[1];
     strncpy(symbolOverlayArray,symbol.c_str(),1);
@@ -211,7 +211,7 @@ namespace APRSPacketLib {
     strncpy(symbolOverlayArray,overlay.c_str(),1);
     miceInfoFieldArray[8] = symbolOverlayArray[0];
     
-    miceAltiduteEncoding(&miceInfoFieldArray[9], (uint32_t)altitude); // altitude = gps.altitude.meters()
+    encodeMiceAltitude(&miceInfoFieldArray[9], (uint32_t)altitude); // altitude = gps.altitude.meters()
     miceInfoFieldArray[13] = 0x00;      // por repetidor?
     String miceInformationField = (char*)miceInfoFieldArray;
 
