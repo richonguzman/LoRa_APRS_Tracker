@@ -47,7 +47,7 @@ namespace APRSPacketLib {
   gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude);
   gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude);
 
-  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, float latitude, float longitude, float course, float speed, int altitude);
+  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, String path, float latitude, float longitude, float course, float speed, int altitude);
 
   String generateBasePacket(String callsign, String tocall, String path);
   String generateStatusPacket(String callsign, String tocall, String path, String status);
