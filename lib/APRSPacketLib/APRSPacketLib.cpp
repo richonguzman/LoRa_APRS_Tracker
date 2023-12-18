@@ -567,12 +567,9 @@ namespace APRSPacketLib {
       }
       // DECODING Mic-E received packet
       aprsPacket.miceType = decodeMiceMsgType(aprsPacket.tocall);
-      Serial.println(aprsPacket.miceType);
-
+      //Serial.println(aprsPacket.miceType);
       aprsPacket.latitude = decodeMiceLatitude(aprsPacket.tocall);
-      Serial.println(aprsPacket.latitude);
-
-
+      //Serial.println(aprsPacket.latitude);
 
       /*
       decodeMiceLongitud(aprsPacket.tocall, aprsPacket.message);
@@ -584,7 +581,7 @@ namespace APRSPacketLib {
       message es longitud, curso, velocidad y altura
       
       */
-      aprsPacket.miceType = "110";
+      
     } else if (receivedPacket.indexOf(":;") > 10) {
       aprsPacket.type = 5;
       aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;")+2);
