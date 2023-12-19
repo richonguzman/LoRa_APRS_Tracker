@@ -20,8 +20,9 @@ export class SettingsFormComponent implements OnInit, OnDestroy {
         'callsign': FormControl<string | null>,
         'symbol': FormControl<string | null>,
         'overlay': FormControl<string | null>
+        'micE': FormControl<string | null>,
         'comment': FormControl<string | null>,
-        'smart_beacon': FormGroup<{
+        'smartBeacon': FormGroup<{
           'active': FormControl<boolean | null>,
           'slowRate': FormControl<number | null>,
           'slowSpeed': FormControl<number | null>,
@@ -44,7 +45,8 @@ export class SettingsFormComponent implements OnInit, OnDestroy {
         'sendBatteryInfo': new FormControl(false, [Validators.required]),
         'showSymbolOnScreen': new FormControl(true, [Validators.required]),
         'displayEcoMode': new FormControl(true, [Validators.required]),
-        'bluetooth': new FormControl(true, [Validators.required]),
+        'bluetoothType': new FormControl(0, [Validators.required]),
+        'bluetoothActive': new FormControl(true, [Validators.required]),
         'disableGps': new FormControl(true, [Validators.required]),
         'simplifiedTrackerMode': new FormControl(false, [Validators.required]),
         'path': new FormControl('WIDE1-1', [Validators.required, Validators.minLength(1), Validators.maxLength(9)]),
@@ -125,8 +127,9 @@ export class SettingsFormComponent implements OnInit, OnDestroy {
       'callsign': new FormControl('NOCALL-7', [Validators.required, Validators.minLength(1), Validators.maxLength(9)]),
       'symbol': new FormControl('>', [Validators.required, Validators.minLength(1), Validators.maxLength(1)]),
       'overlay': new FormControl('/', [Validators.required, Validators.minLength(1), Validators.maxLength(1)]),
+      'micE': new FormControl('', Validators.maxLength(40)),
       'comment': new FormControl('', Validators.maxLength(40)),
-      'smart_beacon': new FormGroup({
+      'smartBeacon': new FormGroup({
         'active': new FormControl(true, [Validators.required]),
         'slowRate': new FormControl(120, [Validators.required, Validators.min(0), Validators.max(65535)]),
         'slowSpeed': new FormControl(10, [Validators.required, Validators.min(0), Validators.max(65535)]),

@@ -11,8 +11,9 @@ export interface Beacon {
   callsign:     string;
   symbol:       string;
   overlay:      string;
+  micE:         string;
   comment:      string;
-  smart_beacon: SmartBeacon;
+  smartBeacon: SmartBeacon;
 }
 
 export interface SmartBeacon {
@@ -61,7 +62,8 @@ export interface Other {
   sendBatteryInfo:          boolean;
   showSymbolOnScreen:       boolean;
   displayEcoMode:           boolean;
-  bluetooth:                boolean;
+  bluetoothType:            number;
+  bluetoothActive:          boolean;
   disableGps:               boolean;
   simplifiedTrackerMode:    boolean;
   path:                     string;

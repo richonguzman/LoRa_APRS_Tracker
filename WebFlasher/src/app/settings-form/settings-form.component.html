@@ -27,12 +27,19 @@
         </label>
       </div>
 
-      <label for="comment">
-        Comment
-        <input type="text" id="comment" maxlength="40" formControlName="comment">
-      </label>
+      <div class="grid">
+        <label for="comment">
+          Comment
+          <input type="text" id="comment" maxlength="40" formControlName="comment">
+        </label>
 
-      <details [formGroup]="beaconForm.controls.smart_beacon">
+        <label for="micE">
+          Mic-E comment
+          <input type="text" id="micE" maxlength="40" formControlName="micE">
+        </label>
+      </div>
+
+      <details [formGroup]="beaconForm.controls.smartBeacon">
         <summary>Smart beacon</summary>
 
         <label for="active">
@@ -40,7 +47,7 @@
           <input type="checkbox" role="switch" id="active" formControlName="active">
         </label>
 
-        <div *ngIf="beaconForm.controls.smart_beacon.controls.active.value">
+        <div *ngIf="beaconForm.controls.smartBeacon.controls.active.value">
           <div class="grid">
             <label for="slowRate">
               Slow rate
@@ -168,9 +175,9 @@
     </div>
 
     <div class="grid">
-      <label for="bluetooth">
+      <label for="bluetoothActive">
         Bluetooth
-        <input type="checkbox" role="switch" id="bluetooth" formControlName="bluetooth">
+        <input type="checkbox" role="switch" id="bluetoothActive" formControlName="bluetoothActive">
       </label>
 
       <label for="disableGps">
@@ -194,10 +201,20 @@
         Send Comment After X Beacons
         <input type="number" id="sendCommentAfterXBeacons" min="1" max="86400" formControlName="sendCommentAfterXBeacons">
       </label>
+    </div>
 
+    <div class="grid">
       <label for="displayTimeout">
         Display Timeout
         <input type="number" id="displayTimeout" min="0" max="86400" formControlName="displayTimeout">
+      </label>
+
+      <label for="bluetoothType" *ngIf="form.controls.other.controls.bluetoothActive.value">
+        Bluetooth type
+        <select id="bluetoothType" formControlName="bluetoothType">
+          <option value="0">IOS (BLE)</option>
+          <option value="1">Android (SPP)</option>
+        </select>
       </label>
     </div>
 
