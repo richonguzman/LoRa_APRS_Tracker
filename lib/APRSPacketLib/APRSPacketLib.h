@@ -47,7 +47,6 @@ namespace APRSPacketLib {
 
   gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude);
   gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude);
-
   String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, String path, float latitude, float longitude, float course, float speed, int altitude);
 
   String generateBasePacket(String callsign, String tocall, String path);
@@ -63,15 +62,17 @@ namespace APRSPacketLib {
   float decodeLongitude(String receivedPacket);
   int decodeSpeed(String speed);
   int decodeAltitude(String altitude);
+
   String decodeMiceMsgType(String tocall);
-
-
   String decodeMiceSymbol(String informationField);
   String decodeMiceOverlay(String informationField);
+  int decodeMiceSpeed(String informationField);
+  int decodeMiceCourse(String informationField);
   int decodeMiceAltitude(String informationField);
-
-  float gpsDegreesToDecimalLatitude(String latitude);
-  float decodeMiceLatitude(String tocall);
+  float gpsDegreesToDecimalLatitude(String degreesLatitude);
+  float gpsDegreesToDecimalLongitude(String degreesLongitude);
+  float decodeMiceLatitude(String destinationField);
+  float decodeMiceLongitude(String destinationField, String informationField);
 
   APRSPacket processReceivedPacket(String receivedPacket);
 
