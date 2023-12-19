@@ -319,7 +319,7 @@ namespace MENU_Utils {
                         sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
                     }
                     #endif
-                    #ifdef TTGO_T_Beam_V1_2
+                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
                         if (Config.notification.lowBatteryBeep && !powerManagement.isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();

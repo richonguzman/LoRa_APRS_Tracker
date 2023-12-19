@@ -416,7 +416,7 @@ namespace STATION_Utils {
       #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
       packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
       #endif
-      #ifdef TTGO_T_Beam_V1_2
+      #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
       packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
       #endif
     }

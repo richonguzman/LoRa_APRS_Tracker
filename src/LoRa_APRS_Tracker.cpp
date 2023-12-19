@@ -29,7 +29,7 @@ PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
@@ -138,7 +138,7 @@ void setup() {
   }
 
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
@@ -161,7 +161,7 @@ void loop() {
 
   powerManagement.batteryManager();
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
     userButton.tick();
     #endif
   }

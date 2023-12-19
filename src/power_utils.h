@@ -11,7 +11,7 @@
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
 #include <axp20x.h>
 #endif
-#ifdef TTGO_T_Beam_V1_2
+#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
 #define XPOWERS_CHIP_AXP2101
 #include "XPowersLib.h"
 #endif
@@ -57,7 +57,7 @@ private:
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
   AXP20X_Class axp;
   #endif
-  #ifdef TTGO_T_Beam_V1_2
+  #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
   XPowersPMU PMU;
   #endif
 
