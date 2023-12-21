@@ -461,7 +461,7 @@ namespace STATION_Utils {
     if (!fileCallsignIndex) {
       return;
     }
-    while (fileCallsignIndex.available()) {
+    while (fileCallsignIndex.available() > 0) {
       String firstLine = fileCallsignIndex.readStringUntil('\n');
       myBeaconsIndex = firstLine.toInt();
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine.c_str());
