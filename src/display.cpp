@@ -260,11 +260,11 @@ void show_display(const String& header, const String& line1, const String& line2
     const auto time_now = now();
     if (!bluetoothConnected || time_now % 10 < 5) {
       if (symbolAvailable) {
-        display.drawBitmap((display.width() - SYM_WIDTH), 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
+        display.drawBitmap(display.width() - SYM_WIDTH, 0, symbolsAPRS[symbol], SYM_WIDTH, SYM_HEIGHT, 1);
       }
     } else if (bluetoothConnected) {
       // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
-      display.drawBitmap((display.width() - SYM_WIDTH), 0, bluetoothSymbol, SYM_WIDTH, SYM_HEIGHT, 1);
+      display.drawBitmap(display.width() - SYM_WIDTH, 0, bluetoothSymbol, SYM_WIDTH, SYM_HEIGHT, 1);
     }
   }
   

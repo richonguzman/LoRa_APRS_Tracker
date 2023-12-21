@@ -19,7 +19,7 @@ Configuration::Configuration() {
     readFile(SPIFFS, _filePath.c_str());
 }
 
-void Configuration::readFile(fs::FS &fs, const char *fileName) {
+void Configuration::readFile(FS &fs, const char *fileName) {
     StaticJsonDocument<2560> data;
     File configFile = fs.open(fileName, "r");
     DeserializationError error = deserializeJson(data, configFile);
@@ -139,7 +139,7 @@ bool Configuration::writeConfigFile(const String& json) {
 
   return true;
 }
-String Configuration::readRawConfigFile() {
+String Configuration::readRawConfigFile() const {
   File configFile = SPIFFS.open(_filePath.c_str(), "r");
   if (!configFile) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Failed to open file");

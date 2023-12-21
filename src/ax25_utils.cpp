@@ -15,7 +15,7 @@ namespace AX25_Utils {
         packet += char(shiftedValue);
       }
     }
-    byte ssid = (frame[6]>>1) & 0x0f;
+    byte ssid = frame[6] >> 1 & 0x0f;
     if (String(ssid) != "0") {
       packet += "-" + String(ssid);
     }
@@ -23,7 +23,7 @@ namespace AX25_Utils {
   }
 
   bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
-    if ((frameSize <14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize-1] != KissChar::Fend)) {
+    if (frameSize < 14 || (frame[0] != Fend && frame[1] != Data && frame[frameSize-1] != Fend)) {
       return false;
     }
     int payloadFrameStart = 0;
@@ -46,7 +46,7 @@ namespace AX25_Utils {
     return true;
   }
 
-  String AX25FrameToLoRaPacket(String frame) {
+  String AX25FrameToLoRaPacket(const String &frame) {
     //Serial.println(frame);
     if (decodeAX25(frame, frame.length(), &decodedFrame)) {
       String packetToLoRa = "";
@@ -61,9 +61,8 @@ namespace AX25_Utils {
       packetToLoRa += ":";
       packetToLoRa += decodedFrame.payload;
       return packetToLoRa;
-    } else {
-      return "";
     }
+    return "";
   }
 
   String frameCleaning(String frame) {
@@ -80,12 +79,12 @@ namespace AX25_Utils {
   std::string intToBinaryString(int value, int bitLength) {
     std::string result = "";
     for (int i = bitLength - 1; i >= 0; i--) {
-      result += ((value >> i) & 1) ? '1' : '0';
+      result += value >> i & 1 ? '1' : '0';
     }
     return result;
   }
 
-  String encodeAX25Address(String frame, int type, bool lastAddress) {
+  String encodeAX25Address(const String &frame, int type, bool lastAddress) {
     String packet = "";
     String address;
     std::string concatenatedBinary;
@@ -110,7 +109,7 @@ namespace AX25_Utils {
       lastSSIDBit = "1";            // address is the last from AX.25 Frame
     }
     concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit; // ( CRRSSSSX / HRRSSSSX )
-    long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
+    long decimalValue = strtol(concatenatedBinary.c_str(), nullptr, 2);
     packet += (char)decimalValue;   //SSID 
     return packet;
   }

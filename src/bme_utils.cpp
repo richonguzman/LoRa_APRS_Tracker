@@ -1,6 +1,5 @@
 #include "bme_utils.h"
 #include "configuration.h"
-#include "gps_utils.h"
 #include "display.h"
 #include <logger.h>
 
@@ -21,17 +20,18 @@ namespace BME_Utils {
   Adafruit_BMP280   bme;
   #endif
   #ifdef BME680Sensor
-  Adafruit_BME680 bme; 
+  Adafruit_BME680 bme;
   #endif
 
   void setup() {
     if (Config.bme.active) {
-      bool status;
-      status = bme.begin(0x76);  // Don't forget to join pins for righ direction on BME280!
+      bool status = bme.begin(0x76);  // Don't forget to join pins for righ direction on BME280!
       if (!status) {
         show_display("ERROR", "", "BME sensor active", "but no sensor found...");
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
-        while (1);
+        while (true) {
+          delay(10);
+        }
       } else {
         #ifdef BME280Sensor
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
@@ -56,28 +56,26 @@ namespace BME_Utils {
     }
   }
 
-  String generateTempString(float bmeTemp, String type) {
+  String generateTempString(float bmeTemp, const String& type) {
     String strTemp;
     if (type=="OLED") {
       strTemp = String((int)bmeTemp);
     } else {
-      strTemp = String((int)((bmeTemp * 1.8) + 32));
+      strTemp = String((int)(bmeTemp * 1.8 + 32));
     }
     switch (strTemp.length()) {
-      case 1:
-        if (type=="OLED") {
+      case 1: {
+        if (type == "OLED") {
           return "  " + strTemp;
-        } else {
-          return "00" + strTemp;
         }
-        break;
-      case 2:
-        if (type=="OLED") {
+        return "00" + strTemp;
+      } break;
+      case 2: {
+        if (type == "OLED") {
           return " " + strTemp;
-        } else {
-          return "0" + strTemp;
         }
-        break;
+        return "0" + strTemp;
+      } break;
       case 3:
         return strTemp;
         break;
@@ -86,68 +84,58 @@ namespace BME_Utils {
     }
   }
 
-  String generateHumString(float bmeHum, String type) {
-    String strHum;
-    strHum = String((int)bmeHum);
+  String generateHumString(float bmeHum, const String &type) {
+    String strHum = String((int) bmeHum);
     switch (strHum.length()) {
-      case 1:
-        if (type=="OLED") {
+      case 1: {
+        if (type == "OLED") {
           return " " + strHum;
-        } else {
-          return "0" + strHum;
         }
-        break;
+        return "0" + strHum;
+      }
       case 2:
         return strHum;
-        break;
-      case 3:
-        if ((int)bmeHum == 100) {
-          if (type=="OLED") {
+      case 3: {
+        if ((int) bmeHum == 100) {
+          if (type == "OLED") {
             return "  ";
-          } else {
-            return "00";
           }
-        } else {
-          return "-99";
+          return "00";
         }
-        break;
+        return "-99";
+      }
       default:
         return "-99";
     }
   }
 
-  String generatePresString(float bmePress, String type) {
-    String strPress;
-    strPress = String((int)bmePress);
+  String generatePresString(float bmePress, const String &type) {
+    String strPress = String((int) bmePress);
     switch (strPress.length()) {
-      case 1:
-        if (type=="OLED") {
+      case 1: {
+        if (type == "OLED") {
           return "000" + strPress;
-        } else {
-          return "000" + strPress + "0";
         }
-        break;
-      case 2:
-        if (type=="OLED") {
+        return "000" + strPress + "0";
+      } break;
+      case 2: {
+        if (type == "OLED") {
           return "00" + strPress;
-        } else {
-          return "00" + strPress + "0";
         }
-        break;
-      case 3:
-        if (type=="OLED") {
+        return "00" + strPress + "0";
+      } break;
+      case 3: {
+        if (type == "OLED") {
           return "0" + strPress;
-        } else {
-          return "0" + strPress + "0";
         }
-        break;
-      case 4:
-        if (type=="OLED") {
+        return "0" + strPress + "0";
+      } break;
+      case 4: {
+        if (type == "OLED") {
           return strPress;
-        } else {
-          return strPress + "0";
         }
-        break;
+        return strPress + "0";
+      } break;
       case 5:
         return strPress;
         break;
@@ -156,10 +144,10 @@ namespace BME_Utils {
     }
   }
 
-  String readDataSensor(String type) {
+  String readDataSensor(const String& type) {
     String wx, tempStr, humStr, presStr;
     float newHum;
-    
+
     float newTemp   = bme.readTemperature();
     #if defined(BME280Sensor) || defined(BME680Sensor)
     newHum = bme.readHumidity();

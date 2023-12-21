@@ -6,9 +6,6 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
-#include "utils.h"
-
-#include "APRSPacketLib.h"
 
 extern Configuration    Config;
 extern HardwareSerial   neo6m_gps;
@@ -44,7 +41,7 @@ namespace GPS_Utils {
     neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
   }
 
-  void calculateDistanceCourse(String callsign, double checkpointLatitude, double checkPointLongitude) {
+  void calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude) {
     double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
     double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
     STATION_Utils::deleteListenedTrackersbyTime();
@@ -82,9 +79,9 @@ namespace GPS_Utils {
     double headingDelta = abs(previousHeading - currentHeading);
     if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
       if (speed == 0) {
-        TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/(speed+1));
+        TurnMinAngle = currentBeacon->turnMinDeg + currentBeacon->turnSlope / (speed + 1);
       } else {
-        TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/speed);
+        TurnMinAngle = currentBeacon->turnMinDeg + currentBeacon->turnSlope / speed;
       }
       if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
         sendUpdate = true;
@@ -97,7 +94,7 @@ namespace GPS_Utils {
     if (disableGPS) {
       return;
     }
-    if ((millis() > 8000 && gps.charsProcessed() < 10)) {
+    if (millis() > 8000 && gps.charsProcessed() < 10) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                 "No GPS frames detected! Try to reset the GPS Chip with this "
                 "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");

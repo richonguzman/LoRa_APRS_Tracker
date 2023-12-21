@@ -14,7 +14,7 @@ namespace MSG_Utils {
     void    ledNotification();
     void    deleteFile();
     void    saveNewMessage(const String& typeMessage, const String& station, String newMessage);
-    void    sendMessage(String station, const String& textMessage);
+    void    sendMessage(const String& station, const String& textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
 
 }

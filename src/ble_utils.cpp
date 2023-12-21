@@ -20,12 +20,12 @@ extern String           BLEToLoRaPacket;
 
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
-  void onConnect(NimBLEServer* pServer) {
+  void onConnect(NimBLEServer *pServer) override {
     bluetoothConnected = true;
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
   }
 
-  void onDisconnect(NimBLEServer* pServer) {
+  void onDisconnect(NimBLEServer *pServer) override {
     bluetoothConnected = false;
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
     pServer->startAdvertising();
@@ -33,7 +33,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 };
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
-  void onWrite(NimBLECharacteristic *pCharacteristic) {
+  void onWrite(NimBLECharacteristic *pCharacteristic) override {
     std::string receivedData = pCharacteristic->getValue();
     String receivedString = "";
     for (int i=0; i<receivedData.length();i++) {
@@ -60,12 +60,10 @@ namespace BLE_Utils {
 
     pCharacteristicTx = pService->createCharacteristic(
                           CHARACTERISTIC_UUID_TX,
-                          NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY
-                        );
+            READ | NOTIFY);
     pCharacteristicRx = pService->createCharacteristic(
                           CHARACTERISTIC_UUID_RX,
-                          NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
-                        );
+            WRITE | WRITE_NR);
 
     pCharacteristicRx->setCallbacks(new MyCallbacks());
 
@@ -100,21 +98,21 @@ namespace BLE_Utils {
   }
 
   void txToPhoneOverBLE(String frame) {
-    txBLE((byte)KissChar::Fend);
-    txBLE((byte)KissCmd::Data);
+    txBLE(Fend);
+    txBLE(Data);
     for(int n=0;n<frame.length();n++) {   
       uint8_t byteCharacter = frame[n];
-      if (byteCharacter == KissChar::Fend) {
-        txBLE((byte)KissChar::Fesc);
-        txBLE((byte)KissChar::Tfend);
-      } else if (byteCharacter == KissChar::Fesc) {
-        txBLE((byte)KissChar::Fesc);
-        txBLE((byte)KissChar::Tfesc);
+      if (byteCharacter == Fend) {
+        txBLE(Fesc);
+        txBLE(Tfend);
+      } else if (byteCharacter == Fesc) {
+        txBLE(Fesc);
+        txBLE(Tfesc);
       } else {
         txBLE(byteCharacter);
       }       
     }
-    txBLE((byte)KissChar::Fend);
+    txBLE(Fend);
   }
 
   void sendToPhone(const String& packet) {

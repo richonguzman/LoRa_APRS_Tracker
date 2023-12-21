@@ -19,7 +19,7 @@
 class PowerManagement {
 public:
   PowerManagement() : BatteryIsConnected(false), batteryVoltage(""), batteryChargeDischargeCurrent("") {};
-  bool begin(TwoWire &port);
+  bool begin();
 
   void setup();
   void lowerCpuFrequency();
@@ -28,7 +28,7 @@ public:
   void obtainBatteryInfo();
   String getBatteryInfoVoltage();
   String getBatteryInfoCurrent();
-  bool getBatteryInfoIsConnected();
+  bool getBatteryInfoIsConnected() const;
   void batteryManager();
   void shutdown();
   bool isChargeing();

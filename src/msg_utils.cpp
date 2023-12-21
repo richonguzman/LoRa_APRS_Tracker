@@ -149,7 +149,7 @@ namespace MSG_Utils {
     }
   }
 
-  void sendMessage(String station, const String& textMessage) {
+  void sendMessage(const String &station, const String& textMessage) {
     String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);  
     if (textMessage.indexOf("ack")== 0) {
       show_display("<<ACK Tx>>", 500);

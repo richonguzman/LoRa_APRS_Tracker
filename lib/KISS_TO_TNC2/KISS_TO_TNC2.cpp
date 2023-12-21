@@ -167,7 +167,7 @@ String encode_address_ax25(String tnc2Address) {
     }
     kissAddress += (char) (addressChar << 1);
   }
-  kissAddress += (char) ((ssid << 1) | 0b01100000 | (hasBeenDigipited ? HAS_BEEN_DIGIPITED_MASK : 0));
+  kissAddress += (char) (ssid << 1 | 0b01100000 | (hasBeenDigipited ? HAS_BEEN_DIGIPITED_MASK : 0));
   return kissAddress;
 }
 
@@ -202,7 +202,7 @@ String decode_address_ax25(const String &ax25Address, bool &isLast, bool isRelay
 }
 
 bool validateTNC2Frame(const String &tnc2FormattedFrame) {
-  return (tnc2FormattedFrame.indexOf(':') != -1) && (tnc2FormattedFrame.indexOf('>') != -1);
+  return tnc2FormattedFrame.indexOf(':') != -1 && tnc2FormattedFrame.indexOf('>') != -1;
 }
 
 bool validateKISSFrame(const String &kissFormattedFrame) {

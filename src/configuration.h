@@ -2,8 +2,8 @@
 #define CONFIGURATION_H_
 
 #include <Arduino.h>
-#include <FS.h>
 #include <vector>
+#include <FS.h>
 
 class Beacon {
 public:
@@ -93,7 +93,7 @@ public:
 
   Configuration();
   void validateConfigFile(const String& currentBeaconCallsign);
-  String readRawConfigFile();
+  String readRawConfigFile() const;
   bool writeConfigFile(const String& json);
   bool validateMicE(const String& currentBeaconMicE);
 

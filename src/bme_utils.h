@@ -21,10 +21,10 @@
 namespace BME_Utils {
 
     void setup();
-    String generateTempString(float bmeTemp, String type);
-    String generateHumString(float bmeHum, String type);
-    String generatePresString(float bmePress, String type);
-    String readDataSensor(String type);
+    String generateTempString(float bmeTemp, const String& type);
+    String generateHumString(float bmeHum, const String& type);
+    String generatePresString(float bmePress, const String& type);
+    String readDataSensor(const String& type);
 
 }
 

@@ -7,7 +7,6 @@
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "bme_utils.h"
-#include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
 #include "utils.h"
@@ -74,28 +73,28 @@ namespace STATION_Utils {
     if (firstNearTracker != "") {
       firstNearTrackermillis = firstNearTracker.substring(firstNearTracker.indexOf(",")+1);
       firstTrackermillis = firstNearTrackermillis.toInt();
-      if ((millis() - firstTrackermillis) > Config.rememberStationTime*60*1000) {
+      if (millis() - firstTrackermillis > Config.rememberStationTime*60*1000) {
         firstNearTracker = "";
       }
     }
     if (secondNearTracker != "") {
       secondNearTrackermillis = secondNearTracker.substring(secondNearTracker.indexOf(",")+1);
       secondTrackermillis = secondNearTrackermillis.toInt();
-      if ((millis() - secondTrackermillis) > Config.rememberStationTime*60*1000) {
+      if (millis() - secondTrackermillis > Config.rememberStationTime*60*1000) {
         secondNearTracker = "";
       }
     }
     if (thirdNearTracker != "") {
       thirdNearTrackermillis = thirdNearTracker.substring(thirdNearTracker.indexOf(",")+1);
       thirdTrackermillis = thirdNearTrackermillis.toInt();
-      if ((millis() - thirdTrackermillis) > Config.rememberStationTime*60*1000) {
+      if (millis() - thirdTrackermillis > Config.rememberStationTime*60*1000) {
         thirdNearTracker = "";
       }
     }
     if (fourthNearTracker != "") {
       fourthNearTrackermillis = fourthNearTracker.substring(fourthNearTracker.indexOf(",")+1);
       fourthTrackermillis = fourthNearTrackermillis.toInt();
-      if ((millis() - fourthTrackermillis) > Config.rememberStationTime*60*1000) {
+      if (millis() - fourthTrackermillis > Config.rememberStationTime*60*1000) {
         fourthNearTracker = "";
       }
     }
@@ -459,16 +458,15 @@ namespace STATION_Utils {
 
   void loadCallsignIndex() {
     File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt");
-    if(!fileCallsignIndex){
+    if (!fileCallsignIndex) {
       return;
-    } else {
-      while (fileCallsignIndex.available()) {
-        String firstLine = fileCallsignIndex.readStringUntil('\n');
-        myBeaconsIndex = firstLine.toInt();
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine.c_str());
-      }
-      fileCallsignIndex.close();
     }
+    while (fileCallsignIndex.available()) {
+      String firstLine = fileCallsignIndex.readStringUntil('\n');
+      myBeaconsIndex = firstLine.toInt();
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine.c_str());
+    }
+    fileCallsignIndex.close();
   }
 
 }

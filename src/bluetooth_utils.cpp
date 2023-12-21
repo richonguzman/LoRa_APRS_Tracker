@@ -30,8 +30,8 @@ namespace BLUETOOTH_Utils {
 
     serialReceived.reserve(255);
 
-    SerialBT.register_callback(BLUETOOTH_Utils::bluetoothCallback);
-    SerialBT.onData(BLUETOOTH_Utils::getData); // callback instead of while to avoid RX buffer limit when NMEA data received
+    SerialBT.register_callback(bluetoothCallback);
+    SerialBT.onData(getData); // callback instead of while to avoid RX buffer limit when NMEA data received
 
     uint8_t dmac[6];
     esp_efuse_mac_get_default(dmac);

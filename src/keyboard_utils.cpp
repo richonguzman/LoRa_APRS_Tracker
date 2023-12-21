@@ -3,7 +3,6 @@
 #include "keyboard_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
-#include "button_utils.h"
 #include "power_utils.h"
 #include "msg_utils.h"
 #include "display.h"
@@ -72,7 +71,7 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 30) {
         menuDisplay = 31;
       }
-    }else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    } else if (menuDisplay >= 60 && menuDisplay <= 61) {
       menuDisplay--;
       if (menuDisplay < 60) {
         menuDisplay = 61;
@@ -101,8 +100,7 @@ namespace KEYBOARD_Utils {
       if (menuDisplay > 13) {
         menuDisplay = 10;
       }
-    } 
-    else if (menuDisplay >= 130 && menuDisplay <= 132) {
+    } else if (menuDisplay >= 130 && menuDisplay <= 132) {
       menuDisplay++;
       if (menuDisplay > 132) {
         menuDisplay = 130;
@@ -136,14 +134,12 @@ namespace KEYBOARD_Utils {
       menuDisplay++;
       if (menuDisplay > 221) {
         menuDisplay = 220;
-      } 
-    }
-
-    else if (menuDisplay >= 30 && menuDisplay <= 31) {
+      }
+    } else if (menuDisplay >= 30 && menuDisplay <= 31) {
       menuDisplay++;
       if (menuDisplay > 31) {
         menuDisplay = 30;
-      } 
+      }
     }
     
     else if (menuDisplay == 40) {
@@ -178,7 +174,7 @@ namespace KEYBOARD_Utils {
 
   void rightArrow() {
     if (menuDisplay == 0) {
-      if(myBeaconsIndex >= (myBeaconsSize-1)) {
+      if(myBeaconsIndex >= myBeaconsSize - 1) {
         myBeaconsIndex = 0;
       } else {
         myBeaconsIndex++;
@@ -211,7 +207,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay == 132) {
       show_display(" APRS Thu.", "", "    Keep Subscribed" ,"  for 12hours more", 2000);
       MSG_Utils::sendMessage("ANSRVR","K HOTG");
-    } 
+    }
     
     else if (menuDisplay == 210) {
       if (!displayEcoMode) {
@@ -292,7 +288,7 @@ namespace KEYBOARD_Utils {
       if (messageCallsign.length() == 1) {
         messageCallsign.trim();
       }
-      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
+      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key == 45) { //only letters + numbers + "-"
         messageCallsign += key;
       } else if (key == 13) {                         // Return Pressed
         messageCallsign.trim();
@@ -329,7 +325,7 @@ namespace KEYBOARD_Utils {
       }
     } else if (key==13) { // Enter
       if (menuDisplay==200) {
-        if(myBeaconsIndex >= (myBeaconsSize-1)) {
+        if(myBeaconsIndex >= myBeaconsSize - 1) {
           myBeaconsIndex = 0;
         } else {
           myBeaconsIndex++;

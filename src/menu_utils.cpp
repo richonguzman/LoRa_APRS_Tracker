@@ -36,26 +36,23 @@ namespace MENU_Utils {
 
     String checkBTType() {
         if (Config.bluetoothType == 0) {
-            return "BLE iPhone";
-        } else {
-            return "BT Android";
-        }
+        return "BLE iPhone";
+      }
+      return "BT Android";
     }
 
     String checkProcessActive(bool process) {
         if (process) {
-            return "ON";
-        } else {
-            return "OFF";
-        }
+        return "ON";
+      }
+      return "OFF";
     }
 
     String checkScreenBrightness(int bright) {
         if (bright == 255) {
-            return "MAX";
-        } else {
-            return "MIN";
-        }
+        return "MAX";
+      }
+      return "MIN";
     }
 
     void showOnScreen() {
@@ -144,13 +141,13 @@ namespace MENU_Utils {
                             show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                         } else {
                             show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
-                        }     
+                        }
                     } else {
                         show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                     }
                 } else {
-                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
-                }     
+                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", "Can't write Message", "", "1P = Back");
+                }
                 break;
 
 
@@ -247,7 +244,7 @@ namespace MENU_Utils {
                 }
                 firstLineDecoder += lastReceivedPacket.symbol;
 
-                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps 
+                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps
                     courseSpeedAltitude = String(lastReceivedPacket.altitude);
                     for(int j=courseSpeedAltitude.length();j<4;j++) {
                         courseSpeedAltitude = '0' + courseSpeedAltitude;
@@ -266,10 +263,10 @@ namespace MENU_Utils {
                         coursePacketDec = ' ' + coursePacketDec;
                     }
                     courseSpeedAltitude += coursePacketDec;
-                    
+
                     double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
                     double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
-                    
+
                     if (lastReceivedPacket.path.length()>14) {
                         pathDec = "P:" + lastReceivedPacket.path;
                     } else {

@@ -12,7 +12,7 @@ extern bool             disableGPS;
 float lora32BatReadingCorr = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 
 // cppcheck-suppress unusedFunction
-bool PowerManagement::begin(TwoWire &port) {
+bool PowerManagement::begin() {
   #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
   return true; // Currently there is no init for V0.7 boards(they only measure battery voltage).
   #endif
@@ -215,7 +215,7 @@ void PowerManagement::setup() {
   #endif
   #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
   Wire.begin(SDA, SCL);
-  if (begin(Wire)) {
+  if (begin()) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
   } else {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
@@ -277,7 +277,7 @@ String PowerManagement::getBatteryInfoCurrent() {
   return batteryChargeDischargeCurrent;
 }
 
-bool PowerManagement::getBatteryInfoIsConnected() {
+bool PowerManagement::getBatteryInfoIsConnected() const {
   return BatteryIsConnected;
 }
 

@@ -45,39 +45,39 @@ namespace APRSPacketLib {
 
   void encodeMiceAltitude(uint8_t *buf, uint32_t alt_m);
   void encodeMiceCourseSpeed(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg);
-  void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon);
-  void encodeMiceDestinationField(String msgType, uint8_t *buf, const gpsLatitudeStruct *lat, gpsLongitudeStruct *lon);
+  void encodeMiceLongitude(uint8_t *buf, const gpsLongitudeStruct *lon);
+  void encodeMiceDestinationField(const String& msgType, uint8_t *buf, const gpsLatitudeStruct *lat, const gpsLongitudeStruct *lon);
 
   gpsLatitudeStruct gpsDecimalToDegreesMiceLatitude(float latitude);
   gpsLongitudeStruct gpsDecimalToDegreesMiceLongitude(float longitude);
-  String generateMiceGPSBeacon(String miceMsgType, String callsign, String symbol, String overlay, String path, float latitude, float longitude, float course, float speed, int altitude);
+  String generateMiceGPSBeacon(const String& miceMsgType, const String& callsign, const String& symbol, const String& overlay, const String& path, float latitude, float longitude, float course, float speed, int altitude);
 
-  String generateBasePacket(String callsign, String tocall, String path);
-  String generateStatusPacket(String callsign, String tocall, String path, String status);
-  String generateMessagePacket(String callsign, String tocall, String path, String addressee, String message);
+  String generateBasePacket(const String& callsign, const String& tocall, const String& path);
+  String generateStatusPacket(const String& callsign, const String& tocall, const String& path, const String& status);
+  String generateMessagePacket(const String& callsign, const String& tocall, const String& path, String addressee, const String& message);
   String generateDigiRepeatedPacket(APRSPacket packet, const String& callsign);
   char *ax25_base91enc(char *s, uint8_t n, uint32_t v);
-  String encondeGPS(float latitude, float longitude, float course, float speed, String symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, String packetType);
-  String generateGPSBeaconPacket(String callsign, String tocall, String path, String overlay, String gpsData);
-  float decodeEncodedLatitude(String receivedPacket);
-  float decodeEncodedLongitude(String receivedPacket);
-  float decodeLatitude(String receivedPacket);
-  float decodeLongitude(String receivedPacket);
-  int decodeSpeed(String speed);
-  int decodeAltitude(String altitude);
+  String encondeGPS(float latitude, float longitude, float course, float speed, const String& symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, const String& packetType);
+  String generateGPSBeaconPacket(const String& callsign, const String& tocall, const String& path, const String& overlay, const String& gpsData);
+  float decodeEncodedLatitude(const String& encodedLatitude);
+  float decodeEncodedLongitude(const String& encodedLongitude);
+  float decodeLatitude(const String& Latitude);
+  float decodeLongitude(const String& Longitude);
+  int decodeSpeed(const String& speed);
+  int decodeAltitude(const String& altitude);
 
-  String decodeMiceMsgType(String tocall);
-  String decodeMiceSymbol(String informationField);
-  String decodeMiceOverlay(String informationField);
-  int decodeMiceSpeed(String informationField);
-  int decodeMiceCourse(String informationField);
-  int decodeMiceAltitude(String informationField);
-  float gpsDegreesToDecimalLatitude(String degreesLatitude);
-  float gpsDegreesToDecimalLongitude(String degreesLongitude);
-  float decodeMiceLatitude(String destinationField);
-  float decodeMiceLongitude(String destinationField, String informationField);
+  String decodeMiceMsgType(const String& tocall);
+  String decodeMiceSymbol(const String& informationField);
+  String decodeMiceOverlay(const String& informationField);
+  int decodeMiceSpeed(const String& informationField);
+  int decodeMiceCourse(const String& informationField);
+  int decodeMiceAltitude(const String& informationField);
+  float gpsDegreesToDecimalLatitude(const String& degreesLatitude);
+  float gpsDegreesToDecimalLongitude(const String& degreesLongitude);
+  float decodeMiceLatitude(const String& destinationField);
+  float decodeMiceLongitude(const String& destinationField, const String& informationField);
 
-  APRSPacket processReceivedPacket(String receivedPacket, int rssi, float snr, int freqError);
+  APRSPacket processReceivedPacket(const String& receivedPacket, int rssi, float snr, int freqError);
 
 }
 
