@@ -67,6 +67,7 @@
 		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
 		"displayEcoMode": false,
+		"displayMessageInEcoMode": true,
 		"displayTimeout": 4,
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,

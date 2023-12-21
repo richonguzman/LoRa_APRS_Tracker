@@ -62,6 +62,7 @@ export interface Other {
   sendBatteryInfo:          boolean;
   showSymbolOnScreen:       boolean;
   displayEcoMode:           boolean;
+  displayMessageInEcoMode:  boolean;
   bluetoothType:            number;
   bluetoothActive:          boolean;
   disableGps:               boolean;

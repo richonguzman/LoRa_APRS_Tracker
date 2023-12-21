@@ -84,6 +84,7 @@ void Configuration::readFile(FS &fs, const char *fileName) {
     showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
     displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
+    displayMessageInEcoMode       = data["other"]["displayMessageInEcoMode"].as<bool>();
     displayTimeout                = data["other"]["displayTimeout"].as<int>();
     path                          = data["other"]["path"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();

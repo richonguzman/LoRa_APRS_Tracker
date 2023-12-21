@@ -45,6 +45,7 @@ export class SettingsFormComponent implements OnInit, OnDestroy {
         'sendBatteryInfo': new FormControl(false, [Validators.required]),
         'showSymbolOnScreen': new FormControl(true, [Validators.required]),
         'displayEcoMode': new FormControl(true, [Validators.required]),
+        'displayMessageInEcoMode': new FormControl(true, [Validators.required]),
         'bluetoothType': new FormControl(0, [Validators.required]),
         'bluetoothActive': new FormControl(true, [Validators.required]),
         'disableGps': new FormControl(true, [Validators.required]),

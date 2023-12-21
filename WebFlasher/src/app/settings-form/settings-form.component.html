@@ -163,14 +163,14 @@
     </div>
 
     <div class="grid">
-      <label for="showSymbolOnScreen">
-        Show Symbol On Screen
-        <input type="checkbox" role="switch" id="showSymbolOnScreen" formControlName="showSymbolOnScreen">
-      </label>
-
       <label for="displayEcoMode">
         Display Eco Mode
         <input type="checkbox" role="switch" id="displayEcoMode" formControlName="displayEcoMode">
+      </label>
+
+      <label for="displayMessageInEcoMode" *ngIf="form.controls.other.controls.displayEcoMode.value">
+        Display message in Eco Mode
+        <input type="checkbox" role="switch" id="displayMessageInEcoMode" formControlName="displayMessageInEcoMode">
       </label>
     </div>
 
@@ -186,10 +186,17 @@
       </label>
     </div>
 
-    <label for="simplifiedTrackerMode">
-      Simplified Tracker Mode
-      <input type="checkbox" role="switch" id="simplifiedTrackerMode" formControlName="simplifiedTrackerMode">
-    </label>
+    <div class="grid">
+      <label for="showSymbolOnScreen">
+        Show Symbol On Screen
+        <input type="checkbox" role="switch" id="showSymbolOnScreen" formControlName="showSymbolOnScreen">
+      </label>
+
+      <label for="simplifiedTrackerMode">
+        Simplified Tracker Mode
+        <input type="checkbox" role="switch" id="simplifiedTrackerMode" formControlName="simplifiedTrackerMode">
+      </label>
+    </div>
 
     <div class="grid">
       <label for="path">

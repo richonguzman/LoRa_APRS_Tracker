@@ -78,7 +78,7 @@ public:
   bool    showSymbolOnScreen;
   int     sendCommentAfterXBeacons;
   bool    displayEcoMode;
-  bool    displayMessageInEcoMode = true; // TODO
+  bool    displayMessageInEcoMode;
   int     displayTimeout;
   String  path;
   int     nonSmartBeaconRate;
