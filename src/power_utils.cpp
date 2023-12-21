@@ -17,7 +17,7 @@ bool PowerManagement::begin() {
   return true; // Currently there is no init for V0.7 boards(they only measure battery voltage).
   #endif
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-  bool result = axp.begin(port, AXP192_SLAVE_ADDRESS);
+  bool result = axp.begin(Wire, AXP192_SLAVE_ADDRESS);
   if (!result) {
     axp.setDCDC1Voltage(3300);
   }
@@ -199,7 +199,7 @@ void PowerManagement::setup() {
   Wire.end();
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
   Wire.begin(SDA, SCL);
-  if (!begin(Wire)) {
+  if (!begin()) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
   } else {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");

@@ -5,6 +5,7 @@
 #include "notification_utils.h"
 #include "configuration.h"
 #include "display.h"
+#include "pins_config.h" // useful for some env
 
 extern logging::Logger logger;
 extern Configuration Config;
