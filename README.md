@@ -53,7 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2023.12.22 Added APRS_Thrusday Messages to parcitipate from this exercise (https://aprsph.net/aprsthursday/)
+- 2023.12.22 Added APRSThrusday on Messages Menu to parcitipate from this exercise (https://aprsph.net/aprsthursday/)
 - 2023.12.19 Added support for T-Beam V1.2 with Neo8M GPS and SX1262 LoRa Modules.
 - 2023.12.18 Added Mic-E encoding and decoding.
 - 2023.12.12 Added BMP280 (to the already BME280) support for Wx Telemetry Tx.
