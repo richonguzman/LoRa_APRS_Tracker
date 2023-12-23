@@ -42,10 +42,15 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 1) {
         menuDisplay = 6;
       }
-    } else if (menuDisplay >= 10 && menuDisplay <= 12) {
+    } else if (menuDisplay >= 10 && menuDisplay <= 13) {
       menuDisplay--;
       if (menuDisplay < 10) {
-        menuDisplay = 12;
+        menuDisplay = 13;
+      }
+    } else if (menuDisplay >= 130 && menuDisplay <= 132) {
+      menuDisplay--;
+      if (menuDisplay < 130) {
+        menuDisplay = 132;
       }
     } else if (menuDisplay >= 20 && menuDisplay <= 26) {
       menuDisplay--;
@@ -86,10 +91,16 @@ namespace KEYBOARD_Utils {
         menuDisplay = 1;
       }
     } 
-    else if (menuDisplay >= 10 && menuDisplay <= 12) {
+    else if (menuDisplay >= 10 && menuDisplay <= 13) {
       menuDisplay++;
-      if (menuDisplay > 12) {
+      if (menuDisplay > 13) {
         menuDisplay = 10;
+      }
+    } 
+    else if (menuDisplay >= 130 && menuDisplay <= 132) {
+      menuDisplay++;
+      if (menuDisplay > 132) {
+        menuDisplay = 130;
       }
     } else if (menuDisplay == 100) {
       messagesIterator++;
@@ -142,15 +153,16 @@ namespace KEYBOARD_Utils {
   void leftArrow() {
     if (menuDisplay >= 1 && menuDisplay <= 6) {
       menuDisplay = 0;
-    } else if (menuDisplay >= 10 && menuDisplay <= 12) {
-      menuDisplay = 1;
     } else if (menuDisplay==110) {
       messageCallsign = "";
       menuDisplay = 11;
     } else if (menuDisplay==111) {
       messageText = "";
       menuDisplay = 110;
-    } else if ((menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay==30) || (menuDisplay==40)) {
+    } else if (menuDisplay==1300) {
+      messageText = "";
+      menuDisplay = 130;
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay==30) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -169,7 +181,7 @@ namespace KEYBOARD_Utils {
       statusTime = millis();
       show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
       STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=12) || (menuDisplay>=20 && menuDisplay<=29))  {
+    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29))  {
       menuDisplay = menuDisplay*10;
     } else if (menuDisplay == 10) {
       MSG_Utils::loadMessagesFromMemory();
@@ -183,6 +195,14 @@ namespace KEYBOARD_Utils {
       show_display("__INFO____", "", "ALL MESSAGES DELETED!", 2000);
       MSG_Utils::loadNumMessages();
       menuDisplay = 12;
+    } else if (menuDisplay == 130) {
+      menuDisplay = 1300;
+    } else if (menuDisplay == 131) {
+      show_display(" APRS Thu.", "", "     Unsubscribe", " from APRS Thursday", 2000);
+      MSG_Utils::sendMessage("ANSRVR","U HOTG");
+    } else if (menuDisplay == 132) {
+      show_display(" APRS Thu.", "", "    Keep Subscribed" ,"  for 12hours more", 2000);
+      MSG_Utils::sendMessage("ANSRVR","K HOTG");
     } 
     
     else if (menuDisplay == 210) {
@@ -275,7 +295,7 @@ namespace KEYBOARD_Utils {
         messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
       }
       messageCallsign.toUpperCase();
-    } else if (menuDisplay == 111 && key!= 180) {     // Writting Text of Message
+    } else if ((menuDisplay==111 || menuDisplay==1300) && key!= 180) {     // Writting Text of Message
       if (messageText.length() == 1) {
         messageText.trim();
       }
@@ -286,8 +306,14 @@ namespace KEYBOARD_Utils {
         if (messageText.length() > 67){
           messageText = messageText.substring(0,67);
         }
-        MSG_Utils::sendMessage(messageCallsign, messageText);
-        menuDisplay = 11;
+        if (menuDisplay==111) {
+          MSG_Utils::sendMessage(messageCallsign, messageText);
+          menuDisplay = 11;
+        } else if (menuDisplay==1300) {
+          messageCallsign = "ANSRVR";
+          MSG_Utils::sendMessage(messageCallsign, "CQ HOTG " + messageText);
+          menuDisplay = 130;
+        }
         messageCallsign = "";
         messageText = "";
       } else if (key == 8) {                          // Delete Last Key

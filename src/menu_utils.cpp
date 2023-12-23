@@ -92,7 +92,7 @@ namespace MENU_Utils {
 
 
             case 10:    // 1.Messages ---> Messages Read
-                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "", lastLine);
+                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
@@ -104,7 +104,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "", lastLine);
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
                 if (keyDetected) {
@@ -125,10 +125,39 @@ namespace MENU_Utils {
                 }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "", lastLine);
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
                 show_display("DELETE_MSG", "", "     DELETE ALL?", "", "", " Confirm = LP or '>'");
+                break;
+            case 13:    // 1.Messages ---> APRSThursday
+                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
+                break;
+            case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
+                show_display(" APRS Thu.", "> Join APRSThursday", "  Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
+                break;
+            case 1300:
+                if (keyDetected) {
+                    if (messageText.length() <= 67) {
+                        if (messageText.length() < 10) {
+                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        } else {
+                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        }     
+                    } else {
+                        show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    }
+                } else {
+                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
+                }     
+                break;
+
+
+            case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
+                show_display("APRS Thu._", "  Join APRSThursday", "> Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
+                break;
+            case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
+                show_display("APRS Thu._", "  Join APRSThursday", "  Unsubscribe", "> KeepSubscribed+12h", "", lastLine);
                 break;
 
             
