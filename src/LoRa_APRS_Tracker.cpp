@@ -33,7 +33,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2023.12.22";
+String    versionDate         = "2023.12.24";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();

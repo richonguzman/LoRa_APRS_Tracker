@@ -9,7 +9,7 @@ extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             disableGPS;
 
-int lora32BatReadingCorr = 6; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+float lora32BatReadingCorr = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
@@ -137,15 +137,11 @@ void PowerManagement::deactivateMeasurement() {
 // cppcheck-suppress unusedFunction
 double PowerManagement::getBatteryVoltage() {
   #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
-// the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
-// the measured voltage is inaccurate du to known nonlinearity and ~100mV offset of the ESP32 A/D converter
   int adc_value;
   double voltage;
   adc_value = analogRead(35);
-  voltage = (adc_value * 3.3 ) / 4095;
-  voltage += 0.1; // add 0.1V offset
-  voltage = 2 * voltage * (1 + lora32BatReadingCorr/100) ; // multiply result by two because the voltage was measured after the 1:2 divider
-  return voltage;
+  voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
+  return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
   #endif
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
   return axp.getBattVoltage() / 1000.0;
