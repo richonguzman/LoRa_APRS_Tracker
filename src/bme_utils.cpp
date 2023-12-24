@@ -30,7 +30,7 @@ namespace BME_Utils {
       status = bme.begin(0x76);  // Don't forget to join pins for righ direction on BME280!
       if (!status) {
         show_display("ERROR", "", "BME sensor active", "but no sensor found...");
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME280 Active in config but not found! Check Wiring");
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
         while (1);
       } else {
         #ifdef BME280Sensor
@@ -174,7 +174,7 @@ namespace BME_Utils {
     #endif
     
     if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
-      Serial.println("BME280 Module data failed");
+      Serial.println("BME/BMP Module data failed");
       if (type == "OLED") {
         wx = " - C    - %    - hPa";
       } else {
@@ -200,7 +200,7 @@ namespace BME_Utils {
       } else {
         wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
         #ifdef BME680Sensor
-        wx += "Gas: " + String(newGas) + " k ohms";
+        wx += "Gas: " + String(newGas) + "Kohms";
         #endif
       }
       return wx;
