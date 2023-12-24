@@ -9,6 +9,8 @@ extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             disableGPS;
 
+int lora32BatReadingCorr = 6; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
   #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
@@ -139,11 +141,10 @@ double PowerManagement::getBatteryVoltage() {
 // the measured voltage is inaccurate du to known nonlinearity and ~100mV offset of the ESP32 A/D converter
   int adc_value;
   double voltage;
-//  analogSetAttenuation(ADC_11db); // this is the default setting (range 0-3.3V)
-  adc_value = analogRead(35); // ADC1_CHANNEL_7
+  adc_value = analogRead(35);
   voltage = (adc_value * 3.3 ) / 4095;
   voltage += 0.1; // add 0.1V offset
-  voltage = 2 * voltage; // multiply result by two because the voltage was measured after the 1:2 divider
+  voltage = 2 * voltage * (1 + lora32BatReadingCorr/100) ; // multiply result by two because the voltage was measured after the 1:2 divider
   return voltage;
   #endif
   #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)

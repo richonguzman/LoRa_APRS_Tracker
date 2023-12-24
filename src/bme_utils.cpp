@@ -14,10 +14,14 @@ extern logging::Logger  logger;
 
 namespace BME_Utils {
 
-  #ifndef BMPSensor
+  #ifdef BME280Sensor
   Adafruit_BME280   bme;
-  #else
+  #endif
+  #ifdef BMP280Sensor
   Adafruit_BMP280   bme;
+  #endif
+  #ifdef BME680Sensor
+  Adafruit_BME680 bme; 
   #endif
 
   void setup() {
@@ -29,17 +33,25 @@ namespace BME_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME280 Active in config but not found! Check Wiring");
         while (1);
       } else {
-        #ifndef BMPSensor
+        #ifdef BME280Sensor
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
-        #else
+        #endif
+        #ifdef BMP280Sensor
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
+        #endif
+        #ifdef BME680Sensor
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
         #endif
       }
     } else {
-      #ifndef BMPSensor
+      #ifdef BME280Sensor
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module not active in 'tracker_conf.json'");
-      #else
+      #endif
+      #ifdef BMP280Sensor
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module not active in 'tracker_conf.json'");
+      #endif
+      #ifdef BME680Sensor
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP680 Module not active in 'tracker_conf.json'");
       #endif
     }
   }
@@ -146,14 +158,20 @@ namespace BME_Utils {
 
   String readDataSensor(String type) {
     String wx, tempStr, humStr, presStr;
-    float newTemp   = bme.readTemperature();
     float newHum;
-    #ifndef BMPSensor
+    
+    float newTemp   = bme.readTemperature();
+    #if defined(BME280Sensor) || defined(BME680Sensor)
     newHum = bme.readHumidity();
-    #else
+    #endif
+    #ifdef BMP280Sensor
     newHum = 0;
     #endif
     float newPress  = (bme.readPressure() / 100.0F);
+
+    #ifdef BME680Sensor
+    float newGas = bme.gas_resistance / 1000.0; // in Kilo ohms
+    #endif
     
     if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
       Serial.println("BME280 Module data failed");
@@ -165,20 +183,25 @@ namespace BME_Utils {
       return wx;
     } else {
       tempStr = generateTempString(newTemp, type);
-      #ifndef BMPSensor
+      #if defined(BME280Sensor) || defined(BME680Sensor)
       humStr  = generateHumString(newHum,type);
-      #else
+      #endif
+      #ifdef BMP280Sensor
       humStr  = "..";
       #endif
       presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
       if (type == "OLED") {
-        #ifndef BMPSensor
+        #if defined(BME280Sensor) || defined(BME680Sensor)
         wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
-        #else
+        #endif
+        #ifdef BMP280Sensor
         wx = "T: " + tempStr + "C " + "P: " + presStr + "hPa";
         #endif
       } else {
         wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
+        #ifdef BME680Sensor
+        wx += "Gas: " + String(newGas) + " k ohms";
+        #endif
       }
       return wx;
     }
