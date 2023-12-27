@@ -206,6 +206,11 @@ namespace KEYBOARD_Utils {
       menuDisplay = 12;
     } else if (menuDisplay == 130) {
       menuDisplay = 1300;
+    } else if (menuDisplay == 1300) {
+      if (!keyDetected) {
+        show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
+        MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+      }
     } else if (menuDisplay == 131) {
       show_display(" APRS Thu.", "", "     Unsubscribe", " from APRS Thursday", 2000);
       MSG_Utils::sendMessage("ANSRVR","U HOTG");

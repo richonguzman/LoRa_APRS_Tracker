@@ -151,7 +151,7 @@ namespace MENU_Utils {
                         show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                     }
                 } else {
-                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
+                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", " Long Push --> send:", " '#APRSThursday 73'", "1P = Back");           
                 }     
                 break;
 
