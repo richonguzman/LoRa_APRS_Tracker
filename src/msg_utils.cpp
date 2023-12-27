@@ -24,6 +24,8 @@ extern uint32_t             messageLedTime;
 
 extern bool                 digirepeaterActive;
 
+extern APRSPacket           lastReceivedPacket;
+
 String   firstNearTracker            = "";
 String   secondNearTracker           = "";
 String   thirdNearTracker            = "";
@@ -35,7 +37,6 @@ bool     noMessageWarning            = false;
 String   lastHeardTracker            = "NONE";
 uint32_t lastDeleteListenedTracker   = millis();
 
-APRSPacket aprsPacket;
 
 namespace MSG_Utils {
 
@@ -163,16 +164,16 @@ namespace MSG_Utils {
     }
     if (packet.text.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
       //Serial.println(packet.text); // only for debug
-      aprsPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
-      if (aprsPacket.sender!=currentBeacon->callsign) {
+      lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
+      if (lastReceivedPacket.sender!=currentBeacon->callsign) {
         if (Config.bluetoothType==0) {
           BLE_Utils::sendToPhone(packet.text.substring(3));
         } else {
           BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
         }        
 
-        if (digirepeaterActive && aprsPacket.addressee!=currentBeacon->callsign) {
-          String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(aprsPacket, currentBeacon->callsign);
+        if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
+          String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);
           if (digiRepeatedPacket == "X") {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");
           } else {
@@ -180,27 +181,27 @@ namespace MSG_Utils {
             LoRa_Utils::sendNewPacket(digiRepeatedPacket);
           }
         }
-        lastHeardTracker = aprsPacket.sender;
-        if (aprsPacket.type==1 && aprsPacket.addressee==currentBeacon->callsign) {
-          if (aprsPacket.message.indexOf("{")>=0) {
-            String ackMessage = "ack" + aprsPacket.message.substring(aprsPacket.message.indexOf("{")+1);
+        lastHeardTracker = lastReceivedPacket.sender;
+        if (lastReceivedPacket.type==1 && lastReceivedPacket.addressee==currentBeacon->callsign) {
+          if (lastReceivedPacket.message.indexOf("{")>=0) {
+            String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{")+1);
             ackMessage.trim();
             delay(4000);
-            sendMessage(aprsPacket.sender, ackMessage);
-            aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1, aprsPacket.message.indexOf("{"));
+            sendMessage(lastReceivedPacket.sender, ackMessage);
+            lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1, lastReceivedPacket.message.indexOf("{"));
           } else {
-            aprsPacket.message = aprsPacket.message.substring(aprsPacket.message.indexOf(":")+1);
+            lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1);
           }
           if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
             NOTIFICATION_Utils::messageBeep();
           }
-          if (aprsPacket.message.indexOf("ping")==0 || aprsPacket.message.indexOf("Ping")==0 || aprsPacket.message.indexOf("PING")==0) {
+          if (lastReceivedPacket.message.indexOf("ping")==0 || lastReceivedPacket.message.indexOf("Ping")==0 || lastReceivedPacket.message.indexOf("PING")==0) {
             delay(4000);
-            sendMessage(aprsPacket.sender, "pong, 73!");
+            sendMessage(lastReceivedPacket.sender, "pong, 73!");
           }
-          if (aprsPacket.sender == "CD2RXU-15" && aprsPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
+          if (lastReceivedPacket.sender == "CD2RXU-15" && lastReceivedPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
             Serial.println("Weather Report Received");
-            String wxCleaning     = aprsPacket.message.substring(aprsPacket.message.indexOf("WX ")+3);
+            String wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ")+3);
             String place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
             String placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
             String summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
@@ -217,18 +218,18 @@ namespace MSG_Utils {
 
             String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
             String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
-            show_display("<WEATHER>", "From --> " + aprsPacket.sender, place, summary, fifthLineWR, sixthLineWR);
+            show_display("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
             menuDisplay = 40;
             menuTime = millis();
           } else {
-            show_display("< MSG Rx >", "From --> " + aprsPacket.sender, "", aprsPacket.message , 3000);
+            show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
             if (!Config.simplifiedTrackerMode) {
-              saveNewMessage("APRS", aprsPacket.sender, aprsPacket.message);
+              saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
             }
           } 
         } else {
-          if (aprsPacket.type==0 && !Config.simplifiedTrackerMode) {
-            GPS_Utils::calculateDistanceCourse(aprsPacket.sender, aprsPacket.latitude, aprsPacket.longitude);
+          if ((lastReceivedPacket.type==0 || lastReceivedPacket.type==4) && !Config.simplifiedTrackerMode) {
+            GPS_Utils::calculateDistanceCourse(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude);
           }
           if (Config.notification.buzzerActive && Config.notification.stationBeep && !digirepeaterActive) {
             NOTIFICATION_Utils::stationHeardBeep();

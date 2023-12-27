@@ -4,6 +4,7 @@
 #include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
+#include "APRSPacketLib.h"
 #include "power_utils.h"
 #include "menu_utils.h"
 #include "msg_utils.h"
@@ -30,6 +31,7 @@ extern bool                 bluetoothActive;
 extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 extern bool                 disableGPS;
+extern APRSPacket           lastReceivedPacket;
 
 namespace MENU_Utils {
 
@@ -58,9 +60,9 @@ namespace MENU_Utils {
     }
 
     void showOnScreen() {
-        String lastLine;
+        String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==30) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
             messageCallsign = "";
             messageText = "";
@@ -232,10 +234,63 @@ namespace MENU_Utils {
                 break;
 
 
-            case 30:    //3.Stations ---> Display Heared Tracker/Stations
-                show_display("LISTENING>", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
+            case 30:    //3.Stations ---> Packet Decoder
+                show_display("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
+                break;
+            case 31:    //3.Stations ---> Near By Stations
+                show_display("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
+            case 300:    //3.Stations ---> Packet Decoder
+                firstLineDecoder = lastReceivedPacket.sender;
+                for(int i=firstLineDecoder.length();i<9;i++) {
+                    firstLineDecoder += ' ';
+                }
+                firstLineDecoder += lastReceivedPacket.symbol;
+
+                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps 
+                    courseSpeedAltitude = String(lastReceivedPacket.altitude);
+                    for(int j=courseSpeedAltitude.length();j<4;j++) {
+                        courseSpeedAltitude = '0' + courseSpeedAltitude;
+                    }
+                    courseSpeedAltitude = "A=" + courseSpeedAltitude + "m ";
+                    speedPacketDec = String(lastReceivedPacket.speed);
+                    for (int k=speedPacketDec.length();k<3;k++) {
+                        speedPacketDec = ' ' + speedPacketDec;
+                    }
+                    courseSpeedAltitude += speedPacketDec + "km/h ";
+                    for(int l=courseSpeedAltitude.length();l<17;l++) {
+                        courseSpeedAltitude += ' ';
+                    }
+                    coursePacketDec = String(lastReceivedPacket.course);
+                    for(int m=coursePacketDec.length();m<3;m++) {
+                        coursePacketDec = ' ' + coursePacketDec;
+                    }
+                    courseSpeedAltitude += coursePacketDec;
+                    
+                    double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
+                    double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
+                    
+                    if (lastReceivedPacket.path.length()>14) {
+                        pathDec = "P:" + lastReceivedPacket.path;
+                    } else {
+                        pathDec = "PATH:  " +lastReceivedPacket.path;
+                    }
+
+                    show_display(firstLineDecoder, "GPS  " + String(lastReceivedPacket.latitude,2) + " " + String(lastReceivedPacket.longitude,2), courseSpeedAltitude, String(distanceKm) + "km    " + String(courseTo,0), pathDec, "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                } else if (lastReceivedPacket.type==1) {    // message
+                    show_display(firstLineDecoder, "ADDRESSEE: " + lastReceivedPacket.addressee, "MSG:  " + lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                } else if (lastReceivedPacket.type==2) {    // status
+                    show_display(firstLineDecoder, "-------STATUS-------", lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                } else if (lastReceivedPacket.type==3) {    // telemetry
+                    show_display(firstLineDecoder, "------TELEMETRY------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                } else if (lastReceivedPacket.type==5) {    // object
+                    show_display(firstLineDecoder, "-------OBJECT-------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                }
+                break;
+            case 310:    //3.Stations ---> Near By Stations
+                show_display("NEAR BY >", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
+                break;
 
             case 40:
                 // waiting for Weather Report

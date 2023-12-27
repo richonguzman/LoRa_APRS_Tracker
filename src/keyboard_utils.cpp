@@ -67,7 +67,12 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 220) {
         menuDisplay = 221;
       }
-    } else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    } else if (menuDisplay >= 30 && menuDisplay <= 31) {
+      menuDisplay--;
+      if (menuDisplay < 30) {
+        menuDisplay = 31;
+      }
+    }else if (menuDisplay >= 60 && menuDisplay <= 61) {
       menuDisplay--;
       if (menuDisplay < 60) {
         menuDisplay = 61;
@@ -133,9 +138,12 @@ namespace KEYBOARD_Utils {
         menuDisplay = 220;
       } 
     }
-    
-    else if (menuDisplay == 30) {
-      menuDisplay = 3;
+
+    else if (menuDisplay >= 30 && menuDisplay <= 31) {
+      menuDisplay++;
+      if (menuDisplay > 31) {
+        menuDisplay = 30;
+      } 
     }
     
     else if (menuDisplay == 40) {
@@ -162,7 +170,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay==1300) {
       messageText = "";
       menuDisplay = 130;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay==30) || (menuDisplay==40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -181,7 +189,7 @@ namespace KEYBOARD_Utils {
       statusTime = millis();
       show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
       STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29))  {
+    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay>=30 && menuDisplay<=31))  {
       menuDisplay = menuDisplay*10;
     } else if (menuDisplay == 10) {
       MSG_Utils::loadMessagesFromMemory();
