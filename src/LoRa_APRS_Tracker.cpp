@@ -154,7 +154,7 @@ void setup() {
   }
 
   powerManagement.lowerCpuFrequency();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState());
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
 }
@@ -172,7 +172,7 @@ void loop() {
     userButton.tick();
     #endif
   }
-  utils::checkDisplayEcoMode();
+  Utils::checkDisplayEcoMode();
 
   if (keyboardConnected) {
     KEYBOARD_Utils::read();
@@ -185,6 +185,7 @@ void loop() {
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   MSG_Utils::ledNotification();
+  Utils::checkFlashlight();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
   if (Config.bluetoothType==0) {
     BLE_Utils::sendToLoRa();
@@ -195,7 +196,7 @@ void loop() {
   int currentSpeed = (int) gps.speed.kmph();
 
   if (gps_loc_update) {
-    utils::checkStatus();
+    Utils::checkStatus();
     STATION_Utils::checkTelemetryTx();
   }
   lastTx = millis() - lastTxTime;

@@ -10,7 +10,6 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
-#include "utils.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;

@@ -25,6 +25,7 @@ extern int                  lowBatteryPercent;
 extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
+extern bool                 flashlight;
 extern bool                 digirepeaterActive;
 extern bool                 sosActive;
 extern bool                 bluetoothActive;
@@ -74,7 +75,7 @@ namespace MENU_Utils {
         }
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1. Messages
-                show_display("__MENU____","  6.Emergency", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
+                show_display("__MENU____","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
                 break;
             case 2:     // 2. Configuration
                 show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
@@ -83,13 +84,13 @@ namespace MENU_Utils {
                 show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Winlink/Mail", lastLine);
                 break;
             case 4:     //4. Weather
-                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Emergency", lastLine);
+                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Extras", lastLine);
                 break;
             case 5:     //5. Winlink
-                show_display("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Emergency", "  1.Messages", lastLine);
+                show_display("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
                 break;
-            case 6:     //6. Emergency
-                show_display("__MENU____", "  5.Winlink/Mail", "> 6.Emergency", "  1.Messages", "  2.Configuration", lastLine);
+            case 6:     //6. Extras
+                show_display("__MENU____", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
                 break;
 
 
@@ -296,11 +297,14 @@ namespace MENU_Utils {
                 // waiting for Weather Report
                 break;
 
-            case 60:    // 6. Emergency ---> Digirepeater
-                show_display("EMERGENCY_", "", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+            case 60:    // 6. Extras ---> Flashlight
+                show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
-            case 61:    // 6. Emergency ---> S.O.S.
-                show_display("EMERGENCY_", "", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+            case 61:    // 6. Extras ---> Digirepeater
+                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+                break;
+            case 62:    // 6. Extras ---> S.O.S.
+                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
 
             case 0:       ///////////// MAIN MENU //////////////
@@ -327,11 +331,11 @@ namespace MENU_Utils {
                     fourthRowMainMenu = "";
                 } else {
                     const auto time_now = now();
-                    secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
+                    secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
                         thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                     } else {
-                        thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                     }
 
                     for(int i = thirdRowMainMenu.length(); i < 18; i++) {

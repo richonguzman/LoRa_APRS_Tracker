@@ -31,6 +31,7 @@ extern int              messagesIterator;
 extern bool             messageLed;
 extern String           messageCallsign;
 extern String           messageText;
+extern bool             flashlight;
 extern bool             digirepeaterActive;
 extern bool             sosActive;
 
@@ -72,10 +73,10 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 30) {
         menuDisplay = 31;
       }
-    }else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    }else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay--;
       if (menuDisplay < 60) {
-        menuDisplay = 61;
+        menuDisplay = 62;
       }
     }
   }
@@ -150,9 +151,9 @@ namespace KEYBOARD_Utils {
       menuDisplay = 4;
     }
 
-    else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay++;
-      if (menuDisplay > 61) {
+      if (menuDisplay > 62) {
         menuDisplay = 60;
       } 
     }
@@ -170,7 +171,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay==1300) {
       messageText = "";
       menuDisplay = 130;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -248,22 +249,34 @@ namespace KEYBOARD_Utils {
     else if (menuDisplay == 6) {
       menuDisplay = 60;
     } else if (menuDisplay == 60) {
+      if (Config.notification.ledFlashlight) {
+        if (flashlight) {
+          show_display("__EXTRAS__", "","     Flashlight","   Status --> OFF","", 2000);
+          flashlight = false;
+        } else {
+          show_display("__EXTRAS__", "","     Flashlight","   Status --> ON","", 2000);
+          flashlight = true;
+        }
+      } else {
+        show_display("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!","", 2000);
+      }
+    } else if (menuDisplay == 61) {
       if (digirepeaterActive) {
-        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> OFF","", 2000); /////////////////////////
+        show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater OFF");
         digirepeaterActive = false;
       } else {
-        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> ON","", 2000); /////////////////////////
+        show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater ON");
         digirepeaterActive = true;
       }
-    } else if (menuDisplay == 61) {
+    } else if (menuDisplay == 62) {
       if (sosActive) {
-        show_display("EMERGENCY_", "","       S.O.S.","   Status --> OFF","", 2000);
+        show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode OFF");
         sosActive = false;
       } else {
-        show_display("EMERGENCY_", "","       S.O.S.","   Status --> ON","", 2000);
+        show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
         sosActive = true;
       }
