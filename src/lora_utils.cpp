@@ -48,8 +48,12 @@ namespace LoRa_Utils {
     radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
     radio.setBandwidth(Config.loramodule.signalBandwidth);
     radio.setCodingRate(Config.loramodule.codingRate4);
+    #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262)
     state = radio.setOutputPower(Config.loramodule.power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
-
+    #endif
+    #ifdef ESP32_DIY_1W_LoRa_GPS
+    state = radio.setOutputPower(Config.loramodule.power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp) 
+    #endif
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
     } else {
