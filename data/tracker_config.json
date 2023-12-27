@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
@@ -19,7 +19,7 @@
 			}			
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
@@ -37,8 +37,8 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
-			"symbol": "j",
+			"callsign": "CA2RXU-7",
+			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
@@ -66,7 +66,7 @@
 		"simplifiedTrackerMode": false,
 		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
-		"displayEcoMode": false,
+		"displayEcoMode": true,
 		"displayTimeout": 4,
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,
@@ -75,7 +75,7 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
-		"bluetoothType": 1,
+		"bluetoothType": 0,
 		"bluetoothActive": true,
 		"disableGPS": false
 	},
@@ -92,10 +92,12 @@
 		"heightCorrection": 0
 	},
 	"notification": {
-		"ledTx": false,
-		"ledTxPin": 13,
-		"ledMessage": false,
-		"ledMessagePin": 2,
+		"ledTx": true,
+		"ledTxPin": 25,
+		"ledMessage": true,
+		"ledMessagePin": 13,
+		"ledFlashlight": true,
+		"ledFlashlightPin": 14,
 		"buzzerActive": false,
 		"buzzerPinTone": 33,
 		"buzzerPinVcc": 25,

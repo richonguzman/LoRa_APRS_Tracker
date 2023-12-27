@@ -85,6 +85,7 @@ uint32_t  keyboardTime        = millis();
 String    messageCallsign     = "";
 String    messageText         = "";
 
+bool      flashlight          = false;
 bool      digirepeaterActive  = false;
 bool      sosActive           = false;
 bool      disableGPS;
@@ -109,13 +110,17 @@ void setup() {
     pinMode(Config.notification.buzzerPinTone, OUTPUT);
     pinMode(Config.notification.buzzerPinVcc, OUTPUT);
     NOTIFICATION_Utils::start();
-  } 
+  }
   if (Config.notification.ledTx){
     pinMode(Config.notification.ledTxPin, OUTPUT);
   }
   if (Config.notification.ledMessage){
     pinMode(Config.notification.ledMessagePin, OUTPUT);
   }
+  if (Config.notification.ledFlashlight) {
+    pinMode(Config.notification.ledFlashlightPin, OUTPUT);
+  }
+
   show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);

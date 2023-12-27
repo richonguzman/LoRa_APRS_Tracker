@@ -54,6 +54,8 @@ public:
   int     ledTxPin;
   bool    ledMessage;
   int     ledMessagePin;
+  bool    ledFlashlight;
+  int     ledFlashlightPin;
   bool    buzzerActive;
   int     buzzerPinTone;
   int     buzzerPinVcc;
