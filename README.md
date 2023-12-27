@@ -53,7 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2023.12.27 Added Led-Flashlight like Baofeng UV5R led.
+- 2023.12.27 Added Led-Flashlight like Baofeng UV5R Led.
 - 2023.12.27 Added LoRa APRS Packet Decoder to Stations Menu.
 - 2023.12.26 Added BME680 (to the already BME/BMP280) support for Wx Telemetry Tx.
 - 2023.12.22 Added APRSThrusday on Messages Menu to parcitipate from this exercise (https://aprsph.net/aprsthursday/)
