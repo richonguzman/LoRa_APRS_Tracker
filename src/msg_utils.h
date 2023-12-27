@@ -2,6 +2,7 @@
 #define MSG_UTILS_H_
 
 #include <Arduino.h>
+#include "lora_utils.h"
 
 namespace MSG_Utils {
 
@@ -14,7 +15,7 @@ namespace MSG_Utils {
     void    deleteFile();
     void    saveNewMessage(String typeMessage, String station, String newMessage);
     void    sendMessage(String station, String textMessage);
-    void    checkReceivedMessage(String packetReceived);
+    void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
     
 }
 

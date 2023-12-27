@@ -579,7 +579,7 @@ namespace APRSPacketLib {
     return gpsDegreesToDecimalLongitude(longitudeString) ;
   }
 
-  APRSPacket processReceivedPacket(String receivedPacket) {
+  APRSPacket processReceivedPacket(String receivedPacket, int rssi, float snr, int freqError) {
     /*  Packet type:
         gps       = 0
         message   = 1
@@ -692,7 +692,9 @@ namespace APRSPacketLib {
     if (aprsPacket.type!=4) {
       aprsPacket.miceType = "";
     }
-
+    aprsPacket.rssi       = rssi;
+    aprsPacket.snr        = snr;
+    aprsPacket.freqError  = freqError;
     return aprsPacket;
   }
 

@@ -157,18 +157,18 @@ namespace MSG_Utils {
     LoRa_Utils::sendNewPacket(newPacket);
   }
 
-  void checkReceivedMessage(String packetReceived) {
-    if(packetReceived.isEmpty()) {
+  void checkReceivedMessage(ReceivedLoRaPacket packet) {
+    if(packet.text.isEmpty()) {
       return;
     }
-    if (packetReceived.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
-      //Serial.println(packetReceived); // only for debug
-      aprsPacket = APRSPacketLib::processReceivedPacket(packetReceived.substring(3));
+    if (packet.text.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
+      //Serial.println(packet.text); // only for debug
+      aprsPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
       if (aprsPacket.sender!=currentBeacon->callsign) {
         if (Config.bluetoothType==0) {
-          BLE_Utils::sendToPhone(packetReceived.substring(3));
+          BLE_Utils::sendToPhone(packet.text.substring(3));
         } else {
-          BLUETOOTH_Utils::sendPacket(packetReceived.substring(3));
+          BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
         }        
 
         if (digirepeaterActive && aprsPacket.addressee!=currentBeacon->callsign) {

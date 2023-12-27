@@ -18,6 +18,9 @@ struct APRSPacket {
   int     speed;
   int     altitude;
   String  miceType;
+  int     rssi;
+  float   snr;
+  int     freqError;
 };
 
 struct gpsLatitudeStruct {
@@ -74,7 +77,7 @@ namespace APRSPacketLib {
   float decodeMiceLatitude(String destinationField);
   float decodeMiceLongitude(String destinationField, String informationField);
 
-  APRSPacket processReceivedPacket(String receivedPacket);
+  APRSPacket processReceivedPacket(String receivedPacket, int rssi, float snr, int freqError);
 
 }
 
