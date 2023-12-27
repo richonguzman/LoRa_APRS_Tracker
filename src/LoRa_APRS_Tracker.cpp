@@ -5,6 +5,7 @@
 #include <logger.h>
 #include <WiFi.h>
 #include <vector>
+#include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"

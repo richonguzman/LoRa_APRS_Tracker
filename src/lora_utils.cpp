@@ -1,3 +1,4 @@
+#include "lora_utils.h"
 #include <RadioLib.h> // useful to build
 #include <logger.h>
 #include <LoRa.h>
