@@ -53,6 +53,8 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2023.12.27 Added LoRa APRS Packet Decoder to Stations Menu.
+- 2023.12.26 Added BME680 (to the already BME/BMP280) support for Wx Telemetry Tx.
 - 2023.12.22 Added APRSThrusday on Messages Menu to parcitipate from this exercise (https://aprsph.net/aprsthursday/)
 - 2023.12.19 Added support for T-Beam V1.2 with Neo8M GPS and SX1262 LoRa Modules.
 - 2023.12.18 Added Mic-E encoding and decoding.
