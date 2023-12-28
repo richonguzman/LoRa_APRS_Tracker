@@ -205,12 +205,11 @@ namespace KEYBOARD_Utils {
       MSG_Utils::loadNumMessages();
       menuDisplay = 12;
     } else if (menuDisplay == 130) {
-      menuDisplay = 1300;
-    } else if (menuDisplay == 1300) {
-      if (!keyDetected) {
+      if (keyDetected) {
+        menuDisplay = 1300;
+      } else {
         show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
         MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
-        menuDisplay = 130;
       }
     } else if (menuDisplay == 131) {
       show_display(" APRS Thu.", "", "     Unsubscribe", " from APRS Thursday", 2000);

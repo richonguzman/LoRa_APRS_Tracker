@@ -140,22 +140,16 @@ namespace MENU_Utils {
                 show_display(" APRS Thu.", "> Join APRSThursday", "  Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
                 break;
             case 1300:
-                if (keyDetected) {
-                    if (messageText.length() <= 67) {
-                        if (messageText.length() < 10) {
-                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
-                        } else {
-                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
-                        }     
+                if (messageText.length() <= 67) {
+                    if (messageText.length() < 10) {
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
-                    }
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                    }     
                 } else {
-                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", " Long Push --> send:", " '#APRSThursday 73'", "1P = Back");           
-                }     
+                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                }
                 break;
-
-
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 show_display("APRS Thu._", "  Join APRSThursday", "> Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
                 break;
