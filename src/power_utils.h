@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include "XPowersLib.h"
 
+
 /*#if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
 // The V0.7 boards have no power managment components connected to TwoWire. 
 // Battery charging is controlled by a TP5400 IC indepemdetly from the ESP32.
@@ -71,9 +72,38 @@ private:
 ///////////////////////////////
 namespace POWER_Utils {
 
+  double getBatteryVoltage();
+  String getBatteryInfoVoltage();
+  String getBatteryInfoCurrent();
+  bool getBatteryInfoIsConnected();
+
+  void enableChgLed();
+  void disableChgLed();
+
+  bool isChargeing();
+  void handleChargingLed();
+  double getBatteryChargeDischargeCurrent();
+  bool isBatteryConnected();
+  void obtainBatteryInfo();
+  void batteryManager();
+
+  void activateMeasurement();
+  void deactivateMeasurement();
+
+  void activateGPS();
+  void deactivateGPS();
+
+  void activateOLED();
+  void decativateOLED();
+
+  void activateLoRa();
+  void deactivateLoRa();
+
   bool begin(TwoWire &port);
   void setup();
 
+  void lowerCpuFrequency();
+  void shutdown();
 }
 
 #endif

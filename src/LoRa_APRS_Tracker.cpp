@@ -25,7 +25,6 @@
 #include "utils.h"
 
 Configuration                 Config;
-//PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
@@ -103,7 +102,6 @@ void setup() {
   logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
   #endif
 
-  //powerManagement.setup();
   POWER_Utils::setup();
 
   setup_display();
@@ -154,7 +152,7 @@ void setup() {
     KEYBOARD_Utils::setup();
   }
 
-  //powerManagement.lowerCpuFrequency();
+  POWER_Utils::lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
@@ -167,7 +165,7 @@ void loop() {
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
 
-  //powerManagement.batteryManager();
+  POWER_Utils::batteryManager();
   if (!Config.simplifiedTrackerMode) {
     #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
     userButton.tick();

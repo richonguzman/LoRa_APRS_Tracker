@@ -16,7 +16,6 @@ extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
-//extern PowerManagement      powerManagement;
 extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
@@ -386,9 +385,9 @@ namespace MENU_Utils {
 
                 fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
 
-                /*if (powerManagement.getBatteryInfoIsConnected()) {
-                    String batteryVoltage = powerManagement.getBatteryInfoVoltage();
-                    String batteryCharge = powerManagement.getBatteryInfoCurrent();
+                if (POWER_Utils::getBatteryInfoIsConnected()) {
+                    String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+                    String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
@@ -402,28 +401,28 @@ namespace MENU_Utils {
                     }
                     #endif
                     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-                        if (Config.notification.lowBatteryBeep && !powerManagement.isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
+                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
                             if (batteryCharge.toInt() < 6) {
                                 NOTIFICATION_Utils::lowBatteryBeep();
                             }
                         } 
-                        if (powerManagement.isChargeing()) {
+                        if (POWER_Utils::isChargeing()) {
                             lowBatteryPercent = 21;
                         }
                         batteryVoltage = batteryVoltage.toFloat()/1000;
-                        if (powerManagement.isChargeing() && batteryCharge!="100") {
+                        if (POWER_Utils::isChargeing() && batteryCharge!="100") {
                             sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
-                        } else if (!powerManagement.isChargeing() && batteryCharge=="100") {
+                        } else if (!POWER_Utils::isChargeing() && batteryCharge=="100") {
                             sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
                         } else {
                             sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryCharge + "%";
                         }
                     #endif
-                } else {*/
-                sixthRowMainMenu = "No Battery Connected" ;
-                //}
+                } else {
+                    sixthRowMainMenu = "No Battery Connected" ;
+                }
                 show_display(String(firstRowMainMenu),
                             String(secondRowMainMenu),
                             String(thirdRowMainMenu),

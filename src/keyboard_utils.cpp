@@ -8,11 +8,10 @@
 #include "msg_utils.h"
 #include "display.h"
 
-#define CARDKB_ADDR 0x5F    // yes , this is for CARDKB from m5stack.com
+#define CARDKB_ADDR 0x5F    // CARDKB from m5stack.com
 
 extern Configuration    Config;
 extern logging::Logger  logger;
-//extern PowerManagement  powerManagement;
 extern bool             sendUpdate;
 extern int              menuDisplay;
 extern uint32_t         menuTime;
@@ -364,7 +363,7 @@ namespace KEYBOARD_Utils {
         ESP.restart();
       } else if (menuDisplay==260) {
         show_display("", "", "    POWER OFF ...", 2000);
-        //powerManagement.shutdown();
+        POWER_Utils::shutdown();
       }
     }
     else if (key == 181) {  // Arrow Up
