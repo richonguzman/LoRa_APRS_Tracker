@@ -88,13 +88,9 @@ namespace POWER_Utils {
   void batteryManager();
 
   void activateMeasurement();
-  void deactivateMeasurement();
 
   void activateGPS();
   void deactivateGPS();
-
-  void activateOLED();
-  void decativateOLED();
 
   void activateLoRa();
   void deactivateLoRa();
