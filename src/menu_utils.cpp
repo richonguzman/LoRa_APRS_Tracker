@@ -16,7 +16,7 @@ extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
-extern PowerManagement      powerManagement;
+//extern PowerManagement      powerManagement;
 extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
@@ -386,7 +386,7 @@ namespace MENU_Utils {
 
                 fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
 
-                if (powerManagement.getBatteryInfoIsConnected()) {
+                /*if (powerManagement.getBatteryInfoIsConnected()) {
                     String batteryVoltage = powerManagement.getBatteryInfoVoltage();
                     String batteryCharge = powerManagement.getBatteryInfoCurrent();
                     #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
@@ -421,9 +421,9 @@ namespace MENU_Utils {
                             sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryCharge + "%";
                         }
                     #endif
-                } else {
-                    sixthRowMainMenu = "No Battery Connected" ;
-                }
+                } else {*/
+                sixthRowMainMenu = "No Battery Connected" ;
+                //}
                 show_display(String(firstRowMainMenu),
                             String(secondRowMainMenu),
                             String(thirdRowMainMenu),

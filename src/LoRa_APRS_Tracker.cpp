@@ -25,7 +25,7 @@
 #include "utils.h"
 
 Configuration                 Config;
-PowerManagement               powerManagement;
+//PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
 BluetoothSerial               SerialBT;
@@ -33,7 +33,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2023.12.27";
+String    versionDate         = "2023.12.30";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -103,7 +103,8 @@ void setup() {
   logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
   #endif
 
-  powerManagement.setup();
+  //powerManagement.setup();
+  POWER_Utils::setup();
 
   setup_display();
   if (Config.notification.buzzerActive) {
@@ -153,7 +154,7 @@ void setup() {
     KEYBOARD_Utils::setup();
   }
 
-  powerManagement.lowerCpuFrequency();
+  //powerManagement.lowerCpuFrequency();
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
@@ -166,7 +167,7 @@ void loop() {
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
 
-  powerManagement.batteryManager();
+  //powerManagement.batteryManager();
   if (!Config.simplifiedTrackerMode) {
     #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
     userButton.tick();

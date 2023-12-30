@@ -11,6 +11,8 @@ extern bool             disableGPS;
 
 float lora32BatReadingCorr = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 
+
+/*
 // cppcheck-suppress unusedFunction
 bool PowerManagement::begin(TwoWire &port) {
   #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
@@ -295,4 +297,93 @@ void PowerManagement::shutdown() {
   #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
   PMU.shutdown();
   #endif
+}
+
+*/
+
+#if defined(TTGO_T_Beam_V1_0)
+XPowersAXP192 PMU;
+#endif
+#if defined(TTGO_T_Beam_V1_2)
+XPowersAXP2101 PMU;
+#endif
+
+namespace POWER_Utils {
+
+  void 
+
+  bool begin(TwoWire &port) {
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
+    return true; // nor powerManagment chip for this boards (only a few measure battery voltage).
+    #endif
+    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    bool result = axp.begin(port, AXP192_SLAVE_ADDRESS);
+    if (!result) {
+      axp.setDCDC1Voltage(3300);
+    }
+    return result;
+    #endif
+    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
+    if (result) {
+      PMU.disableDC2();
+      PMU.disableDC3();
+      PMU.disableDC4();
+      PMU.disableDC5();
+      PMU.disableALDO1();
+      PMU.disableALDO4();
+      PMU.disableBLDO1();
+      PMU.disableBLDO2();
+      PMU.disableDLDO1();
+      PMU.disableDLDO2();
+
+      PMU.setDC1Voltage(3300);
+      PMU.enableDC1();
+    }
+    return result;
+    #endif
+  }
+
+  void setup() {
+    Serial.println("starting setup");
+    Wire.end();
+    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    Wire.begin(SDA, SCL);
+    if (!begin(Wire)) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
+    } else {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
+    }
+    /*activateLoRa();
+    activateOLED();
+    if (disableGPS) {
+      deactivateGPS();
+    } else {
+      activateGPS();
+    }
+    activateMeasurement();*/
+    #endif
+    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    Wire.begin(SDA, SCL);
+    if (begin(Wire)) {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
+    } else {
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
+    }
+    /*activateLoRa();
+    activateOLED();
+    if (disableGPS) {
+      deactivateGPS();
+    } else {
+      activateGPS();
+    }
+    activateMeasurement();*/
+    /*PMU.setPrechargeCurr(XPOWERS_AXP2101_PRECHARGE_200MA);
+    PMU.setChargerTerminationCurr(XPOWERS_AXP2101_CHG_ITERM_25MA);
+    PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
+    PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
+    PMU.setSysPowerDownVoltage(2600);*/
+    #endif
+  }
+
 }
