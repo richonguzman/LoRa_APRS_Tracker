@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2023.12.31 PowerManagment Library AXP192/AXP2101 updated.
 - 2023.12.27 Added Led-Flashlight like Baofeng UV5R Led.
 - 2023.12.27 Added LoRa APRS Packet Decoder to Stations Menu.
 - 2023.12.26 Added BME680 (to the already BME/BMP280) support for Wx Telemetry Tx.
