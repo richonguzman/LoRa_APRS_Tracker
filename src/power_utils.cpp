@@ -236,6 +236,7 @@ namespace POWER_Utils {
     PMU.setChargerTerminationCurr(XPOWERS_AXP192_CHG_ITERM_LESS_10_PERCENT);
     PMU.setChargeTargetVoltage(XPOWERS_AXP192_CHG_VOL_4V2);
     PMU.setChargerConstantCurr(XPOWERS_AXP192_CHG_CUR_780MA);
+    PMU.setSysPowerDownVoltage(2600);
     #endif
     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
     Wire.begin(SDA, SCL);
@@ -255,8 +256,8 @@ namespace POWER_Utils {
     PMU.setChargerTerminationCurr(XPOWERS_AXP2101_CHG_ITERM_25MA);
     PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
     PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
-    #endif
     PMU.setSysPowerDownVoltage(2600);
+    #endif
   }
 
   void lowerCpuFrequency() {
