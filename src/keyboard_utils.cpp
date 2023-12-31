@@ -211,10 +211,10 @@ namespace KEYBOARD_Utils {
         MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
       }
     } else if (menuDisplay == 131) {
-      show_display(" APRS Thu.", "", "     Unsubscribe", " from APRS Thursday", 2000);
+      show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
       MSG_Utils::sendMessage("ANSRVR","U HOTG");
     } else if (menuDisplay == 132) {
-      show_display(" APRS Thu.", "", "    Keep Subscribed" ,"  for 12hours more", 2000);
+      show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
       MSG_Utils::sendMessage("ANSRVR","K HOTG");
     } 
     
