@@ -244,7 +244,7 @@ namespace KEYBOARD_Utils {
 
     else if (menuDisplay == 4) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-      MSG_Utils::sendMessage("CD2RXU-15","wrl");
+      MSG_Utils::sendMessage("CA2RXU-15","wrl");
     }
     else if (menuDisplay == 5) {
       show_display("_WINLINK_", "still on", "development..", 2000); /////////////////////////
