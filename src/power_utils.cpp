@@ -4,6 +4,7 @@
 
 #define I2C_SDA 21
 #define I2C_SCL 22
+#define IRQ_PIN 35
 
 #if defined(TTGO_T_Beam_V1_0)
 XPowersAXP192 PMU;
@@ -58,7 +59,6 @@ namespace POWER_Utils {
   void disableChgLed() {
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
     PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
-    
     #endif
   }  
 
@@ -131,6 +131,7 @@ namespace POWER_Utils {
 
   void activateMeasurement() {
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    PMU.disableTSPinMeasure();
     PMU.enableBattDetection();
     PMU.enableVbusVoltageMeasure();
     PMU.enableBattVoltageMeasure();
@@ -186,11 +187,12 @@ namespace POWER_Utils {
     bool result = PMU.begin(Wire, AXP192_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
     if (result) {
       PMU.disableDC2();
-      PMU.disableDC3();
       PMU.disableLDO2();
       PMU.disableLDO3();
       PMU.setDC1Voltage(3300);
       PMU.enableDC1();
+      PMU.setProtectedChannel(XPOWERS_DCDC3);
+      PMU.disableIRQ(XPOWERS_AXP192_ALL_IRQ);
     }
     return result;
     #endif
@@ -209,17 +211,17 @@ namespace POWER_Utils {
       PMU.disableDLDO2();
       PMU.setDC1Voltage(3300);
       PMU.enableDC1();
+      PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
     }
     return result;
     #endif
   }
 
   void setup() {
-    Serial.println("starting setup");
     Wire.end();
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
     Wire.begin(SDA, SCL);
-    if (!begin(Wire)) {
+    if (begin(Wire)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
@@ -231,6 +233,9 @@ namespace POWER_Utils {
       activateGPS();
     }
     activateMeasurement();
+    PMU.setChargerTerminationCurr(XPOWERS_AXP192_CHG_ITERM_LESS_10_PERCENT);
+    PMU.setChargeTargetVoltage(XPOWERS_AXP192_CHG_VOL_4V2);
+    PMU.setChargerConstantCurr(XPOWERS_AXP192_CHG_CUR_780MA);
     #endif
     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
     Wire.begin(SDA, SCL);
@@ -250,8 +255,8 @@ namespace POWER_Utils {
     PMU.setChargerTerminationCurr(XPOWERS_AXP2101_CHG_ITERM_25MA);
     PMU.setChargeTargetVoltage(XPOWERS_AXP2101_CHG_VOL_4V2);
     PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
-    PMU.setSysPowerDownVoltage(2600);
     #endif
+    PMU.setSysPowerDownVoltage(2600);
   }
 
   void lowerCpuFrequency() {
