@@ -105,7 +105,7 @@
 #define RADIO_BUSY_PIN  4
 
 /*      NOT USED????
-/*#define SPI_MOSI                    35      // ??
+#define SPI_MOSI                    35      // ??
 #define SPI_SCK                     36      // ??
 #define SPI_MISO                    37      // ??
 #define SPI_CS                      47      // ??
