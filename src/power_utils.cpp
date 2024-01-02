@@ -10,6 +10,8 @@
 #endif
 
 #ifdef TTGO_T_Beam_S3_SUPREME_V3
+#define I2C0_SDA 17
+#define I2C0_SCL 18
 #define I2C1_SDA 42
 #define I2C1_SCL 41
 #define IRQ_PIN  40
@@ -35,9 +37,10 @@ namespace POWER_Utils {
   String batteryVoltage = "";
   String batteryChargeDischargeCurrent = "";
 
+  /*      NOT USED????
   void setPMUFlag() {
     pmuInterrupt = true;
-  }
+  }*/
 
   double getBatteryVoltage() {
     #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
@@ -297,10 +300,10 @@ namespace POWER_Utils {
     #endif
 
     #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-    #ifdef I2C1_SDA
+    #ifdef I2C1_SDA   // what is this validating?
     Wire1.begin(I2C1_SDA, I2C1_SCL);
     #endif
-    Wire.begin(SDA, SCL);
+    Wire.begin(I2C0_SDA, I2C0_SCL);
     if (begin(Wire1)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
     } else {

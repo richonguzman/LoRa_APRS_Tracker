@@ -73,13 +73,13 @@
 #define OLED_SCL        18
 #define OLED_RST        16
   
-#define SDA             17
-#define SCL             18
+//#define SDA             17    // writen in power_utils.cpp variable definitions
+//#define SCL             18
 
-#define I2C1_SDA        42
-#define I2C1_SCL        41
-//#define PMU_IRQ                     40    // double defined in power_utils.cpp
-//#define IRQ_PIN                     40    // double defined in power_utils.cpp
+//#define I2C1_SDA        42    // double defined in power_utils.cpp
+//#define I2C1_SCL        41    // double defined in power_utils.cpp
+//#define PMU_IRQ         40    // double defined in power_utils.cpp
+//#define IRQ_PIN         40    // double defined in power_utils.cpp
 
 #define GPS_RX          8       // changed to maintain the same "neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);"
 #define GPS_TX          9       // 8 for 9 and 9 for 8
