@@ -6,12 +6,13 @@
 #define I2C_SCL 22
 #define IRQ_PIN 35
 
-#if defined(TTGO_T_Beam_V1_0)
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
 XPowersAXP192 PMU;
 #endif
-#if defined(TTGO_T_Beam_V1_2)
+#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
 XPowersAXP2101 PMU;
 #endif
+
 
 extern Configuration    Config;
 extern logging::Logger  logger;
