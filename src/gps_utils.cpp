@@ -41,7 +41,11 @@ namespace GPS_Utils {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
+    #if defined(TTGO_T_Beam_S3_SUPREME_V3)
+    neo6m_gps.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
+    #else
     neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+    #endif
   }
 
   void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {

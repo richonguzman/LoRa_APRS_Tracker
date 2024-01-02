@@ -14,7 +14,7 @@ namespace POWER_Utils {
   void enableChgLed();
   void disableChgLed();
 
-  bool isChargeing();
+  bool isCharging();
   void handleChargingLed();
   double getBatteryChargeDischargeCurrent();
   bool isBatteryConnected();

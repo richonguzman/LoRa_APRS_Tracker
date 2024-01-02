@@ -169,7 +169,9 @@ namespace MSG_Utils {
         if (Config.bluetoothType==0) {
           BLE_Utils::sendToPhone(packet.text.substring(3));
         } else {
+          #ifndef TTGO_T_Beam_S3_SUPREME_V3
           BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+          #endif
         }        
 
         if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
