@@ -1,4 +1,4 @@
-#include "configuration.h"
+ #include "configuration.h"
 #include "power_utils.h"
 #include "pins_config.h"
 #include "logger.h"
@@ -36,11 +36,6 @@ namespace POWER_Utils {
   bool   BatteryIsConnected = false;
   String batteryVoltage = "";
   String batteryChargeDischargeCurrent = "";
-
-  /*      NOT USED????
-  void setPMUFlag() {
-    pmuInterrupt = true;
-  }*/
 
   double getBatteryVoltage() {
     #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
@@ -261,7 +256,7 @@ namespace POWER_Utils {
       PMU.disableDLDO2();
       PMU.setDC1Voltage(3300);
       PMU.enableDC1();
-      PMU.setALDO1Voltage(2300); // screen brightness???
+      PMU.setALDO1Voltage(3300);
       PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
     }
     return result;
@@ -300,9 +295,7 @@ namespace POWER_Utils {
     #endif
 
     #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-    #ifdef I2C1_SDA   // what is this validating?
     Wire1.begin(I2C1_SDA, I2C1_SCL);
-    #endif
     Wire.begin(I2C0_SDA, I2C0_SCL);
     if (begin(Wire1)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
