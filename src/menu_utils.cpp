@@ -400,21 +400,21 @@ namespace MENU_Utils {
                         sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
                     }
                     #endif
-                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
+                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
                             if (batteryCharge.toInt() < 6) {
                                 NOTIFICATION_Utils::lowBatteryBeep();
                             }
                         } 
-                        if (POWER_Utils::isChargeing()) {
+                        if (POWER_Utils::isCharging()) {
                             lowBatteryPercent = 21;
                         }
                         batteryVoltage = batteryVoltage.toFloat()/1000;
-                        if (POWER_Utils::isChargeing() && batteryCharge!="100") {
+                        if (POWER_Utils::isCharging() && batteryCharge!="100") {
                             sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
-                        } else if (!POWER_Utils::isChargeing() && batteryCharge=="100") {
+                        } else if (!POWER_Utils::isCharging() && batteryCharge=="100") {
                             sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
                         } else {
                             sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryCharge + "%";

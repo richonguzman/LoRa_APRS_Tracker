@@ -9,6 +9,10 @@
 
 #define ssd1306 //comment this line with "//" when using SH1106 screen instead of SSD1306
 
+#if defined(TTGO_T_Beam_S3_SUPREME_V3)
+#undef ssd1306
+#endif
+
 #ifdef ssd1306
 #include <Adafruit_SSD1306.h>
 #else

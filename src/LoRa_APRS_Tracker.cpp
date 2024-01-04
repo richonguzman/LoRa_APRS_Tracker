@@ -27,12 +27,14 @@
 Configuration                 Config;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
+#ifndef TTGO_T_Beam_S3_SUPREME_V3
 BluetoothSerial               SerialBT;
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+#endif
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2023.12.31";
+String    versionDate         = "2024.01.04";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -140,11 +142,13 @@ void setup() {
   if (Config.bluetoothType==0) {
     BLE_Utils::setup();
   } else {
+    #ifndef TTGO_T_Beam_S3_SUPREME_V3
     BLUETOOTH_Utils::setup();
+    #endif
   }
 
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
@@ -167,7 +171,7 @@ void loop() {
 
   POWER_Utils::batteryManager();
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
     userButton.tick();
     #endif
   }
@@ -189,7 +193,9 @@ void loop() {
   if (Config.bluetoothType==0) {
     BLE_Utils::sendToLoRa();
   } else {
+    #ifndef TTGO_T_Beam_S3_SUPREME_V3
     BLUETOOTH_Utils::sendToLoRa();
+    #endif
   }
 
   int currentSpeed = (int) gps.speed.kmph();

@@ -65,16 +65,16 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.ledTx            = data["notification"]["ledTx"].as<bool>();
     notification.ledTxPin         = data["notification"]["ledTxPin"].as<int>();
     notification.ledMessage       = data["notification"]["ledMessage"].as<bool>();
-		notification.ledMessagePin    = data["notification"]["ledMessagePin"].as<int>();
+    notification.ledMessagePin    = data["notification"]["ledMessagePin"].as<int>();
     notification.ledFlashlight    = data["notification"]["ledFlashlight"].as<bool>();
-		notification.ledFlashlightPin = data["notification"]["ledFlashlightPin"].as<int>();
-		notification.buzzerActive     = data["notification"]["buzzerActive"].as<bool>();
-		notification.buzzerPinTone    = data["notification"]["buzzerPinTone"].as<int>();
+    notification.ledFlashlightPin = data["notification"]["ledFlashlightPin"].as<int>();
+    notification.buzzerActive     = data["notification"]["buzzerActive"].as<bool>();
+    notification.buzzerPinTone    = data["notification"]["buzzerPinTone"].as<int>();
     notification.buzzerPinVcc     = data["notification"]["buzzerPinVcc"].as<int>();
-		notification.bootUpBeep       = data["notification"]["bootUpBeep"].as<bool>();
-		notification.txBeep           = data["notification"]["txBeep"].as<bool>();
-		notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
-		notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
+    notification.bootUpBeep       = data["notification"]["bootUpBeep"].as<bool>();
+    notification.txBeep           = data["notification"]["txBeep"].as<bool>();
+    notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
+    notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
 
     simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
