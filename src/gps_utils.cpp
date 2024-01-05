@@ -32,7 +32,7 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
   void setup() {
-    #ifdef TTGO_T_LORA_V2_1_TNC
+    #ifdef TTGO_T_LORA32_V2_1_TNC
     disableGPS = true;
     #else
     disableGPS = Config.disableGPS;

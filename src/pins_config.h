@@ -17,7 +17,7 @@
 #define BUTTON_PIN      38 // The middle button GPIO on the T-Beam
 #endif
 
-#if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS)
+#if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
 #define GPS_RX          12
 #define GPS_TX          34
 #define BUTTON_PIN      -1
@@ -61,7 +61,7 @@
 #define BUTTON_PIN      39
 #endif
 
-#ifdef TTGO_T_LORA_V2_1_TNC
+#ifdef TTGO_T_LORA32_V2_1_TNC
 #define GPS_RX          -1
 #define GPS_TX          -1
 #define BUTTON_PIN      -1
