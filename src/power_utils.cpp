@@ -101,7 +101,7 @@ namespace POWER_Utils {
     #endif
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
     if (PMU.isCharging()) {
-      return PMU.getBattDischargeCurrent();
+      return PMU.getBatteryChargeCurrent();
     }
     return -1.0 * PMU.getBattDischargeCurrent();
     #endif
