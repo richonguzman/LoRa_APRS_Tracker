@@ -54,7 +54,7 @@ ____________________________________________________
 ## Timeline (Versions):
 
 - 2024.01.05 Added HELTEC V3 with NEO8M GPS. Thanks Luc ON2ON.
-- 2024.01.04 Added TTGO Lilygo T-Beam S3 Supreme v3 support. Thanks Johannes OE2JPO.
+- 2024.01.04 Added TTGO Lilygo T-Beam S3 Supreme V3 support. Thanks Johannes OE2JPO.
 - 2023.12.31 PowerManagment Library AXP192/AXP2101 updated.
 - 2023.12.27 Added Led-Flashlight like Baofeng UV5R Led.
 - 2023.12.27 Added LoRa APRS Packet Decoder to Stations Menu.
