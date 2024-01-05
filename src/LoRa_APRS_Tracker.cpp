@@ -27,7 +27,7 @@
 Configuration                 Config;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
-#ifndef TTGO_T_Beam_S3_SUPREME_V3
+#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
 BluetoothSerial               SerialBT;
 #endif
 #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -142,7 +142,7 @@ void setup() {
   if (Config.bluetoothType==0) {
     BLE_Utils::setup();
   } else {
-    #ifndef TTGO_T_Beam_S3_SUPREME_V3
+    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
     BLUETOOTH_Utils::setup();
     #endif
   }
@@ -193,7 +193,7 @@ void loop() {
   if (Config.bluetoothType==0) {
     BLE_Utils::sendToLoRa();
   } else {
-    #ifndef TTGO_T_Beam_S3_SUPREME_V3
+    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
     BLUETOOTH_Utils::sendToLoRa();
     #endif
   }

@@ -12,6 +12,9 @@
 #if defined(TTGO_T_Beam_S3_SUPREME_V3)
 #undef ssd1306
 #endif
+#if defined(HELTEC_V3_GPS)
+#define OLED_DISPLAY_HAS_RST_PIN
+#endif
 
 #ifdef ssd1306
 #include <Adafruit_SSD1306.h>
