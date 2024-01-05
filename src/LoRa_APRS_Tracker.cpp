@@ -24,15 +24,16 @@
 #include "utils.h"
 
 Configuration                 Config;
-PowerManagement               powerManagement;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
+#ifndef TTGO_T_Beam_S3_SUPREME_V3
 BluetoothSerial               SerialBT;
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+#endif
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2023.12.27";
+String    versionDate         = "2024.01.04";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -84,6 +85,7 @@ uint32_t  keyboardTime        = millis();
 String    messageCallsign     = "";
 String    messageText         = "";
 
+bool      flashlight          = false;
 bool      digirepeaterActive  = false;
 bool      sosActive           = false;
 bool      disableGPS;
@@ -101,20 +103,24 @@ void setup() {
   logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
   #endif
 
-  powerManagement.setup();
+  POWER_Utils::setup();
 
   setup_display();
   if (Config.notification.buzzerActive) {
     pinMode(Config.notification.buzzerPinTone, OUTPUT);
     pinMode(Config.notification.buzzerPinVcc, OUTPUT);
     NOTIFICATION_Utils::start();
-  } 
+  }
   if (Config.notification.ledTx){
     pinMode(Config.notification.ledTxPin, OUTPUT);
   }
   if (Config.notification.ledMessage){
     pinMode(Config.notification.ledMessagePin, OUTPUT);
   }
+  if (Config.notification.ledFlashlight) {
+    pinMode(Config.notification.ledFlashlightPin, OUTPUT);
+  }
+
   show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate.c_str());
@@ -135,11 +141,13 @@ void setup() {
   if (Config.bluetoothType==0) {
     BLE_Utils::setup();
   } else {
+    #ifndef TTGO_T_Beam_S3_SUPREME_V3
     BLUETOOTH_Utils::setup();
+    #endif
   }
 
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
@@ -147,8 +155,8 @@ void setup() {
     KEYBOARD_Utils::setup();
   }
 
-  powerManagement.lowerCpuFrequency();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", utils::getSmartBeaconState().c_str());
+  POWER_Utils::lowerCpuFrequency();
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
 }
@@ -174,13 +182,13 @@ void loop() {
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
 
-  powerManagement.batteryManager();
+  POWER_Utils::batteryManager();
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
     userButton.tick();
     #endif
   }
-  utils::checkDisplayEcoMode();
+  Utils::checkDisplayEcoMode();
 
   if (keyboardConnected) {
     KEYBOARD_Utils::read();
@@ -193,17 +201,20 @@ void loop() {
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
   MSG_Utils::ledNotification();
+  Utils::checkFlashlight();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
   if (Config.bluetoothType==0) {
     BLE_Utils::sendToLoRa();
   } else {
+    #ifndef TTGO_T_Beam_S3_SUPREME_V3
     BLUETOOTH_Utils::sendToLoRa();
+    #endif
   }
 
   int currentSpeed = (int) gps.speed.kmph();
 
   if (gps_loc_update) {
-    utils::checkStatus();
+    Utils::checkStatus();
     STATION_Utils::checkTelemetryTx();
   }
   lastTx = millis() - lastTxTime;

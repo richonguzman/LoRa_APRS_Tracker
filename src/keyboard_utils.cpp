@@ -7,11 +7,10 @@
 #include "msg_utils.h"
 #include "display.h"
 
-#define CARDKB_ADDR 0x5F    // yes , this is for CARDKB from m5stack.com
+#define CARDKB_ADDR 0x5F    // CARDKB from m5stack.com
 
 extern Configuration    Config;
 extern logging::Logger  logger;
-extern PowerManagement  powerManagement;
 extern bool             sendUpdate;
 extern int              menuDisplay;
 extern uint32_t         menuTime;
@@ -30,6 +29,7 @@ extern int              messagesIterator;
 extern bool             messageLed;
 extern String           messageCallsign;
 extern String           messageText;
+extern bool             flashlight;
 extern bool             digirepeaterActive;
 extern bool             sosActive;
 
@@ -71,10 +71,10 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 30) {
         menuDisplay = 31;
       }
-    } else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    }else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay--;
       if (menuDisplay < 60) {
-        menuDisplay = 61;
+        menuDisplay = 62;
       }
     }
   }
@@ -100,7 +100,8 @@ namespace KEYBOARD_Utils {
       if (menuDisplay > 13) {
         menuDisplay = 10;
       }
-    } else if (menuDisplay >= 130 && menuDisplay <= 132) {
+    } 
+    else if (menuDisplay >= 130 && menuDisplay <= 132) {
       menuDisplay++;
       if (menuDisplay > 132) {
         menuDisplay = 130;
@@ -134,21 +135,23 @@ namespace KEYBOARD_Utils {
       menuDisplay++;
       if (menuDisplay > 221) {
         menuDisplay = 220;
-      }
-    } else if (menuDisplay >= 30 && menuDisplay <= 31) {
+      } 
+    }
+
+    else if (menuDisplay >= 30 && menuDisplay <= 31) {
       menuDisplay++;
       if (menuDisplay > 31) {
         menuDisplay = 30;
-      }
+      } 
     }
     
     else if (menuDisplay == 40) {
       menuDisplay = 4;
     }
 
-    else if (menuDisplay >= 60 && menuDisplay <= 61) {
+    else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay++;
-      if (menuDisplay > 61) {
+      if (menuDisplay > 62) {
         menuDisplay = 60;
       } 
     }
@@ -166,7 +169,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay==1300) {
       messageText = "";
       menuDisplay = 130;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=61) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -174,7 +177,7 @@ namespace KEYBOARD_Utils {
 
   void rightArrow() {
     if (menuDisplay == 0) {
-      if(myBeaconsIndex >= myBeaconsSize - 1) {
+      if(myBeaconsIndex >= (myBeaconsSize-1)) {
         myBeaconsIndex = 0;
       } else {
         myBeaconsIndex++;
@@ -200,14 +203,19 @@ namespace KEYBOARD_Utils {
       MSG_Utils::loadNumMessages();
       menuDisplay = 12;
     } else if (menuDisplay == 130) {
-      menuDisplay = 1300;
+      if (keyDetected) {
+        menuDisplay = 1300;
+      } else {
+        show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
+        MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+      }
     } else if (menuDisplay == 131) {
-      show_display(" APRS Thu.", "", "     Unsubscribe", " from APRS Thursday", 2000);
+      show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
       MSG_Utils::sendMessage("ANSRVR","U HOTG");
     } else if (menuDisplay == 132) {
-      show_display(" APRS Thu.", "", "    Keep Subscribed" ,"  for 12hours more", 2000);
+      show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
       MSG_Utils::sendMessage("ANSRVR","K HOTG");
-    }
+    } 
     
     else if (menuDisplay == 210) {
       if (!displayEcoMode) {
@@ -235,7 +243,7 @@ namespace KEYBOARD_Utils {
 
     else if (menuDisplay == 4) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-      MSG_Utils::sendMessage("CD2RXU-15","wrl");
+      MSG_Utils::sendMessage("CA2RXU-15","wrl");
     }
     else if (menuDisplay == 5) {
       show_display("_WINLINK_", "still on", "development..", 2000); /////////////////////////
@@ -244,22 +252,34 @@ namespace KEYBOARD_Utils {
     else if (menuDisplay == 6) {
       menuDisplay = 60;
     } else if (menuDisplay == 60) {
+      if (Config.notification.ledFlashlight) {
+        if (flashlight) {
+          show_display("__EXTRAS__", "","     Flashlight","   Status --> OFF","", 2000);
+          flashlight = false;
+        } else {
+          show_display("__EXTRAS__", "","     Flashlight","   Status --> ON","", 2000);
+          flashlight = true;
+        }
+      } else {
+        show_display("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!","", 2000);
+      }
+    } else if (menuDisplay == 61) {
       if (digirepeaterActive) {
-        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> OFF","", 2000); /////////////////////////
+        show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater OFF");
         digirepeaterActive = false;
       } else {
-        show_display("EMERGENCY_", "","   DigiRepeater","   Status --> ON","", 2000); /////////////////////////
+        show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater ON");
         digirepeaterActive = true;
       }
-    } else if (menuDisplay == 61) {
+    } else if (menuDisplay == 62) {
       if (sosActive) {
-        show_display("EMERGENCY_", "","       S.O.S.","   Status --> OFF","", 2000);
+        show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode OFF");
         sosActive = false;
       } else {
-        show_display("EMERGENCY_", "","       S.O.S.","   Status --> ON","", 2000);
+        show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON","", 2000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
         sosActive = true;
       }
@@ -288,7 +308,7 @@ namespace KEYBOARD_Utils {
       if (messageCallsign.length() == 1) {
         messageCallsign.trim();
       }
-      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key == 45) { //only letters + numbers + "-"
+      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
         messageCallsign += key;
       } else if (key == 13) {                         // Return Pressed
         messageCallsign.trim();
@@ -325,7 +345,7 @@ namespace KEYBOARD_Utils {
       }
     } else if (key==13) { // Enter
       if (menuDisplay==200) {
-        if(myBeaconsIndex >= myBeaconsSize - 1) {
+        if(myBeaconsIndex >= (myBeaconsSize-1)) {
           myBeaconsIndex = 0;
         } else {
           myBeaconsIndex++;
@@ -342,7 +362,7 @@ namespace KEYBOARD_Utils {
         ESP.restart();
       } else if (menuDisplay==260) {
         show_display("", "", "    POWER OFF ...", 2000);
-        powerManagement.shutdown();
+        POWER_Utils::shutdown();
       } else if (menuDisplay == 0) {
         menuDisplay = 1;
       } else {
@@ -353,7 +373,7 @@ namespace KEYBOARD_Utils {
       upArrow();
     }
     else if (key == 182) {  // Arrow Down
-      downArrow();
+      downArrow();      
     }
     else if (key == 180) {  // Arrow Left
       leftArrow();

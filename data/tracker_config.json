@@ -38,7 +38,7 @@
 		},
 		{
 			"callsign": "NOCALL-7",
-			"symbol": "j",
+			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
@@ -97,6 +97,8 @@
 		"ledTxPin": 13,
 		"ledMessage": false,
 		"ledMessagePin": 2,
+		"ledFlashlight": false,
+		"ledFlashlightPin": 14,
 		"buzzerActive": false,
 		"buzzerPinTone": 33,
 		"buzzerPinVcc": 25,

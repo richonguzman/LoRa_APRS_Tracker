@@ -16,11 +16,11 @@ extern uint32_t         displayTime;
 extern bool             displayState;
 extern int              menuDisplay;
 extern String           versionDate;
+extern bool             flashlight;
 
-namespace utils {
+namespace Utils {
   
-  static char locator[11];
-  // The letterize and getMaidenheadLocator functions are Copyright (c) 2021 Mateusz Salwach - MIT License
+  static char locator[11];    // letterize and getMaidenheadLocator functions are Copyright (c) 2021 Mateusz Salwach - MIT License
 
   static char letterize(int x) {
       return (char) x + 65;
@@ -99,4 +99,12 @@ namespace utils {
     return "Off";
   }
 
+  void checkFlashlight() {
+    if (flashlight && !digitalRead(Config.notification.ledFlashlightPin)) {
+      digitalWrite(Config.notification.ledFlashlightPin, HIGH);
+    } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
+      digitalWrite(Config.notification.ledFlashlightPin, LOW);
+    }       
+  }
+  
 }

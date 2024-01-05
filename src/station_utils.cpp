@@ -9,13 +9,11 @@
 #include "bme_utils.h"
 #include "display.h"
 #include "logger.h"
-#include "utils.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
-extern PowerManagement      powerManagement;
 extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern int                  myBeaconsIndex;
@@ -410,8 +408,8 @@ namespace STATION_Utils {
       } 
     }
     if (Config.sendBatteryInfo) {
-      String batteryVoltage = powerManagement.getBatteryInfoVoltage();
-      String batteryChargeCurrent = powerManagement.getBatteryInfoCurrent();
+      String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+      String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
       #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
       packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
       #endif

@@ -15,7 +15,6 @@ extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
-extern PowerManagement      powerManagement;
 extern std::vector<String>  loadedAPRSMessages;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
@@ -24,6 +23,7 @@ extern int                  lowBatteryPercent;
 extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
+extern bool                 flashlight;
 extern bool                 digirepeaterActive;
 extern bool                 sosActive;
 extern bool                 bluetoothActive;
@@ -70,7 +70,7 @@ namespace MENU_Utils {
         }
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1. Messages
-                show_display("__MENU____","  6.Emergency", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
+                show_display("__MENU____","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
                 break;
             case 2:     // 2. Configuration
                 show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
@@ -79,13 +79,13 @@ namespace MENU_Utils {
                 show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Winlink/Mail", lastLine);
                 break;
             case 4:     //4. Weather
-                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Emergency", lastLine);
+                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Extras", lastLine);
                 break;
             case 5:     //5. Winlink
-                show_display("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Emergency", "  1.Messages", lastLine);
+                show_display("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
                 break;
-            case 6:     //6. Emergency
-                show_display("__MENU____", "  5.Winlink/Mail", "> 6.Emergency", "  1.Messages", "  2.Configuration", lastLine);
+            case 6:     //6. Extras
+                show_display("__MENU____", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
                 break;
 
 
@@ -135,22 +135,16 @@ namespace MENU_Utils {
                 show_display(" APRS Thu.", "> Join APRSThursday", "  Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
                 break;
             case 1300:
-                if (keyDetected) {
-                    if (messageText.length() <= 67) {
-                        if (messageText.length() < 10) {
-                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
-                        } else {
-                            show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
-                        }
+                if (messageText.length() <= 67) {
+                    if (messageText.length() < 10) {
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }
                 } else {
-                    show_display("WRITE_MSG>", "  - APRSThursday -", "No Keyboard Detected", "Can't write Message", "", "1P = Back");
+                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
-
-
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 show_display("APRS Thu._", "  Join APRSThursday", "> Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
                 break;
@@ -244,7 +238,7 @@ namespace MENU_Utils {
                 }
                 firstLineDecoder += lastReceivedPacket.symbol;
 
-                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps
+                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps 
                     courseSpeedAltitude = String(lastReceivedPacket.altitude);
                     for(int j=courseSpeedAltitude.length();j<4;j++) {
                         courseSpeedAltitude = '0' + courseSpeedAltitude;
@@ -263,10 +257,10 @@ namespace MENU_Utils {
                         coursePacketDec = ' ' + coursePacketDec;
                     }
                     courseSpeedAltitude += coursePacketDec;
-
+                    
                     double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
                     double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
-
+                    
                     if (lastReceivedPacket.path.length()>14) {
                         pathDec = "P:" + lastReceivedPacket.path;
                     } else {
@@ -292,11 +286,14 @@ namespace MENU_Utils {
                 // waiting for Weather Report
                 break;
 
-            case 60:    // 6. Emergency ---> Digirepeater
-                show_display("EMERGENCY_", "", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+            case 60:    // 6. Extras ---> Flashlight
+                show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
-            case 61:    // 6. Emergency ---> S.O.S.
-                show_display("EMERGENCY_", "", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+            case 61:    // 6. Extras ---> Digirepeater
+                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
+                break;
+            case 62:    // 6. Extras ---> S.O.S.
+                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
 
             case 0:       ///////////// MAIN MENU //////////////
@@ -323,11 +320,11 @@ namespace MENU_Utils {
                     fourthRowMainMenu = "";
                 } else {
                     const auto time_now = now();
-                    secondRowMainMenu = utils::createDateString(time_now) + "   " + utils::createTimeString(time_now);
+                    secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
                         thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                     } else {
-                        thirdRowMainMenu = String(utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                     }
 
                     for(int i = thirdRowMainMenu.length(); i < 18; i++) {
@@ -384,9 +381,9 @@ namespace MENU_Utils {
 
                 fifthRowMainMenu  = "LAST Rx = " + MSG_Utils::getLastHeardTracker();
 
-                if (powerManagement.getBatteryInfoIsConnected()) {
-                    String batteryVoltage = powerManagement.getBatteryInfoVoltage();
-                    String batteryCharge = powerManagement.getBatteryInfoCurrent();
+                if (POWER_Utils::getBatteryInfoIsConnected()) {
+                    String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+                    String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA_V2_1_GPS) || defined(TTGO_T_LORA_V2_1_TNC)
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
@@ -399,21 +396,21 @@ namespace MENU_Utils {
                         sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
                     }
                     #endif
-                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-                        if (Config.notification.lowBatteryBeep && !powerManagement.isChargeing() && batteryCharge.toInt() < lowBatteryPercent) {
+                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
                             if (batteryCharge.toInt() < 6) {
                                 NOTIFICATION_Utils::lowBatteryBeep();
                             }
                         } 
-                        if (powerManagement.isChargeing()) {
+                        if (POWER_Utils::isCharging()) {
                             lowBatteryPercent = 21;
                         }
                         batteryVoltage = batteryVoltage.toFloat()/1000;
-                        if (powerManagement.isChargeing() && batteryCharge!="100") {
+                        if (POWER_Utils::isCharging() && batteryCharge!="100") {
                             sixthRowMainMenu = "Bat: " + String(batteryVoltage) + "V (charging)";
-                        } else if (!powerManagement.isChargeing() && batteryCharge=="100") {
+                        } else if (!POWER_Utils::isCharging() && batteryCharge=="100") {
                             sixthRowMainMenu = "Battery Charged " + String(batteryVoltage) + "V";
                         } else {
                             sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryCharge + "%";

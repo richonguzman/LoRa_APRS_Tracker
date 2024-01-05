@@ -153,7 +153,7 @@ namespace MSG_Utils {
     String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);  
     if (textMessage.indexOf("ack")== 0) {
       show_display("<<ACK Tx>>", 500);
-    } else if (station.indexOf("CD2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {
+    } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {
       show_display("<WEATHER>","", "--- Sending Query ---",  1000);
     } else {
       show_display("MSG Tx >>", "", newPacket, 1000);
@@ -183,7 +183,9 @@ namespace MSG_Utils {
         if (Config.bluetoothType==0) {
           BLE_Utils::sendToPhone(packetTrimmed);
         } else {
+          #ifndef TTGO_T_Beam_S3_SUPREME_V3
           BLUETOOTH_Utils::sendPacket(packetTrimmed);
+          #endif
         }        
 
         if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
@@ -213,7 +215,7 @@ namespace MSG_Utils {
             delay(4000);
             sendMessage(lastReceivedPacket.sender, "pong, 73!");
           }
-          if (lastReceivedPacket.sender == "CD2RXU-15" && lastReceivedPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
+          if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
             Serial.println("Weather Report Received");
             String wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ")+3);
             String place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
