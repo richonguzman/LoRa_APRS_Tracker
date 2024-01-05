@@ -242,7 +242,7 @@ namespace POWER_Utils {
       PMU.disableDLDO2();
       PMU.setDC1Voltage(3300);
       PMU.enableDC1();
-      PMU.setButtonBatteryChargeVoltage(3100);
+      PMU.setButtonBatteryChargeVoltage(3300);
       PMU.enableButtonBatteryCharge();
       PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
     }
@@ -263,7 +263,7 @@ namespace POWER_Utils {
       PMU.setDC1Voltage(3300);
       PMU.enableDC1();
       PMU.setALDO1Voltage(3300);
-      PMU.setButtonBatteryChargeVoltage(3100);
+      PMU.setButtonBatteryChargeVoltage(3300);
       PMU.enableButtonBatteryCharge();
       PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
     }
