@@ -140,10 +140,10 @@ namespace KEYBOARD_Utils {
     }
 
     else if (menuDisplay >= 30 && menuDisplay <= 31) {
-      menuDisplay++;
+      menuDisplay++;  
       if (menuDisplay > 31) {
         menuDisplay = 30;
-      } 
+      }
     }
     
     else if (menuDisplay == 40) {
@@ -216,7 +216,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay == 132) {
       show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
       MSG_Utils::sendMessage("ANSRVR","K HOTG");
-    } 
+    }
     
     else if (menuDisplay == 210) {
       if (!displayEcoMode) {
@@ -309,7 +309,7 @@ namespace KEYBOARD_Utils {
       if (messageCallsign.length() == 1) {
         messageCallsign.trim();
       }
-      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || (key == 45)) { //only letters + numbers + "-"
+      if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key == 45) { //only letters + numbers + "-"
         messageCallsign += key;
       } else if (key == 13) {                         // Return Pressed
         messageCallsign.trim();
@@ -346,7 +346,7 @@ namespace KEYBOARD_Utils {
       }
     } else if (key==13) {
       if (menuDisplay==200) {
-        if(myBeaconsIndex >= (myBeaconsSize-1)) {
+        if(myBeaconsIndex >= (myBeaconsSize - 1)) {
           myBeaconsIndex = 0;
         } else {
           myBeaconsIndex++;
@@ -370,7 +370,7 @@ namespace KEYBOARD_Utils {
       upArrow();
     }
     else if (key == 182) {  // Arrow Down
-      downArrow();      
+      downArrow();
     }
     else if (key == 180) {  // Arrow Left
       leftArrow();

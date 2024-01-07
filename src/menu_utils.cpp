@@ -242,7 +242,7 @@ namespace MENU_Utils {
                 }
                 firstLineDecoder += lastReceivedPacket.symbol;
 
-                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps 
+                if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps
                     courseSpeedAltitude = String(lastReceivedPacket.altitude);
                     for(int j=courseSpeedAltitude.length();j<4;j++) {
                         courseSpeedAltitude = '0' + courseSpeedAltitude;

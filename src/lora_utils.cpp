@@ -24,7 +24,7 @@ bool enableInterrupt = true;
 
 namespace LoRa_Utils {
 
-  void setFlag(void) {
+  void setFlag() {
     #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
     transmissionFlag = true;
     #endif

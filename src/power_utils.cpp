@@ -254,9 +254,9 @@ namespace POWER_Utils {
     if (result) {
       PMU.disableDC2();
       PMU.disableDC3();
-      PMU.disableDC4();  
+      PMU.disableDC4();
       PMU.disableDC5();
-      PMU.disableBLDO1();      
+      PMU.disableBLDO1();
       PMU.disableBLDO2();
       PMU.disableDLDO1();
       PMU.disableDLDO2();
