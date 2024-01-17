@@ -99,7 +99,6 @@
 #define RADIO_DIO1_PIN      14
 #define RADIO_BUSY_PIN      13
 #define BATTERY_PIN         1
-//#define ADC_EN_PIN          37
 #endif
 
 
