@@ -34,12 +34,29 @@ namespace BME_Utils {
         while (1);
       } else {
         #ifdef BME280Sensor
+        bme.setSampling(Adafruit_BME280::MODE_FORCED,   // Force reading after delayTime
+                        Adafruit_BME280::SAMPLING_X1,   // Temperature sampling set to 1
+                        Adafruit_BME280::SAMPLING_X1,   // Pressure sampling set to 1
+                        Adafruit_BME280::SAMPLING_X1,   // Humidity sampling set to 1
+                        Adafruit_BME280::FILTER_OFF,    // Filter off - immediate 100% step response
+                        Adafruit_BME280::STANDBY_MS_1000
+                        );
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
         #endif
         #ifdef BMP280Sensor
+        bme.setSampling(Adafruit_BMP280::MODE_FORCED,   // Operating Mode
+                        Adafruit_BMP280::SAMPLING_X1,   // Temp. oversampling
+                        Adafruit_BMP280::SAMPLING_X1,   // Pressure oversampling
+                        Adafruit_BMP280::FILTER_OFF,    // Filtering
+                        Adafruit_BMP280::STANDBY_MS_1000 // Standby time
+                        ); 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
         #endif
         #ifdef BME680Sensor
+        bme.setTemperatureOversampling(BME680_OS_1X);
+        bme.setHumidityOversampling(BME680_OS_1X);
+        bme.setPressureOversampling(BME680_OS_1X);
+        bme.setIIRFilterSize(BME680_FILTER_SIZE_0);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
         #endif
       }
