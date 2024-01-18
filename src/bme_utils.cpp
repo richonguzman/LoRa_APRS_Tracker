@@ -10,7 +10,9 @@
 
 extern Configuration    Config;
 extern logging::Logger  logger;
+extern uint32_t         bmeLastReading; 
 
+float newHum, newTemp, newPress, newGas;
 
 namespace BME_Utils {
 
@@ -175,20 +177,23 @@ namespace BME_Utils {
 
   String readDataSensor(String type) {
     String wx, tempStr, humStr, presStr;
-    float newHum;
-    
-    float newTemp   = bme.readTemperature();
-    #if defined(BME280Sensor) || defined(BME680Sensor)
-    newHum = bme.readHumidity();
-    #endif
-    #ifdef BMP280Sensor
-    newHum = 0;
-    #endif
-    float newPress  = (bme.readPressure() / 100.0F);
 
-    #ifdef BME680Sensor
-    float newGas = bme.gas_resistance / 1000.0; // in Kilo ohms
-    #endif
+    uint32_t lastReading = millis() - bmeLastReading;
+    if (lastReading > 60*1000) {
+      newTemp   = bme.readTemperature();
+      newPress  = (bme.readPressure() / 100.0F);
+      #if defined(BME280Sensor) || defined(BME680Sensor)
+      newHum = bme.readHumidity();
+      #endif
+      #ifdef BMP280Sensor
+      newHum = 0;
+      #endif
+      
+      #ifdef BME680Sensor
+      newGas = bme.gas_resistance / 1000.0; // in Kilo ohms
+      #endif
+      bmeLastReading = millis();
+    }
     
     if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
       Serial.println("BME/BMP Module data failed");

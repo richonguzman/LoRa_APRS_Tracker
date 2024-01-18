@@ -34,7 +34,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.01.09";
+String    versionDate         = "2024.01.18";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -78,6 +78,8 @@ double    previousHeading     = 0;
 
 uint32_t  menuTime            = millis();
 bool      symbolAvailable     = true;
+
+uint32_t  bmeLastReading      = -60000;
 
 int       screenBrightness    = 1;
 bool      keyboardConnected   = false;
