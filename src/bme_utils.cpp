@@ -180,6 +180,7 @@ namespace BME_Utils {
 
     uint32_t lastReading = millis() - bmeLastReading;
     if (lastReading > 60*1000) {
+      bme.takeForcedMeasurement();
       newTemp   = bme.readTemperature();
       newPress  = (bme.readPressure() / 100.0F);
       #if defined(BME280Sensor) || defined(BME680Sensor)
