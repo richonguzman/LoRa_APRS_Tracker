@@ -136,7 +136,7 @@ namespace MENU_Utils {
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display(" APRS Thu.", "> Join APRSThursday", "  Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
+                show_display("APRS Thu._", "> Join APRSThursday", "  Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1300:
                 if (messageText.length() <= 67) {
@@ -150,10 +150,24 @@ namespace MENU_Utils {
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "  Join APRSThursday", "> Unsubscribe", "  KeepSubscribed+12h", "", lastLine);
+                show_display("APRS Thu._", "  Join APRSThursday", "> Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                break;
+            case 1310:
+                if (messageText.length() <= 67) {
+                    if (messageText.length() < 10) {
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                    } else {
+                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                    }     
+                } else {
+                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                }
                 break;
             case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "  Join APRSThursday", "  Unsubscribe", "> KeepSubscribed+12h", "", lastLine);
+                show_display("APRS Thu._", "  Join APRSThursday", "  Check In", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                break;
+            case 133:   // 1.Messages ---> APRSThursday ---> Delete: ALL
+                show_display("APRS Thu._", "  Join APRSThursday", "  Check In", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
             

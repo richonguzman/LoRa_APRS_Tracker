@@ -47,10 +47,10 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 10) {
         menuDisplay = 13;
       }
-    } else if (menuDisplay >= 130 && menuDisplay <= 132) {
+    } else if (menuDisplay >= 130 && menuDisplay <= 133) {
       menuDisplay--;
       if (menuDisplay < 130) {
-        menuDisplay = 132;
+        menuDisplay = 133;
       }
     } else if (menuDisplay >= 20 && menuDisplay <= 26) {
       menuDisplay--;
@@ -102,9 +102,9 @@ namespace KEYBOARD_Utils {
         menuDisplay = 10;
       }
     } 
-    else if (menuDisplay >= 130 && menuDisplay <= 132) {
+    else if (menuDisplay >= 130 && menuDisplay <= 133) {
       menuDisplay++;
-      if (menuDisplay > 132) {
+      if (menuDisplay > 133) {
         menuDisplay = 130;
       }
     } else if (menuDisplay == 100) {
@@ -167,10 +167,10 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay==111) {
       messageText = "";
       menuDisplay = 110;
-    } else if (menuDisplay==1300) {
+    } else if (menuDisplay==1300 ||  menuDisplay==1310) {
       messageText = "";
-      menuDisplay = 130;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=132) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
+      menuDisplay = menuDisplay/10;
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -211,9 +211,16 @@ namespace KEYBOARD_Utils {
         MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
       }
     } else if (menuDisplay == 131) {
+      if (keyDetected) {
+        menuDisplay = 1310;
+      } else {
+        show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
+        MSG_Utils::sendMessage("APRSPH","HOTG Happy #APRSThursday from LoRa Tracker 73!");
+      }
+    } else if (menuDisplay == 132) {
       show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
       MSG_Utils::sendMessage("ANSRVR","U HOTG");
-    } else if (menuDisplay == 132) {
+    } else if (menuDisplay == 133) {
       show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
       MSG_Utils::sendMessage("ANSRVR","K HOTG");
     }
@@ -320,7 +327,7 @@ namespace KEYBOARD_Utils {
         messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
       }
       messageCallsign.toUpperCase();
-    } else if ((menuDisplay==111 || menuDisplay==1300) && key!= 180) {     // Writting Text of Message
+    } else if ((menuDisplay==111 || menuDisplay==1300 || menuDisplay==1310) && key!= 180) {     // Writting Text of Message
       if (messageText.length() == 1) {
         messageText.trim();
       }
@@ -338,6 +345,10 @@ namespace KEYBOARD_Utils {
           messageCallsign = "ANSRVR";
           MSG_Utils::sendMessage(messageCallsign, "CQ HOTG " + messageText);
           menuDisplay = 130;
+        } else if (menuDisplay==1310) {
+          messageCallsign = "APRSPH";
+          MSG_Utils::sendMessage(messageCallsign, "HOTG " + messageText);
+          menuDisplay = 131;
         }
         messageCallsign = "";
         messageText = "";
