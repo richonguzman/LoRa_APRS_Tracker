@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
@@ -19,7 +19,7 @@
 			}			
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
@@ -37,7 +37,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
@@ -55,19 +55,15 @@
 			}
 		}
 	],
-	"lora": {
-		"frequency": 433775000,
-		"spreadingFactor": 12,
-		"signalBandwidth": 125000,
-		"codingRate4": 5,
-		"power": 20
-	},
+	"display": {
+		"showSymbol": true,
+		"ecoMode": true,
+		"timeout": 4,
+        "turn180" : false
+    },
 	"other": {
 		"simplifiedTrackerMode": false,
-		"showSymbolOnScreen": true,
 		"sendCommentAfterXBeacons": 10,
-		"displayEcoMode": false,
-		"displayTimeout": 4,
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
@@ -75,9 +71,40 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
-		"bluetoothType": 1,
+		"bluetoothType": 0,
 		"bluetoothActive": true,
 		"disableGPS": false
+	},
+	"winlink": {
+		"password": "ABCDEF"
+	},
+	"bme": {
+		"active": true,
+		"sendTelemetry": false,
+		"heightCorrection": 0
+	},
+	"notification": {
+		"ledTx": true,
+        "ledTxPin": 25,
+        "ledMessage": true,
+        "ledMessagePin": 13,
+        "ledFlashlight": true,
+        "ledFlashlightPin": 14,
+        "buzzerActive": true,
+        "buzzerPinTone": 4,
+        "buzzerPinVcc": 2,
+        "bootUpBeep": true,
+        "txBeep": false,
+        "messageRxBeep": true,
+        "stationBeep": true,
+        "lowBatteryBeep": false
+	},
+	"lora": {
+		"frequency": 433775000,
+		"spreadingFactor": 12,
+		"signalBandwidth": 125000,
+		"codingRate4": 5,
+		"power": 20
 	},
 	"pttTrigger": {
 		"active": false,
@@ -85,26 +112,5 @@
 		"preDelay": 0,
 		"postDelay": 0,
 		"reverse": false
-	},
-	"bme": {
-		"active": false,
-		"sendTelemetry": false,
-		"heightCorrection": 0
-	},
-	"notification": {
-		"ledTx": false,
-		"ledTxPin": 13,
-		"ledMessage": false,
-		"ledMessagePin": 2,
-		"ledFlashlight": false,
-		"ledFlashlightPin": 14,
-		"buzzerActive": false,
-		"buzzerPinTone": 33,
-		"buzzerPinVcc": 25,
-		"bootUpBeep": false,
-		"txBeep": false,
-		"messageRxBeep": false,
-		"stationBeep": false,
-		"lowBatteryBeep": false
 	}
 }

@@ -32,7 +32,6 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
         bcn.micE              = BeaconsArray[i]["micE"].as<String>();
         bcn.comment           = BeaconsArray[i]["comment"].as<String>();
-
         bcn.smartBeaconState  = BeaconsArray[i]["smartBeacon"]["active"].as<bool>();
         bcn.slowRate          = BeaconsArray[i]["smartBeacon"]["slowRate"].as<int>();
         bcn.slowSpeed         = BeaconsArray[i]["smartBeacon"]["slowSpeed"].as<int>();
@@ -41,22 +40,17 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         bcn.minTxDist         = BeaconsArray[i]["smartBeacon"]["minTxDist"].as<int>();
         bcn.minDeltaBeacon    = BeaconsArray[i]["smartBeacon"]["minDeltaBeacon"].as<int>();
         bcn.turnMinDeg        = BeaconsArray[i]["smartBeacon"]["turnMinDeg"].as<int>();
-        bcn.turnSlope         = BeaconsArray[i]["smartBeacon"]["turnSlope"].as<int>();      
-
+        bcn.turnSlope         = BeaconsArray[i]["smartBeacon"]["turnSlope"].as<int>();
+        
         beacons.push_back(bcn);
     }
 
-    loramodule.frequency          = data["lora"]["frequency"].as<long>();
-    loramodule.spreadingFactor    = data["lora"]["spreadingFactor"].as<int>();
-    loramodule.signalBandwidth    = data["lora"]["signalBandwidth"].as<long>();
-    loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
-    loramodule.power              = data["lora"]["power"].as<int>();
+    display.showSymbol            = data["display"]["showSymbol"].as<bool>();
+    display.ecoMode               = data["display"]["ecoMode"].as<bool>();
+    display.timeout               = data["display"]["timeout"].as<int>();
+    display.turn180               = data["display"]["turn180"].as<bool>();
 
-    ptt.active                    = data["pttTrigger"]["active"].as<bool>();
-    ptt.io_pin                    = data["pttTrigger"]["io_pin"].as<int>();
-    ptt.preDelay                  = data["pttTrigger"]["preDelay"].as<int>();
-    ptt.postDelay                 = data["pttTrigger"]["postDelay"].as<int>();
-    ptt.reverse                   = data["pttTrigger"]["reverse"].as<bool>();
+    winlink.password              = data["winlink"]["password"].as<String>();
 
     bme.active                    = data["bme"]["active"].as<bool>();
     bme.sendTelemetry             = data["bme"]["sendTelemetry"].as<bool>();
@@ -77,11 +71,20 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
 
+    loramodule.frequency          = data["lora"]["frequency"].as<long>();
+    loramodule.spreadingFactor    = data["lora"]["spreadingFactor"].as<int>();
+    loramodule.signalBandwidth    = data["lora"]["signalBandwidth"].as<long>();
+    loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
+    loramodule.power              = data["lora"]["power"].as<int>();
+
+    ptt.active                    = data["pttTrigger"]["active"].as<bool>();
+    ptt.io_pin                    = data["pttTrigger"]["io_pin"].as<int>();
+    ptt.preDelay                  = data["pttTrigger"]["preDelay"].as<int>();
+    ptt.postDelay                 = data["pttTrigger"]["postDelay"].as<int>();
+    ptt.reverse                   = data["pttTrigger"]["reverse"].as<bool>();
+
     simplifiedTrackerMode         = data["other"]["simplifiedTrackerMode"].as<bool>();
-    showSymbolOnScreen            = data["other"]["showSymbolOnScreen"].as<bool>();
     sendCommentAfterXBeacons      = data["other"]["sendCommentAfterXBeacons"].as<int>();
-    displayEcoMode                = data["other"]["displayEcoMode"].as<bool>();
-    displayTimeout                = data["other"]["displayTimeout"].as<int>();
     path                          = data["other"]["path"].as<String>();
     nonSmartBeaconRate            = data["other"]["nonSmartBeaconRate"].as<int>();
     rememberStationTime           = data["other"]["rememberStationTime"].as<int>();

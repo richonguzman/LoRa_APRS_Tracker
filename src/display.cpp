@@ -67,6 +67,9 @@ void setup_display() {
     while (true) {
     }
   }
+  if (Config.display.turn180) {
+    display.setRotation(2);
+  }
   #else
   if (!display.begin(0x3c, true)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
@@ -248,7 +251,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.ssd1306_command(screenBrightness);
   #endif
 
-  if (menuDisplay==0 && Config.showSymbolOnScreen) {
+  if (menuDisplay==0 && Config.display.showSymbol) {
     int symbol = 100;
     for (int i=0; i<symbolArraySize; i++) {
       if (currentBeacon->symbol == symbolArray[i]) {

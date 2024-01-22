@@ -34,7 +34,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.01.18";
+String    versionDate         = "2024.01.22";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -45,7 +45,7 @@ int       menuDisplay         = 100;
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
 
-bool      displayEcoMode      = Config.displayEcoMode;
+bool      displayEcoMode      = Config.display.ecoMode;
 bool      displayState        = true;
 uint32_t  displayTime         = millis();
 uint32_t  refreshDisplayTime  = millis();

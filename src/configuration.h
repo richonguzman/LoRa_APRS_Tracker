@@ -23,22 +23,17 @@ public:
   int   turnSlope;
 };
 
-class LoraModule {
+class Display {
 public:
-  long  frequency;
-  int   spreadingFactor;
-  long  signalBandwidth;
-  int   codingRate4;
-  int   power;
+  bool    showSymbol;
+  bool    ecoMode;
+  int     timeout;
+  bool    turn180;
 };
 
-class Ptt {
+class Winlink {
 public:
-  bool  active;
-  int   io_pin;
-  int   preDelay;
-  int   postDelay;
-  bool  reverse;
+  String  password;
 };
 
 class BME {
@@ -66,21 +61,37 @@ public:
   bool    lowBatteryBeep;
 };
 
+class LoraModule {
+public:
+  long  frequency;
+  int   spreadingFactor;
+  long  signalBandwidth;
+  int   codingRate4;
+  int   power;
+};
+
+class Ptt {
+public:
+  bool  active;
+  int   io_pin;
+  int   preDelay;
+  int   postDelay;
+  bool  reverse;
+};
 
 class Configuration {
 public:
 
   std::vector<Beacon> beacons;  
-  LoraModule          loramodule;
-  Ptt                 ptt;
+  Display             display;
+  Winlink             winlink;
   BME                 bme;
   Notification        notification;
-  
+  LoraModule          loramodule;
+  Ptt                 ptt;
+   
   bool    simplifiedTrackerMode;
-  bool    showSymbolOnScreen;
   int     sendCommentAfterXBeacons;
-  bool    displayEcoMode;
-  int     displayTimeout;
   String  path;
   int     nonSmartBeaconRate;
   int     rememberStationTime;

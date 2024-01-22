@@ -318,7 +318,7 @@ namespace MENU_Utils {
                 String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 
                 firstRowMainMenu = currentBeacon->callsign;
-                if (Config.showSymbolOnScreen) {
+                if (Config.display.showSymbol) {
                     for (int j=firstRowMainMenu.length();j<9;j++) {
                         firstRowMainMenu += " ";
                     }
