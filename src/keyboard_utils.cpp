@@ -255,6 +255,7 @@ namespace KEYBOARD_Utils {
     }
     else if (menuDisplay == 5) {
       show_display("_WINLINK_", "still on", "development..", 2000); /////////////////////////
+      Serial.println(Config.winlink.password);
     }
 
     else if (menuDisplay == 6) {
