@@ -59,7 +59,7 @@
 		"showSymbol": true,
 		"ecoMode": false,
 		"timeout": 4,
-        "turn180" : false
+		"turn180" : false
     },
 	"other": {
 		"simplifiedTrackerMode": false,
