@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
@@ -19,7 +19,7 @@
 			}			
 		},
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
@@ -37,7 +37,7 @@
 			}
 		},
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
@@ -57,7 +57,7 @@
 	],
 	"display": {
 		"showSymbol": true,
-		"ecoMode": true,
+		"ecoMode": false,
 		"timeout": 4,
         "turn180" : false
     },
@@ -71,7 +71,7 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
-		"bluetoothType": 0,
+		"bluetoothType": 1,
 		"bluetoothActive": true,
 		"disableGPS": false
 	},
@@ -79,24 +79,24 @@
 		"password": "ABCDEF"
 	},
 	"bme": {
-		"active": true,
+		"active": false,
 		"sendTelemetry": false,
 		"heightCorrection": 0
 	},
 	"notification": {
-		"ledTx": true,
-        "ledTxPin": 25,
-        "ledMessage": true,
-        "ledMessagePin": 13,
-        "ledFlashlight": true,
+		"ledTx": false,
+        "ledTxPin": 13,
+        "ledMessage": false,
+        "ledMessagePin": 2,
+        "ledFlashlight": false,
         "ledFlashlightPin": 14,
-        "buzzerActive": true,
-        "buzzerPinTone": 4,
-        "buzzerPinVcc": 2,
-        "bootUpBeep": true,
+        "buzzerActive": false,
+        "buzzerPinTone": 33,
+        "buzzerPinVcc": 25,
+        "bootUpBeep": false,
         "txBeep": false,
-        "messageRxBeep": true,
-        "stationBeep": true,
+        "messageRxBeep": false,
+        "stationBeep": false,
         "lowBatteryBeep": false
 	},
 	"lora": {
