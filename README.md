@@ -42,9 +42,9 @@ ____________________________________________________
 
 ### 4. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/04.-Upload-Firmware-and-Filesystem-%23-Subir-Firmware-y-sistema-de-archivos" target="_blank">here</a>
 
-### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/05.-Menu-Guide" target="_blank">here</a>
+### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/05.-Menu-Guide-%23-Guía-del-menú" target="_blank">here</a>
 
-### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/06.-Bluetooth-Connection" target="_blank">here</a>
+### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/06.-Bluetooth-Connection-%23-Conexión-Bluetooth" target="_blank">here</a>
 
 ### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/07.-First-Time-Boot-and-GPS.-Primer-arranque-y-GPS" target="_blank">here</a>
 
