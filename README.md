@@ -48,7 +48,8 @@ ____________________________________________________
 
 ### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/07.-First-Time-Boot-and-GPS" target="_blank">here</a>
 
-### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/08.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules" target="_blank">here</a>
+### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/08.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules.-Añadir-teclado,-BME280,-LED-y-alarma-sonora." target="_blank">here</a>
+
 
 ____________________________________________________
 ## Timeline (Versions):
