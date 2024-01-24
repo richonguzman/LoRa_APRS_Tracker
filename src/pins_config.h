@@ -5,6 +5,27 @@
 #undef OLED_SCL
 #undef OLED_RST
 
+
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(OE5HWN_MeshCom)
+#define HAS_BUTTON
+#endif
+
+#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+#define HAS_SX126X
+#endif
+
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_2) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
+#define HAS_SX127X
+#endif
+
+#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+#define HAS_AXP192
+#endif
+
+#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+#define HAS_AXP2101
+#endif
+
 #if !defined(TTGO_T_Beam_S3_SUPREME_V3)  && !defined(HELTEC_V3_GPS)
 #define OLED_SDA            21
 #define OLED_SCL            22
@@ -102,8 +123,18 @@
 #endif
 
 #if defined(OE5HWN_MeshCom)
-
-
+#define GPS_RX              17
+#define GPS_TX              16
+#define BUTTON_PIN          12
+#define RADIO_SCLK_PIN      18
+#define RADIO_MISO_PIN      19
+#define RADIO_MOSI_PIN      23
+#define RADIO_CS_PIN        5
+#define RADIO_RST_PIN       27
+#define RADIO_DIO1_PIN      33
+#define RADIO_BUSY_PIN      26
+#define RADIO_RXEN          14
+#define RADIO_TXEN          13
 #endif
 
 #endif

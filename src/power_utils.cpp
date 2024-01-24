@@ -17,10 +17,10 @@
 #define IRQ_PIN  40
 #endif
 
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+#ifdef HAS_AXP192
 XPowersAXP192 PMU;
 #endif
-#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+#ifdef HAS_AXP2101
 XPowersAXP2101 PMU;
 #endif
 
@@ -39,12 +39,12 @@ namespace POWER_Utils {
   String batteryChargeDischargeCurrent = "";
 
   double getBatteryVoltage() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
     int adc_value = analogRead(35);;
     double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.getBattVoltage() / 1000.0;
     #endif
     #if defined(HELTEC_V3_GPS)
@@ -68,22 +68,22 @@ namespace POWER_Utils {
   }
 
   void enableChgLed() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
     #endif
   }
 
   void disableChgLed() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
     #endif
   }  
 
   bool isCharging() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
     return 0;
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isCharging();
     #endif
   }
@@ -97,29 +97,29 @@ namespace POWER_Utils {
   }
 
   double getBatteryChargeDischargeCurrent() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
     return 0;
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     if (PMU.isCharging()) {
       return PMU.getBatteryChargeCurrent();
     }
     return -1.0 * PMU.getBattDischargeCurrent();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #ifdef HAS_AXP2101
     return PMU.getBatteryPercent();
     #endif
   }
 
   bool isBatteryConnected() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
     if(getBatteryVoltage() > 1.0) {
       return true;
     } else {
       return false;
     }
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isBatteryConnect();
     #endif
   }
@@ -129,10 +129,10 @@ namespace POWER_Utils {
     if (!(rate_limit_check_battery++ % 60))
       BatteryIsConnected = isBatteryConnected();
     if (BatteryIsConnected) {
-      #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+      #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
       batteryVoltage       = String(getBatteryVoltage(), 2);
       #endif
-      #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+      #ifdef HAS_AXP2101
       batteryVoltage       = String(PMU.getBattVoltage());
       #endif
       batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
@@ -141,13 +141,13 @@ namespace POWER_Utils {
 
   void batteryManager() {
     obtainBatteryInfo();
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     handleChargingLed();
     #endif
   }
 
   void activateMeasurement() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.disableTSPinMeasure();
     PMU.enableBattDetection();
     PMU.enableVbusVoltageMeasure();
@@ -157,7 +157,7 @@ namespace POWER_Utils {
   }
 
   void activateGPS() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     PMU.setLDO3Voltage(3300);
     PMU.enableLDO3();
     #endif
@@ -172,7 +172,7 @@ namespace POWER_Utils {
   }
 
   void deactivateGPS() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     PMU.disableLDO3();
     #endif
     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
@@ -184,7 +184,7 @@ namespace POWER_Utils {
   }
 
   void activateLoRa() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     PMU.setLDO2Voltage(3300);
     PMU.enableLDO2();
     #endif
@@ -199,7 +199,7 @@ namespace POWER_Utils {
   }
 
   void deactivateLoRa() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     PMU.disableLDO2();
     #endif
     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
@@ -211,10 +211,10 @@ namespace POWER_Utils {
   }
 
   bool begin(TwoWire &port) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
     return true; // no powerManagment chip for this boards (only a few measure battery voltage).
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     bool result = PMU.begin(Wire, AXP192_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
     if (result) {
       PMU.disableDC2();
@@ -274,7 +274,7 @@ namespace POWER_Utils {
 
   void setup() {
     Wire.end();
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #ifdef HAS_AXP192
     Wire.begin(SDA, SCL);
     if (begin(Wire)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
@@ -313,7 +313,7 @@ namespace POWER_Utils {
     }
     #endif
     
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #ifdef HAS_AXP2101
     activateLoRa();
     if (disableGPS) {
       deactivateGPS();
@@ -333,7 +333,7 @@ namespace POWER_Utils {
   }
 
   void lowerCpuFrequency() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
     if (setCpuFrequencyMhz(80)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
     } else {
@@ -343,7 +343,7 @@ namespace POWER_Utils {
   }
 
   void shutdown() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.shutdown();
     #endif
   }
