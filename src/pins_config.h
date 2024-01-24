@@ -101,5 +101,9 @@
 #define BATTERY_PIN         1
 #endif
 
+#if defined(OE5HWN_MeshCom)
+
+
+#endif
 
 #endif
