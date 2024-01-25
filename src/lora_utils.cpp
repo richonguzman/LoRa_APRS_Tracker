@@ -37,7 +37,7 @@ namespace LoRa_Utils {
     float freq = (float)Config.loramodule.frequency/1000000;
     int state = radio.begin(freq);
     if (state == RADIOLIB_ERR_NONE) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX1268");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX126X");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
