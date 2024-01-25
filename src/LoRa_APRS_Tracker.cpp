@@ -23,6 +23,10 @@
 #include "display.h"
 #include "SPIFFS.h"
 #include "utils.h"
+#ifdef ESP32_BV5DJ_1W_LoRa_GPS
+  #include <Adafruit_NeoPixel.h>
+  Adafruit_NeoPixel myLED (LEDNUM, RGB_LED_PIN, NEO_GRB + NEO_KHZ400);
+#endif
 
 Configuration                 Config;
 HardwareSerial                neo6m_gps(1);
@@ -30,8 +34,14 @@ TinyGPSPlus                   gps;
 #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
 BluetoothSerial               SerialBT;
 #endif
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
+#ifdef BUTTON_PIN
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
+#endif
+#ifdef ESP32_BV5DJ_1W_LoRa_GPS
+OneButton userButtonU          = OneButton(BUTTON_UP, true, true);
+OneButton userButtonD          = OneButton(BUTTON_DOWN, true, true);
+OneButton userButtonL          = OneButton(BUTTON_LEFT, true, true);
+OneButton userButtonR          = OneButton(BUTTON_RIGHT, true, true);
 #endif
 
 String    versionDate         = "2024.01.22";
@@ -109,29 +119,55 @@ void setup() {
   POWER_Utils::setup();
 
   setup_display();
-  if (Config.notification.buzzerActive) {
+  #ifndef ESP32_BV5DJ_1W_LoRa_GPS
+  if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
     pinMode(Config.notification.buzzerPinTone, OUTPUT);
     pinMode(Config.notification.buzzerPinVcc, OUTPUT);
     NOTIFICATION_Utils::start();
   }
-  if (Config.notification.ledTx){
+  if (Config.notification.ledTx && Config.notification.ledTxPin >= 0){
     pinMode(Config.notification.ledTxPin, OUTPUT);
   }
-  if (Config.notification.ledMessage){
+  if (Config.notification.ledMessage  && Config.notification.ledMessagePin >= 0){
     pinMode(Config.notification.ledMessagePin, OUTPUT);
   }
-  if (Config.notification.ledFlashlight) {
+  if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
     pinMode(Config.notification.ledFlashlightPin, OUTPUT);
   }
+  #endif
 
-  show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
+  show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 2000);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
-  if (Config.ptt.active) {
+  #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+    myLED.begin();
+    myLED.clear();
+    myLED.setBrightness(20); 
+    myLED.setPixelColor(0, 0xff0000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x00ff00); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x0000ff); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x000000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x0000ff); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x00ff00); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0xff0000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x000000); myLED.show();
+    delay(50);
+  #endif
+
+#ifndef ESP32_BV5DJ_1W_LoRa_GPS
+  if (Config.ptt.active && Config.ptt.io_pin >= 0) {
     pinMode(Config.ptt.io_pin, OUTPUT);
     digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
   }
+#endif
 
   MSG_Utils::loadNumMessages();
   GPS_Utils::setup();
@@ -150,10 +186,16 @@ void setup() {
   }
 
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
+    #if defined(BUTTON_PIN)
     userButton.attachClick(BUTTON_Utils::singlePress);
     userButton.attachLongPressStart(BUTTON_Utils::longPress);
     userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+      #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+        userButtonU.attachClick(KEYBOARD_Utils::leftArrow); //why changed Up/Left?!
+        userButtonD.attachClick(KEYBOARD_Utils::downArrow);
+        userButtonL.attachClick(KEYBOARD_Utils::upArrow); //why changed Up/Left?!
+        userButtonR.attachClick(KEYBOARD_Utils::rightArrow);
+      #endif
     #endif
     KEYBOARD_Utils::setup();
   }
@@ -162,6 +204,7 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
+  myLED.clear();
 }
 
 void loop() {
@@ -173,8 +216,14 @@ void loop() {
 
   POWER_Utils::batteryManager();
   if (!Config.simplifiedTrackerMode) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(BUTTON_PIN)
     userButton.tick();
+      #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+      userButtonU.tick();
+      userButtonD.tick();
+      userButtonL.tick();
+      userButtonR.tick();
+      #endif
     #endif
   }
   Utils::checkDisplayEcoMode();

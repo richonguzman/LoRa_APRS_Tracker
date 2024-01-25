@@ -39,8 +39,8 @@ namespace POWER_Utils {
   String batteryChargeDischargeCurrent = "";
 
   double getBatteryVoltage() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS)
-    int adc_value = analogRead(35);;
+    #if defined(BATTERY_PIN)
+    int adc_value = analogRead(BATTERY_PIN);;
     double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
     #endif
@@ -80,7 +80,7 @@ namespace POWER_Utils {
   }  
 
   bool isCharging() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(BATTERY_PIN)
     return 0;
     #endif
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -97,7 +97,7 @@ namespace POWER_Utils {
   }
 
   double getBatteryChargeDischargeCurrent() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(BATTERY_PIN)
     return 0;
     #endif
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
@@ -112,7 +112,7 @@ namespace POWER_Utils {
   }
 
   bool isBatteryConnected() {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(BATTERY_PIN)
     if(getBatteryVoltage() > 1.0) {
       return true;
     } else {
@@ -129,7 +129,7 @@ namespace POWER_Utils {
     if (!(rate_limit_check_battery++ % 60))
       BatteryIsConnected = isBatteryConnected();
     if (BatteryIsConnected) {
-      #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+      #if defined(BATTERY_PIN)
       batteryVoltage       = String(getBatteryVoltage(), 2);
       #endif
       #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -211,7 +211,7 @@ namespace POWER_Utils {
   }
 
   bool begin(TwoWire &port) {
-    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS)
+    #if defined(BATTERY_PIN)
     return true; // no powerManagment chip for this boards (only a few measure battery voltage).
     #endif
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
@@ -334,7 +334,7 @@ namespace POWER_Utils {
 
   void lowerCpuFrequency() {
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
-    if (setCpuFrequencyMhz(80)) {
+    if (setCpuFrequencyMhz(160)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");

@@ -10,6 +10,10 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef ESP32_BV5DJ_1W_LoRa_GPS
+  #include <Adafruit_NeoPixel.h>
+  extern Adafruit_NeoPixel              myLED;
+#endif
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
@@ -102,17 +106,31 @@ namespace MSG_Utils {
 
   void ledNotification() {
     uint32_t ledTimeDelta = millis() - messageLedTime;
-    if (messageLed && ledTimeDelta > 5*1000) {
+    #ifndef ESP32_BV5DJ_1W_LoRa_GPS
+    if (messageLed && ledTimeDelta > 5*1000 && Config.notification.ledMessagePin >= 0) {
       digitalWrite(Config.notification.ledMessagePin, HIGH);
       messageLedTime = millis();
     }
+    #elif ESP32_BV5DJ_1W_LoRa_GPS
+    if (messageLed && ledTimeDelta > 5*1000) { myLED.setPixelColor(1, 0x0000ff); myLED.show(); }
+    #endif
+
     uint32_t ledOnDelta = millis() - messageLedTime;
-    if (messageLed && ledOnDelta > 1*1000) {
+    #ifndef ESP32_BV5DJ_1W_LoRa_GPS
+    if (messageLed && ledOnDelta > 1*1000  && Config.notification.ledMessagePin >= 0) {
       digitalWrite(Config.notification.ledMessagePin, LOW);
     }
-    if (!messageLed && digitalRead(Config.notification.ledMessagePin)==HIGH) {
+    #elif ESP32_BV5DJ_1W_LoRa_GPS
+    if (messageLed && ledOnDelta > 1*1000) { myLED.setPixelColor(1, 0x000000); myLED.show(); }
+    #endif
+
+    #ifndef ESP32_BV5DJ_1W_LoRa_GPS
+    if (!messageLed && digitalRead(Config.notification.ledMessagePin)==HIGH  && Config.notification.ledMessagePin >= 0) {
       digitalWrite(Config.notification.ledMessagePin, LOW);
     }
+    #elif ESP32_BV5DJ_1W_LoRa_GPS
+    if (!messageLed && myLED.getPixelColor(1) > 0x0) { myLED.setPixelColor(1, 0x000000); myLED.show(); }
+    #endif
   }
 
   void deleteFile() {

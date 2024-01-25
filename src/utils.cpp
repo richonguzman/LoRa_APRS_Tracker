@@ -100,9 +100,9 @@ namespace Utils {
   }
 
   void checkFlashlight() {
-    if (flashlight && !digitalRead(Config.notification.ledFlashlightPin)) {
+    if (flashlight && !digitalRead(Config.notification.ledFlashlightPin) && Config.notification.ledFlashlightPin >= 0) {
       digitalWrite(Config.notification.ledFlashlightPin, HIGH);
-    } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
+    } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin) && Config.notification.ledFlashlightPin >= 0) {
       digitalWrite(Config.notification.ledFlashlightPin, LOW);
     }       
   }

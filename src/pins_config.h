@@ -44,6 +44,32 @@
 #define RADIO_TXEN          25
 #endif
 
+#ifdef ESP32_BV5DJ_1W_LoRa_GPS
+#define GPS_RX          17
+#define GPS_TX          16
+#define BUTTON_PIN      0   //ENT
+#define RADIO_SCLK_PIN  18
+#define RADIO_MISO_PIN  19
+#define RADIO_MOSI_PIN  23
+#define RADIO_CS_PIN    5
+#define RADIO_RST_PIN   14  //NRST
+#define RADIO_DIO1_PIN  33
+#define RADIO_BUSY_PIN  39
+#define RADIO_RXEN      2   //
+#define RADIO_TXEN      4
+//EXTRA PINS HERE:
+#define BUTTON_UP       34 //joystick UP
+#define BUTTON_DOWN     35 //joystick DOWN
+#define BUTTON_LEFT     27 //joystick LEFT
+#define BUTTON_RIGHT    32 //joystick RIGHT
+#define SD_CS           13 //MicroSD card SlaveSelect
+#define GPS_PPS         26  //GPS PPS pin 
+#define BATTERY_PIN     36 //ADC pin from voltage divider
+#define RGB_LED_PIN     12 //WS2812 LED GPIO
+#define LEDNUM          2  //WS2812 LEDs number
+#define KEEP_ALIVE      25  //Trigger -pad in PCB
+#endif
+
 #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262)
 #define RADIO_SCLK_PIN      5
 #define RADIO_MISO_PIN      19
