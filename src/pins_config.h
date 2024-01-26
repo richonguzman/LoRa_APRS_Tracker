@@ -85,6 +85,7 @@
 #define GPS_RX              15
 #define GPS_TX              12
 #define BUTTON_PIN          39
+#define BATTERY_PIN         35
 #endif
 
 #ifdef TTGO_T_LORA32_V2_1_TNC
@@ -127,5 +128,19 @@
 #define BATTERY_PIN         1
 #endif
 
+#if defined(OE5HWN_MeshCom)
+#define GPS_RX              17
+#define GPS_TX              16
+#define BUTTON_PIN          12
+#define RADIO_SCLK_PIN      18
+#define RADIO_MISO_PIN      19
+#define RADIO_MOSI_PIN      23
+#define RADIO_CS_PIN        5
+#define RADIO_RST_PIN       27
+#define RADIO_DIO1_PIN      33
+#define RADIO_BUSY_PIN      26
+#define RADIO_RXEN          14
+#define RADIO_TXEN          13
+#endif
 
 #endif

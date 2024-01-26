@@ -117,6 +117,9 @@ void setup() {
   #endif
 
   POWER_Utils::setup();
+  #ifdef BATTERY_PIN
+   pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.  (Could be in main. HA5SZI)
+  #endif
 
   setup_display();
   #ifndef ESP32_BV5DJ_1W_LoRa_GPS
@@ -204,7 +207,9 @@ void setup() {
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
   menuDisplay = 0;
-  myLED.clear();
+  #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+   myLED.clear();
+  #endif
 }
 
 void loop() {

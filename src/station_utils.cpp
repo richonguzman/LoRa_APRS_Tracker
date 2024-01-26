@@ -10,6 +10,7 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "pins_config.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -411,13 +412,13 @@ namespace STATION_Utils {
     if (Config.sendBatteryInfo) {
       String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
       String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-      #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+      #if defined(HAS_AXP192)
       packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
       #endif
-      #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+      #if defined(HAS_AXP2101)
       packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
       #endif
-      #if defined(HELTEC_V3_GPS)
+      #if defined(BATTERY_PIN)
       packet += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
       #endif
     }

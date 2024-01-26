@@ -11,6 +11,7 @@
 #include "bme_utils.h"
 #include "display.h"
 #include "utils.h"
+#include "pins_config.h"
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
@@ -327,7 +328,7 @@ namespace MENU_Utils {
                     }
                 }
 
-                #ifdef TTGO_T_LORA32_V2_1_TNC
+                #ifdef HAS_NOGPS
                 secondRowMainMenu = "";
                 thirdRowMainMenu = "    LoRa APRS TNC";
                 fourthRowMainMenu = "";
@@ -402,10 +403,10 @@ namespace MENU_Utils {
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
                     String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
-                    #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC)
+                    #ifdef BATTERY_PIN
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
-                    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+                    #ifdef HAS_AXP192
                     if (batteryCharge.toInt() == 0) {
                         sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
                     } else if (batteryCharge.toInt() > 0) {
@@ -414,7 +415,7 @@ namespace MENU_Utils {
                         sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
                     }
                     #endif
-                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+                    #ifdef HAS_AXP2101
                         if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();

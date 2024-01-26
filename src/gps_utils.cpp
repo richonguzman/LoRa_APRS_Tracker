@@ -32,7 +32,7 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
   void setup() {
-    #ifdef TTGO_T_LORA32_V2_1_TNC
+    #ifdef HAS_NOGPS
     disableGPS = true;
     #else
     disableGPS = Config.disableGPS;
@@ -41,7 +41,7 @@ namespace GPS_Utils {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
-    neo6m_gps.begin(115200, SERIAL_8N1, GPS_TX, GPS_RX);
+    neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
   }
 
   void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {

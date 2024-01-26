@@ -17,10 +17,10 @@
 #define IRQ_PIN  40
 #endif
 
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+#ifdef HAS_AXP192
 XPowersAXP192 PMU;
 #endif
-#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+#ifdef HAS_AXP2101
 XPowersAXP2101 PMU;
 #endif
 
@@ -39,20 +39,22 @@ namespace POWER_Utils {
   String batteryChargeDischargeCurrent = "";
 
   double getBatteryVoltage() {
-    #if defined(BATTERY_PIN)
-    int adc_value = analogRead(BATTERY_PIN);;
+    #if defined(BATTERY_PIN) //It is likely that different boards will require different corrections.
+    int adc_value = analogRead(BATTERY_PIN);
     double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.getBattVoltage() / 1000.0;
     #endif
+    /*
     #if defined(HELTEC_V3_GPS)
     int adc_value = analogRead(BATTERY_PIN);
     double voltage = (adc_value * 3.3) / 4095.0;
     double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
     return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
     #endif
+    */
   }
 
   String getBatteryInfoVoltage() {
@@ -68,13 +70,13 @@ namespace POWER_Utils {
   }
 
   void enableChgLed() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
     #endif
   }
 
   void disableChgLed() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
     #endif
   }  
@@ -83,7 +85,7 @@ namespace POWER_Utils {
     #if defined(BATTERY_PIN)
     return 0;
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isCharging();
     #endif
   }
@@ -100,13 +102,13 @@ namespace POWER_Utils {
     #if defined(BATTERY_PIN)
     return 0;
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     if (PMU.isCharging()) {
       return PMU.getBatteryChargeCurrent();
     }
     return -1.0 * PMU.getBattDischargeCurrent();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP2101)
     return PMU.getBatteryPercent();
     #endif
   }
@@ -119,7 +121,7 @@ namespace POWER_Utils {
       return false;
     }
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isBatteryConnect();
     #endif
   }
@@ -132,7 +134,7 @@ namespace POWER_Utils {
       #if defined(BATTERY_PIN)
       batteryVoltage       = String(getBatteryVoltage(), 2);
       #endif
-      #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+      #if defined(HAS_AXP2101)
       batteryVoltage       = String(PMU.getBattVoltage());
       #endif
       batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
@@ -141,13 +143,13 @@ namespace POWER_Utils {
 
   void batteryManager() {
     obtainBatteryInfo();
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     handleChargingLed();
     #endif
   }
 
   void activateMeasurement() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.disableTSPinMeasure();
     PMU.enableBattDetection();
     PMU.enableVbusVoltageMeasure();
@@ -157,11 +159,11 @@ namespace POWER_Utils {
   }
 
   void activateGPS() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     PMU.setLDO3Voltage(3300);
     PMU.enableLDO3();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     PMU.setALDO3Voltage(3300);
     PMU.enableALDO3(); 
     #endif
@@ -172,10 +174,10 @@ namespace POWER_Utils {
   }
 
   void deactivateGPS() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     PMU.disableLDO3();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     PMU.disableALDO3();
     #endif
     #if defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -184,11 +186,11 @@ namespace POWER_Utils {
   }
 
   void activateLoRa() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     PMU.setLDO2Voltage(3300);
     PMU.enableLDO2();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     PMU.setALDO2Voltage(3300);
     PMU.enableALDO2();
     #endif
@@ -199,10 +201,10 @@ namespace POWER_Utils {
   }
 
   void deactivateLoRa() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-    PMU.disableLDO2();
+    #if defined(HAS_AXP192)
+    PMU.disableALDO2();
     #endif
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     PMU.disableALDO2();
     #endif
     #if defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -214,7 +216,7 @@ namespace POWER_Utils {
     #if defined(BATTERY_PIN)
     return true; // no powerManagment chip for this boards (only a few measure battery voltage).
     #endif
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     bool result = PMU.begin(Wire, AXP192_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
     if (result) {
       PMU.disableDC2();
@@ -228,7 +230,7 @@ namespace POWER_Utils {
     return result;
     #endif
 
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
     if (result) {
       PMU.disableDC2();
@@ -274,7 +276,7 @@ namespace POWER_Utils {
 
   void setup() {
     Wire.end();
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+    #if defined(HAS_AXP192)
     Wire.begin(SDA, SCL);
     if (begin(Wire)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
@@ -294,7 +296,7 @@ namespace POWER_Utils {
     PMU.setSysPowerDownVoltage(2600);
     #endif
 
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+    #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     Wire.begin(SDA, SCL);
     if (begin(Wire)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
@@ -313,7 +315,7 @@ namespace POWER_Utils {
     }
     #endif
     
-    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP2101)
     activateLoRa();
     if (disableGPS) {
       deactivateGPS();
@@ -327,14 +329,14 @@ namespace POWER_Utils {
     PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
     PMU.setSysPowerDownVoltage(2600);
     #endif
-    #ifdef HELTEC_V3_GPS
-    pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.
+    #ifdef BATTERY_PIN
+     pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.  (Could be in main. HA5SZI)
   #endif
   }
 
   void lowerCpuFrequency() {
     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
-    if (setCpuFrequencyMhz(160)) {
+    if (setCpuFrequencyMhz(80)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
@@ -343,7 +345,7 @@ namespace POWER_Utils {
   }
 
   void shutdown() {
-    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.shutdown();
     #endif
   }
