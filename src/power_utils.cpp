@@ -47,14 +47,13 @@ namespace POWER_Utils {
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.getBattVoltage() / 1000.0;
     #endif
-    /*
     #if defined(HELTEC_V3_GPS)
     int adc_value = analogRead(BATTERY_PIN);
     double voltage = (adc_value * 3.3) / 4095.0;
     double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
     return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
     #endif
-    */
+    return 0;
   }
 
   String getBatteryInfoVoltage() {
@@ -88,6 +87,7 @@ namespace POWER_Utils {
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isCharging();
     #endif
+    return 0;
   }
 
   void handleChargingLed() {
@@ -111,6 +111,7 @@ namespace POWER_Utils {
     #if defined(HAS_AXP2101)
     return PMU.getBatteryPercent();
     #endif
+    return 0;
   }
 
   bool isBatteryConnected() {
@@ -124,6 +125,7 @@ namespace POWER_Utils {
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     return PMU.isBatteryConnect();
     #endif
+    return false;
   }
 
   void obtainBatteryInfo() {
@@ -272,6 +274,7 @@ namespace POWER_Utils {
     }
     return result;
     #endif
+    return false;
   }
 
   void setup() {
