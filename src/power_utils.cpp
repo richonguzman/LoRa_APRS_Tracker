@@ -39,7 +39,7 @@ namespace POWER_Utils {
   String batteryChargeDischargeCurrent = "";
 
   double getBatteryVoltage() {
-    #if defined(BATTERY_PIN) //It is likely that different boards will require different corrections.
+    #if defined(BATTERY_PIN) && !defned(HELTEC_V3_GPS) //It is likely that different boards will require different corrections.
     int adc_value = analogRead(BATTERY_PIN);
     double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction

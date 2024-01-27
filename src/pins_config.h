@@ -20,13 +20,13 @@
 #if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
 #define GPS_RX              12
 #define GPS_TX              34
-#define BUTTON_PIN          -1
 #define LORA_SCK            5
 #define LORA_MISO           19
 #define LORA_MOSI           27
 #define LORA_CS             18  // CS  --> NSS
 #define LORA_RST            23
 #define LORA_IRQ            26  // IRQ --> DIO0
+#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
@@ -55,7 +55,7 @@
 #define RADIO_RST_PIN   14  //NRST
 #define RADIO_DIO1_PIN  33
 #define RADIO_BUSY_PIN  39
-#define RADIO_RXEN      2   //
+#define RADIO_RXEN      2   //Same LED_BUILTIN
 #define RADIO_TXEN      4
 //EXTRA PINS HERE:
 #define BUTTON_UP       34 //joystick UP
@@ -92,6 +92,7 @@
 #define GPS_RX              -1
 #define GPS_TX              -1
 #define BUTTON_PIN          -1
+#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 #endif
 
 #if defined(TTGO_T_Beam_S3_SUPREME_V3)
@@ -125,7 +126,9 @@
 #define RADIO_RST_PIN       12
 #define RADIO_DIO1_PIN      14
 #define RADIO_BUSY_PIN      13
-#define BATTERY_PIN         1
+#define BATTERY_PIN         1   //390k/100k
+#define ADC_CTRL            37  //ADC control PIN -should be low for the measurement battery.
+#define VEXT_CTRL           36  //Vext control PIN -for Display on/off
 #endif
 
 #if defined(OE5HWN_MeshCom)
