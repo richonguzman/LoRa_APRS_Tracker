@@ -1,5 +1,9 @@
 #include "notification_utils.h"
 #include "configuration.h"
+#ifdef ESP32_BV5DJ_1W_LoRa_GPS
+  #include <Adafruit_NeoPixel.h>
+  extern Adafruit_NeoPixel  myLED;
+#endif
 
 int channel       = 0;
 int resolution    = 8; 
@@ -73,4 +77,26 @@ namespace NOTIFICATION_Utils {
     digitalWrite(Config.notification.buzzerPinVcc, LOW);
     /*shutDownBeep();*/ 
   }
+
+  #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+  void startRGB() {
+    myLED.setPixelColor(0, 0xff0000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x00ff00); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x0000ff); myLED.show();
+    delay(150);
+    myLED.setPixelColor(0, 0x000000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x0000ff); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x00ff00); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0xff0000); myLED.show();
+    delay(150);
+    myLED.setPixelColor(1, 0x000000); myLED.show();
+    delay(50);
+  }
+
+  #endif
 }

@@ -12,6 +12,9 @@ namespace NOTIFICATION_Utils {
     //void shutDownBeep();
     void lowBatteryBeep();
     void start();
+    #ifdef ESP32_BV5DJ_1W_LoRa_GPS
+    void startRGB();
+    #endif
 
 }
 
