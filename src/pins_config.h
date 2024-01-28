@@ -48,6 +48,7 @@
 #define LORA_CS             18  // CS  --> NSS
 #define LORA_RST            23
 #define LORA_IRQ            26  // IRQ --> DIO0
+#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
