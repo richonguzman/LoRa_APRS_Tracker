@@ -1,4 +1,4 @@
- #include "configuration.h"
+#include "configuration.h"
 #include "power_utils.h"
 #include "pins_config.h"
 #include "logger.h"
@@ -136,7 +136,7 @@ namespace POWER_Utils {
       #if defined(BATTERY_PIN)
       batteryVoltage       = String(getBatteryVoltage(), 2);
       #endif
-      #if defined(HAS_AXP2101)
+      #if defined(HAS_AXP2101) || defined(HAS_AXP192)
       batteryVoltage       = String(PMU.getBattVoltage());
       #endif
       batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);

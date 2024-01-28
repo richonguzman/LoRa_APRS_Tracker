@@ -407,6 +407,7 @@ namespace MENU_Utils {
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
                     #ifdef HAS_AXP192
+                    batteryVoltage = batteryVoltage.toFloat()/1000;
                     if (batteryCharge.toInt() == 0) {
                         sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
                     } else if (batteryCharge.toInt() > 0) {
