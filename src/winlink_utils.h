@@ -5,6 +5,7 @@
 
 namespace WINLINK_Utils {
 
+    String processWinlinkChallenge(String winlinkInteger);
     void login();
 
 }
