@@ -204,7 +204,7 @@ namespace POWER_Utils {
 
   void deactivateLoRa() {
     #if defined(HAS_AXP192)
-    PMU.disableALDO2();
+    PMU.disableLDO2();
     #endif
     #if defined(HAS_AXP2101) && !defined(TTGO_T_Beam_S3_SUPREME_V3)
     PMU.disableALDO2();
