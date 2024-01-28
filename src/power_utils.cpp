@@ -1,4 +1,4 @@
- #include "configuration.h"
+#include "configuration.h"
 #include "power_utils.h"
 #include "pins_config.h"
 #include "logger.h"
@@ -329,7 +329,7 @@ namespace POWER_Utils {
     #endif
     #ifdef HELTEC_V3_GPS
     pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.
-  #endif
+    #endif
   }
 
   void lowerCpuFrequency() {
