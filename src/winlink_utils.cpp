@@ -26,6 +26,8 @@ namespace WINLINK_Utils {
     // procesar challenge
     // enviar challenge con ack
     // recibir ack
+    // recibir Login valid
+    // responder ack
   }
 
 }
