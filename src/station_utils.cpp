@@ -19,12 +19,6 @@ extern std::vector<String>  lastHeardStation;
 extern std::vector<String>  lastHeardStation_temp;
 extern int                  myBeaconsIndex;
 
-extern String               firstNearTracker;
-extern String               secondNearTracker;
-extern String               thirdNearTracker;
-extern String               fourthNearTracker;
-
-extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
 
@@ -46,6 +40,13 @@ extern double               lastTxLng;
 extern double               lastTxDistance;
 
 extern bool                 miceActive;
+
+String                      firstNearTracker;
+String                      secondNearTracker;
+String                      thirdNearTracker;
+String                      fourthNearTracker;
+
+uint32_t                    lastDeleteListenedTracker;
 
 
 namespace STATION_Utils {

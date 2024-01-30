@@ -19,6 +19,30 @@ namespace WINLINK_Utils {
 
   void login() {
     Serial.println("Starting Winlink Login");
+    /*
+    ---genero ack number en random
+    ---reviso si llega a 999 y paso a 1
+    
+    menu50 seria:
+    si no logged:
+    start login
+    read msg/mails
+    delete all msg/mails
+
+
+    si esta logeado pasa a otro menu de :
+    L
+    R
+    Y
+    B 
+    y mas
+    
+    
+    */
+
+
+
+
     // enviar "L" con ack
     // recibir ack - esperar challenge
     // recibir challenge con ack

@@ -236,6 +236,7 @@ namespace APRSPacketLib {
   }
 
   String generateMessagePacket(String callsign, String tocall, String path, String addressee, String message) {
+    message.trim();
     for(int i = addressee.length(); i < 9; i++) {
       addressee += ' ';
     }      

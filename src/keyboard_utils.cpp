@@ -208,21 +208,21 @@ namespace KEYBOARD_Utils {
         menuDisplay = 1300;
       } else {
         show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
-        MSG_Utils::sendMessage("ANSRVR","CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+        MSG_Utils::sendMessage(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
       }
     } else if (menuDisplay == 131) {
       if (keyDetected) {
         menuDisplay = 1310;
       } else {
         show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
-        MSG_Utils::sendMessage("APRSPH","HOTG Happy #APRSThursday from LoRa Tracker 73!");
+        MSG_Utils::sendMessage(0, "APRSPH", "HOTG Happy #APRSThursday from LoRa Tracker 73!");
       }
     } else if (menuDisplay == 132) {
       show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
-      MSG_Utils::sendMessage("ANSRVR","U HOTG");
+      MSG_Utils::sendMessage(0, "ANSRVR", "U HOTG");
     } else if (menuDisplay == 133) {
       show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
-      MSG_Utils::sendMessage("ANSRVR","K HOTG");
+      MSG_Utils::sendMessage(0, "ANSRVR", "K HOTG");
     }
     
     else if (menuDisplay == 210) {
@@ -251,7 +251,7 @@ namespace KEYBOARD_Utils {
 
     else if (menuDisplay == 4) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-      MSG_Utils::sendMessage("CA2RXU-15","wrl");
+      MSG_Utils::sendMessage(0, "CA2RXU-15", "wrl");
     }
     else if (menuDisplay == 5) {
       show_display("_WINLINK_", "still on", "development..", 2000); /////////////////////////
@@ -340,15 +340,15 @@ namespace KEYBOARD_Utils {
           messageText = messageText.substring(0,67);
         }
         if (menuDisplay==111) {
-          MSG_Utils::sendMessage(messageCallsign, messageText);
+          MSG_Utils::sendMessage(0, messageCallsign, messageText);
           menuDisplay = 11;
         } else if (menuDisplay==1300) {
           messageCallsign = "ANSRVR";
-          MSG_Utils::sendMessage(messageCallsign, "CQ HOTG " + messageText);
+          MSG_Utils::sendMessage(0, messageCallsign, "CQ HOTG " + messageText);
           menuDisplay = 130;
         } else if (menuDisplay==1310) {
           messageCallsign = "APRSPH";
-          MSG_Utils::sendMessage(messageCallsign, "HOTG " + messageText);
+          MSG_Utils::sendMessage(0, messageCallsign, "HOTG " + messageText);
           menuDisplay = 131;
         }
         messageCallsign = "";

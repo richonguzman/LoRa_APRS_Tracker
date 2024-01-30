@@ -94,6 +94,7 @@ bool      sosActive           = false;
 bool      disableGPS;
 
 bool      miceActive          = false;
+int       ackNumberSend;
 
 APRSPacket                    lastReceivedPacket;
 
@@ -138,6 +139,7 @@ void setup() {
   LoRa_Utils::setup();
   BME_Utils::setup();
   STATION_Utils::loadCallsignIndex();
+  ackNumberSend = random(1,999);
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
@@ -170,13 +172,19 @@ void loop() {
     Config.validateConfigFile(currentBeacon->callsign);
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
+  
+  if (ackNumberSend >= 999) {
+    ackNumberSend = 1;
+  }
 
   POWER_Utils::batteryManager();
+
   if (!Config.simplifiedTrackerMode) {
     #ifdef HAS_BUTTON
     userButton.tick();
     #endif
   }
+
   Utils::checkDisplayEcoMode();
 
   if (keyboardConnected) {

@@ -24,19 +24,14 @@ extern uint32_t             messageLedTime;
 
 extern bool                 digirepeaterActive;
 
-extern APRSPacket           lastReceivedPacket;
+extern int                  ackNumberSend;
 
-String   firstNearTracker            = "";
-String   secondNearTracker           = "";
-String   thirdNearTracker            = "";
-String   fourthNearTracker           = "";
+extern APRSPacket           lastReceivedPacket;
 
 String   lastMessageAPRS             = "";
 int      numAPRSMessages             = 0;
 bool     noMessageWarning            = false;
 String   lastHeardTracker            = "NONE";
-uint32_t lastDeleteListenedTracker   = millis();
-
 
 namespace MSG_Utils {
 
@@ -146,14 +141,24 @@ namespace MSG_Utils {
     }
   }
 
-  void sendMessage(String station, String textMessage) {
+  void sendMessage(int typeOfMessage, String station, String textMessage) {
     String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);  
     if (textMessage.indexOf("ack")== 0) {
-      show_display("<<ACK Tx>>", 500);
+      if (station != "WLNK-1") {  // don't show Winlink ACK
+        show_display("<<ACK Tx>>", 500);
+      }
     } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl")==0) {
       show_display("<WEATHER>","", "--- Sending Query ---",  1000);
     } else {
-      show_display("MSG Tx >>", "", newPacket, 1000);
+      if (station == "WLNK-1") {
+        show_display("WINLINK Tx", "", newPacket, 1000);
+      } else {
+        show_display("MSG Tx >>", "", newPacket, 1000);
+      }
+    }
+    if (typeOfMessage==1) {   //forced to send MSG with ack confirmation
+      ackNumberSend++;
+      newPacket += "{" + String(ackNumberSend);
     }
     LoRa_Utils::sendNewPacket(newPacket);
   }
@@ -189,7 +194,7 @@ namespace MSG_Utils {
             String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{")+1);
             ackMessage.trim();
             delay(4000);
-            sendMessage(lastReceivedPacket.sender, ackMessage);
+            sendMessage(0, lastReceivedPacket.sender, ackMessage);
             lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1, lastReceivedPacket.message.indexOf("{"));
           } else {
             lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1);
@@ -199,7 +204,7 @@ namespace MSG_Utils {
           }
           if (lastReceivedPacket.message.indexOf("ping")==0 || lastReceivedPacket.message.indexOf("Ping")==0 || lastReceivedPacket.message.indexOf("PING")==0) {
             delay(4000);
-            sendMessage(lastReceivedPacket.sender, "pong, 73!");
+            sendMessage(0, lastReceivedPacket.sender, "pong, 73!");
           }
           if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX")==0) {    // WX = WeatherReport
             Serial.println("Weather Report Received");
