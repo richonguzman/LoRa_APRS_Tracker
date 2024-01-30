@@ -32,6 +32,7 @@ extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 extern bool                 disableGPS;
 extern APRSPacket           lastReceivedPacket;
+extern int                  winlinkStatus;
 
 namespace MENU_Utils {
 
@@ -249,7 +250,7 @@ namespace MENU_Utils {
                 show_display("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
-            case 300:    //3.Stations ---> Packet Decoder
+            case 300:   //3.Stations ---> Packet Decoder
                 firstLineDecoder = lastReceivedPacket.sender;
                 for(int i=firstLineDecoder.length();i<9;i++) {
                     firstLineDecoder += ' ';
@@ -304,33 +305,45 @@ namespace MENU_Utils {
                 // waiting for Weather Report
                 break;
 
-            case 50:    // 5.Winlink
-                show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
+            case 50:    // 5.Winlink MENU
+                if (winlinkStatus == 0) {
+                    show_display("__WINLINK_", "> Login" , "  Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
+                } else {
+                    menuDisplay = 5000;
+                }
                 break;
-            
+            case 51:    // 5.Winlink
+                show_display("__WINLINK_", "  Login" , "> Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
+                break;
+            case 52:    // 5.Winlink
+                show_display("__WINLINK_", "  Login" , "  Read Saved Mails", "> Delete Saved Mails", "" , lastLine);
+                break;
 
-                /* si no esta loggeado (50)
-                50) login                --> 51
-                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> waiting", "" , "<Back");
-                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> sended", "" , "<Back");
-                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
-                5?1) Read saved Mails     --> 52
-                5?2) delete saved mails   --> 53  
-                */
+            case 500:    // 5.Winlink ---> Login
+                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> waiting", "" , "<Back");
+                break;
+            case 501:    // 5.Winlink ---> Login
+                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> sended", "" , "<Back");
+                break;
+            case 502:    // 5.Winlink ---> Login
+                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
+                break;
 
-                /* si esta loggeado (500)
-                500) write mail
-                501) list pending mails
-                502) download mails
+                /* si esta loggeado (5000)
+                5010) write mail
+                5020) list pending mails
+                5030) download mails
                 51) read saved mails
-                503) reply mail
-                504) forward mail
+                5040) reply mail
+                5050) forward mail
                 52) delete mail (local o en winlink?)
-                505) alias menu ------->
-                510) log out
+                5060) alias menu ------->
+                5070) log out
                 */
 
                 // check si no esta logeado o si
+
+                //show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
                 
 
             case 60:    // 6. Extras ---> Flashlight

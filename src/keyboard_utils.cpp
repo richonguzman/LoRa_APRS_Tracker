@@ -1,6 +1,7 @@
 #include <logger.h>
 #include <Wire.h>
 #include "keyboard_utils.h"
+#include "winlink_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
 #include "button_utils.h"
@@ -72,7 +73,12 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 30) {
         menuDisplay = 31;
       }
-    }else if (menuDisplay >= 60 && menuDisplay <= 62) {
+    } else if (menuDisplay >= 50 && menuDisplay <= 52) {
+      menuDisplay--;
+      if (menuDisplay < 50) {
+        menuDisplay = 52;
+      }
+    } else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay--;
       if (menuDisplay < 60) {
         menuDisplay = 62;
@@ -150,6 +156,13 @@ namespace KEYBOARD_Utils {
       menuDisplay = 4;
     }
 
+    else if (menuDisplay >= 50 && menuDisplay <= 52) {
+      menuDisplay++;  
+      if (menuDisplay > 52) {
+        menuDisplay = 50;
+      }
+    }
+
     else if (menuDisplay >= 60 && menuDisplay <= 62) {
       menuDisplay++;
       if (menuDisplay > 62) {
@@ -170,7 +183,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay==1300 ||  menuDisplay==1310) {
       messageText = "";
       menuDisplay = menuDisplay/10;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
       menuDisplay = int(menuDisplay/10);
     }
     /*               winlinkMailNumber = "";*/
@@ -254,9 +267,20 @@ namespace KEYBOARD_Utils {
       MSG_Utils::sendMessage(0, "CA2RXU-15", "wrl");
     }
     else if (menuDisplay == 5) {
-      show_display("_WINLINK_", "still on", "development..", 2000); /////////////////////////
-      Serial.println(Config.winlink.password);
+      menuDisplay = 50;
+    } else if (menuDisplay == 50) {
+      WINLINK_Utils::login();
+      menuDisplay = 500;
+    } else if (menuDisplay == 51) {
+      show_display("__WINLINK_", "", "READ MSG/MAIL", "", 1000);
+    } else if (menuDisplay == 52) {
+      show_display("__WINLINK_", "", "DELETE MSG/MAIL" ,"", 1000);
     }
+
+
+
+
+
 
     else if (menuDisplay == 6) {
       menuDisplay = 60;

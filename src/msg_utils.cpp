@@ -3,6 +3,7 @@
 #include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
+#include "winlink_utils.h"
 #include "configuration.h"
 #include "lora_utils.h"
 #include "ble_utils.h"
@@ -25,8 +26,11 @@ extern uint32_t             messageLedTime;
 extern bool                 digirepeaterActive;
 
 extern int                  ackNumberSend;
+extern int                  winlinkStatus;
 
 extern APRSPacket           lastReceivedPacket;
+
+
 
 String   lastMessageAPRS             = "";
 int      numAPRSMessages             = 0;
@@ -228,12 +232,40 @@ namespace MSG_Utils {
             show_display("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
             menuDisplay = 40;
             menuTime = millis();
+          } else if (lastReceivedPacket.sender == "WLNK-1") {
+            String winlinkAckAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack")+3);
+            if (winlinkStatus == 1 && winlinkAckAnswer.toInt() == ackNumberSend) {
+              winlinkStatus = 2;  // recibió ack de nuestro mensaje
+              Serial.println("waiting for Challenge");
+              menuDisplay = 500;
+            } else if (winlinkStatus <= 2 && lastReceivedPacket.message.indexOf("Login [") == 0) {
+              Serial.println("Challenge received");
+              String winlinkChallenge = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]"));
+              Serial.println("el challenge es " + winlinkChallenge);
+              WINLINK_Utils::processWinlinkChallenge(winlinkChallenge);              
+              winlinkStatus = 3;
+              menuDisplay = 501;
+            } else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
+              Serial.println("Estamos conetados a WINLINK!!!!");
+              show_display("__WINLINK_", "", " LOGGED !!!!", 2000);
+              winlinkStatus = 5;
+              //menuDisplay = 800;
+            } else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
+              winlinkStatus = 4;
+              Serial.println("llego ack de recepcion challenge");
+              menuDisplay = 502;
+            } else if (lastReceivedPacket.message.indexOf("Login valid") > 0) {
+              winlinkStatus = 5;
+              Serial.println("Estamos conetados a WINLINK!!!!");
+              //menuDisplay = 800;
+            } 
+            // que se hace con los mensajes recibidos desde Winlink cuando ya estamos conectados
           } else {
             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
             if (!Config.simplifiedTrackerMode) {
               saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
             }
-          } 
+          }
         } else {
           if ((lastReceivedPacket.type==0 || lastReceivedPacket.type==4) && !Config.simplifiedTrackerMode) {
             GPS_Utils::calculateDistanceCourse(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude);

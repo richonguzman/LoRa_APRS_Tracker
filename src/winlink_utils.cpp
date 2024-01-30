@@ -1,12 +1,15 @@
 #include "winlink_utils.h"
 #include "configuration.h"
+#include "msg_utils.h"
+#include "display.h"
 
 extern Configuration    Config;
-extern int              winlinkStatus
+extern int              winlinkStatus;
+extern int              menuDisplay;
 
 namespace WINLINK_Utils {
 
-  String processWinlinkChallenge(String winlinkInteger) {
+  void processWinlinkChallenge(String winlinkInteger) {
     String challengeAnswer;
     for (int i=0; i<winlinkInteger.length(); i++) {
       String number = String(winlinkInteger[i]);
@@ -14,51 +17,21 @@ namespace WINLINK_Utils {
       challengeAnswer += Config.winlink.password[digit-1];
     }
     challengeAnswer += "AZ6";
+    delay(8000); ///
     Serial.println("el challenge creado es " + challengeAnswer);
-    return challengeAnswer;
+    MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
   }
 
   void login() {
-    Serial.println("Starting Winlink Login");
+    Serial.println("Starting Winlink Login"); // por borrar
+    show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
     if (winlinkStatus == 5) {
       //menuDisplay = 800;
     } else {
       winlinkStatus = 1;
-      sendMessage(1, "WLNK-1", "L");
-      menuDisplay = 50;
+      MSG_Utils::sendMessage(1, "WLNK-1", "L");
+      menuDisplay = 500; // enviar a proceso LOGIN
     }
-    /*
-    ---genero ack number en random
-    ---reviso si llega a 999 y paso a 1
-    ---confirmo envio de Mensaje con ack
-    ---espero confirimacion de ACK desde winlink para continuar a otro paso
-
-
-    
-    menu50 seria:
-    si no logged:
-    start login
-    read msg/mails
-    delete all msg/mails
-
-
-    si esta logeado pasa a otro menu de :
-    L
-    R
-    Y
-    B 
-    y mas
-    
-    
-    */
-
-
-
-
-    // enviar "L" con ack
-    // recibir ack - esperar challenge
-    // recibir challenge con ack
-    // contestar ack
     // procesar challenge
     // enviar challenge con ack
     // recibir ack
