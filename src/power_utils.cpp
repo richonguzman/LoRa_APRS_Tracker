@@ -45,7 +45,7 @@ namespace POWER_Utils {
     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
     #endif
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-    return PMU.getBattVoltage() / 1000.0;
+    return PMU.getBattVoltage();
     #endif
     #if defined(HELTEC_V3_GPS)
     int adc_value = analogRead(BATTERY_PIN);
@@ -109,7 +109,7 @@ namespace POWER_Utils {
     return -1.0 * PMU.getBattDischargeCurrent();
     #endif
     #if defined(HAS_AXP2101)
-    return PMU.getBatteryPercent();
+    return PMU.getBatteryPercent(); //why not PMU.getBatteryChargeCurrent()???
     #endif
     return 0;
   }

@@ -14,7 +14,8 @@
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262)
 #define GPS_RX              12
 #define GPS_TX              34
-#define BUTTON_PIN          38 // The middle button GPIO on the T-Beam
+#define BUTTON_PIN          38  // The middle button GPIO on the T-Beam
+//#define LED_PIN           4   //V1_1 >> Red LED next to blue LED: LED_BUILTIN
 #endif
 
 #if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
@@ -58,15 +59,15 @@
 #define RADIO_RXEN      2   //Same LED_BUILTIN
 #define RADIO_TXEN      4
 //EXTRA PINS HERE:
-#define BUTTON_UP       34 //joystick UP
-#define BUTTON_DOWN     35 //joystick DOWN
-#define BUTTON_LEFT     27 //joystick LEFT
-#define BUTTON_RIGHT    32 //joystick RIGHT
-#define SD_CS           13 //MicroSD card SlaveSelect
+#define BUTTON_UP       34  //joystick UP
+#define BUTTON_DOWN     35  //joystick DOWN
+#define BUTTON_LEFT     27  //joystick LEFT
+#define BUTTON_RIGHT    32  //joystick RIGHT
+#define SD_CS           13  //MicroSD card SlaveSelect
 #define GPS_PPS         26  //GPS PPS pin 
-#define BATTERY_PIN     36 //ADC pin from voltage divider
-#define RGB_LED_PIN     12 //WS2812 LED GPIO
-#define LEDNUM          2  //WS2812 LEDs number
+#define BATTERY_PIN     36  //ADC pin from voltage divider
+#define RGB_LED_PIN     12  //WS2812 LED GPIO
+#define LEDNUM          2   //WS2812 LEDs number
 #define KEEP_ALIVE      25  //Trigger -pad in PCB
 #endif
 

@@ -413,7 +413,7 @@ namespace STATION_Utils {
       String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
       String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
       #if defined(HAS_AXP192)
-      packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+      packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "mA)";
       #endif
       #if defined(HAS_AXP2101)
       packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
