@@ -305,19 +305,33 @@ namespace MENU_Utils {
                 break;
 
             case 50:    // 5.Winlink
-                // check si no esta logeado o si
                 show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
                 break;
-            /*case 51:    //////////// WINLINK/MAIL MENU ////////////
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> waiting", "" , "<Back");
-                break;
-            case 52:    //////////// WINLINK/MAIL MENU ////////////
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> sended", "" , "<Back");
-                break;
-            case 53:    //////////// WINLINK/MAIL MENU ////////////
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
-                break;*/
+            
 
+                /* si no esta loggeado (50)
+                50) login                --> 51
+                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> waiting", "" , "<Back");
+                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> sended", "" , "<Back");
+                    show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
+                5?1) Read saved Mails     --> 52
+                5?2) delete saved mails   --> 53  
+                */
+
+                /* si esta loggeado (500)
+                500) write mail
+                501) list pending mails
+                502) download mails
+                51) read saved mails
+                503) reply mail
+                504) forward mail
+                52) delete mail (local o en winlink?)
+                505) alias menu ------->
+                510) log out
+                */
+
+                // check si no esta logeado o si
+                
 
             case 60:    // 6. Extras ---> Flashlight
                 show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);

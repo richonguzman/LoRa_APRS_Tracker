@@ -95,6 +95,8 @@ bool      disableGPS;
 
 bool      miceActive          = false;
 int       ackNumberSend;
+int       winlinkStatus       = 0;
+
 
 APRSPacket                    lastReceivedPacket;
 

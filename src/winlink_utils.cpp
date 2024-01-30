@@ -2,6 +2,7 @@
 #include "configuration.h"
 
 extern Configuration    Config;
+extern int              winlinkStatus
 
 namespace WINLINK_Utils {
 
@@ -19,9 +20,20 @@ namespace WINLINK_Utils {
 
   void login() {
     Serial.println("Starting Winlink Login");
+    if (winlinkStatus == 5) {
+      //menuDisplay = 800;
+    } else {
+      winlinkStatus = 1;
+      sendMessage(1, "WLNK-1", "L");
+      menuDisplay = 50;
+    }
     /*
     ---genero ack number en random
     ---reviso si llega a 999 y paso a 1
+    ---confirmo envio de Mensaje con ack
+    ---espero confirimacion de ACK desde winlink para continuar a otro paso
+
+
     
     menu50 seria:
     si no logged:
