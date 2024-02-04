@@ -63,7 +63,7 @@ namespace MENU_Utils {
     void showOnScreen() {
         String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && !(menuDisplay>=500 && menuDisplay<=5000) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
             messageCallsign = "";
             messageText = "";
@@ -327,6 +327,10 @@ namespace MENU_Utils {
                 break;
             case 502:    // 5.Winlink ---> Login
                 show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
+                break;
+
+            case 5000:   // 5.Winlink ---> Logged!!!
+                show_display("__WINLINK_", "" , "Logged !!! ", "", "" , "<Back");
                 break;
 
                 /* si esta loggeado (5000)

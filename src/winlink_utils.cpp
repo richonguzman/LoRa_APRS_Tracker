@@ -2,10 +2,12 @@
 #include "configuration.h"
 #include "msg_utils.h"
 #include "display.h"
+#include "logger.h"
 
 extern Configuration    Config;
 extern int              winlinkStatus;
 extern int              menuDisplay;
+extern logging::Logger  logger;
 
 namespace WINLINK_Utils {
 
@@ -23,7 +25,7 @@ namespace WINLINK_Utils {
   }
 
   void login() {
-    Serial.println("Starting Winlink Login"); // por borrar
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Start Login");
     show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
     if (winlinkStatus == 5) {
       //menuDisplay = 800;

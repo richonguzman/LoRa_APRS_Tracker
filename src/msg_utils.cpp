@@ -199,9 +199,7 @@ namespace MSG_Utils {
             ackMessage.trim();
             delay(4000);
             sendMessage(0, lastReceivedPacket.sender, ackMessage);
-            lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1, lastReceivedPacket.message.indexOf("{"));
-          } else {
-            lastReceivedPacket.message = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf(":")+1);
+            lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
           }
           if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
             NOTIFICATION_Utils::messageBeep();
@@ -235,29 +233,29 @@ namespace MSG_Utils {
           } else if (lastReceivedPacket.sender == "WLNK-1") {
             String winlinkAckAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack")+3);
             if (winlinkStatus == 1 && winlinkAckAnswer.toInt() == ackNumberSend) {
-              winlinkStatus = 2;  // recibió ack de nuestro mensaje
-              Serial.println("waiting for Challenge");
+              winlinkStatus = 2;
+              logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Waiting Challenge");
               menuDisplay = 500;
             } else if (winlinkStatus <= 2 && lastReceivedPacket.message.indexOf("Login [") == 0) {
-              Serial.println("Challenge received");
+              logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge received");
               String winlinkChallenge = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]"));
-              Serial.println("el challenge es " + winlinkChallenge);
+              //Serial.println("the challenge is " + winlinkChallenge);
               WINLINK_Utils::processWinlinkChallenge(winlinkChallenge);              
               winlinkStatus = 3;
               menuDisplay = 501;
-            } else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
+            } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
               Serial.println("Estamos conetados a WINLINK!!!!");
               show_display("__WINLINK_", "", " LOGGED !!!!", 2000);
               winlinkStatus = 5;
               //menuDisplay = 800;
-            } else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
+            } */else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
               winlinkStatus = 4;
-              Serial.println("llego ack de recepcion challenge");
+              logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Reception ACK");
               menuDisplay = 502;
             } else if (lastReceivedPacket.message.indexOf("Login valid") > 0) {
               winlinkStatus = 5;
-              Serial.println("Estamos conetados a WINLINK!!!!");
-              //menuDisplay = 800;
+              logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
+              menuDisplay = 5000;
             } 
             // que se hace con los mensajes recibidos desde Winlink cuando ya estamos conectados
           } else {

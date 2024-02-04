@@ -278,10 +278,6 @@ namespace KEYBOARD_Utils {
     }
 
 
-
-
-
-
     else if (menuDisplay == 6) {
       menuDisplay = 60;
     } else if (menuDisplay == 60) {

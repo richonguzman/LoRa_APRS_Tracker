@@ -645,11 +645,10 @@ namespace APRSPacketLib {
       }
     } else if (receivedPacket.indexOf("::") > 10) {
       aprsPacket.type = 1;
-      String temp1 = receivedPacket.substring(receivedPacket.indexOf("::")+2);
-      String temp2 = temp1.substring(0,temp1.indexOf(":"));
-      temp2.trim();
-      aprsPacket.addressee = temp2;
-      aprsPacket.message = temp1.substring(temp1.indexOf(":")+1);
+      String temp1 = receivedPacket.substring(receivedPacket.indexOf("::")+2,receivedPacket.indexOf("::")+11);
+      temp1.trim();
+      aprsPacket.addressee = temp1;
+      aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf("::")+12);
       aprsPacket.latitude = 0;
       aprsPacket.longitude = 0;
     } else if (receivedPacket.indexOf(":>") > 10) {
