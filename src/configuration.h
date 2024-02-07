@@ -29,6 +29,7 @@ public:
   bool    ecoMode;
   int     timeout;
   bool    turn180;
+  uint8_t brightness;
 };
 
 class Winlink {

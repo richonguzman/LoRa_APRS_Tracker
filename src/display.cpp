@@ -7,13 +7,7 @@
 #include "display.h"
 #include "TimeLib.h"
 
-#define ssd1306 //comment this line with "//" when using SH1106 screen instead of SSD1306
-
-#if defined(TTGO_T_Beam_S3_SUPREME_V3)
-#undef ssd1306
-#endif
-
-#ifdef ssd1306
+#ifdef oSSD1306
 #include <Adafruit_SSD1306.h>
 #else
 #include <Adafruit_SH110X.h>
@@ -41,16 +35,18 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 
 extern logging::Logger logger;
 
-#ifdef ssd1306
+#ifdef oSSD1306
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
-#else
-Adafruit_SH1106G display(128, 64, &Wire, OLED_RST);
+#elif oSH1107
+Adafruit_SH1107 display(128, 64, &Wire, OLED_RST);
+#elif oSH1106
+Adafruit_SH1106G display(128, 128, &Wire, OLED_RST); //extra rows still empty
 #endif
 
 // cppcheck-suppress unusedFunction
 void setup_display() {
   delay(500);
-  #ifdef OLED_DISPLAY_HAS_RST_PIN // 
+  #ifdef OLED_DISPLAY_HAS_RST_PIN //
     pinMode(OLED_RST, OUTPUT);
     digitalWrite(OLED_RST, LOW);
     delay(20);
@@ -58,14 +54,11 @@ void setup_display() {
   #endif
 
   Wire.begin(OLED_SDA, OLED_SCL);
-  #ifdef ssd1306
+  #ifdef oSSD1306
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306", "allocation failed!");
     while (true) {
     }
-  }
-  if (Config.display.turn180) {
-    display.setRotation(2);
   }
   #else
   if (!display.begin(0x3c, true)) {
@@ -74,49 +67,52 @@ void setup_display() {
     }
   }
   #endif
+  if (Config.display.turn180) {
+    display.setRotation(2);
+  }
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1); //WHITE & SH110X_WHITE value is 1
   display.setTextSize(1);
   display.setCursor(0, 0);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
 }
 
 // cppcheck-suppress unusedFunction
 void display_toggle(bool toggle) {
   if (toggle) {
-    #ifdef ssd1306
+    #ifdef oSSD1306
     display.ssd1306_command(SSD1306_DISPLAYON);
+    #else
+    display.oled_command(SH110X_DISPLAYON);
     #endif
+
   } else {
-    #ifdef ssd1306
+    #ifdef oSSD1306
     display.ssd1306_command(SSD1306_DISPLAYOFF);
+    #else
+    display.oled_command(SH110X_DISPLAYOFF);
     #endif
   }
+}
+
+void _setContrast(uint8_t dimm) {
+  #ifdef oSSD1306
+  display.ssd1306_command(SSD1306_SETCONTRAST);
+  display.ssd1306_command(dimm);
+  #else
+  display.setContrast(dimm);
+  #endif
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
   delay(wait);
 }
@@ -124,21 +120,14 @@ void show_display(String header, int wait) {
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
   display.setTextSize(1);
   display.setCursor(0, 16);
   display.println(line1);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
   delay(wait);
 }
@@ -146,11 +135,7 @@ void show_display(String header, String line1, int wait) {
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -159,10 +144,7 @@ void show_display(String header, String line1, String line2, int wait) {
   display.println(line1);
   display.setCursor(0, 26);
   display.println(line2);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
   delay(wait);
 }
@@ -170,11 +152,7 @@ void show_display(String header, String line1, String line2, int wait) {
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -185,10 +163,7 @@ void show_display(String header, String line1, String line2, String line3, int w
   display.println(line2);
   display.setCursor(0, 36);
   display.println(line3);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
   delay(wait);
 }
@@ -196,11 +171,7 @@ void show_display(String header, String line1, String line2, String line3, int w
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -213,10 +184,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.println(line3);
   display.setCursor(0, 46);
   display.println(line4);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
   display.display();
   delay(wait);
 }
@@ -224,11 +192,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
   display.clearDisplay();
-  #ifdef ssd1306
-  display.setTextColor(WHITE);
-  #else
-  display.setTextColor(SH110X_WHITE);
-  #endif
+  display.setTextColor(1);
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println(header);
@@ -243,10 +207,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
   display.println(line4);
   display.setCursor(0, 56);
   display.println(line5);
-  #ifdef ssd1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
-  display.ssd1306_command(screenBrightness);
-  #endif
+  _setContrast(screenBrightness);
 
   if (menuDisplay==0 && Config.display.showSymbol) {
     int symbol = 100;

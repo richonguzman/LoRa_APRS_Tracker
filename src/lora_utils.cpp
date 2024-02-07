@@ -50,6 +50,9 @@ namespace LoRa_Utils {
     radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
     radio.setBandwidth(Config.loramodule.signalBandwidth);
     radio.setCodingRate(Config.loramodule.codingRate4);
+    #ifdef DIO3_TCXO_REF
+    radio.setTCXO(DIO3_TCXO_REF, 5000);
+    #endif
     #if defined(HAS_E22)
     radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
     #endif

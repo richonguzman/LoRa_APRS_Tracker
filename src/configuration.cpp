@@ -49,6 +49,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     display.ecoMode               = data["display"]["ecoMode"].as<bool>();
     display.timeout               = data["display"]["timeout"].as<int>();
     display.turn180               = data["display"]["turn180"].as<bool>();
+    display.brightness            = data["display"]["brightness"].as<uint8_t>();
 
     winlink.password              = data["winlink"]["password"].as<String>();
 
