@@ -30,6 +30,7 @@
 #define LORA_RST            23
 #define LORA_IRQ            26  // IRQ --> DIO0
 #define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
+#define BUTTON_PIN					0		//Default PRG button.GPIO0, or use the following: GPIO12, 13, 14, 15 with 10k pullup 
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
