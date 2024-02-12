@@ -57,9 +57,10 @@
 	],
 	"display": {
 		"showSymbol": true,
-		"ecoMode": false,
-		"timeout": 4,
-		"turn180" : false
+		"ecoMode": true,
+		"timeout": 15,
+		"turn180" : false,
+		"brightness" : 255
     },
 	"other": {
 		"simplifiedTrackerMode": false,
@@ -70,9 +71,9 @@
 		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"sendBatteryInfo": false,
+		"sendBatteryInfo": true,
 		"bluetoothType": 1,
-		"bluetoothActive": true,
+		"bluetoothActive": false,
 		"disableGPS": false
 	},
 	"winlink": {
@@ -101,10 +102,12 @@
 	},
 	"lora": {
 		"frequency": 433775000,
+		"freqErrorOffset": 0,
 		"spreadingFactor": 12,
 		"signalBandwidth": 125000,
 		"codingRate4": 5,
-		"power": 20
+		"power": 20,
+		"lnaGain": 0
 	},
 	"pttTrigger": {
 		"active": false,
