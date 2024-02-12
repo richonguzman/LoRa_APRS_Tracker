@@ -38,7 +38,7 @@ namespace LoRa_Utils {
     #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-    float freq = (float)Config.loramodule.frequency/1000000;
+    float freq = (float)Config.loramodule.frequency + Config.loramodule.freqErrorOffset / 1000000;
     int state = radio.begin(freq);
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX1268");
@@ -74,7 +74,7 @@ namespace LoRa_Utils {
     SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
     LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
 
-    long freq = Config.loramodule.frequency;
+    long freq = Config.loramodule.frequency + Config.loramodule.freqErrorOffset;
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Frequency: %d", freq);
     if (!LoRa.begin(freq)) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
@@ -89,6 +89,7 @@ namespace LoRa_Utils {
     LoRa.enableCrc();
 
     LoRa.setTxPower(Config.loramodule.power);
+    LoRa.setGain(Config.loramodule.lnaGain);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
     #endif
   }

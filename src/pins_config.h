@@ -30,7 +30,7 @@
 #define LORA_RST            23
 #define LORA_IRQ            26  // IRQ --> DIO0
 #define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
-#define BUTTON_PIN					0		//Default PRG button.GPIO0, or use the following: GPIO12, 13, 14, 15 with 10k pullup 
+#define BUTTON_PIN          0   //Default PRG button.GPIO0, or use the following: GPIO12, 13, 14, 15
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
@@ -169,6 +169,26 @@
 #define RADIO_RXEN          14
 #define RADIO_TXEN          13
 #define DIO3_TCXO_REF       1.8 //DIO3 TCXO Reference Voltage
+#endif
+
+#if defined(ESP32_BATTERY_OLED)
+#undef OLED_RST
+#undef OLED_SCL
+#undef OLED_SDA
+#define OLED_SCL            4
+#define OLED_SDA            5
+#define OLED_RST            -1
+#define GPS_RX              12
+#define GPS_TX              14
+#define LORA_SCK            18
+#define LORA_MISO           19
+#define LORA_MOSI           23
+#define LORA_CS             17  // CS  --> NSS
+#define LORA_RST            15
+#define LORA_IRQ            22  // IRQ --> DIO0
+#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
+#define BUTTON_PIN          0
+#define LED_PIN             16  //LED_BUILTIN
 #endif
 
 #endif

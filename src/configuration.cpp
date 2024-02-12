@@ -73,10 +73,12 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
 
     loramodule.frequency          = data["lora"]["frequency"].as<long>();
+    loramodule.freqErrorOffset    = data["lora"]["freqErrorOffset"].as<long>();
     loramodule.spreadingFactor    = data["lora"]["spreadingFactor"].as<int>();
     loramodule.signalBandwidth    = data["lora"]["signalBandwidth"].as<long>();
     loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
     loramodule.power              = data["lora"]["power"].as<int>();
+    loramodule.lnaGain            = data["lora"]["lnaGain"].as<int>();
 
     ptt.active                    = data["pttTrigger"]["active"].as<bool>();
     ptt.io_pin                    = data["pttTrigger"]["io_pin"].as<int>();

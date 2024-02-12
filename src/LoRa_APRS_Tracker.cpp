@@ -91,7 +91,7 @@ bool      symbolAvailable     = true;
 
 uint32_t  bmeLastReading      = -60000;
 
-int       screenBrightness    = 1;
+int       screenBrightness    = Config.display.brightness;
 bool      keyboardConnected   = false;
 bool      keyDetected         = false;
 uint32_t  keyboardTime        = millis();

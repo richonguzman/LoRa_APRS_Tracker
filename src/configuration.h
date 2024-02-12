@@ -65,10 +65,12 @@ public:
 class LoraModule {
 public:
   long  frequency;
+  long  freqErrorOffset;
   int   spreadingFactor;
   long  signalBandwidth;
   int   codingRate4;
   int   power;
+  int   lnaGain;
 };
 
 class Ptt {
