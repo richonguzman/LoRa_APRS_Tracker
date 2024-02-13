@@ -171,6 +171,7 @@
 #define DIO3_TCXO_REF       1.8 //DIO3 TCXO Reference Voltage
 #endif
 
+//PLAN
 #if defined(ESP32_BATTERY_OLED)
 #undef OLED_RST
 #undef OLED_SCL
