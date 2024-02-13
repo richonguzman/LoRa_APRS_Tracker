@@ -60,6 +60,7 @@ public:
   bool    messageRxBeep;
   bool    stationBeep;
   bool    lowBatteryBeep;
+  uint8_t ws2812brightness;
 };
 
 class LoraModule {

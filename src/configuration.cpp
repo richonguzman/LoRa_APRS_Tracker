@@ -71,6 +71,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
     notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
+    notification.ws2812brightness = data["notification"]["ws2812brightness"].as<uint8_t>();
 
     loramodule.frequency          = data["lora"]["frequency"].as<long>();
     loramodule.freqErrorOffset    = data["lora"]["freqErrorOffset"].as<long>();

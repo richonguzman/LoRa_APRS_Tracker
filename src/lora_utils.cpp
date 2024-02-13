@@ -1,6 +1,6 @@
 #include <RadioLib.h>
 #include <logger.h>
-#include <LoRa.h>
+//#include <LoRa.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
@@ -25,31 +25,46 @@ SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUS
 bool transmissionFlag = true;
 bool enableInterrupt = true;
 #endif
+#if defined(HAS_SX1278)
+SX1278 radio = new Module(LORA_CS, LORA_IRQ, LORA_RST, LORA_DIO2);
+bool transmissionFlag = true;
+bool enableInterrupt = true;
+#endif
 
 namespace LoRa_Utils {
 
   void setFlag() {
-    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
+    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22) || defined(HAS_SX1278)
     transmissionFlag = true;
     #endif
   }
 
   void setup() {
-    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
+    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+    #endif
+    #if defined(HAS_SX1278)
+    SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI);
+    #endif
     float freq = ((float)Config.loramodule.frequency + (float)Config.loramodule.freqErrorOffset) / 1000000;
     int state = radio.begin(freq);
     if (state == RADIOLIB_ERR_NONE) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX1268");
+      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing Radio");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
     }
+    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     radio.setDio1Action(setFlag);
+    #endif
+    #if defined(HAS_SX1278)
+    radio.setDio0Action(setFlag, RISING);
+    #endif
     radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
     radio.setBandwidth(Config.loramodule.signalBandwidth);
     radio.setCodingRate(Config.loramodule.codingRate4);
+    radio.setCRC(true);
     #ifdef DIO3_TCXO_REF
     radio.setTCXO(DIO3_TCXO_REF, 5000);
     #endif
@@ -62,36 +77,18 @@ namespace LoRa_Utils {
     #ifdef HAS_E22
     state = radio.setOutputPower(Config.loramodule.power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp) 
     #endif
+    #if defined(HAS_SX1278)
+    state = radio.setOutputPower(Config.loramodule.power - 3); //SX1278 max value 17dB
+    #endif
+    #if defined(HAS_SX1278)
+    radio.setGain(Config.loramodule.lnaGain);
+    #endif
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
     } else {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
       while (true);
     }
-    #endif
-    #if defined(HAS_SX1278)
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
-    SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
-    LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
-
-    long freq = Config.loramodule.frequency + Config.loramodule.freqErrorOffset;
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Frequency: %d", freq);
-    if (!LoRa.begin(freq)) {
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
-      show_display("ERROR", "Starting LoRa failed!");
-      while (true) {
-        delay(1000);
-      }
-    }
-    LoRa.setSpreadingFactor(Config.loramodule.spreadingFactor);
-    LoRa.setSignalBandwidth(Config.loramodule.signalBandwidth);
-    LoRa.setCodingRate4(Config.loramodule.codingRate4);
-    LoRa.enableCrc();
-
-    LoRa.setTxPower(Config.loramodule.power);
-    LoRa.setGain(Config.loramodule.lnaGain);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-    #endif
   }
 
   void sendNewPacket(const String &newPacket) {
@@ -114,8 +111,6 @@ namespace LoRa_Utils {
     #ifdef ESP32_BV5DJ_1W_LoRa_GPS
      myLED.setPixelColor( 0, 0xff0000); myLED.show();
     #endif
-
-    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     int state = radio.transmit("\x3c\xff\x01" + newPacket);
     if (state == RADIOLIB_ERR_NONE) {
       //Serial.println(F("success!"));
@@ -127,15 +122,6 @@ namespace LoRa_Utils {
       Serial.print(F("failed, code "));
       Serial.println(state);
     }
-    #endif
-    #if defined(HAS_SX1278)
-    LoRa.beginPacket();
-    LoRa.write('<');
-    LoRa.write(0xFF);
-    LoRa.write(0x01);
-    LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
-    LoRa.endPacket();
-    #endif
     if (Config.notification.ledTx && Config.notification.ledTxPin >= 0){
       digitalWrite(Config.notification.ledTxPin, LOW);
     }
@@ -151,21 +137,6 @@ namespace LoRa_Utils {
   ReceivedLoRaPacket receivePacket() {
     ReceivedLoRaPacket receivedLoraPacket;
     String packet = "";
-    #if defined(HAS_SX1278)
-    int packetSize = LoRa.parsePacket();
-    if (packetSize) {
-      while (LoRa.available()) {
-        int inChar = LoRa.read();
-        packet += (char)inChar;
-      }
-      receivedLoraPacket.text       = packet;
-      receivedLoraPacket.rssi       = LoRa.packetRssi();
-      receivedLoraPacket.snr        = LoRa.packetSnr();
-      receivedLoraPacket.freqError  = LoRa.packetFrequencyError();
-      logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", packet.c_str());
-    }
-    #endif
-    #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     if (transmissionFlag) {
       transmissionFlag = false;
       radio.startReceive();
@@ -185,7 +156,6 @@ namespace LoRa_Utils {
         Serial.println(state);
       }
     }
-    #endif
     return receivedLoraPacket;
   }
 
