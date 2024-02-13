@@ -38,7 +38,7 @@ namespace LoRa_Utils {
     #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_E22)
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
     SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-    float freq = (float)Config.loramodule.frequency + Config.loramodule.freqErrorOffset / 1000000;
+    float freq = ((float)Config.loramodule.frequency + (float)Config.loramodule.freqErrorOffset) / 1000000;
     int state = radio.begin(freq);
     if (state == RADIOLIB_ERR_NONE) {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX1268");
