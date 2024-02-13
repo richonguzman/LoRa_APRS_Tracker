@@ -60,7 +60,7 @@
 		"ecoMode": true,
 		"timeout": 15,
 		"turn180" : false,
-		"brightness" : 255
+		"brightness" : 100
     },
 	"other": {
 		"simplifiedTrackerMode": false,
@@ -98,7 +98,8 @@
 		"txBeep": false,
 		"messageRxBeep": false,
 		"stationBeep": false,
-		"lowBatteryBeep": false
+		"lowBatteryBeep": false,
+		"ws2812brightness": 120
 	},
 	"lora": {
 		"frequency": 433775000,
