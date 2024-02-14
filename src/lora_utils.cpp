@@ -26,7 +26,7 @@ bool transmissionFlag = true;
 bool enableInterrupt = true;
 #endif
 #if defined(HAS_SX1278)
-SX1278 radio = new Module(LORA_CS, LORA_IRQ, LORA_RST, LORA_DIO2);
+SX1278 radio = new Module(LORA_CS, LORA_IRQ, LORA_RST);
 bool transmissionFlag = true;
 bool enableInterrupt = true;
 #endif
