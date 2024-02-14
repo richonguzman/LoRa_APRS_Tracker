@@ -33,6 +33,8 @@ extern bool                 screenBrightness;
 extern bool                 disableGPS;
 extern APRSPacket           lastReceivedPacket;
 extern int                  winlinkStatus;
+extern String               winlinkMailNumber;
+extern String               winlinkAddressee;
 
 namespace MENU_Utils {
 
@@ -63,7 +65,7 @@ namespace MENU_Utils {
     void showOnScreen() {
         String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && !(menuDisplay>=500 && menuDisplay<=5000) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && !(menuDisplay>=500 && menuDisplay<=5100) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
             messageCallsign = "";
             messageText = "";
@@ -306,49 +308,80 @@ namespace MENU_Utils {
                 break;
 
             case 50:    // 5.Winlink MENU
-                if (winlinkStatus == 0) {
-                    show_display("__WINLINK_", "> Login" , "  Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
-                } else {
+                if (winlinkStatus == 5) {
                     menuDisplay = 5000;
+                } else {
+                    show_display("_WINLINK_>", "> Login" , "  Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
                 }
                 break;
             case 51:    // 5.Winlink
-                show_display("__WINLINK_", "  Login" , "> Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "> Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
                 break;
             case 52:    // 5.Winlink
-                show_display("__WINLINK_", "  Login" , "  Read Saved Mails", "> Delete Saved Mails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "  Read Saved Mails", "> Delete Saved Mails", "" , lastLine);
                 break;
 
             case 500:    // 5.Winlink ---> Login
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> waiting", "" , "<Back");
+                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> waiting", "" , "");
                 break;
             case 501:    // 5.Winlink ---> Login
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> sended", "" , "<Back");
+                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> sended", "" , "");
                 break;
             case 502:    // 5.Winlink ---> Login
-                show_display("__WINLINK_", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "<Back");
+                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
                 break;
 
-            case 5000:   // 5.Winlink ---> Logged!!!
-                show_display("__WINLINK_", "" , "Logged !!! ", "", "" , "<Back");
+            case 5000:   // WINLINK: List Pend. Mail //
+                show_display("WLNK_MENU_", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
+                break;
+            case 5010:    // WINLINK: Downloaded Mails //
+                show_display("WLNK_MENU_", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
                 break;
 
-                /* si esta loggeado (5000)
-                5010) write mail
-                5020) list pending mails
-                5030) download mails
-                51) read saved mails
-                5040) reply mail
-                5050) forward mail
-                52) delete mail (local o en winlink?)
-                5060) alias menu ------->
-                5070) log out
-                */
+            case 5020:    // WINLINK: Read Mail //
+                show_display("WLNK_MENU_", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
+                break;
+            case 5021:
+                show_display("WLNK_READ_", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
+                break;
 
+            case 5030:    // WINLINK: Reply Mail //
+                show_display("WLNK_MENU_", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
+                break;
+            case 5031:
+                show_display("WLNK_REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                break;        
+
+            case 5040:    // WINLINK: Foward Mail //
+                show_display("WLNK_MENU_", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
+                break;
+            case 5041:    // WINLINK: Forward Mail //
+                show_display("WLNK_FORW_", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                break;
+            case 5042:    // WINLINK: Forward Mail //
+                show_display("WLNK_FORW_", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                //show_display("WLNK_FORW_", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
+                break;
+
+            case 5050:    // WINLINK: Delete Mail //
+                show_display("WLNK_MENU_", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
+                break;
+            case 5051:    // WINLINK: Delete Mail //
+                show_display("WLNK_DEL__", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "<Back          Enter>");
+                break;
+
+            case 5060:    // WINLINK: Alias Menu //
+                show_display("WLNK_MENU_", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
+                break;
+            case 5070:    // WINLINK: Log Out MAIL //
+                show_display("WLNK_MENU_", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
+                break;
+            case 5080:    // WINLINK: WRITE MAIL //
+                show_display("WLNK_MENU_", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
+                break;
+                // validar winlinkStatus = 0
                 // check si no esta logeado o si
 
-                //show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
-                
 
             case 60:    // 6. Extras ---> Flashlight
                 show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);

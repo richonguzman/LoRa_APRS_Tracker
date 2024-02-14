@@ -245,7 +245,7 @@ namespace MSG_Utils {
               menuDisplay = 501;
             } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
               Serial.println("Estamos conetados a WINLINK!!!!");
-              show_display("__WINLINK_", "", " LOGGED !!!!", 2000);
+              show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
               winlinkStatus = 5;
               //menuDisplay = 800;
             } */else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
@@ -255,8 +255,13 @@ namespace MSG_Utils {
             } else if (lastReceivedPacket.message.indexOf("Login valid") > 0) {
               winlinkStatus = 5;
               logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
+              show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
               menuDisplay = 5000;
-            } 
+            } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
+              show_display("_WINLINK_>", "", "    LOG OUT !!!",2000);
+              winlinkStatus = 0;
+            }
+
             // que se hace con los mensajes recibidos desde Winlink cuando ya estamos conectados
           } else {
             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);

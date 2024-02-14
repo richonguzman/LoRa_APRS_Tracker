@@ -20,7 +20,7 @@ namespace WINLINK_Utils {
     }
     challengeAnswer += "AZ6";
     delay(8000); ///
-    Serial.println("el challenge creado es " + challengeAnswer);
+    //Serial.println("el challenge creado es " + challengeAnswer);
     MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
   }
 
@@ -28,17 +28,12 @@ namespace WINLINK_Utils {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Start Login");
     show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
     if (winlinkStatus == 5) {
-      //menuDisplay = 800;
+      menuDisplay = 5000;
     } else {
       winlinkStatus = 1;
       MSG_Utils::sendMessage(1, "WLNK-1", "L");
-      menuDisplay = 500; // enviar a proceso LOGIN
+      menuDisplay = 500;
     }
-    // procesar challenge
-    // enviar challenge con ack
-    // recibir ack
-    // recibir Login valid
-    // responder ack
   }
 
 }

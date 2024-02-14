@@ -34,7 +34,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.01.30";
+String    versionDate         = "2024.02.14";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -94,9 +94,15 @@ bool      sosActive           = false;
 bool      disableGPS;
 
 bool      miceActive          = false;
-int       ackNumberSend;
-int       winlinkStatus       = 0;
 
+int       ackNumberSend;
+int       winlinkStatus       = 5; // debe ser  0
+String    winlinkMailNumber   = "_?";
+/*String winlinkAlias                = "";
+String winlinkAliasComplete        = "";
+String winlinkAddressee            = "";
+String winlinkSubject              = "";
+String winlinkBody                 = "";*/
 
 APRSPacket                    lastReceivedPacket;
 
