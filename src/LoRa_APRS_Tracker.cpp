@@ -96,13 +96,15 @@ bool      disableGPS;
 bool      miceActive          = false;
 
 int       ackNumberSend;
-int       winlinkStatus       = 5; // debe ser  0
+int       winlinkStatus       = 0; // debe ser  0
 String    winlinkMailNumber   = "_?";
-/*String winlinkAlias                = "";
+String    winlinkAddressee    = "";
+String    winlinkSubject      = "";
+String    winlinkBody         = "";
+/*
+String winlinkAlias                = "";
 String winlinkAliasComplete        = "";
-String winlinkAddressee            = "";
-String winlinkSubject              = "";
-String winlinkBody                 = "";*/
+*/
 
 APRSPacket                    lastReceivedPacket;
 

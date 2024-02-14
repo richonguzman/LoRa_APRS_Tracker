@@ -35,6 +35,9 @@ extern bool             flashlight;
 extern bool             digirepeaterActive;
 extern bool             sosActive;
 extern String           winlinkMailNumber;
+extern String           winlinkAddressee;
+extern String           winlinkSubject;
+extern String           winlinkBody;
 
 namespace KEYBOARD_Utils {
 
@@ -85,10 +88,15 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 50) {
         menuDisplay = 52;
       }
-    } else if (menuDisplay >= 5000 && menuDisplay <= 5080) {
+    } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
       menuDisplay = menuDisplay - 10;
       if (menuDisplay < 5000) {
         menuDisplay = 5080;
+      }
+    } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
+      menuDisplay--;
+      if (menuDisplay < 5084) {
+        menuDisplay = 5085;
       }
     } 
     
@@ -174,10 +182,15 @@ namespace KEYBOARD_Utils {
       if (menuDisplay > 52) {
         menuDisplay = 50;
       }
-    } else if (menuDisplay >= 5000 && menuDisplay <= 5080) {
+    } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
       menuDisplay = menuDisplay + 10;
       if (menuDisplay > 5080) {
         menuDisplay = 5000;
+      }
+    } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
+      menuDisplay++;
+      if (menuDisplay > 5085) {
+        menuDisplay = 5084;
       }
     } 
 
@@ -192,19 +205,22 @@ namespace KEYBOARD_Utils {
   void leftArrow() {
     if (menuDisplay >= 1 && menuDisplay <= 6) {
       menuDisplay = 0;
-    } else if (menuDisplay==110) {
+    } else if (menuDisplay == 110) {
       messageCallsign = "";
       menuDisplay = 11;
-    } else if (menuDisplay==111) {
+    } else if (menuDisplay == 111) {
       messageText = "";
       menuDisplay = 110;
-    } else if (menuDisplay==1300 ||  menuDisplay==1310) {
+    } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
       messageText = "";
       menuDisplay = menuDisplay/10;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay==120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay==40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
       menuDisplay = int(menuDisplay/10);
-    } else if (menuDisplay==5000 || menuDisplay== 5010 || menuDisplay == 5020 || menuDisplay==5030 || menuDisplay==5040 || menuDisplay==5050 || menuDisplay==5060 || menuDisplay==5070 || menuDisplay==5080) {
+    } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
       menuDisplay = 5;
+    } else if (menuDisplay == 5021 || menuDisplay == 5041 || menuDisplay == 5051) {
+      winlinkMailNumber = "_?";
+      menuDisplay--;
     }
 
 
@@ -300,26 +316,37 @@ namespace KEYBOARD_Utils {
       show_display("_WINLINK_>", "", "DELETE MSG/MAIL" ,"", 1000);
     }
 
-    else if (menuDisplay==5000) {
+    else if (menuDisplay == 5000) {
       MSG_Utils::sendMessage(1, "WLNK-1", "L");
-    } else if (menuDisplay==5010) {
+    } else if (menuDisplay == 5010) {
       show_display("_WINLINK_>", "", "DOWNLOADED MAILS" ,"", 1000);
-    } else if (menuDisplay==5020) {
+    } else if (menuDisplay == 5020) {
       menuDisplay = 5021;
-    } else if (menuDisplay==5030) {
+    } else if (menuDisplay == 5030) {
       show_display("_WINLINK_>", "", "REPLY MAIL" ,"", 1000);
-    } else if (menuDisplay==5040) {
-      show_display("_WINLINK_>", "", "FORWARD MAIL" ,"", 1000);
-    } else if (menuDisplay==5050) {
+    } else if (menuDisplay == 5040) {
+      menuDisplay = 5041;
+    } else if (menuDisplay == 5050) {
       menuDisplay = 5051;
-    } else if (menuDisplay==5060) {
+    } else if (menuDisplay == 5060) {
       show_display("_WINLINK_>", "", "ALIAS MENU" ,"", 1000);
-    } else if (menuDisplay==5070) {
+    } else if (menuDisplay == 5070) {
       MSG_Utils::sendMessage(1, "WLNK-1", "B");
       menuDisplay = 5;
-    } else if (menuDisplay==5080) {
-      show_display("_WINLINK_>", "", "WRITE MAIL" ,"", 1000);
-    } 
+    } else if (menuDisplay == 5080) {
+      menuDisplay = 5081;
+    } else if (menuDisplay == 5084) {
+      //Serial.println("1, WLNK-1, /EX");
+      MSG_Utils::sendMessage(1, "WLNK-1", "/EX");
+      winlinkAddressee = "";
+      winlinkSubject = "";
+      winlinkBody = "";
+      menuDisplay = 5080;
+    } else if (menuDisplay == 5085) {
+      winlinkBody = "";
+      menuDisplay = 5083;
+    }
+
 
     else if (menuDisplay == 6) {
       menuDisplay = 60;
@@ -391,7 +418,7 @@ namespace KEYBOARD_Utils {
         messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
       }
       messageCallsign.toUpperCase();
-    } else if ((menuDisplay==111 || menuDisplay==1300 || menuDisplay==1310) && key!= 180) {     // Writting Text of Message
+    } else if ((menuDisplay == 111 || menuDisplay == 1300 || menuDisplay == 1310) && key!= 180) {     // Writting Text of Message
       if (messageText.length() == 1) {
         messageText.trim();
       }
@@ -402,14 +429,14 @@ namespace KEYBOARD_Utils {
         if (messageText.length() > 67){
           messageText = messageText.substring(0,67);
         }
-        if (menuDisplay==111) {
+        if (menuDisplay == 111) {
           MSG_Utils::sendMessage(0, messageCallsign, messageText);
           menuDisplay = 11;
-        } else if (menuDisplay==1300) {
+        } else if (menuDisplay == 1300) {
           messageCallsign = "ANSRVR";
           MSG_Utils::sendMessage(0, messageCallsign, "CQ HOTG " + messageText);
           menuDisplay = 130;
-        } else if (menuDisplay==1310) {
+        } else if (menuDisplay == 1310) {
           messageCallsign = "APRSPH";
           MSG_Utils::sendMessage(0, messageCallsign, "HOTG " + messageText);
           menuDisplay = 131;
@@ -419,29 +446,98 @@ namespace KEYBOARD_Utils {
       } else if (key == 8) {                          // Delete Last Key
         messageText = messageText.substring(0, messageText.length()-1);
       }
-    } else if ((menuDisplay== 5021 || menuDisplay==5051) && key >= 48 && key <= 57) { // numeros exactos???
+    } else if ((menuDisplay == 5021 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) { // numeros exactos???
       winlinkMailNumber = key;
-    } else if ((menuDisplay== 5021 || menuDisplay==5051) && key == 8) { // numeros exactos???
+    } else if ((menuDisplay == 5021 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) { // numeros exactos???
       winlinkMailNumber = "_?";
-    } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber!="?") {
-      Serial.println("1, WLNK-1, R " + winlinkMailNumber);
-      //MSG_Utils::sendMessage(1, "WLNK-1", "R" + winlinkMailNumber);
+    } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber!="_?") {
+      //Serial.println("1, WLNK-1, R " + winlinkMailNumber);
+      MSG_Utils::sendMessage(1, "WLNK-1", "R" + winlinkMailNumber);
       winlinkMailNumber = "_?";
       menuDisplay = 5020;
-    } else if (menuDisplay == 5051 && key == 13 && winlinkMailNumber!="?") {
-      Serial.println("1, WLNK-1, K " + winlinkMailNumber);
-      //MSG_Utils::sendMessage(1, "WLNK-1", "K" + winlinkMailNumber);
+    } else if (menuDisplay == 5051 && key == 13 && winlinkMailNumber!="_?") {
+      //Serial.println("1, WLNK-1, K " + winlinkMailNumber);
+      MSG_Utils::sendMessage(1, "WLNK-1", "K" + winlinkMailNumber);
       winlinkMailNumber = "_?";
       menuDisplay = 5050;
-    } /*else if (menuDisplay == 5051 && key == 13) {
-      Serial.println("1, WLNK-1, Y " + winlinkMailNumber);
-      //MSG_Utils::sendMessage(1, "WLNK-1", "Y" + winlinkMailNumber);
-      winlinkMailNumber = "";
-      menuDisplay = 5030;
+    } else if (menuDisplay == 5041 && key == 13 && winlinkMailNumber!="_?") {
+      menuDisplay = 5042;
+    } else if (menuDisplay == 5042) {
+      if (winlinkAddressee.length() == 1) {
+        winlinkAddressee.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
+        winlinkAddressee += key;
+      } else if (key == 13 && winlinkAddressee.length() > 0) {
+        winlinkAddressee.trim();
+        //Serial.println("1, WLNK-1, F" + winlinkMailNumber + " " + winlinkAddressee);
+        MSG_Utils::sendMessage(1, "WLNK-1", "F" + winlinkMailNumber + " " + winlinkAddressee);
+        winlinkMailNumber = "_?";
+        winlinkAddressee = "";
+        menuDisplay = 5040;
+      } else if (key == 8) {
+        winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 5041;
+        winlinkAddressee = "";
+      }
+    }    
+
+    else if (menuDisplay == 5081) {
+    if (winlinkAddressee.length() == 1) {
+      winlinkAddressee.trim();
+    }
+    if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
+      winlinkAddressee += key;
+    } else if (key == 13 && winlinkAddressee.length() > 0) {
+      winlinkAddressee.trim();
+      menuDisplay = 5082;
+    } else if (key == 8) {
+      winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
+    } else if (key == 180) { 
+      menuDisplay = 5080;
+      winlinkAddressee = "";
+    }
+  } else if (menuDisplay == 5082) {
+    if (winlinkSubject.length() == 1) {
+      winlinkSubject.trim();
+    }
+    if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key == 32) || (key >= 48 && key <= 57)) {
+      winlinkSubject += key;
+    } else if (key == 13 && winlinkSubject.length() > 0) {
+      winlinkSubject.trim();
+      //Serial.println("1, WLNK-1, SP " + winlinkAddressee + " " + winlinkSubject);
+      MSG_Utils::sendMessage(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
+      menuDisplay = 5083;
+    } else if (key == 8) {
+      winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length()-1);
+    } else if (key == 180) { 
+      menuDisplay = 5081;
+      winlinkSubject = "";
+    }
+  } else if (menuDisplay == 5083) {
+    if (winlinkBody.length() == 1) {
+      winlinkBody.trim();
+    }
+    if ((key >= 32 && key <=122)) {
+      winlinkBody += key;
+    } else if (key == 13 && winlinkBody.length() <= 67) {
+      winlinkBody.trim();
+      //Serial.println("1, WLNK-1, winlinkBody");
+      MSG_Utils::sendMessage(1, "WLNK-1", winlinkBody);
+      menuDisplay = 5084;
+    } else if (key == 8) {
+      winlinkBody = winlinkBody.substring(0, winlinkBody.length()-1);
+    } else if (key == 180) { 
+      winlinkBody = "";
+    }
+  }
 
 
-    }*/ else if (key==13) {
-      if (menuDisplay==200) {
+
+
+    else if (key==13) {
+      if (menuDisplay == 200) {
         if(myBeaconsIndex >= (myBeaconsSize - 1)) {
           myBeaconsIndex = 0;
         } else {
@@ -454,10 +550,10 @@ namespace KEYBOARD_Utils {
         show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
         STATION_Utils::saveCallsingIndex(myBeaconsIndex);
         menuDisplay = 0;
-      } else if (menuDisplay==250) {
+      } else if (menuDisplay == 250) {
         show_display("", "", "    REBOOTING ...", 2000);
         ESP.restart();
-      } else if (menuDisplay==260) {
+      } else if (menuDisplay == 260) {
         show_display("", "", "    POWER OFF ...", 2000);
         POWER_Utils::shutdown();
       }

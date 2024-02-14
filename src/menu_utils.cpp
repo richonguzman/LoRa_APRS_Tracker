@@ -32,9 +32,12 @@ extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 extern bool                 disableGPS;
 extern APRSPacket           lastReceivedPacket;
+
 extern int                  winlinkStatus;
 extern String               winlinkMailNumber;
 extern String               winlinkAddressee;
+extern String               winlinkSubject;
+extern String               winlinkBody;
 
 namespace MENU_Utils {
 
@@ -331,54 +334,82 @@ namespace MENU_Utils {
                 show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
                 break;
 
+            ////
             case 5000:   // WINLINK: List Pend. Mail //
-                show_display("WLNK_MENU_", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
+                show_display("WLNK__MENU", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
                 break;
             case 5010:    // WINLINK: Downloaded Mails //
-                show_display("WLNK_MENU_", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
+                show_display("WLNK__MENU", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
                 break;
+            ////
 
             case 5020:    // WINLINK: Read Mail //
-                show_display("WLNK_MENU_", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
+                show_display("WLNK__MENU", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
                 break;
             case 5021:
-                show_display("WLNK_READ_", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
+                show_display("WLNK__READ", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
                 break;
 
+            ////
             case 5030:    // WINLINK: Reply Mail //
-                show_display("WLNK_MENU_", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
+                show_display("WLNK__MENU", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
                 break;
             case 5031:
                 show_display("WLNK_REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
-                break;        
+                break;    
+            ////    
 
             case 5040:    // WINLINK: Foward Mail //
-                show_display("WLNK_MENU_", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
+                show_display("WLNK__MENU", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
                 break;
             case 5041:    // WINLINK: Forward Mail //
-                show_display("WLNK_FORW_", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                show_display("WLNK__FORW", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
                 break;
             case 5042:    // WINLINK: Forward Mail //
-                show_display("WLNK_FORW_", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
-                //show_display("WLNK_FORW_", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
+                show_display("WLNK_FORW_", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
                 break;
 
             case 5050:    // WINLINK: Delete Mail //
-                show_display("WLNK_MENU_", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
+                show_display("WLNK__MENU", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
                 break;
             case 5051:    // WINLINK: Delete Mail //
-                show_display("WLNK_DEL__", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "<Back          Enter>");
+                show_display("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "<Back          Enter>");
                 break;
+            
 
+            ////
             case 5060:    // WINLINK: Alias Menu //
-                show_display("WLNK_MENU_", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
+                show_display("WLNK__MENU", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
                 break;
             case 5070:    // WINLINK: Log Out MAIL //
-                show_display("WLNK_MENU_", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
+                show_display("WLNK__MENU", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
                 break;
+            ////
+
             case 5080:    // WINLINK: WRITE MAIL //
-                show_display("WLNK_MENU_", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
+                show_display("WLNK__MENU", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
                 break;
+            case 5081:    // WINLINK: WRITE MAIL: Addressee //
+                show_display("WLNK__MAIL", "--- Send Mail to ---", "", "-> " + winlinkAddressee, "", "<Back          Enter>");
+                break;
+            case 5082:    // WINLINK: WRITE MAIL: Subject //
+                show_display("WLNK__MAIL", "--- Write Subject ---", "", "-> " + winlinkSubject, "", "<Back          Enter>");
+                break;
+            case 5083:    // WINLINK: WRITE MAIL: Body //
+                if (winlinkBody.length() <= 67) {
+                show_display("WLNK__MAIL", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
+                } else {
+                show_display("WLNK__MAIL", "-- Body To Long = " + String(winlinkBody.length()) + "!", "-> " + winlinkBody, "", "", "<Clear Body");
+                }
+                break;
+            case 5084:    // WINLINK: WRITE MAIL: End Mail? //
+                show_display("WLNK__MAIL", "", "> End Mail", "  1 More Line", "", "      Up/Down Select>");
+                break;
+            case 5085:    // WINLINK: WRITE MAIL: One More Line(Body) //
+                show_display("WLNK__MAIL", "", "  End Mail", "> 1 More Line", "", "      Up/Down Select>");
+                break;
+
+
                 // validar winlinkStatus = 0
                 // check si no esta logeado o si
 
