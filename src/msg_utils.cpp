@@ -262,6 +262,10 @@ namespace MSG_Utils {
               winlinkStatus = 0;
             }
 
+            else {
+              show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
+            }
+
             // que se hace con los mensajes recibidos desde Winlink cuando ya estamos conectados
           } else {
             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
