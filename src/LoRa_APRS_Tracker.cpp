@@ -129,10 +129,13 @@ void setup() {
     NOTIFICATION_Utils::start();
   }
   if (Config.notification.ledTx && Config.notification.ledTxPin >= 0){
-    pinMode(Config.notification.ledTxPin, OUTPUT);
+    pinMode(Config.notification.ledTxPin & 127, OUTPUT);
+    digitalWrite(Config.notification.ledTxPin & 127, Config.notification.ledTxPin & 128 ? 1 : 0); //add 128 to pin num for HIGH
   }
   if (Config.notification.ledMessage  && Config.notification.ledMessagePin >= 0){
-    pinMode(Config.notification.ledMessagePin, OUTPUT);
+    pinMode(Config.notification.ledMessagePin & 127, OUTPUT);
+    digitalWrite(Config.notification.ledMessagePin & 127, Config.notification.ledMessagePin & 128 ? 1 : 0); //add 128 to pin num for HIGH
+    
   }
   if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
     pinMode(Config.notification.ledFlashlightPin, OUTPUT);
@@ -146,7 +149,7 @@ void setup() {
   #ifdef ESP32_BV5DJ_1W_LoRa_GPS
     myLED.begin();
     myLED.clear();
-    myLED.setBrightness(20);
+    myLED.setBrightness(Config.notification.ws2812brightness);
     NOTIFICATION_Utils::startRGB();
   #endif
 

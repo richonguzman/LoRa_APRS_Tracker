@@ -16,8 +16,10 @@
 #define OLED_RST            -1  //Conflict with PSRAM. GPIO16 is PSRAM CS# PIN (T-Beam V1.1)
 #define GPS_RX              12
 #define GPS_TX              34
+#define LORA_DIO1           33
+#define LORA_DIO2           32
 #define BUTTON_PIN          38  //The middle button GPIO on the T-Beam
-#define LED_PIN             4   //V1_1 >> Red LED next to blue LED: LED_BUILTIN
+#define LED_PIN             4   //V1_1 >> Red LED next to blue LED: LED_BUILTIN, INVERTED 
 #endif
 
 #if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
@@ -171,7 +173,6 @@
 #define DIO3_TCXO_REF       1.8 //DIO3 TCXO Reference Voltage
 #endif
 
-//PLAN
 #if defined(ESP32_BATTERY_OLED)
 #undef OLED_RST
 #undef OLED_SCL
