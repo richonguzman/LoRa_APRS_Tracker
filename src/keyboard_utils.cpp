@@ -38,6 +38,8 @@ extern String           winlinkMailNumber;
 extern String           winlinkAddressee;
 extern String           winlinkSubject;
 extern String           winlinkBody;
+extern String           winlinkAlias;
+extern String           winlinkAliasComplete;
 
 namespace KEYBOARD_Utils {
 
@@ -93,9 +95,9 @@ namespace KEYBOARD_Utils {
       if (menuDisplay < 5000) {
         menuDisplay = 5080;
       }
-    } else if (menuDisplay >= 5060 && menuDisplay <= 5063) {
+    } else if (menuDisplay >= 5061 && menuDisplay <= 5063) {
       menuDisplay--;
-      if (menuDisplay < 5060) {
+      if (menuDisplay < 5061) {
         menuDisplay = 5063;
       }
     } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
@@ -192,10 +194,10 @@ namespace KEYBOARD_Utils {
       if (menuDisplay > 5080) {
         menuDisplay = 5000;
       }
-    } else if (menuDisplay >= 5060 && menuDisplay <= 5063) {
+    } else if (menuDisplay >= 5061 && menuDisplay <= 5063) {
       menuDisplay++;
       if (menuDisplay > 5063) {
-        menuDisplay = 5060;
+        menuDisplay = 5061;
       }
     } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
       menuDisplay++;
@@ -340,6 +342,14 @@ namespace KEYBOARD_Utils {
       menuDisplay = 5051;
     } else if (menuDisplay == 5060) {
       menuDisplay = 5061;
+    } else if (menuDisplay == 5061) {
+      menuDisplay = 50610;
+    } else if (menuDisplay == 5061) {
+      menuDisplay = 50610;
+    } else if (menuDisplay == 5062) {
+      menuDisplay = 50620;
+    } else if (menuDisplay == 5063) {
+      MSG_Utils::sendMessage(1, "WLNK-1", "AL");
     } else if (menuDisplay == 5070) {
       MSG_Utils::sendMessage(1, "WLNK-1", "BYE");
       menuDisplay = 5;
@@ -355,7 +365,6 @@ namespace KEYBOARD_Utils {
       winlinkBody = "";
       menuDisplay = 5083;
     }
-
 
     else if (menuDisplay == 6) {
       menuDisplay = 60;
@@ -491,53 +500,103 @@ namespace KEYBOARD_Utils {
       MSG_Utils::sendMessage(1, "WLNK-1", "K" + winlinkMailNumber);
       winlinkMailNumber = "_?";
       menuDisplay = 5050;
+    } else if (menuDisplay == 50610) {
+      if (winlinkAlias.length() == 1) {
+        winlinkAlias.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57)) {
+        winlinkAlias += key;
+      } else if (key == 13 && winlinkAlias.length()>= 1) {
+        winlinkAlias.trim();
+        menuDisplay = 50611;
+      } else if (key == 8) {
+        winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 5061;
+        winlinkAlias = "";
+      }
+    } else if (menuDisplay == 50611) {
+      if (winlinkAliasComplete.length() == 1) {
+        winlinkAliasComplete.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
+        winlinkAliasComplete += key;
+      } else if (key == 13 && winlinkAliasComplete.length()>= 1) {
+        winlinkAliasComplete.trim();
+        MSG_Utils::sendMessage(1, "WLNK-1", "A " + winlinkAlias + "=" + winlinkAliasComplete);
+        winlinkAlias = "";
+        winlinkAliasComplete = "";
+        menuDisplay = 5061;
+      } else if (key == 8) {
+        winlinkAliasComplete = winlinkAliasComplete.substring(0, winlinkAliasComplete.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 50610;
+        winlinkAliasComplete = "";
+      }
+    } else if (menuDisplay == 50620) {
+      if (winlinkAlias.length() == 1) {
+        winlinkAlias.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57)) {
+        winlinkAlias += key;
+      } else if (key == 13 && winlinkAlias.length()>= 1) {
+        winlinkAlias.trim();
+        MSG_Utils::sendMessage(1, "WLNK-1", "A " + winlinkAlias + "=");
+        winlinkAlias = "";
+        menuDisplay = 5062;
+      } else if (key == 8) {
+        winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 5062;
+        winlinkAlias = "";
+      }
     } else if (menuDisplay == 5081) {
-    if (winlinkAddressee.length() == 1) {
-      winlinkAddressee.trim();
+      if (winlinkAddressee.length() == 1) {
+        winlinkAddressee.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
+        winlinkAddressee += key;
+      } else if (key == 13 && winlinkAddressee.length() > 0) {
+        winlinkAddressee.trim();
+        menuDisplay = 5082;
+      } else if (key == 8) {
+        winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 5080;
+        winlinkAddressee = "";
+      }
+    } else if (menuDisplay == 5082) {
+      if (winlinkSubject.length() == 1) {
+        winlinkSubject.trim();
+      }
+      if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key == 32) || (key >= 48 && key <= 57)) {
+        winlinkSubject += key;
+      } else if (key == 13 && winlinkSubject.length() > 0) {
+        winlinkSubject.trim();
+        MSG_Utils::sendMessage(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
+        menuDisplay = 5083;
+      } else if (key == 8) {
+        winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length()-1);
+      } else if (key == 180) { 
+        menuDisplay = 5081;
+        winlinkSubject = "";
+      }
+    } else if (menuDisplay == 5083) {
+      if (winlinkBody.length() == 1) {
+        winlinkBody.trim();
+      }
+      if ((key >= 32 && key <=122)) {
+        winlinkBody += key;
+      } else if (key == 13 && winlinkBody.length() <= 67) {
+        winlinkBody.trim();
+        MSG_Utils::sendMessage(1, "WLNK-1", winlinkBody);
+        menuDisplay = 5084;
+      } else if (key == 8) {
+        winlinkBody = winlinkBody.substring(0, winlinkBody.length()-1);
+      } else if (key == 180) { 
+        winlinkBody = "";
+      }
     }
-    if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
-      winlinkAddressee += key;
-    } else if (key == 13 && winlinkAddressee.length() > 0) {
-      winlinkAddressee.trim();
-      menuDisplay = 5082;
-    } else if (key == 8) {
-      winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
-    } else if (key == 180) { 
-      menuDisplay = 5080;
-      winlinkAddressee = "";
-    }
-  } else if (menuDisplay == 5082) {
-    if (winlinkSubject.length() == 1) {
-      winlinkSubject.trim();
-    }
-    if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key == 32) || (key >= 48 && key <= 57)) {
-      winlinkSubject += key;
-    } else if (key == 13 && winlinkSubject.length() > 0) {
-      winlinkSubject.trim();
-      MSG_Utils::sendMessage(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
-      menuDisplay = 5083;
-    } else if (key == 8) {
-      winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length()-1);
-    } else if (key == 180) { 
-      menuDisplay = 5081;
-      winlinkSubject = "";
-    }
-  } else if (menuDisplay == 5083) {
-    if (winlinkBody.length() == 1) {
-      winlinkBody.trim();
-    }
-    if ((key >= 32 && key <=122)) {
-      winlinkBody += key;
-    } else if (key == 13 && winlinkBody.length() <= 67) {
-      winlinkBody.trim();
-      MSG_Utils::sendMessage(1, "WLNK-1", winlinkBody);
-      menuDisplay = 5084;
-    } else if (key == 8) {
-      winlinkBody = winlinkBody.substring(0, winlinkBody.length()-1);
-    } else if (key == 180) { 
-      winlinkBody = "";
-    }
-  }
 
     else if (key==13) {
       if (menuDisplay == 200) {

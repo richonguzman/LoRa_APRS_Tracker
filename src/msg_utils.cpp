@@ -175,13 +175,16 @@ namespace MSG_Utils {
       //Serial.println(packet.text); // only for debug
       lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
       if (lastReceivedPacket.sender!=currentBeacon->callsign) {
-        if (Config.bluetoothType==0) {
-          BLE_Utils::sendToPhone(packet.text.substring(3));
-        } else {
-          #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
-          BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
-          #endif
-        }        
+        
+        if (lastReceivedPacket.sender != "WLNK-1") {
+          if (Config.bluetoothType==0) {
+            BLE_Utils::sendToPhone(packet.text.substring(3));
+          } else {
+            #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+            BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+            #endif
+          }
+        }    
 
         if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
           String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);

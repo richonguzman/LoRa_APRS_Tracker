@@ -98,15 +98,13 @@ bool      miceActive          = false;
 bool      smartBeaconValue    = true;
 
 int       ackNumberSend;
-int       winlinkStatus       = 5; // debe ser  0
-String    winlinkMailNumber   = "_?";
-String    winlinkAddressee    = "";
-String    winlinkSubject      = "";
-String    winlinkBody         = "";
-/*
-String winlinkAlias                = "";
-String winlinkAliasComplete        = "";
-*/
+int       winlinkStatus         = 0; // debe ser  0
+String    winlinkMailNumber     = "_?";
+String    winlinkAddressee      = "";
+String    winlinkSubject        = "";
+String    winlinkBody           = "";
+String    winlinkAlias          = "";
+String    winlinkAliasComplete  = "";
 
 APRSPacket                    lastReceivedPacket;
 

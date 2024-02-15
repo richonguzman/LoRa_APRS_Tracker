@@ -38,6 +38,8 @@ extern String               winlinkMailNumber;
 extern String               winlinkAddressee;
 extern String               winlinkSubject;
 extern String               winlinkBody;
+extern String               winlinkAlias;
+extern String               winlinkAliasComplete;
 
 namespace MENU_Utils {
 
