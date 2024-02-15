@@ -95,6 +95,8 @@ bool      disableGPS;
 
 bool      miceActive          = false;
 
+bool      smartBeaconValue    = true;
+
 int       ackNumberSend;
 int       winlinkStatus       = 0; // debe ser  0
 String    winlinkMailNumber   = "_?";
@@ -182,6 +184,7 @@ void loop() {
     Config.validateConfigFile(currentBeacon->callsign);
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
+  STATION_Utils::checkSmartBeaconValue();
   
   if (ackNumberSend >= 999) {
     ackNumberSend = 1;
@@ -225,7 +228,7 @@ void loop() {
     STATION_Utils::checkTelemetryTx();
   }
   lastTx = millis() - lastTxTime;
-  if (!sendUpdate && gps_loc_update && currentBeacon->smartBeaconState) {
+  if (!sendUpdate && gps_loc_update && smartBeaconValue) {
     GPS_Utils::calculateDistanceTraveled();
     if (!sendUpdate) {
       GPS_Utils::calculateHeadingDelta(currentSpeed);

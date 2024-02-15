@@ -40,6 +40,8 @@ extern double               lastTxLng;
 extern double               lastTxDistance;
 
 extern bool                 miceActive;
+extern bool                 smartBeaconValue;
+extern int                  winlinkStatus;
 
 String                      firstNearTracker;
 String                      secondNearTracker;
@@ -359,7 +361,7 @@ namespace STATION_Utils {
   }
 
   void checkSmartBeaconInterval(int speed) {
-    if (currentBeacon->smartBeaconState) {
+    if (smartBeaconValue) {
       if (speed < currentBeacon->slowSpeed) {
         txInterval = currentBeacon->slowRate * 1000;
       } else if (speed > currentBeacon->fastSpeed) {
@@ -377,8 +379,16 @@ namespace STATION_Utils {
     }
   }
 
+  void checkSmartBeaconValue() {
+    if (winlinkStatus != 0) {
+      smartBeaconValue = false;
+    } else {
+      smartBeaconValue = currentBeacon->smartBeaconState;
+    }
+  }
+
   void checkSmartBeaconState() {
-    if (!currentBeacon->smartBeaconState) {
+    if (!smartBeaconValue) {
       uint32_t lastTxSmartBeacon = millis() - lastTxTime;
       if (lastTxSmartBeacon >= Config.nonSmartBeaconRate*60*1000) {
         sendUpdate = true;
@@ -425,7 +435,7 @@ namespace STATION_Utils {
     show_display("<<< TX >>>", "", packet,100);
     LoRa_Utils::sendNewPacket(packet);
     
-    if (currentBeacon->smartBeaconState) {
+    if (smartBeaconValue) {
       lastTxLat       = gps.location.lat();
       lastTxLng       = gps.location.lng();
       previousHeading = currentHeading;
