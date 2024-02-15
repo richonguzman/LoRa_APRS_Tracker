@@ -15,6 +15,7 @@
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern std::vector<String>  loadedAPRSMessages;
+extern std::vector<String>  loadedWLNKMails;
 extern Configuration        Config;
 
 extern int                  menuDisplay;
@@ -32,15 +33,21 @@ extern APRSPacket           lastReceivedPacket;
 
 
 
-String   lastMessageAPRS             = "";
-int      numAPRSMessages             = 0;
-bool     noMessageWarning            = false;
-String   lastHeardTracker            = "NONE";
+String  lastMessageSaved      = "";
+int     numAPRSMessages       = 0;
+int     numWLNKMessages       = 0;
+bool    noAPRSMsgWarning      = false;
+bool    noWLNKMsgWarning      = false;
+String  lastHeardTracker      = "NONE";
 
 namespace MSG_Utils {
 
-  bool warnNoMessages() {
-      return noMessageWarning;
+  bool warnNoAPRSMessages() {
+    return noAPRSMsgWarning;
+  }
+
+  bool warnNoWLNKMails() {
+    return noWLNKMsgWarning;
   }
 
   String getLastHeardTracker() {
@@ -49,6 +56,10 @@ namespace MSG_Utils {
 
   int getNumAPRSMessages() {
       return numAPRSMessages;
+  }
+
+  int getNumWLNKMails() {
+      return numWLNKMessages;
   }
 
   void loadNumMessages() {
@@ -74,29 +85,69 @@ namespace MSG_Utils {
       numAPRSMessages++;
     }
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
+  
+    File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
+    if(!fileToReadWLNK){
+      Serial.println("Failed to open Winlink_Msg for reading");
+      return;
+    }
+
+    std::vector<String> v2;
+    while (fileToReadWLNK.available()) {
+      v2.push_back(fileToReadWLNK.readStringUntil('\n'));
+    }
+    fileToReadWLNK.close();
+
+    numWLNKMessages = 0;
+    for (String s2 : v2) {
+      numWLNKMessages++;
+    }
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));  
   }
 
-  void loadMessagesFromMemory() {
+  void loadMessagesFromMemory(String typeOfMessage) {
     File fileToRead;
-    noMessageWarning = false;
-    if (numAPRSMessages == 0) {
-      noMessageWarning = true;
-    } else {
-      loadedAPRSMessages.clear();
-      fileToRead = SPIFFS.open("/aprsMessages.txt");
-    }
-    if (noMessageWarning) {
-      show_display("__INFO____", "", "NO MESSAGES IN MEMORY", 1500);
-    } else {
-      if(!fileToRead){
-        Serial.println("Failed to open file for reading");
-        return;
+    if (typeOfMessage == "APRS") {
+      noAPRSMsgWarning = false;
+      if (numAPRSMessages == 0) {
+        noAPRSMsgWarning = true;
+      } else {
+        loadedAPRSMessages.clear();
+        fileToRead = SPIFFS.open("/aprsMessages.txt");
       }
-      while (fileToRead.available()) {
-        loadedAPRSMessages.push_back(fileToRead.readStringUntil('\n'));
+      if (noAPRSMsgWarning) {
+        show_display("___INFO___", "", " NO APRS MSG SAVED", 1500);
+      } else {
+        if(!fileToRead){
+          Serial.println("Failed to open file for reading");
+          return;
+        }
+        while (fileToRead.available()) {
+          loadedAPRSMessages.push_back(fileToRead.readStringUntil('\n'));
+        }
+        fileToRead.close();
       }
-      fileToRead.close();
-    }
+    } else if (typeOfMessage == "WLNK") {
+      noWLNKMsgWarning = false;
+      if (numWLNKMessages == 0) {
+        noWLNKMsgWarning = true;
+      } else {
+        loadedWLNKMails.clear();
+        fileToRead = SPIFFS.open("/winlinkMails.txt");
+      }
+      if (noWLNKMsgWarning) {
+        show_display("___INFO___", "", " NO WLNK MAILS SAVED", 1500);
+      } else {
+        if(!fileToRead){
+          Serial.println("Failed to open file for reading");
+          return;
+        }
+        while (fileToRead.available()) {
+          loadedWLNKMails.push_back(fileToRead.readStringUntil('\n'));
+        }
+        fileToRead.close();
+      } 
+    }    
   }
 
   void ledNotification() {
@@ -114,31 +165,51 @@ namespace MSG_Utils {
     }
   }
 
-  void deleteFile() {
+  void deleteFile(String typeOfFile) {
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
-    SPIFFS.remove("/aprsMessages.txt");
+    if (typeOfFile == "APRS") {
+      SPIFFS.remove("/aprsMessages.txt");
+    } else if (typeOfFile == "WLNK") {
+      SPIFFS.remove("/winlinkMails.txt");
+    }    
     if (Config.notification.ledMessage){
       messageLed = false;
     }
   }
 
   void saveNewMessage(String typeMessage, String station, String newMessage) {
-    if (typeMessage == "APRS" && lastMessageAPRS != newMessage) {
+    if (typeMessage == "APRS" && lastMessageSaved != newMessage) {
       File fileToAppendAPRS = SPIFFS.open("/aprsMessages.txt", FILE_APPEND);
       if(!fileToAppendAPRS){
         Serial.println("There was an error opening the file for appending");
         return;
       }
       newMessage.trim();
-      if(!fileToAppendAPRS.println("1," + station + "," + newMessage)){
+      if(!fileToAppendAPRS.println(station + "," + newMessage)){
         Serial.println("File append failed");
       }
-      lastMessageAPRS = newMessage;
+      lastMessageSaved = newMessage;
       numAPRSMessages++;
       fileToAppendAPRS.close();
+      if (Config.notification.ledMessage){
+        messageLed = true;
+      }
+    } else if (typeMessage == "WLNK" && lastMessageSaved != newMessage) {
+      File fileToAppendWLNK = SPIFFS.open("/winlinkMails.txt", FILE_APPEND);
+      if(!fileToAppendWLNK){
+        Serial.println("There was an error opening the file for appending");
+        return;
+      }
+      newMessage.trim();
+      if(!fileToAppendWLNK.println(newMessage)){
+        Serial.println("File append failed");
+      }
+      lastMessageSaved = newMessage;
+      numWLNKMessages++;
+      fileToAppendWLNK.close();
       if (Config.notification.ledMessage){
         messageLed = true;
       }
@@ -175,7 +246,7 @@ namespace MSG_Utils {
       //Serial.println(packet.text); // only for debug
       lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
       if (lastReceivedPacket.sender!=currentBeacon->callsign) {
-        
+
         if (lastReceivedPacket.sender != "WLNK-1") {
           if (Config.bluetoothType==0) {
             BLE_Utils::sendToPhone(packet.text.substring(3));
@@ -200,7 +271,7 @@ namespace MSG_Utils {
           if (lastReceivedPacket.message.indexOf("{")>=0) {
             String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{")+1);
             ackMessage.trim();
-            delay(4000);
+            delay(4000); ////// make this into output buffer!!!
             sendMessage(0, lastReceivedPacket.sender, ackMessage);
             lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
           }
@@ -263,13 +334,10 @@ namespace MSG_Utils {
             } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
               show_display("_WINLINK_>", "", "    LOG OUT !!!",2000);
               winlinkStatus = 0;
+            } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
+              show_display("<WLNK Rx >", "", lastReceivedPacket.message , "", 3000);
+              saveNewMessage("WLNK", lastReceivedPacket.sender, lastReceivedPacket.message);
             }
-
-            else {
-              show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
-            }
-
-            // que se hace con los mensajes recibidos desde Winlink cuando ya estamos conectados
           } else {
             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
             if (!Config.simplifiedTrackerMode) {

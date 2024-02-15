@@ -44,6 +44,7 @@ int       menuDisplay         = 100;
 
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
+std::vector<String>           loadedWLNKMails;
 
 bool      displayEcoMode      = Config.display.ecoMode;
 bool      displayState        = true;
@@ -98,7 +99,7 @@ bool      miceActive          = false;
 bool      smartBeaconValue    = true;
 
 int       ackNumberSend;
-int       winlinkStatus         = 0; // debe ser  0
+int       winlinkStatus         = 0;
 String    winlinkMailNumber     = "_?";
 String    winlinkAddressee      = "";
 String    winlinkSubject        = "";

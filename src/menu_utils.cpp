@@ -17,6 +17,7 @@ extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
 extern std::vector<String>  loadedAPRSMessages;
+extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
@@ -100,17 +101,15 @@ namespace MENU_Utils {
                 show_display("__MENU____", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
                 break;
 
-
+//////////
             case 10:    // 1.Messages ---> Messages Read
                 show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
-                    String msgSender      = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
-                    String restOfMessage  = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
-                    String msgGate        = restOfMessage.substring(0,restOfMessage.indexOf(","));
-                    String msgText        = restOfMessage.substring(restOfMessage.indexOf(",")+1);
-                    show_display("MSG_APRS>", msgSender + "-->" + msgGate, msgText, "", "", "               Next>");
+                    String msgSender    = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
+                    String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
+                    show_display("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
@@ -138,7 +137,7 @@ namespace MENU_Utils {
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
-                show_display("DELETE_MSG", "", "     DELETE ALL?", "", "", " Confirm = LP or '>'");
+                show_display("DELETE_MSG", "", "  DELETE APRS MSG?", "", "", " Confirm = LP or '>'");
                 break;
             case 13:    // 1.Messages ---> APRSThursday
                 show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
@@ -178,7 +177,7 @@ namespace MENU_Utils {
                 show_display("APRS Thu._", "  Join APRSThursday", "  Check In", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
-            
+//////////            
             case 20:    // 2.Configuration ---> Callsign
                 show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
@@ -249,7 +248,7 @@ namespace MENU_Utils {
                 }
                 break;
 
-
+//////////
             case 30:    //3.Stations ---> Packet Decoder
                 show_display("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
                 break;
@@ -308,22 +307,24 @@ namespace MENU_Utils {
                 show_display("NEAR BY >", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
                 break;
 
+//////////
             case 40:
                 // waiting for Weather Report
                 break;
 
+//////////
             case 50:    // 5.Winlink MENU
                 if (winlinkStatus == 5) {
                     menuDisplay = 5000;
                 } else {
-                    show_display("_WINLINK_>", "> Login" , "  Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
+                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
                 }
                 break;
             case 51:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "> Read Saved Mails", "  Delete Saved Mails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
                 break;
             case 52:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read Saved Mails", "> Delete Saved Mails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
                 break;
 
             case 500:    // 5.Winlink ---> Login
@@ -336,14 +337,28 @@ namespace MENU_Utils {
                 show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
                 break;
 
-            ////
             case 5000:   // WINLINK: List Pend. Mail //
                 show_display("WLNK__MENU", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
                 break;
+
             case 5010:    // WINLINK: Downloaded Mails //
                 show_display("WLNK__MENU", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
                 break;
-            ////
+            case 50100:    // WINLINK: Downloaded Mails //
+                show_display("_WINLINK_>", "" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
+                break;
+            case 50101:    // WINLINK: Downloaded Mails //
+                {
+                    String mailText = loadedWLNKMails[messagesIterator];
+                    show_display("WLNK__MAIL", "", mailText, "", "", "           Next=Down");
+                }
+                break;
+            case 50110:    // WINLINK: Downloaded Mails //
+                show_display("_WINLINK_>", "" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
+                break;
+            case 50111:    // WINLINK: Downloaded Mails //
+                show_display("WLNK__DEL", "", "  DELETE ALL MAILS?", "", "", " Confirm = LP or '>'");
+                break;
 
             case 5020:    // WINLINK: Read Mail //
                 show_display("WLNK__MENU", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
@@ -425,11 +440,10 @@ namespace MENU_Utils {
                 show_display("WLNK__MAIL", "", "  End Mail", "> 1 More Line", "", "      Up/Down Select>");
                 break;
 
-
                 // validar winlinkStatus = 0
                 // check si no esta logeado o si
 
-
+//////////
             case 60:    // 6. Extras ---> Flashlight
                 show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
@@ -440,6 +454,7 @@ namespace MENU_Utils {
                 show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","",lastLine);
                 break;
 
+//////////
             case 0:       ///////////// MAIN MENU //////////////
                 String hdopState, firstRowMainMenu, secondRowMainMenu, thirdRowMainMenu, fourthRowMainMenu, fifthRowMainMenu, sixthRowMainMenu;
 
@@ -516,7 +531,10 @@ namespace MENU_Utils {
                         }
                     } else {
                         fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
-                    }               
+                    }
+                    if (MSG_Utils::getNumWLNKMails() > 0){
+                        fourthRowMainMenu = "** WLNK MAIL: " + String(MSG_Utils::getNumWLNKMails()) + " **";
+                    }
                     if (MSG_Utils::getNumAPRSMessages() > 0){
                         fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
                     }
