@@ -350,14 +350,12 @@ namespace MENU_Utils {
                 show_display("WLNK__READ", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
                 break;
 
-            ////
             case 5030:    // WINLINK: Reply Mail //
                 show_display("WLNK__MENU", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
                 break;
             case 5031:
                 show_display("WLNK_REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
-                break;    
-            ////    
+                break;
 
             case 5040:    // WINLINK: Foward Mail //
                 show_display("WLNK__MENU", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
@@ -376,15 +374,31 @@ namespace MENU_Utils {
                 show_display("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "<Back          Enter>");
                 break;
             
-
-            ////
             case 5060:    // WINLINK: Alias Menu //
                 show_display("WLNK__MENU", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
                 break;
+            case 5061:    // WINLINK: Alias Menu : Create Alias //
+                show_display("WLNK_ALIAS", "> Create Alias" , "  Delete Alias ", "  List All Alias", "", lastLine);
+                break;
+            case 50610:   // WINLINK: Alias Menu : Create Alias //
+                show_display("WLNK_ALIAS", "", "Write Alias to Create", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                break;
+            case 50611:   // WINLINK: Alias Menu : Create Alias //
+                show_display("WLNK_ALIAS", "", "      " + winlinkAlias + " =", winlinkAliasComplete, "", "<Back          Enter>");
+                break;
+            case 5062:    // WINLINK: Alias Menu : Delete Alias //
+                show_display("WLNK_ALIAS", "  Create Alias" , "> Delete Alias ", "  List All Alias", "", lastLine);
+                break;
+            case 50620:   // WINLINK: Alias Menu : Delete Alias //
+                show_display("WLNK_ALIAS", "Write Alias to Delete", "", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                break;
+            case 5063:    // WINLINK: Alias Menu : List Alias//
+                show_display("WLNK_ALIAS", "  Create Alias" , "  Delete Alias ", "> List All Alias", "", lastLine);
+                break;
+
             case 5070:    // WINLINK: Log Out MAIL //
                 show_display("WLNK__MENU", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
                 break;
-            ////
 
             case 5080:    // WINLINK: WRITE MAIL //
                 show_display("WLNK__MENU", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);

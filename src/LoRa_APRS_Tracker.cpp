@@ -34,7 +34,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.02.14";
+String    versionDate         = "2024.02.15";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -98,7 +98,7 @@ bool      miceActive          = false;
 bool      smartBeaconValue    = true;
 
 int       ackNumberSend;
-int       winlinkStatus       = 0; // debe ser  0
+int       winlinkStatus       = 5; // debe ser  0
 String    winlinkMailNumber   = "_?";
 String    winlinkAddressee    = "";
 String    winlinkSubject      = "";
