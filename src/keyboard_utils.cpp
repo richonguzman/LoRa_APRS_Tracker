@@ -1,6 +1,8 @@
+#include <TinyGPS++.h>
 #include <logger.h>
 #include <Wire.h>
 #include "keyboard_utils.h"
+#include "APRSPacketLib.h"
 #include "winlink_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
@@ -12,6 +14,8 @@
 #define CARDKB_ADDR 0x5F    // CARDKB from m5stack.com
 
 extern Configuration    Config;
+extern Beacon           *currentBeacon;
+extern TinyGPSPlus      gps;
 extern logging::Logger  logger;
 extern bool             sendUpdate;
 extern int              menuDisplay;
@@ -31,6 +35,7 @@ extern int              messagesIterator;
 extern bool             messageLed;
 extern String           messageCallsign;
 extern String           messageText;
+extern bool             sendStandingUpdate;
 extern bool             flashlight;
 extern bool             digirepeaterActive;
 extern bool             sosActive;
@@ -113,10 +118,10 @@ namespace KEYBOARD_Utils {
       }
     } 
     
-    else if (menuDisplay >= 60 && menuDisplay <= 62) {
+    else if (menuDisplay >= 60 && menuDisplay <= 63) {
       menuDisplay--;
       if (menuDisplay < 60) {
-        menuDisplay = 62;
+        menuDisplay = 63;
       }
     }
   }
@@ -232,9 +237,9 @@ namespace KEYBOARD_Utils {
       }
     } 
 
-    else if (menuDisplay >= 60 && menuDisplay <= 62) {
+    else if (menuDisplay >= 60 && menuDisplay <= 63) {
       menuDisplay++;
-      if (menuDisplay > 62) {
+      if (menuDisplay > 63) {
         menuDisplay = 60;
       } 
     }
@@ -255,7 +260,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
       messageText = "";
       menuDisplay = menuDisplay/10;
-    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=62) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
+    } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
       menuDisplay = int(menuDisplay/10);
     } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
       menuDisplay = 5;
@@ -279,6 +284,9 @@ namespace KEYBOARD_Utils {
       } else {
         menuDisplay = 50110;
       }
+    } else if (menuDisplay == 630) {
+      messageText = "";
+      menuDisplay = 63;
     }
   }
 
@@ -464,7 +472,9 @@ namespace KEYBOARD_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
         sosActive = true;
       }
-    }    
+    } else if (menuDisplay == 63) {
+      menuDisplay = 630;
+    }
   }
 
   void processPressedKey(char key) {
@@ -512,7 +522,7 @@ namespace KEYBOARD_Utils {
       }
       if (key >= 32 && key <= 126) {
         messageText += key;
-      } else if (key == 13) {                         // Return Pressed: SENDING MESSAGE
+      } else if (key == 13 && messageText.length() > 0) {                         // Return Pressed: SENDING MESSAGE
         messageText.trim();
         if (messageText.length() > 67){
           messageText = messageText.substring(0,67);
@@ -684,6 +694,26 @@ namespace KEYBOARD_Utils {
         winlinkBody = winlinkBody.substring(0, winlinkBody.length()-1);
       } else if (key == 180) { 
         winlinkBody = "";
+      }
+    } else if (menuDisplay == 630 && key != 180) {
+      if (messageText.length() == 1) {
+        messageText.trim();
+      }
+      if (key >= 32 && key <= 126) {
+        messageText += key;
+      } else if (key == 13 && messageText.length() > 0) {
+        messageText.trim();
+        if (messageText.length() > 67){
+          messageText = messageText.substring(0,67);
+        }
+        String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+        packet += messageText;
+        show_display("<<< TX >>>", "", packet,100);
+        LoRa_Utils::sendNewPacket(packet);       
+        messageText = "";
+        menuDisplay = 63;
+      } else if (key == 8) {
+        messageText = messageText.substring(0, messageText.length()-1);
       }
     }
 
