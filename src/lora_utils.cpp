@@ -119,7 +119,7 @@ namespace LoRa_Utils {
     } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
       Serial.println(F("timeout!"));
     } else {
-      Serial.print(F("failed, code "));
+      Serial.print(F("TX failed, code "));
       Serial.println(state);
     }
     if (Config.notification.ledTx && Config.notification.ledTxPin >= 0){
@@ -141,22 +141,24 @@ namespace LoRa_Utils {
       transmissionFlag = false;
       radio.startReceive();
       int state = radio.readData(packet);
-      if (state == RADIOLIB_ERR_NONE) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.c_str());
-        receivedLoraPacket.text       = packet;
-        receivedLoraPacket.rssi       = radio.getRSSI();
-        receivedLoraPacket.snr        = radio.getSNR();
-        receivedLoraPacket.freqError  = radio.getFrequencyError();
-      } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
-        // timeout occurred while waiting for a packet
-      } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
-        Serial.println(F("CRC error!"));
-      } else {
-        Serial.print(F("failed, code "));
-        Serial.println(state);
+      if (packet != "") {
+        if (state == RADIOLIB_ERR_NONE) {
+          logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.c_str());
+          receivedLoraPacket.text       = packet;
+          receivedLoraPacket.rssi       = radio.getRSSI();
+          receivedLoraPacket.snr        = radio.getSNR();
+          receivedLoraPacket.freqError  = radio.getFrequencyError();
+        } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+          // timeout occurred while waiting for a packet
+        } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
+          Serial.println(F("CRC error!"));
+        } else {
+          Serial.print(F("RX failed, code "));
+          Serial.println(state);
+        }
       }
     }
     return receivedLoraPacket;
   }
-
+  
 }
