@@ -44,7 +44,7 @@ OneButton userButtonL          = OneButton(BUTTON_LEFT, true, true);
 OneButton userButtonR          = OneButton(BUTTON_RIGHT, true, true);
 #endif
 
-String    versionDate         = "2024.01.26b";
+String    versionDate         = "2024.01.26c";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
