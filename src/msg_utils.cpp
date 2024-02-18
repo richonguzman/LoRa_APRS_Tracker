@@ -337,6 +337,10 @@ namespace MSG_Utils {
             } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
               show_display("<WLNK Rx >", "", lastReceivedPacket.message , "", 3000);
               saveNewMessage("WLNK", lastReceivedPacket.sender, lastReceivedPacket.message);
+            } else if (winlinkStatus == 0) {
+              if (!Config.simplifiedTrackerMode) {
+                saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
+              }
             }
           } else {
             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
