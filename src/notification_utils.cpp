@@ -16,7 +16,7 @@ extern bool             digirepeaterActive;
 
 namespace NOTIFICATION_Utils {
 
-  void playTone(int frequency, int duration){
+  void playTone(int frequency, int duration) {
     ledcSetup(channel, frequency, resolution);
     ledcAttachPin(Config.notification.buzzerPinTone, 0);
     ledcWrite(channel, 128);
@@ -71,6 +71,6 @@ namespace NOTIFICATION_Utils {
       playTone(startUpSound[i], startUpSoundDuration[i]);
     }
     digitalWrite(Config.notification.buzzerPinVcc, LOW);
-    /*shutDownBeep();*/ 
   }
+
 }

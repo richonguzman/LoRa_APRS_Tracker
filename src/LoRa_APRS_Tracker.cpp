@@ -131,10 +131,10 @@ void setup() {
     pinMode(Config.notification.buzzerPinVcc, OUTPUT);
     NOTIFICATION_Utils::start();
   }
-  if (Config.notification.ledTx){
+  if (Config.notification.ledTx) {
     pinMode(Config.notification.ledTxPin, OUTPUT);
   }
-  if (Config.notification.ledMessage){
+  if (Config.notification.ledMessage) {
     pinMode(Config.notification.ledMessagePin, OUTPUT);
   }
   if (Config.notification.ledFlashlight) {

@@ -18,4 +18,5 @@ namespace LoRa_Utils {
     ReceivedLoRaPacket receivePacket();
 
 }
+
 #endif

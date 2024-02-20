@@ -136,7 +136,7 @@ namespace KEYBOARD_Utils {
         displayState = true;  
       }
     }    
-    if (menuDisplay >= 1 && menuDisplay <= 6) {       
+    if (menuDisplay >= 1 && menuDisplay <= 6) {
       menuDisplay++;
       if (menuDisplay > 6) {
         menuDisplay = 1;
@@ -157,7 +157,7 @@ namespace KEYBOARD_Utils {
       if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
         menuDisplay = 10;
         messagesIterator = 0;
-        if (Config.notification.ledMessage){
+        if (Config.notification.ledMessage) {
           messageLed = false;
         }
       } else {
@@ -219,7 +219,7 @@ namespace KEYBOARD_Utils {
           menuDisplay = 50100;
         }
         messagesIterator = 0;
-        if (Config.notification.ledMessage){
+        if (Config.notification.ledMessage) {
           messageLed = false;
         }
       } else {
@@ -303,7 +303,7 @@ namespace KEYBOARD_Utils {
       statusTime = millis();
       show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
       STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay>=30 && menuDisplay<=31))  {
+    } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay>=30 && menuDisplay<=31)) {
       menuDisplay = menuDisplay*10;
     } else if (menuDisplay == 10) {
       MSG_Utils::loadMessagesFromMemory("APRS");
@@ -423,7 +423,7 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay == 5063) {
       MSG_Utils::sendMessage(1, "WLNK-1", "AL");
     } else if (menuDisplay == 5070) {
-      MSG_Utils::sendMessage(1, "WLNK-1", "BYE");
+      MSG_Utils::sendMessage(1, "WLNK-1", "B");
       menuDisplay = 5;
     } else if (menuDisplay == 5080) {
       menuDisplay = 5081;
@@ -524,7 +524,7 @@ namespace KEYBOARD_Utils {
         messageText += key;
       } else if (key == 13 && messageText.length() > 0) {                         // Return Pressed: SENDING MESSAGE
         messageText.trim();
-        if (messageText.length() > 67){
+        if (messageText.length() > 67) {
           messageText = messageText.substring(0,67);
         }
         if (menuDisplay == 111) {
@@ -563,9 +563,9 @@ namespace KEYBOARD_Utils {
     } else if (menuDisplay == 260 && key == 13) {
       show_display("", "", "    POWER OFF ...", 2000);
       POWER_Utils::shutdown();
-    } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) { // numeros exactos???
+    } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) {
       winlinkMailNumber = key;
-    } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) { // numeros exactos???
+    } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) {
       winlinkMailNumber = "_?";
     } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber !="_?") {
       MSG_Utils::sendMessage(1, "WLNK-1", "R" + winlinkMailNumber);
@@ -703,7 +703,7 @@ namespace KEYBOARD_Utils {
         messageText += key;
       } else if (key == 13 && messageText.length() > 0) {
         messageText.trim();
-        if (messageText.length() > 67){
+        if (messageText.length() > 67) {
           messageText = messageText.substring(0,67);
         }
         String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));

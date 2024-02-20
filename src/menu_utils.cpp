@@ -546,10 +546,10 @@ namespace MENU_Utils {
                     } else {
                         fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                     }
-                    if (MSG_Utils::getNumWLNKMails() > 0){
+                    if (MSG_Utils::getNumWLNKMails() > 0) {
                         fourthRowMainMenu = "** WLNK MAIL: " + String(MSG_Utils::getNumWLNKMails()) + " **";
                     }
-                    if (MSG_Utils::getNumAPRSMessages() > 0){
+                    if (MSG_Utils::getNumAPRSMessages() > 0) {
                         fourthRowMainMenu = "*** MESSAGES: " + String(MSG_Utils::getNumAPRSMessages()) + " ***";
                     }
                 }
@@ -603,7 +603,6 @@ namespace MENU_Utils {
                             String(sixthRowMainMenu));
                 break;
         }
-
     }
 
 }

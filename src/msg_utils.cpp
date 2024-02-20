@@ -18,7 +18,6 @@ extern logging::Logger      logger;
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern std::deque<String>   outputBufferPackets;
-//extern std::vector<String>  outputBufferPackets;
 extern Configuration        Config;
 
 extern int                  menuDisplay;
@@ -33,6 +32,7 @@ extern int                  ackNumberSend;
 extern int                  winlinkStatus;
 
 extern APRSPacket           lastReceivedPacket;
+extern uint32_t             ackTime;
 
 String  lastMessageSaved      = "";
 int     numAPRSMessages       = 0;
@@ -41,7 +41,6 @@ bool    noAPRSMsgWarning      = false;
 bool    noWLNKMsgWarning      = false;
 String  lastHeardTracker      = "NONE";
 
-extern uint32_t             ackTime;
 
 namespace MSG_Utils {
 
@@ -66,13 +65,13 @@ namespace MSG_Utils {
   }
 
   void loadNumMessages() {
-    if(!SPIFFS.begin(true)){
+    if(!SPIFFS.begin(true)) {
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
 
     File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
-    if(!fileToReadAPRS){
+    if(!fileToReadAPRS) {
       Serial.println("Failed to open APRS_Msg for reading");
       return;
     }
@@ -90,7 +89,7 @@ namespace MSG_Utils {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
   
     File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
-    if(!fileToReadWLNK){
+    if(!fileToReadWLNK) {
       Serial.println("Failed to open Winlink_Msg for reading");
       return;
     }
@@ -105,7 +104,7 @@ namespace MSG_Utils {
     for (String s2 : v2) {
       numWLNKMessages++;
     }
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));  
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
   }
 
   void loadMessagesFromMemory(String typeOfMessage) {
@@ -121,7 +120,7 @@ namespace MSG_Utils {
       if (noAPRSMsgWarning) {
         show_display("___INFO___", "", " NO APRS MSG SAVED", 1500);
       } else {
-        if(!fileToRead){
+        if(!fileToRead) {
           Serial.println("Failed to open file for reading");
           return;
         }
@@ -141,7 +140,7 @@ namespace MSG_Utils {
       if (noWLNKMsgWarning) {
         show_display("___INFO___", "", " NO WLNK MAILS SAVED", 1500);
       } else {
-        if(!fileToRead){
+        if(!fileToRead) {
           Serial.println("Failed to open file for reading");
           return;
         }
@@ -169,7 +168,7 @@ namespace MSG_Utils {
   }
 
   void deleteFile(String typeOfFile) {
-    if(!SPIFFS.begin(true)){
+    if(!SPIFFS.begin(true)) {
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
@@ -178,7 +177,7 @@ namespace MSG_Utils {
     } else if (typeOfFile == "WLNK") {
       SPIFFS.remove("/winlinkMails.txt");
     }    
-    if (Config.notification.ledMessage){
+    if (Config.notification.ledMessage) {
       messageLed = false;
     }
   }
@@ -186,41 +185,41 @@ namespace MSG_Utils {
   void saveNewMessage(String typeMessage, String station, String newMessage) {
     if (typeMessage == "APRS" && lastMessageSaved != newMessage) {
       File fileToAppendAPRS = SPIFFS.open("/aprsMessages.txt", FILE_APPEND);
-      if(!fileToAppendAPRS){
+      if(!fileToAppendAPRS) {
         Serial.println("There was an error opening the file for appending");
         return;
       }
       newMessage.trim();
-      if(!fileToAppendAPRS.println(station + "," + newMessage)){
+      if(!fileToAppendAPRS.println(station + "," + newMessage)) {
         Serial.println("File append failed");
       }
       lastMessageSaved = newMessage;
       numAPRSMessages++;
       fileToAppendAPRS.close();
-      if (Config.notification.ledMessage){
+      if (Config.notification.ledMessage) {
         messageLed = true;
       }
     } else if (typeMessage == "WLNK" && lastMessageSaved != newMessage) {
       File fileToAppendWLNK = SPIFFS.open("/winlinkMails.txt", FILE_APPEND);
-      if(!fileToAppendWLNK){
+      if(!fileToAppendWLNK) {
         Serial.println("There was an error opening the file for appending");
         return;
       }
       newMessage.trim();
-      if(!fileToAppendWLNK.println(newMessage)){
+      if(!fileToAppendWLNK.println(newMessage)) {
         Serial.println("File append failed");
       }
       lastMessageSaved = newMessage;
       numWLNKMessages++;
       fileToAppendWLNK.close();
-      if (Config.notification.ledMessage){
+      if (Config.notification.ledMessage) {
         messageLed = true;
       }
     }
   }
 
   void sendMessage(int typeOfMessage, String station, String textMessage) {
-    String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);  
+    String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign,"APLRT1",Config.path,station,textMessage);
     if (textMessage.indexOf("ack")== 0) {
       if (station != "WLNK-1") {  // don't show Winlink ACK
         show_display("<<ACK Tx>>", 500);
@@ -267,7 +266,7 @@ namespace MSG_Utils {
             BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
             #endif
           }
-        }    
+        }
 
         if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
           String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);
@@ -329,7 +328,7 @@ namespace MSG_Utils {
               String winlinkChallenge = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]"));
               //Serial.println("the challenge is " + winlinkChallenge);
               WINLINK_Utils::processWinlinkChallenge(winlinkChallenge);
-              ackTime = millis();             
+              ackTime = millis();
               winlinkStatus = 3;
               menuDisplay = 501;
             } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {

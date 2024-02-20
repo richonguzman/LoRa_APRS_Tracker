@@ -95,7 +95,7 @@ namespace LoRa_Utils {
       digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
       delay(Config.ptt.preDelay);
     }
-    if (Config.notification.ledTx){
+    if (Config.notification.ledTx) {
       digitalWrite(Config.notification.ledTxPin, HIGH);
     }
     if (Config.notification.buzzerActive && Config.notification.txBeep) {
@@ -122,7 +122,7 @@ namespace LoRa_Utils {
     LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
     LoRa.endPacket();
     #endif
-    if (Config.notification.ledTx){
+    if (Config.notification.ledTx) {
       digitalWrite(Config.notification.ledTxPin, LOW);
     }
     if (Config.ptt.active) {

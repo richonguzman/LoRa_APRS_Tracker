@@ -102,7 +102,7 @@ namespace BLE_Utils {
   void txToPhoneOverBLE(String frame) {
     txBLE((byte)KissChar::Fend);
     txBLE((byte)KissCmd::Data);
-    for(int n=0;n<frame.length();n++) {   
+    for(int n=0;n<frame.length();n++) {
       uint8_t byteCharacter = frame[n];
       if (byteCharacter == KissChar::Fend) {
         txBLE((byte)KissChar::Fesc);

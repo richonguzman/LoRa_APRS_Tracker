@@ -11,7 +11,7 @@ extern uint32_t         statusTime;
 extern uint32_t         lastTx;
 extern uint32_t         lastTxTime;
 
-extern bool             displayEcoMode; 
+extern bool             displayEcoMode;
 extern uint32_t         displayTime;
 extern bool             displayState;
 extern int              menuDisplay;
@@ -36,7 +36,7 @@ namespace Utils {
     if (size <= 0 || size > 10) size = 6;
     size/=2; size*=2;
 
-    for (i = 0; i < size/2; i++){
+    for (i = 0; i < size/2; i++) {
       if (i % 2 == 1) {
         locator[i*2] = (char) (lon/LON_F[i] + '0');
         locator[i*2+1] = (char) (lat/LAT_F[i] + '0');

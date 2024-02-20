@@ -15,8 +15,6 @@ extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
-//extern std::vector<String>  lastHeardStation;
-//extern std::vector<String>  lastHeardStation_temp;
 extern int                  myBeaconsIndex;
 
 extern uint32_t             lastTx;
@@ -183,7 +181,6 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > secondDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = newTrackerInfo;
@@ -193,7 +190,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance < firstDistance) {
               secondNearTracker = firstNearTracker;
               firstNearTracker  = newTrackerInfo;
@@ -223,7 +219,6 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -237,7 +232,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = newTrackerInfo;
@@ -250,7 +244,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance <= firstDistance) {
               thirdNearTracker  = secondNearTracker;
               secondNearTracker = firstNearTracker;
@@ -285,7 +278,6 @@ namespace STATION_Utils {
       } else {
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -304,7 +296,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = fourthNearTracker;
@@ -321,7 +312,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               thirdNearTracker  = fourthNearTracker;
               fourthNearTracker = newTrackerInfo;
@@ -338,7 +328,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == fourthNearTrackerCallsign) {
           if (distance != fourthDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               fourthNearTracker = newTrackerInfo;
             } else if (distance > secondDistance && distance <= thirdDistance) {
@@ -458,7 +447,7 @@ namespace STATION_Utils {
 
   void saveCallsingIndex(int index) {
     File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt", "w");
-    if(!fileCallsignIndex){
+    if(!fileCallsignIndex) {
       return;
     } 
     String dataToSave = String(index);
@@ -471,7 +460,7 @@ namespace STATION_Utils {
 
   void loadCallsignIndex() {
     File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt");
-    if(!fileCallsignIndex){
+    if(!fileCallsignIndex) {
       return;
     } else {
       while (fileCallsignIndex.available()) {

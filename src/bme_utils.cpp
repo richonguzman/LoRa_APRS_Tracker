@@ -29,26 +29,26 @@ namespace BME_Utils {
   void setup() {
     if (Config.bme.active) {
       bool status;
-      status = bme.begin(0x76);  // Don't forget to join pins for righ direction on BME280!
+      status = bme.begin(0x76);
       if (!status) {
         show_display("ERROR", "", "BME sensor active", "but no sensor found...");
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
         while (1);
       } else {
         #ifdef BME280Sensor
-        bme.setSampling(Adafruit_BME280::MODE_FORCED,   // Force reading after delayTime
-                        Adafruit_BME280::SAMPLING_X1,   // Temperature sampling set to 1
-                        Adafruit_BME280::SAMPLING_X1,   // Pressure sampling set to 1
-                        Adafruit_BME280::SAMPLING_X1,   // Humidity sampling set to 1
-                        Adafruit_BME280::FILTER_OFF    // Filter off - immediate 100% step response
+        bme.setSampling(Adafruit_BME280::MODE_FORCED,
+                        Adafruit_BME280::SAMPLING_X1,
+                        Adafruit_BME280::SAMPLING_X1,
+                        Adafruit_BME280::SAMPLING_X1,
+                        Adafruit_BME280::FILTER_OFF
                         );
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
         #endif
         #ifdef BMP280Sensor
-        bme.setSampling(Adafruit_BMP280::MODE_FORCED,   // Operating Mode
-                        Adafruit_BMP280::SAMPLING_X1,   // Temp. oversampling
-                        Adafruit_BMP280::SAMPLING_X1,   // Pressure oversampling
-                        Adafruit_BMP280::FILTER_OFF    // Filtering
+        bme.setSampling(Adafruit_BMP280::MODE_FORCED,
+                        Adafruit_BMP280::SAMPLING_X1,
+                        Adafruit_BMP280::SAMPLING_X1,
+                        Adafruit_BMP280::FILTER_OFF
                         ); 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
         #endif
