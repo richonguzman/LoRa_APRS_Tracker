@@ -8,25 +8,25 @@ extern uint32_t         menuTime;
 
 namespace BUTTON_Utils {
 
-  void singlePress() {
-    menuTime = millis();
-    KEYBOARD_Utils::downArrow();
-  }
-
-  void longPress() {
-    menuTime = millis();
-    KEYBOARD_Utils::rightArrow();
-  }
-
-  void doublePress() {
-    display_toggle(true);
-    menuTime = millis();
-    if (menuDisplay == 0) {
-      menuDisplay = 1;
-    } else if (menuDisplay > 0) {
-      menuDisplay = 0;
-      displayTime = millis();
+    void singlePress() {
+        menuTime = millis();
+        KEYBOARD_Utils::downArrow();
     }
-  }
+
+    void longPress() {
+        menuTime = millis();
+        KEYBOARD_Utils::rightArrow();
+    }
+
+    void doublePress() {
+        display_toggle(true);
+        menuTime = millis();
+        if (menuDisplay == 0) {
+            menuDisplay = 1;
+        } else if (menuDisplay > 0) {
+            menuDisplay = 0;
+            displayTime = millis();
+        }
+    }
 
 }

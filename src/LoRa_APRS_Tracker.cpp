@@ -46,7 +46,6 @@ int       menuDisplay         = 100;
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
 std::vector<String>           loadedWLNKMails;
-//std::vector<String>           outputBufferPackets;
 std::deque<String>            outputBufferPackets;
 
 bool      displayEcoMode      = Config.display.ecoMode;
@@ -117,140 +116,140 @@ APRSPacket                    lastReceivedPacket;
 logging::Logger               logger;
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  #ifndef DEBUG
-  logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
-  #endif
-
-  POWER_Utils::setup();
-
-  setup_display();
-  if (Config.notification.buzzerActive) {
-    pinMode(Config.notification.buzzerPinTone, OUTPUT);
-    pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-    NOTIFICATION_Utils::start();
-  }
-  if (Config.notification.ledTx) {
-    pinMode(Config.notification.ledTxPin, OUTPUT);
-  }
-  if (Config.notification.ledMessage) {
-    pinMode(Config.notification.ledMessagePin, OUTPUT);
-  }
-  if (Config.notification.ledFlashlight) {
-    pinMode(Config.notification.ledFlashlightPin, OUTPUT);
-  }
-
-  show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
-
-  if (Config.ptt.active) {
-    pinMode(Config.ptt.io_pin, OUTPUT);
-    digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
-  }
-
-  MSG_Utils::loadNumMessages();
-  GPS_Utils::setup();
-  LoRa_Utils::setup();
-  BME_Utils::setup();
-  STATION_Utils::loadCallsignIndex();
-  ackNumberSend = random(1,999);
-
-  WiFi.mode(WIFI_OFF);
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
-  if (Config.bluetoothType==0) {
-    BLE_Utils::setup();
-  } else {
-    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
-    BLUETOOTH_Utils::setup();
+    #ifndef DEBUG
+    logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
-  }
 
-  if (!Config.simplifiedTrackerMode) {
-    #ifdef HAS_BUTTON
-    userButton.attachClick(BUTTON_Utils::singlePress);
-    userButton.attachLongPressStart(BUTTON_Utils::longPress);
-    userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-    #endif
-    KEYBOARD_Utils::setup();
-  }
+    POWER_Utils::setup();
 
-  POWER_Utils::lowerCpuFrequency();
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
-  logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
-  menuDisplay = 0;
+    setup_display();
+    if (Config.notification.buzzerActive) {
+        pinMode(Config.notification.buzzerPinTone, OUTPUT);
+        pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+        NOTIFICATION_Utils::start();
+    }
+    if (Config.notification.ledTx) {
+        pinMode(Config.notification.ledTxPin, OUTPUT);
+    }
+    if (Config.notification.ledMessage) {
+        pinMode(Config.notification.ledMessagePin, OUTPUT);
+    }
+    if (Config.notification.ledFlashlight) {
+        pinMode(Config.notification.ledFlashlightPin, OUTPUT);
+    }
+
+    show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
+
+    if (Config.ptt.active) {
+        pinMode(Config.ptt.io_pin, OUTPUT);
+        digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
+    }
+
+    MSG_Utils::loadNumMessages();
+    GPS_Utils::setup();
+    LoRa_Utils::setup();
+    BME_Utils::setup();
+    STATION_Utils::loadCallsignIndex();
+    ackNumberSend = random(1,999);
+
+    WiFi.mode(WIFI_OFF);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
+    if (Config.bluetoothType==0) {
+        BLE_Utils::setup();
+    } else {
+        #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+        BLUETOOTH_Utils::setup();
+        #endif
+    }
+
+    if (!Config.simplifiedTrackerMode) {
+        #ifdef HAS_BUTTON
+        userButton.attachClick(BUTTON_Utils::singlePress);
+        userButton.attachLongPressStart(BUTTON_Utils::longPress);
+        userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+        #endif
+        KEYBOARD_Utils::setup();
+    }
+
+    POWER_Utils::lowerCpuFrequency();
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+    menuDisplay = 0;
 }
 
 void loop() {
-  currentBeacon = &Config.beacons[myBeaconsIndex];
-  if (statusState) {
-    Config.validateConfigFile(currentBeacon->callsign);
-    miceActive = Config.validateMicE(currentBeacon->micE);
-  }
-  STATION_Utils::checkSmartBeaconValue();
-  
-  if (ackNumberSend >= 999) {
-    ackNumberSend = 1;
-  }
-
-  POWER_Utils::batteryManager();
-
-  if (!Config.simplifiedTrackerMode) {
-    #ifdef HAS_BUTTON
-    userButton.tick();
-    #endif
-  }
-
-  Utils::checkDisplayEcoMode();
-
-  if (keyboardConnected) {
-    KEYBOARD_Utils::read();
-  }
-
-  GPS_Utils::getData();
-  bool gps_time_update = gps.time.isUpdated();
-  bool gps_loc_update  = gps.location.isUpdated();
-  GPS_Utils::setDateFromData();
-
-  MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
-  MSG_Utils::processOutputBuffer();
-  MSG_Utils::ledNotification();
-  Utils::checkFlashlight();
-  STATION_Utils::checkListenedTrackersByTimeAndDelete();
-  if (Config.bluetoothType==0) {
-    BLE_Utils::sendToLoRa();
-  } else {
-    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
-    BLUETOOTH_Utils::sendToLoRa();
-    #endif
-  }
-
-  int currentSpeed = (int) gps.speed.kmph();
-
-  if (gps_loc_update) {
-    Utils::checkStatus();
-    STATION_Utils::checkTelemetryTx();
-  }
-  lastTx = millis() - lastTxTime;
-  if (!sendUpdate && gps_loc_update && smartBeaconValue) {
-    GPS_Utils::calculateDistanceTraveled();
-    if (!sendUpdate) {
-      GPS_Utils::calculateHeadingDelta(currentSpeed);
+    currentBeacon = &Config.beacons[myBeaconsIndex];
+    if (statusState) {
+        Config.validateConfigFile(currentBeacon->callsign);
+        miceActive = Config.validateMicE(currentBeacon->micE);
     }
-    STATION_Utils::checkStandingUpdateTime();
-  }
-  STATION_Utils::checkSmartBeaconState();
-  if (sendUpdate && gps_loc_update) {
-    STATION_Utils::sendBeacon("GPS");
-  }
-  if (gps_time_update) {
-    STATION_Utils::checkSmartBeaconInterval(currentSpeed);
-  }
+    STATION_Utils::checkSmartBeaconValue();
+    
+    if (ackNumberSend >= 999) {
+        ackNumberSend = 1;
+    }
+
+    POWER_Utils::batteryManager();
+
+    if (!Config.simplifiedTrackerMode) {
+        #ifdef HAS_BUTTON
+        userButton.tick();
+        #endif
+    }
+
+    Utils::checkDisplayEcoMode();
+
+    if (keyboardConnected) {
+        KEYBOARD_Utils::read();
+    }
+
+    GPS_Utils::getData();
+    bool gps_time_update = gps.time.isUpdated();
+    bool gps_loc_update  = gps.location.isUpdated();
+    GPS_Utils::setDateFromData();
+
+    MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+    MSG_Utils::processOutputBuffer();
+    MSG_Utils::ledNotification();
+    Utils::checkFlashlight();
+    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+    if (Config.bluetoothType==0) {
+        BLE_Utils::sendToLoRa();
+    } else {
+        #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+        BLUETOOTH_Utils::sendToLoRa();
+        #endif
+    }
+
+    int currentSpeed = (int) gps.speed.kmph();
+
+    if (gps_loc_update) {
+        Utils::checkStatus();
+        STATION_Utils::checkTelemetryTx();
+    }
+    lastTx = millis() - lastTxTime;
+    if (!sendUpdate && gps_loc_update && smartBeaconValue) {
+        GPS_Utils::calculateDistanceTraveled();
+        if (!sendUpdate) {
+            GPS_Utils::calculateHeadingDelta(currentSpeed);
+        }
+        STATION_Utils::checkStandingUpdateTime();
+    }
+    STATION_Utils::checkSmartBeaconState();
+    if (sendUpdate && gps_loc_update) {
+        STATION_Utils::sendBeacon("GPS");
+    }
+    if (gps_time_update) {
+        STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+    }
   
-  if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
-    GPS_Utils::checkStartUpFrames();
-    MENU_Utils::showOnScreen();
-    refreshDisplayTime = millis();
-  }
+    if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
+        GPS_Utils::checkStartUpFrames();
+        MENU_Utils::showOnScreen();
+        refreshDisplayTime = millis();
+    }
 }

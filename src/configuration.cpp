@@ -9,8 +9,8 @@ extern logging::Logger logger;
 Configuration::Configuration() {
     _filePath = "/tracker_config.json";
     if (!SPIFFS.begin(false)) {
-      Serial.println("SPIFFS Mount Failed");
-      return;
+        Serial.println("SPIFFS Mount Failed");
+        return;
     }
     readFile(SPIFFS, _filePath.c_str());
 }
@@ -100,23 +100,23 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 }
 
 void Configuration::validateConfigFile(String currentBeaconCallsign) {
-  if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
-    show_display("ERROR", "Change all callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
-    while (true) {
-        delay(1000);
+    if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
+        show_display("ERROR", "Change all callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
+        while (true) {
+            delay(1000);
+        }
     }
-  }
 }
 
 bool Configuration::validateMicE(String currentBeaconMicE) {
-  String miceMessageTypes[] = {"111", "110", "101", "100", "011", "010", "001" , "000"};
-  int arraySize = sizeof(miceMessageTypes) / sizeof(miceMessageTypes[0]);
-  bool validType = false;
-  for (int i=0; i<arraySize;i++) {
-    if (currentBeaconMicE == miceMessageTypes[i]) {
-      validType = true;
+    String miceMessageTypes[] = {"111", "110", "101", "100", "011", "010", "001" , "000"};
+    int arraySize = sizeof(miceMessageTypes) / sizeof(miceMessageTypes[0]);
+    bool validType = false;
+    for (int i=0; i<arraySize;i++) {
+        if (currentBeaconMicE == miceMessageTypes[i]) {
+            validType = true;
+        }
     }
-  }
-  return validType;
+    return validType;
 }

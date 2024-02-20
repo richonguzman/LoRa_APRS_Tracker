@@ -7,109 +7,109 @@
 
 class Beacon {
 public:
-  String callsign;
-  String symbol;
-  String overlay;
-  String micE;
-  String comment;
-  bool  smartBeaconState;
-  int   slowRate;
-  int   slowSpeed;
-  int   fastRate;
-  int   fastSpeed;
-  int   minTxDist;
-  int   minDeltaBeacon;
-  int   turnMinDeg;
-  int   turnSlope;
+    String callsign;
+    String symbol;
+    String overlay;
+    String micE;
+    String comment;
+    bool  smartBeaconState;
+    int   slowRate;
+    int   slowSpeed;
+    int   fastRate;
+    int   fastSpeed;
+    int   minTxDist;
+    int   minDeltaBeacon;
+    int   turnMinDeg;
+    int   turnSlope;
 };
 
 class Display {
 public:
-  bool    showSymbol;
-  bool    ecoMode;
-  int     timeout;
-  bool    turn180;
+    bool    showSymbol;
+    bool    ecoMode;
+    int     timeout;
+    bool    turn180;
 };
 
 class Winlink {
 public:
-  String  password;
+    String  password;
 };
 
 class BME {
 public:
-  bool    active;
-  bool    sendTelemetry;
-  int     heightCorrection;
+    bool    active;
+    bool    sendTelemetry;
+    int     heightCorrection;
 };
 
 class Notification {
 public:
-  bool    ledTx;
-  int     ledTxPin;
-  bool    ledMessage;
-  int     ledMessagePin;
-  bool    ledFlashlight;
-  int     ledFlashlightPin;
-  bool    buzzerActive;
-  int     buzzerPinTone;
-  int     buzzerPinVcc;
-  bool    bootUpBeep;
-  bool    txBeep;
-  bool    messageRxBeep;
-  bool    stationBeep;
-  bool    lowBatteryBeep;
+    bool    ledTx;
+    int     ledTxPin;
+    bool    ledMessage;
+    int     ledMessagePin;
+    bool    ledFlashlight;
+    int     ledFlashlightPin;
+    bool    buzzerActive;
+    int     buzzerPinTone;
+    int     buzzerPinVcc;
+    bool    bootUpBeep;
+    bool    txBeep;
+    bool    messageRxBeep;
+    bool    stationBeep;
+    bool    lowBatteryBeep;
 };
 
 class LoraModule {
 public:
-  long  frequency;
-  int   spreadingFactor;
-  long  signalBandwidth;
-  int   codingRate4;
-  int   power;
+    long  frequency;
+    int   spreadingFactor;
+    long  signalBandwidth;
+    int   codingRate4;
+    int   power;
 };
 
 class Ptt {
 public:
-  bool  active;
-  int   io_pin;
-  int   preDelay;
-  int   postDelay;
-  bool  reverse;
+    bool  active;
+    int   io_pin;
+    int   preDelay;
+    int   postDelay;
+    bool  reverse;
 };
 
 class Configuration {
 public:
 
-  std::vector<Beacon> beacons;  
-  Display             display;
-  Winlink             winlink;
-  BME                 bme;
-  Notification        notification;
-  LoraModule          loramodule;
-  Ptt                 ptt;
-   
-  bool    simplifiedTrackerMode;
-  int     sendCommentAfterXBeacons;
-  String  path;
-  int     nonSmartBeaconRate;
-  int     rememberStationTime;
-  int     maxDistanceToTracker;
-  int     standingUpdateTime;
-  bool    sendAltitude;
-  bool    sendBatteryInfo;
-  int     bluetoothType;
-  bool    bluetoothActive;
-  bool    disableGPS;
+    std::vector<Beacon> beacons;  
+    Display             display;
+    Winlink             winlink;
+    BME                 bme;
+    Notification        notification;
+    LoraModule          loramodule;
+    Ptt                 ptt;
+    
+    bool    simplifiedTrackerMode;
+    int     sendCommentAfterXBeacons;
+    String  path;
+    int     nonSmartBeaconRate;
+    int     rememberStationTime;
+    int     maxDistanceToTracker;
+    int     standingUpdateTime;
+    bool    sendAltitude;
+    bool    sendBatteryInfo;
+    int     bluetoothType;
+    bool    bluetoothActive;
+    bool    disableGPS;
 
-  Configuration();
-  void validateConfigFile(String currentBeaconCallsign);
-  bool validateMicE(String currentBeaconMicE);
+    Configuration();
+    void validateConfigFile(String currentBeaconCallsign);
+    bool validateMicE(String currentBeaconMicE);
 
 private:
-  void readFile(fs::FS &fs, const char *fileName) ;
-  String _filePath;
+    void readFile(fs::FS &fs, const char *fileName) ;
+    String _filePath;
 };
 
 #endif
