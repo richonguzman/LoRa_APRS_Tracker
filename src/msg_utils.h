@@ -17,6 +17,7 @@ namespace MSG_Utils {
     void    deleteFile(String typeOfFile);
     void    saveNewMessage(String typeMessage, String station, String newMessage);
     void    sendMessage(int typeOfMessage, String station, String textMessage);
+    void    processOutputBuffer();
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
     
 }

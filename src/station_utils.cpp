@@ -15,8 +15,8 @@ extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
-extern std::vector<String>  lastHeardStation;
-extern std::vector<String>  lastHeardStation_temp;
+//extern std::vector<String>  lastHeardStation;
+//extern std::vector<String>  lastHeardStation_temp;
 extern int                  myBeaconsIndex;
 
 extern uint32_t             lastTx;

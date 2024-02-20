@@ -19,7 +19,8 @@ namespace WINLINK_Utils {
       challengeAnswer += Config.winlink.password[digit-1];
     }
     challengeAnswer += "AZ6";
-    delay(8000); ///
+    delay(500);
+    //delay(8000); ///
     //Serial.println("el challenge creado es " + challengeAnswer);
     MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
   }

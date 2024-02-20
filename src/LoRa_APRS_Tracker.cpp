@@ -5,6 +5,7 @@
 #include <logger.h>
 #include <WiFi.h>
 #include <vector>
+#include <deque>
 #include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
@@ -34,7 +35,7 @@ BluetoothSerial               SerialBT;
 OneButton userButton          = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.02.15";
+String    versionDate         = "2024.02.20";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -45,6 +46,8 @@ int       menuDisplay         = 100;
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
 std::vector<String>           loadedWLNKMails;
+//std::vector<String>           outputBufferPackets;
+std::deque<String>            outputBufferPackets;
 
 bool      displayEcoMode      = Config.display.ecoMode;
 bool      displayState        = true;
@@ -99,6 +102,8 @@ bool      miceActive          = false;
 bool      smartBeaconValue    = true;
 
 int       ackNumberSend;
+uint32_t  ackTime             = millis();
+
 int       winlinkStatus         = 0;
 String    winlinkMailNumber     = "_?";
 String    winlinkAddressee      = "";
@@ -209,6 +214,7 @@ void loop() {
   GPS_Utils::setDateFromData();
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+  MSG_Utils::processOutputBuffer();
   MSG_Utils::ledNotification();
   Utils::checkFlashlight();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
