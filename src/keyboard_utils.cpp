@@ -91,10 +91,10 @@ namespace KEYBOARD_Utils {
             }
         } 
         
-        else if (menuDisplay >= 50 && menuDisplay <= 52) {
+        else if (menuDisplay >= 50 && menuDisplay <= 53) {
             menuDisplay--;
             if (menuDisplay < 50) {
-                menuDisplay = 52;
+                menuDisplay = 53;
             }
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = menuDisplay - 10;
@@ -195,9 +195,9 @@ namespace KEYBOARD_Utils {
             menuDisplay = 4;
         }
 
-        else if (menuDisplay >= 50 && menuDisplay <= 52) {
+        else if (menuDisplay >= 50 && menuDisplay <= 53) {
         menuDisplay++;  
-        if (menuDisplay > 52) {
+        if (menuDisplay > 53) {
             menuDisplay = 50;
         }
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
@@ -260,7 +260,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=52) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -382,6 +382,11 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 52) {
             menuDisplay = 50111;
+        } else if (menuDisplay == 53) {
+            String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+            packet += "winlink";
+            show_display("<<< TX >>>", "", packet,100);
+            LoRa_Utils::sendNewPacket(packet);
         } else if (menuDisplay == 5000) {
             MSG_Utils::sendMessage(1, "WLNK-1", "L");
         } else if (menuDisplay == 5010) {

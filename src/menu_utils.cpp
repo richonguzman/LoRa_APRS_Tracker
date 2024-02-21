@@ -317,14 +317,17 @@ namespace MENU_Utils {
                 if (winlinkStatus == 5) {
                     menuDisplay = 5000;
                 } else {
-                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
+                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Quick Check" , lastLine);
                 }
                 break;
             case 51:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Quick Check" , lastLine);
                 break;
             case 52:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Quick Check" , lastLine);
+                break;
+            case 53:    // 5.Winlink
+                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Quick Check" , lastLine);
                 break;
 
             case 500:    // 5.Winlink ---> Login

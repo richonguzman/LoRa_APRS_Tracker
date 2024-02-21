@@ -377,14 +377,6 @@ namespace MSG_Utils {
                     }
                 }
             }
-
-        /// DEBUG ONLY ///// soon to be deleted
-        uint64_t recepcion = millis();
-        Serial.print(lastReceivedPacket.sender);Serial.print(" ");
-        Serial.print(lastReceivedPacket.message);Serial.print(" ");
-        Serial.println(recepcion);
-        /// DEBUG ONLY ///// soon to be deleted
-
         }   
     }
 
