@@ -55,7 +55,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2024.02.21 Winlink Mails through APRSLink ( https://www.winlink.org/APRSLink )
+- 2024.02.21 Winlink Mails through APRSLink ( https://www.winlink.org/APRSLink/ )
 - 2024.01.26 Added Helmut OE5HWN MeshCom PCB support.
 - 2024.01.18 BME modules have now a single reading per minute.
 - 2024.01.05 Added HELTEC V3 with NEO8M GPS. Thanks Asbjørn LA1HSA.
