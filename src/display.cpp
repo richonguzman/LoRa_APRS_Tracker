@@ -1,4 +1,3 @@
-#include <Adafruit_GFX.h>
 #include <logger.h>
 #include <Wire.h>
 #include "custom_characters.h"
@@ -6,6 +5,11 @@
 #include "pins_config.h"
 #include "display.h"
 #include "TimeLib.h"
+#ifdef tST7735
+//#include <U8g2lib.h>
+#include <Arduino_GFX_Library.h>
+#elif
+#include <Adafruit_GFX.h>
 
 #ifdef oSSD1306
 #include <Adafruit_SSD1306.h>
@@ -19,6 +23,7 @@
 #ifndef SCREEN_H
 #define SCREEN_H   64
 #endif
+#endif
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
@@ -27,11 +32,13 @@ extern bool             symbolAvailable;
 extern bool             bluetoothConnected;
 extern int              screenBrightness; //from 1 to 255 to regulate brightness of oled scren
 
-const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k", "C", "a", "Y", "O"};
+const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
+                                "C", "a", "Y", "O", "'"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
 const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, 
                                 truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
-                                houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol};
+                                houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
+                                aircraftSymbol};
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
@@ -39,8 +46,12 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 
 extern logging::Logger logger;
 
+#ifndef tST7735
 #ifdef oSSD1306
 Adafruit_SSD1306 display(SCREEN_W, SCREEN_H, &Wire, OLED_RST);
+#ifdef DUALSCREEN
+Adafruit_SSD1306 display2(SCREEN_W, SCREEN_H, &Wire, OLED_RST);
+#endif
 #elif oSH1107
 Adafruit_SH1107 display(SCREEN_W, SCREEN_H, &Wire, OLED_RST);
 #elif oSH1106
@@ -64,6 +75,13 @@ void setup_display() {
     while (true) {
     }
   }
+  #ifdef DUALSCREEN
+    if (!display2.begin(SSD1306_SWITCHCAPVCC, 0x3d, false, false)) {
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306-2", "allocation failed!");
+    while (true) {
+    }
+  }
+  #endif
   #else
   if (!display.begin(0x3c, true)) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
@@ -73,13 +91,23 @@ void setup_display() {
   #endif
   if (Config.display.turn180) {
     display.setRotation(2);
+    #ifdef DUALSCREEN
+    display2.setRotation(2);
+    #endif
   }
   display.clearDisplay();
   display.setTextColor(1); //WHITE & SH110X_WHITE value is 1
   display.setTextSize(1);
   display.setCursor(0, 0);
-  _setContrast(screenBrightness);
   display.display();
+  #ifdef DUALSCREEN
+  display2.clearDisplay();
+  display2.setTextColor(1); //WHITE & SH110X_WHITE value is 1
+  display2.setTextSize(1);
+  display2.setCursor(0, 0);
+  display2.display();
+  #endif
+  _setContrast(screenBrightness);
 }
 
 // cppcheck-suppress unusedFunction
@@ -87,6 +115,9 @@ void display_toggle(bool toggle) {
   if (toggle) {
     #ifdef oSSD1306
     display.ssd1306_command(SSD1306_DISPLAYON);
+    #ifdef DUALSCREEN
+    display2.ssd1306_command(SSD1306_DISPLAYON);
+    #endif
     #else
     display.oled_command(SH110X_DISPLAYON);
     #endif
@@ -94,6 +125,9 @@ void display_toggle(bool toggle) {
   } else {
     #ifdef oSSD1306
     display.ssd1306_command(SSD1306_DISPLAYOFF);
+    #ifdef DUALSCREEN
+    display2.ssd1306_command(SSD1306_DISPLAYOFF);
+    #endif
     #else
     display.oled_command(SH110X_DISPLAYOFF);
     #endif
@@ -102,8 +136,12 @@ void display_toggle(bool toggle) {
 
 void _setContrast(uint8_t dimm) {
   #ifdef oSSD1306
-  display.ssd1306_command(SSD1306_SETCONTRAST);
+  display.ssd1306_command(0x81); //Set Contrast Command 0x81
   display.ssd1306_command(dimm);
+  #ifdef DUALSCREEN
+  display2.ssd1306_command(0x81); //Set Contrast Command 0x81
+  display2.ssd1306_command(dimm);
+  #endif
   #else
   display.oled_command(0x81); //Set Contrast Command
   display.oled_command(dimm);
@@ -242,5 +280,156 @@ void show_display(String header, String line1, String line2, String line3, Strin
   }
   
   display.display();
+  #ifdef DUALSCREEN
+  //second SSD1306 test HERE!
+  display2.clearDisplay();
+  display2.display();
+  #endif
   delay(wait);
 }
+#else
+
+#include <Fonts/FreeMonoBold9pt7b.h>
+//#include <Fonts/FreeMono9pt7b.h>
+//
+#ifndef VSPI
+#define VSPI 1
+#endif
+Arduino_DataBus *bus = new Arduino_ESP32SPI(ST7735_DC_PIN /* DC */, ST7735_CS_PIN /* CS */, ST7735_SCLK_PIN, ST7735_MOSI_PIN, ST7735_MOSI_PIN, VSPI);
+Arduino_GFX *gfx = new Arduino_ST7735(bus, GFX_NOT_DEFINED /* RST */, 1 /* rotation */, true /* IPS */, 80 /* width */, 160 /* height */, 26 /* col offset 1 */, 1 /* row offset 1 */, 26 /* col offset 2 */, 1 /* row offset 2 */);
+
+void setup_display() {
+  #ifdef HWT_VERSION05
+  pinMode(VEXT_ENABLE_V05, OUTPUT);     //Vext control pin
+  digitalWrite(VEXT_ENABLE_V05, HIGH);  //LCD needs power before init.
+  pinMode(ST7735_LED_K_PIN_V05, OUTPUT);    //backlight pin ledk
+  digitalWrite(ST7735_LED_K_PIN_V05, HIGH); //backlight HIGH turn ON
+  #else
+  pinMode(VEXT_ENABLE_V03, OUTPUT);     //Vext control pin
+  digitalWrite(VEXT_ENABLE_V03, LOW);  //LCD needs power before init.
+  pinMode(ST7735_LED_K_PIN_V03, OUTPUT);    //backlight pin ledk
+  digitalWrite(ST7735_LED_K_PIN_V03, HIGH); //backlight HIGH turn ON
+  #endif
+  if (!gfx->begin())
+  {
+    Serial.println("gfx->begin() failed!");
+  }
+  gfx->fillScreen(BLACK);
+}
+
+void display_toggle(bool toggle) {
+  if (toggle) {
+    #ifdef HWT_VERSION05
+    digitalWrite(ST7735_LED_K_PIN_V05, HIGH);
+    #elif HWT_VERSION03
+    digitalWrite(ST7735_LED_K_PIN_V03, HIGH);
+    #endif
+  } else {
+    #ifdef HWT_VERSION05
+    digitalWrite(ST7735_LED_K_PIN_V05, LOW);
+    #elif WT_VERSION03
+    digitalWrite(ST7735_LED_K_PIN_V03, LOW);
+    #endif
+  }
+}
+
+void _setContrast(uint8_t dimm) {
+  //return dimm;
+}
+
+void show_display(String header, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  delay(wait);
+}
+
+void show_display(String header, String line1, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  gfx->setCursor(0, 20);
+  gfx->println(line1);
+  delay(wait);
+}
+
+void show_display(String header, String line1, String line2, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  gfx->setCursor(0, 20);
+  gfx->println(line1);
+  gfx->setCursor(0, 32);
+  gfx->println(line2);
+  delay(wait);
+}
+
+void show_display(String header, String line1, String line2, String line3, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  gfx->setCursor(0, 20);
+  gfx->println(line1);
+  gfx->setCursor(0, 32);
+  gfx->println(line2);
+  gfx->setCursor(0, 44);
+  gfx->println(line3);
+  delay(wait);
+}
+
+void show_display(String header, String line1, String line2, String line3, String line4, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  gfx->setCursor(0, 20);
+  gfx->println(line1);
+  gfx->setCursor(0, 32);
+  gfx->println(line2);
+  gfx->setCursor(0, 44);
+  gfx->println(line3);
+  gfx->setCursor(0, 56);
+  gfx->println(line4);
+  delay(wait);
+}
+
+void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
+  int sy = 13;
+  gfx->fillScreen(BLACK);
+  gfx->setFont(&FreeMonoBold9pt7b);
+  gfx->setTextColor(BLUE);
+  gfx->setCursor(0, sy);
+  gfx->println(header);
+  gfx->setFont();
+  gfx->setCursor(0, 20);
+  gfx->println(line1);
+  gfx->setCursor(0, 32);
+  gfx->println(line2);
+  gfx->setCursor(0, 44);
+  gfx->println(line3);
+  gfx->setCursor(0, 56);
+  gfx->println(line4);
+  gfx->setCursor(0, 68);
+  gfx->println(line5);
+  delay(wait);
+}
+#endif

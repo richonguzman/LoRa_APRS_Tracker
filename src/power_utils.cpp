@@ -39,19 +39,26 @@ namespace POWER_Utils {
   String batteryChargeDischargeCurrent = "";
 
   double getBatteryVoltage() {
-    #if defined(BATTERY_PIN) && !defined(HELTEC_V3_GPS) //It is likely that different boards will require different corrections.
+    #ifdef BATTERY_PIN //&& !defined(HELTEC_V3_GPS) //It is likely that different boards will require different corrections.
+     #ifdef HELTEC_WIRELESS_TRACKER
+     digitalWrite(ADC_CTRL, HIGH);
+     #endif
     int adc_value = analogRead(BATTERY_PIN);
-    double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
-    return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
+     #ifdef HELTEC_WIRELESS_TRACKER
+     digitalWrite(ADC_CTRL, LOW);
+     #endif
+    #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
+     double voltage = (adc_value * 3.3) / 4095.0;
+     double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+     return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+    #else
+     double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
+     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
     #endif
+    #endif
+
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-    return PMU.getBattVoltage();
-    #endif
-    #if defined(HELTEC_V3_GPS)
-    int adc_value = analogRead(BATTERY_PIN);
-    double voltage = (adc_value * 3.3) / 4095.0;
-    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-    return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+     return PMU.getBattVoltage();
     #endif
     return 0;
   }
@@ -350,6 +357,8 @@ namespace POWER_Utils {
   void shutdown() {
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
     PMU.shutdown();
+    #else
+    esp_deep_sleep_start();
     #endif
   }
 

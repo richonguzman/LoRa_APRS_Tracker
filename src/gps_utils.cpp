@@ -9,6 +9,11 @@
 #include "utils.h"
 
 #include "APRSPacketLib.h"
+#ifdef HIGH_GPS_BAUDRATE
+#define GPS_BAUD  115200
+#else
+#define GPS_BAUD  9600
+#endif
 
 extern Configuration    Config;
 extern HardwareSerial   neo6m_gps;
@@ -32,6 +37,20 @@ extern uint32_t         lastTx;
 namespace GPS_Utils {
 
   void setup() {
+    #ifdef HWT_VERSION03
+    pinMode(VGNSS_CTRL_V03, OUTPUT);
+    digitalWrite(VGNSS_CTRL_V03, HIGH);
+    #endif
+    #ifdef GPS_RESET
+    pinMode(GPS_RESET, OUTPUT);
+    digitalWrite(GPS_RESET, LOW); // assert for 10ms
+    delay(10);
+    digitalWrite(GPS_RESET, HIGH);
+    #endif
+    #ifdef GPS_PPS
+    // pulse per second
+    pinMode(GPS_PPS, INPUT);
+    #endif
     #ifdef HAS_NOGPS
     disableGPS = true;
     #else
@@ -41,7 +60,7 @@ namespace GPS_Utils {
       logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
       return;
     }
-    neo6m_gps.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+    neo6m_gps.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
   }
 
   void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude) {

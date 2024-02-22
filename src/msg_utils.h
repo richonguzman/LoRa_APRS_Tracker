@@ -6,15 +6,18 @@
 
 namespace MSG_Utils {
 
-    bool    warnNoMessages();
+    bool    warnNoAPRSMessages();
+    bool    warnNoWLNKMails();
     String  getLastHeardTracker();
     int     getNumAPRSMessages();
+    int     getNumWLNKMails();
     void    loadNumMessages();
-    void    loadMessagesFromMemory();
+    void    loadMessagesFromMemory(String typeOfMessage);
     void    ledNotification();
-    void    deleteFile();
+    void    deleteFile(String typeOfFile);
     void    saveNewMessage(String typeMessage, String station, String newMessage);
-    void    sendMessage(String station, String textMessage);
+    void    sendMessage(int typeOfMessage, String station, String textMessage);
+    void    processOutputBuffer();
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
     
 }

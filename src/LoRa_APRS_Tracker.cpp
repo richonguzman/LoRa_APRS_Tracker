@@ -5,6 +5,7 @@
 #include <logger.h>
 #include <WiFi.h>
 #include <vector>
+#include <deque>
 #include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
@@ -31,7 +32,7 @@
 Configuration                 Config;
 HardwareSerial                neo6m_gps(1);
 TinyGPSPlus                   gps;
-#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+#if !defined(CONFIG_IDF_TARGET_ESP32S3) //better way
 BluetoothSerial               SerialBT;
 #endif
 #ifdef BUTTON_PIN
@@ -44,7 +45,7 @@ OneButton userButtonL          = OneButton(BUTTON_LEFT, true, true);
 OneButton userButtonR          = OneButton(BUTTON_RIGHT, true, true);
 #endif
 
-String    versionDate         = "2024.01.26c";
+String    versionDate         = "2024.02.22a";
 
 int       myBeaconsIndex      = 0;
 int       myBeaconsSize       = Config.beacons.size();
@@ -54,6 +55,8 @@ int       menuDisplay         = 100;
 
 int       messagesIterator    = 0;
 std::vector<String>           loadedAPRSMessages;
+std::vector<String>           loadedWLNKMails;
+std::deque<String>            outputBufferPackets;
 
 bool      displayEcoMode      = Config.display.ecoMode;
 bool      displayState        = true;
@@ -105,6 +108,19 @@ bool      disableGPS;
 
 bool      miceActive          = false;
 
+bool      smartBeaconValue    = true;
+
+int       ackNumberSend;
+uint32_t  ackTime             = millis();
+
+int       winlinkStatus         = 0;
+String    winlinkMailNumber     = "_?";
+String    winlinkAddressee      = "";
+String    winlinkSubject        = "";
+String    winlinkBody           = "";
+String    winlinkAlias          = "";
+String    winlinkAliasComplete  = "";
+
 APRSPacket                    lastReceivedPacket;
 
 logging::Logger               logger;
@@ -118,7 +134,10 @@ void setup() {
 
   POWER_Utils::setup();
   #ifdef BATTERY_PIN
-   pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.  (Could be in main. HA5SZI)
+   pinMode(BATTERY_PIN, INPUT);     // This could or should be elsewhere, but this was my point of entry.  (Could be in main. HA5SZI)
+   #ifdef HELTEC_WIRELESS_TRACKER
+   pinMode(ADC_CTRL, OUTPUT);       //ADC Control PIN for measure
+   #endif
   #endif
 
   setup_display();
@@ -165,13 +184,14 @@ void setup() {
   LoRa_Utils::setup();
   BME_Utils::setup();
   STATION_Utils::loadCallsignIndex();
+    ackNumberSend = random(1,999);
 
   WiFi.mode(WIFI_OFF);
   logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
   if (Config.bluetoothType==0) {
     BLE_Utils::setup();
   } else {
-    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S3) //better way
     BLUETOOTH_Utils::setup();
     #endif
   }
@@ -206,6 +226,11 @@ void loop() {
     Config.validateConfigFile(currentBeacon->callsign);
     miceActive = Config.validateMicE(currentBeacon->micE);
   }
+    STATION_Utils::checkSmartBeaconValue();
+    
+    if (ackNumberSend >= 999) {
+        ackNumberSend = 1;
+    }
 
   POWER_Utils::batteryManager();
   if (!Config.simplifiedTrackerMode) {
@@ -231,13 +256,14 @@ void loop() {
   GPS_Utils::setDateFromData();
 
   MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+    MSG_Utils::processOutputBuffer();
   MSG_Utils::ledNotification();
   Utils::checkFlashlight();
   STATION_Utils::checkListenedTrackersByTimeAndDelete();
   if (Config.bluetoothType==0) {
     BLE_Utils::sendToLoRa();
   } else {
-    #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+    #if !defined(CONFIG_IDF_TARGET_ESP32S3) //better way
     BLUETOOTH_Utils::sendToLoRa();
     #endif
   }
@@ -249,7 +275,7 @@ void loop() {
     STATION_Utils::checkTelemetryTx();
   }
   lastTx = millis() - lastTxTime;
-  if (!sendUpdate && gps_loc_update && currentBeacon->smartBeaconState) {
+    if (!sendUpdate && gps_loc_update && smartBeaconValue) {
     GPS_Utils::calculateDistanceTraveled();
     if (!sendUpdate) {
       GPS_Utils::calculateHeadingDelta(currentSpeed);

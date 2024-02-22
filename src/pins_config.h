@@ -193,4 +193,42 @@
 #define LED_PIN             16  //LED_BUILTIN
 #endif
 
+#ifdef HELTEC_WIRELESS_TRACKER
+#undef OLED_SDA
+#undef OLED_SCL
+#undef OLED_RST
+#define GPS_RX              34
+#define GPS_TX              33
+#define GPS_PPS             36
+#define GPS_RESET           35
+#define BUTTON_PIN          0
+#define RADIO_SCLK_PIN      9
+#define RADIO_MISO_PIN      11
+#define RADIO_MOSI_PIN      10
+#define RADIO_CS_PIN        8
+#define RADIO_DIO0_PIN      -1  // a No connect on the SX1262 module
+#define RADIO_RST_PIN       12
+#define RADIO_DIO1_PIN      14  // SX1262 IRQ
+#define RADIO_BUSY_PIN      13  // SX1262 BUSY
+#define LORA_DIO3           -1  // Not connected on PCB, but internally on the TTGO SX1262, if DIO3 is high the TXCO is enabled
+#define DIO3_TCXO_REF       1.8 // DIO3 Reference Voltage
+#define ST7735_CS_PIN       38
+#define ST7735_REST_PIN     39
+#define ST7735_DC_PIN       40
+#define ST7735_SCLK_PIN     41
+#define ST7735_MOSI_PIN     42
+#define ST7735_LED_K_PIN_V03    45
+#define ST7735_LED_K_PIN_V05    21
+#define ST7735_VTFT_CTRL_V03    46
+#define ST7735_VTFT_CTRL_V05    -1  //VDD Connected to VEXT
+#define VEXT_ENABLE_V03         36  // active LOW, powers the oled display and the lora antenna boost
+#define VEXT_ENABLE_V05         3   // active HIGH, powers the oled display
+#define VGNSS_CTRL_V03          37  // Heltec Tracker needs this pulled low for GPS
+#define VGNSS_CTRL_V05          -1  // Heltec Tracker needs this pulled low for GPS
+#define BATTERY_PIN             1
+#define ADC_CTRL                2   // active HIGH, powers the voltage divider. Only on V05 = V1.1
+#define LED_PIN                 18  // LED_BUILTIN
+#define HSPI_MOSI   RADIO_MOSI_PIN
+#endif
+
 #endif

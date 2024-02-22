@@ -15,6 +15,7 @@ namespace STATION_Utils {
     void orderListenedTrackersByDistance(String callsign, float distance, float course);
     void checkSmartBeaconInterval(int speed);
     void checkStandingUpdateTime();
+    void checkSmartBeaconValue();
     void checkSmartBeaconState();
     void sendBeacon(String type);
     void checkTelemetryTx();

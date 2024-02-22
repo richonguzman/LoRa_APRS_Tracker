@@ -16,16 +16,8 @@ extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
-extern std::vector<String>  lastHeardStation;
-extern std::vector<String>  lastHeardStation_temp;
 extern int                  myBeaconsIndex;
 
-extern String               firstNearTracker;
-extern String               secondNearTracker;
-extern String               thirdNearTracker;
-extern String               fourthNearTracker;
-
-extern uint32_t             lastDeleteListenedTracker;
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
 
@@ -47,6 +39,15 @@ extern double               lastTxLng;
 extern double               lastTxDistance;
 
 extern bool                 miceActive;
+extern bool                 smartBeaconValue;
+extern int                  winlinkStatus;
+
+String                      firstNearTracker;
+String                      secondNearTracker;
+String                      thirdNearTracker;
+String                      fourthNearTracker;
+
+uint32_t                    lastDeleteListenedTracker;
 
 
 namespace STATION_Utils {
@@ -181,7 +182,6 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > secondDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = newTrackerInfo;
@@ -191,7 +191,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance < firstDistance) {
               secondNearTracker = firstNearTracker;
               firstNearTracker  = newTrackerInfo;
@@ -221,7 +220,6 @@ namespace STATION_Utils {
       } else {  
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -235,7 +233,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = newTrackerInfo;
@@ -248,7 +245,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance <= firstDistance) {
               thirdNearTracker  = secondNearTracker;
               secondNearTracker = firstNearTracker;
@@ -283,7 +279,6 @@ namespace STATION_Utils {
       } else {
         if (callsign == firstNearTrackerCallsign) {
           if (distance != firstDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               firstNearTracker  = secondNearTracker;
               secondNearTracker = thirdNearTracker;
@@ -302,7 +297,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == secondNearTrackerCallsign) {
           if (distance != secondDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               secondNearTracker = thirdNearTracker;
               thirdNearTracker  = fourthNearTracker;
@@ -319,7 +313,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == thirdNearTrackerCallsign) {
           if (distance != thirdDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > fourthDistance) {
               thirdNearTracker  = fourthNearTracker;
               fourthNearTracker = newTrackerInfo;
@@ -336,7 +329,6 @@ namespace STATION_Utils {
           }
         } else if (callsign == fourthNearTrackerCallsign) {
           if (distance != fourthDistance) {
-            //Serial.print("Distance Updated for : "); Serial.println(callsign);
             if (distance > thirdDistance) {
               fourthNearTracker = newTrackerInfo;
             } else if (distance > secondDistance && distance <= thirdDistance) {
@@ -359,7 +351,7 @@ namespace STATION_Utils {
   }
 
   void checkSmartBeaconInterval(int speed) {
-    if (currentBeacon->smartBeaconState) {
+        if (smartBeaconValue) {
       if (speed < currentBeacon->slowSpeed) {
         txInterval = currentBeacon->slowRate * 1000;
       } else if (speed > currentBeacon->fastSpeed) {
@@ -377,8 +369,16 @@ namespace STATION_Utils {
     }
   }
 
+    void checkSmartBeaconValue() {
+        if (winlinkStatus != 0) {
+            smartBeaconValue = false;
+        } else {
+            smartBeaconValue = currentBeacon->smartBeaconState;
+        }
+    }
+
   void checkSmartBeaconState() {
-    if (!currentBeacon->smartBeaconState) {
+        if (!smartBeaconValue) {
       uint32_t lastTxSmartBeacon = millis() - lastTxTime;
       if (lastTxSmartBeacon >= Config.nonSmartBeaconRate*60*1000) {
         sendUpdate = true;
@@ -425,7 +425,7 @@ namespace STATION_Utils {
     show_display("<<< TX >>>", "", packet,100);
     LoRa_Utils::sendNewPacket(packet);
     
-    if (currentBeacon->smartBeaconState) {
+        if (smartBeaconValue) {
       lastTxLat       = gps.location.lat();
       lastTxLng       = gps.location.lng();
       previousHeading = currentHeading;

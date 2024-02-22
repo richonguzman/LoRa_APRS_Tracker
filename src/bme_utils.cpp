@@ -180,18 +180,27 @@ namespace BME_Utils {
 
     uint32_t lastReading = millis() - bmeLastReading;
     if (lastReading > 60*1000) {
+            #if defined(BME280Sensor) || defined(BMP280Sensor)
       bme.takeForcedMeasurement();
       newTemp   = bme.readTemperature();
       newPress  = (bme.readPressure() / 100.0F);
-      #if defined(BME280Sensor) || defined(BME680Sensor)
+            #ifdef BME280Sensor
       newHum = bme.readHumidity();
       #endif
       #ifdef BMP280Sensor
       newHum = 0;
       #endif
+            #endif
       
       #ifdef BME680Sensor
+            bme.performReading();
+            delay(50);
+            if (bme.endReading()) {
+                newTemp     = bme.temperature;
+                newPress    = (bme.pressure / 100.0F);
+                newHum      = bme.humidity;
       newGas = bme.gas_resistance / 1000.0; // in Kilo ohms
+            }
       #endif
       bmeLastReading = millis();
     }
