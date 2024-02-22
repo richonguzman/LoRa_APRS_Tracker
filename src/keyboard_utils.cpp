@@ -383,10 +383,14 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 52) {
             menuDisplay = 50111;
         } else if (menuDisplay == 53) {
-            String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
-            packet += "winlink";
-            show_display("<<< TX >>>", "", packet,100);
-            LoRa_Utils::sendNewPacket(packet);
+            if (gps.location.isUpdated()) {
+                String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                packet += "winlink";
+                show_display("<<< TX >>>", "", packet,100);
+                LoRa_Utils::sendNewPacket(packet);
+            } else {
+                show_display("___INFO___", "", " WAITING FOR GPS FIX", 2000);
+            }
         } else if (menuDisplay == 5000) {
             MSG_Utils::sendMessage(1, "WLNK-1", "L");
         } else if (menuDisplay == 5010) {
