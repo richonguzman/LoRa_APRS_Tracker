@@ -69,7 +69,7 @@ uint32_t  refreshDisplayTime  = millis();
 
 bool      sendUpdate          = true;
 int       updateCounter       = Config.sendCommentAfterXBeacons;
-bool	    sendStandingUpdate  = false;
+bool	  sendStandingUpdate  = false;
 bool      statusState         = true;
 uint32_t  statusTime          = millis();
 bool      bluetoothConnected  = false;
