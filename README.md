@@ -55,6 +55,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.02.24 New Partitions: more memory for new code/firmware (still > 500 Rx messages available)
 - 2024.02.21 Winlink Mails through APRSLink ( https://www.winlink.org/APRSLink/ )
 - 2024.01.26 Added Helmut OE5HWN MeshCom PCB support.
 - 2024.01.18 BME modules have now a single reading per minute.
