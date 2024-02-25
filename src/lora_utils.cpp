@@ -46,6 +46,7 @@ namespace LoRa_Utils {
         radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
         radio.setBandwidth(Config.loramodule.signalBandwidth);
         radio.setCodingRate(Config.loramodule.codingRate4);
+        radio.setCRC(true);
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
         radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
