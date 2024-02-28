@@ -8,6 +8,7 @@
 #include "configuration.h"
 #include "button_utils.h"
 #include "power_utils.h"
+#include "pins_config.h"
 #include "msg_utils.h"
 #include "display.h"
 
@@ -67,20 +68,20 @@ namespace KEYBOARD_Utils {
             }
         } 
 
-        else if (menuDisplay >= 20 && menuDisplay <= 26) {
+        else if (menuDisplay >= 20 && menuDisplay <= 27) {
             menuDisplay--;
             if (menuDisplay < 20) {
-                menuDisplay = 26;
-            }
-        } else if (menuDisplay >= 210 && menuDisplay <= 211) {
-            menuDisplay--;
-            if (menuDisplay < 210) {
-                menuDisplay = 211;
+                menuDisplay = 27;
             }
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) {
                 menuDisplay = 221;
+            }
+        } else if (menuDisplay >= 240 && menuDisplay <= 241) {
+            menuDisplay--;
+            if (menuDisplay < 240) {
+                menuDisplay = 241;
             }
         } 
         
@@ -167,20 +168,20 @@ namespace KEYBOARD_Utils {
             menuDisplay = 11;
         } 
         
-        else if (menuDisplay >= 20 && menuDisplay <= 26) {
+        else if (menuDisplay >= 20 && menuDisplay <= 27) {
         menuDisplay++;
-        if (menuDisplay > 26) {
+        if (menuDisplay > 27) {
             menuDisplay = 20;
         }
-        } else if (menuDisplay >= 210 && menuDisplay <= 211) {
-            menuDisplay++;
-            if (menuDisplay > 211) {
-                menuDisplay = 210;
-            } 
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) {
                 menuDisplay = 220;
+            } 
+        } else if (menuDisplay >= 240 && menuDisplay <= 241) {
+            menuDisplay++;
+            if (menuDisplay > 241) {
+                menuDisplay = 240;
             } 
         }
 
@@ -291,7 +292,7 @@ namespace KEYBOARD_Utils {
     }
 
     void rightArrow() {
-        if (menuDisplay == 0) {
+        if (menuDisplay == 0 || menuDisplay == 200) {
             if(myBeaconsIndex >= (myBeaconsSize-1)) {
                 myBeaconsIndex = 0;
             } else {
@@ -301,9 +302,12 @@ namespace KEYBOARD_Utils {
             displayTime = millis();
             statusState  = true;
             statusTime = millis();
-            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
+            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, 2000);
             STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-        } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay>=30 && menuDisplay<=31)) {
+            if (menuDisplay == 200) {
+                menuDisplay = 20;
+            }
+        } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=27) || (menuDisplay>=30 && menuDisplay<=31)) {
             menuDisplay = menuDisplay*10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory("APRS");
@@ -338,8 +342,10 @@ namespace KEYBOARD_Utils {
             show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
             MSG_Utils::sendMessage(0, "ANSRVR", "K HOTG");
         }
-        
+
         else if (menuDisplay == 210) {
+            LoRa_Utils::changeFreq();
+        } else if (menuDisplay == 220) {
             if (!displayEcoMode) {
                 displayEcoMode = true;
                 show_display("_DISPLAY__", "", "   ECO MODE -> ON", 1000);
@@ -347,7 +353,7 @@ namespace KEYBOARD_Utils {
                 displayEcoMode = false;
                 show_display("_DISPLAY__", "", "   ECO MODE -> OFF", 1000);
             }
-        } else if (menuDisplay == 211) {
+        } else if (menuDisplay == 221) {
             if (screenBrightness ==1) {
                 show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MAX", 1000);
                 screenBrightness = 255;   
@@ -355,11 +361,11 @@ namespace KEYBOARD_Utils {
                 show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
                 screenBrightness = 1;
             }
-        } else if (menuDisplay == 230) {
-            show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
-        } else if (menuDisplay == 231) {
-            show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
         } else if (menuDisplay == 240) {
+            show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+        } else if (menuDisplay == 241) {
+            show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+        } else if (menuDisplay == 250) {
             show_display("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
         } 
 
@@ -553,25 +559,16 @@ namespace KEYBOARD_Utils {
             } else if (key == 8) {                          // Delete Last Key
                 messageText = messageText.substring(0, messageText.length()-1);
             }
-        } else if (menuDisplay == 200 && key == 13) {
-            if(myBeaconsIndex >= (myBeaconsSize - 1)) {
-                myBeaconsIndex = 0;
-            } else {
-                myBeaconsIndex++;
-            }
-            display_toggle(true);
-            displayTime = millis();
-            statusState  = true;
-            statusTime = millis();
-            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", 1000);
-            STATION_Utils::saveCallsingIndex(myBeaconsIndex);
-            menuDisplay = 0;
-        } else if (menuDisplay == 250 && key == 13) {
+        } else if (menuDisplay == 260 && key == 13) {
             show_display("", "", "    REBOOTING ...", 2000);
             ESP.restart();
-        } else if (menuDisplay == 260 && key == 13) {
+        } else if (menuDisplay == 270 && key == 13) {
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             show_display("", "", "    POWER OFF ...", 2000);
             POWER_Utils::shutdown();
+            #else
+            show_display("", "", "ESP32 CAN'T POWER OFF", 2000);
+            #endif
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) {
             winlinkMailNumber = key;
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) {

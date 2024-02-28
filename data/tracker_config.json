@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
@@ -19,7 +19,7 @@
 			}			
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
@@ -37,7 +37,7 @@
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-7",
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
@@ -57,7 +57,7 @@
 	],
 	"display": {
 		"showSymbol": true,
-		"ecoMode": false,
+		"ecoMode": true,
 		"timeout": 4,
 		"turn180" : false
     },
@@ -76,7 +76,7 @@
 		"disableGPS": false
 	},
 	"winlink": {
-		"password": "ABCDEF"
+		"password": "VMRJPJ"
 	},
 	"bme": {
 		"active": false,
@@ -84,20 +84,20 @@
 		"heightCorrection": 0
 	},
 	"notification": {
-		"ledTx": false,
-		"ledTxPin": 13,
-		"ledMessage": false,
-		"ledMessagePin": 2,
-		"ledFlashlight": false,
-		"ledFlashlightPin": 14,
-		"buzzerActive": false,
-		"buzzerPinTone": 33,
-		"buzzerPinVcc": 25,
-		"bootUpBeep": false,
-		"txBeep": false,
-		"messageRxBeep": false,
-		"stationBeep": false,
-		"lowBatteryBeep": false
+        "ledTx": true,
+        "ledTxPin": 25,
+        "ledMessage": true,
+        "ledMessagePin": 13,
+        "ledFlashlight": true,
+        "ledFlashlightPin": 14,
+        "buzzerActive": true,
+        "buzzerPinTone": 4,
+        "buzzerPinVcc": 2,
+        "bootUpBeep": true,
+        "txBeep": false,
+        "messageRxBeep": true,
+        "stationBeep": true,
+        "lowBatteryBeep": false
 	},
 	"lora": [
 		{

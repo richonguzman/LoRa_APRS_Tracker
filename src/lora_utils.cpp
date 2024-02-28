@@ -11,6 +11,8 @@
 extern logging::Logger  logger;
 extern Configuration    Config;
 extern LoraType         *currentLoRaType;
+extern int              loraIndex;
+extern int              loraIndexSize;
 
 
 #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
@@ -30,6 +32,50 @@ namespace LoRa_Utils {
         #ifdef HAS_SX126X
         transmissionFlag = true;
         #endif
+    }
+
+    void changeFreq() {
+        if(loraIndex >= (loraIndexSize - 1)) {
+            loraIndex = 0;
+        } else {
+            loraIndex++;
+        }
+        currentLoRaType = &Config.loraTypes[loraIndex];
+        #ifdef HAS_SX126X
+        float freq = (float)currentLoRaType->frequency/1000000;
+        radio.setFrequency(freq);
+        radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
+        radio.setBandwidth(currentLoRaType->signalBandwidth);
+        radio.setCodingRate(currentLoRaType->codingRate4);
+        #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
+        radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+        #endif
+        #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
+        radio.setOutputPower(currentLoRaType->power); 
+        #endif
+        #endif
+        #ifdef HAS_SX127X
+        LoRa.setFrequency(currentLoRaType->frequency);
+        LoRa.setSpreadingFactor(currentLoRaType->spreadingFactor);
+        LoRa.setSignalBandwidth(currentLoRaType->signalBandwidth);
+        LoRa.setCodingRate4(currentLoRaType->codingRate4);
+        LoRa.setTxPower(currentLoRaType->power);
+        #endif
+        String loraCountryFreq;
+        switch (loraIndex) {
+            case 0:
+                loraCountryFreq = "EU/WORLD";
+                break;
+            case 1:
+                loraCountryFreq = "POLAND";
+                break;
+            case 2:
+                loraCountryFreq = "UK";
+                break;
+        }
+        String currentLoRainfo = "LoRa " + loraCountryFreq + " / Freq: " + String(currentLoRaType->frequency)  + " / SF:" + String(currentLoRaType->spreadingFactor) + " / CR: " + String(currentLoRaType->codingRate4);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
+        show_display("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
     }
 
     void setup() {
@@ -69,10 +115,7 @@ namespace LoRa_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
         SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
         LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
-
-        //long freq = Config.loramodule.frequency;
         long freq = currentLoRaType->frequency;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Frequency: %d", freq);
         if (!LoRa.begin(freq)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
             show_display("ERROR", "Starting LoRa failed!");
@@ -80,16 +123,14 @@ namespace LoRa_Utils {
                 delay(1000);
             }
         }
-        //LoRa.setSpreadingFactor(Config.loramodule.spreadingFactor);
         LoRa.setSpreadingFactor(currentLoRaType->spreadingFactor);
-        //LoRa.setSignalBandwidth(Config.loramodule.signalBandwidth);
         LoRa.setSignalBandwidth(currentLoRaType->signalBandwidth);
-        //LoRa.setCodingRate4(Config.loramodule.codingRate4);
         LoRa.setCodingRate4(currentLoRaType->codingRate4);
         LoRa.enableCrc();
-        //LoRa.setTxPower(Config.loramodule.power);
         LoRa.setTxPower(currentLoRaType->power);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+        String currentLoRainfo = "LoRa Freq: " + String(currentLoRaType->frequency)  + " / SF:" + String(currentLoRaType->spreadingFactor) + " / CR: " + String(currentLoRaType->codingRate4);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
         #endif
     }
 

@@ -179,39 +179,47 @@ namespace MENU_Utils {
 
 //////////            
             case 20:    // 2.Configuration ---> Callsign
-                show_display("_CONFIG___", "  Power Off", "> Callsign Change","  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                show_display("_CONFIG___", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
-            case 21:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Callsign Change", "> Display", "  " + checkBTType() + " ("+ checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+            case 21:    // 2.Configuration ---> Change Freq
+                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " ("+ checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
-            case 22:    // 2.Configuration ---> Bluetooth
+            case 22:    // 2.Configuration ---> Display
+                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + checkBTType() + " ("+ checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                break;
+            case 23:    // 2.Configuration ---> Bluetooth
                 show_display("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
-            case 23:    // 2.Configuration ---> Status
+            case 24:    // 2.Configuration ---> Status
                 show_display("_CONFIG___", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
-            case 24:    // 2.Configuration ---> Notifications
+            case 25:    // 2.Configuration ---> Notifications
                 show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
                 break;
-            case 25:    // 2.Configuration ---> Reboot
-                show_display("_CONFIG___", "  Notifications", "> Reboot", "  Power Off", "  Callsign Change",lastLine);
+            case 26:    // 2.Configuration ---> Reboot
+                show_display("_CONFIG___", "  Notifications", "> Reboot", "  Power Off", "  Change Callsign",lastLine);
                 break;
-            case 26:    // 2.Configuration ---> Power Off
-                show_display("_CONFIG___", "  Reboot", "> Power Off", "  Callsign Change", "  Display",lastLine);
-                break;
-
-            case 200:   // 2.Configuration ---> Callsign
-                show_display("_CALLSIGN_", "","  Confirm Change?","","","<Back   Enter=Confirm");
+            case 27:    // 2.Configuration ---> Power Off
+                show_display("_CONFIG___", "  Reboot", "> Power Off", "  Change Callsign", "  Change Frequency",lastLine);
                 break;
 
-            case 210:   // 2.Configuration ---> Display ---> ECO Mode
+
+            case 200:   // 2.Configuration ---> Change Callsign
+                show_display("_CALLSIGN_", "","  Confirm Change?","","","<Back         Select>");
+                break;
+
+            case 210:   // 2.Configuration ---> Change Frequency
+                show_display("LORA__FREQ", "","  Confirm Change?","","","<Back         Select>");
+                break;
+
+            case 220:   // 2.Configuration ---> Display ---> ECO Mode
                 show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
                 break;
-            case 211:   // 2.Configuration ---> Display ---> Brightness
+            case 221:   // 2.Configuration ---> Display ---> Brightness
                 show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
                 break;
 
-            case 220:
+            case 230:
                 if (bluetoothActive) {
                     bluetoothActive = false;
                     show_display("BLUETOOTH", "", " Bluetooth --> OFF", 1000);
@@ -219,28 +227,28 @@ namespace MENU_Utils {
                     bluetoothActive = true;
                     show_display("BLUETOOTH", "", " Bluetooth --> ON", 1000);
                 }
-                menuDisplay = 22;
+                menuDisplay = 23;
                 break;
 
-            case 230:    // 2.Configuration ---> Status
+            case 240:    // 2.Configuration ---> Status
                 show_display("_STATUS___", "", "> Write","  Select","",lastLine);
                 break;
-            case 231:    // 2.Configuration ---> Status
+            case 241:    // 2.Configuration ---> Status
                 show_display("_STATUS___", "", "  Write","> Select","",lastLine);
                 break;
 
-            case 240:    // 2.Configuration ---> Notifications
+            case 250:    // 2.Configuration ---> Notifications
                 show_display("_NOTIFIC__", "> Turn Off Sound/Led","","","",lastLine);
                 break;
 
-            case 250:   // 2.Configuration ---> Reboot
+            case 260:   // 2.Configuration ---> Reboot
                 if (keyDetected) {
                     show_display("_REBOOT?__", "","Confirm Reboot...","","","<Back   Enter=Confirm");
                 } else {
                     show_display("_REBOOT?__", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
                 }
                 break;
-            case 260:   // 2.Configuration ---> Power Off
+            case 270:   // 2.Configuration ---> Power Off
                 if (keyDetected) {
                     show_display("POWER_OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
                 } else {
