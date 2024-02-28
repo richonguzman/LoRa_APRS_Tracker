@@ -28,6 +28,7 @@ ____________________________________________________
 - Sound Notifications with YL44 Buzzer Module.
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 - Winlink Mails through APRSLink.
+- Posibility to change between 3 mayor Frequencies used by LoRa APRS Worldwide.
 
 ____________________________________________________
 
@@ -51,10 +52,14 @@ ____________________________________________________
 
 ### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/08.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules.-Añadir-teclado,-BME280,-LED-y-alarma-sonora." target="_blank">here</a>
 
+### 9. Winlink (over APRSlink) --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/09.-Winlink-(connecting-and-use--conexion-y-uso)." target="_blank">here</a>
+
 
 ____________________________________________________
 ## Timeline (Versions):
 
+
+- 2024.02.29 Now you can change between (EU,PL,UK) LoRa APRS frequencies used worldwide.
 - 2024.02.24 New Partitions: more memory for new code/firmware (still > 500 Rx messages available)
 - 2024.02.21 Winlink Mails through APRSLink ( https://www.winlink.org/APRSLink/ )
 - 2024.01.26 Added Helmut OE5HWN MeshCom PCB support.
