@@ -71,11 +71,17 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
 
-    loramodule.frequency          = data["lora"]["frequency"].as<long>();
-    loramodule.spreadingFactor    = data["lora"]["spreadingFactor"].as<int>();
-    loramodule.signalBandwidth    = data["lora"]["signalBandwidth"].as<long>();
-    loramodule.codingRate4        = data["lora"]["codingRate4"].as<int>();
-    loramodule.power              = data["lora"]["power"].as<int>();
+    JsonArray LoraTypesArray = data["lora"];
+    for (int j = 0; j < LoraTypesArray.size(); j++) {
+        LoraType loraType;
+
+        loraType.frequency           = LoraTypesArray[j]["frequency"].as<long>();
+        loraType.spreadingFactor     = LoraTypesArray[j]["spreadingFactor"].as<int>();
+        loraType.signalBandwidth     = LoraTypesArray[j]["signalBandwidth"].as<long>();
+        loraType.codingRate4         = LoraTypesArray[j]["codingRate4"].as<int>();
+        loraType.power               = LoraTypesArray[j]["power"].as<int>();
+        loraTypes.push_back(loraType);
+    }
 
     ptt.active                    = data["pttTrigger"]["active"].as<bool>();
     ptt.io_pin                    = data["pttTrigger"]["io_pin"].as<int>();

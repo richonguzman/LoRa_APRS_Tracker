@@ -39,95 +39,98 @@ ________________________________________________________________________________
 #include "SPIFFS.h"
 #include "utils.h"
 
-Configuration                 Config;
-HardwareSerial                neo6m_gps(1);
-TinyGPSPlus                   gps;
+Configuration                       Config;
+HardwareSerial                      neo6m_gps(1);
+TinyGPSPlus                         gps;
 #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
-BluetoothSerial               SerialBT;
+BluetoothSerial                     SerialBT;
 #endif
 #ifdef HAS_BUTTON
-OneButton userButton          = OneButton(BUTTON_PIN, true, true);
+OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String    versionDate         = "2024.02.24";
+String      versionDate             = "2024.02.24";
 
-int       myBeaconsIndex      = 0;
-int       myBeaconsSize       = Config.beacons.size();
-Beacon    *currentBeacon      = &Config.beacons[myBeaconsIndex];
+int         myBeaconsIndex          = 0;
+int         myBeaconsSize           = Config.beacons.size();
+Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
+int         loraIndex               = 0;
+int         loraIndexSize           = Config.loraTypes.size();
+LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
-int       menuDisplay         = 100;
+int         menuDisplay             = 100;
 
-int       messagesIterator    = 0;
-std::vector<String>           loadedAPRSMessages;
-std::vector<String>           loadedWLNKMails;
-std::deque<String>            outputBufferPackets;
+int         messagesIterator        = 0;
+std::vector<String>                 loadedAPRSMessages;
+std::vector<String>                 loadedWLNKMails;
+std::deque<String>                  outputBufferPackets;
 
-bool      displayEcoMode      = Config.display.ecoMode;
-bool      displayState        = true;
-uint32_t  displayTime         = millis();
-uint32_t  refreshDisplayTime  = millis();
+bool        displayEcoMode          = Config.display.ecoMode;
+bool        displayState            = true;
+uint32_t    displayTime             = millis();
+uint32_t    refreshDisplayTime      = millis();
 
-bool      sendUpdate          = true;
-int       updateCounter       = Config.sendCommentAfterXBeacons;
-bool	  sendStandingUpdate  = false;
-bool      statusState         = true;
-uint32_t  statusTime          = millis();
-bool      bluetoothConnected  = false;
-bool      bluetoothActive     = Config.bluetoothActive;
-bool      sendBleToLoRa       = false;
-String    BLEToLoRaPacket     = "";
+bool        sendUpdate              = true;
+int         updateCounter           = Config.sendCommentAfterXBeacons;
+bool	    sendStandingUpdate      = false;
+bool        statusState             = true;
+uint32_t    statusTime              = millis();
+bool        bluetoothConnected      = false;
+bool        bluetoothActive         = Config.bluetoothActive;
+bool        sendBleToLoRa           = false;
+String      BLEToLoRaPacket         = "";
 
-bool      messageLed          = false;
-uint32_t  messageLedTime      = millis();
-int       lowBatteryPercent   = 21;
+bool        messageLed              = false;
+uint32_t    messageLedTime          = millis();
+int         lowBatteryPercent       = 21;
 
-uint32_t  lastTelemetryTx     = millis();
-uint32_t  telemetryTx         = millis();
+uint32_t    lastTelemetryTx         = millis();
+uint32_t    telemetryTx             = millis();
 
-uint32_t  lastTx              = 0.0;
-uint32_t  txInterval          = 60000L;
-uint32_t  lastTxTime          = millis();
-double    lastTxLat           = 0.0;
-double    lastTxLng           = 0.0;
-double    lastTxDistance      = 0.0;
-double    currentHeading      = 0;
-double    previousHeading     = 0;
+uint32_t    lastTx                  = 0.0;
+uint32_t    txInterval              = 60000L;
+uint32_t    lastTxTime              = millis();
+double      lastTxLat               = 0.0;
+double      lastTxLng               = 0.0;
+double      lastTxDistance          = 0.0;
+double      currentHeading          = 0;
+double      previousHeading         = 0;
 
-uint32_t  menuTime            = millis();
-bool      symbolAvailable     = true;
+uint32_t    menuTime                = millis();
+bool        symbolAvailable         = true;
 
-uint32_t  bmeLastReading      = -60000;
+uint32_t    bmeLastReading          = -60000;
 
-int       screenBrightness    = 1;
-bool      keyboardConnected   = false;
-bool      keyDetected         = false;
-uint32_t  keyboardTime        = millis();
-String    messageCallsign     = "";
-String    messageText         = "";
+int         screenBrightness        = 1;
+bool        keyboardConnected       = false;
+bool        keyDetected             = false;
+uint32_t    keyboardTime            = millis();
+String      messageCallsign         = "";
+String      messageText             = "";
 
-bool      flashlight          = false;
-bool      digirepeaterActive  = false;
-bool      sosActive           = false;
-bool      disableGPS;
+bool        flashlight              = false;
+bool        digirepeaterActive      = false;
+bool        sosActive               = false;
+bool        disableGPS;
 
-bool      miceActive          = false;
+bool        miceActive              = false;
 
-bool      smartBeaconValue    = true;
+bool        smartBeaconValue        = true;
 
-int       ackNumberSend;
-uint32_t  ackTime             = millis();
+int         ackNumberSend;
+uint32_t    ackTime                 = millis();
 
-int       winlinkStatus         = 0;
-String    winlinkMailNumber     = "_?";
-String    winlinkAddressee      = "";
-String    winlinkSubject        = "";
-String    winlinkBody           = "";
-String    winlinkAlias          = "";
-String    winlinkAliasComplete  = "";
+int         winlinkStatus           = 0;
+String      winlinkMailNumber       = "_?";
+String      winlinkAddressee        = "";
+String      winlinkSubject          = "";
+String      winlinkBody             = "";
+String      winlinkAlias            = "";
+String      winlinkAliasComplete    = "";
 
-APRSPacket                    lastReceivedPacket;
+APRSPacket                          lastReceivedPacket;
 
-logging::Logger               logger;
+logging::Logger                     logger;
 
 void setup() {
     Serial.begin(115200);
@@ -165,6 +168,7 @@ void setup() {
 
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
+    currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
     BME_Utils::setup();
     STATION_Utils::loadCallsignIndex();

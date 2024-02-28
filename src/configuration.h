@@ -61,7 +61,7 @@ public:
     bool    lowBatteryBeep;
 };
 
-class LoraModule {
+class LoraType {
 public:
     long  frequency;
     int   spreadingFactor;
@@ -82,13 +82,13 @@ public:
 class Configuration {
 public:
 
-    std::vector<Beacon> beacons;  
-    Display             display;
-    Winlink             winlink;
-    BME                 bme;
-    Notification        notification;
-    LoraModule          loramodule;
-    Ptt                 ptt;
+    std::vector<Beacon>     beacons;  
+    Display                 display;
+    Winlink                 winlink;
+    BME                     bme;
+    Notification            notification;
+    std::vector<LoraType>   loraTypes;
+    Ptt                     ptt;
     
     bool    simplifiedTrackerMode;
     int     sendCommentAfterXBeacons;

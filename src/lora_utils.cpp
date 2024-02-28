@@ -8,8 +8,10 @@
 #include "msg_utils.h"
 #include "display.h"
 
-extern logging::Logger logger;
-extern Configuration Config;
+extern logging::Logger  logger;
+extern Configuration    Config;
+extern LoraType         *currentLoRaType;
+
 
 #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
 SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -68,7 +70,8 @@ namespace LoRa_Utils {
         SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
         LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
 
-        long freq = Config.loramodule.frequency;
+        //long freq = Config.loramodule.frequency;
+        long freq = currentLoRaType->frequency;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Frequency: %d", freq);
         if (!LoRa.begin(freq)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
@@ -77,11 +80,15 @@ namespace LoRa_Utils {
                 delay(1000);
             }
         }
-        LoRa.setSpreadingFactor(Config.loramodule.spreadingFactor);
-        LoRa.setSignalBandwidth(Config.loramodule.signalBandwidth);
-        LoRa.setCodingRate4(Config.loramodule.codingRate4);
+        //LoRa.setSpreadingFactor(Config.loramodule.spreadingFactor);
+        LoRa.setSpreadingFactor(currentLoRaType->spreadingFactor);
+        //LoRa.setSignalBandwidth(Config.loramodule.signalBandwidth);
+        LoRa.setSignalBandwidth(currentLoRaType->signalBandwidth);
+        //LoRa.setCodingRate4(Config.loramodule.codingRate4);
+        LoRa.setCodingRate4(currentLoRaType->codingRate4);
         LoRa.enableCrc();
-        LoRa.setTxPower(Config.loramodule.power);
+        //LoRa.setTxPower(Config.loramodule.power);
+        LoRa.setTxPower(currentLoRaType->power);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
         #endif
     }
