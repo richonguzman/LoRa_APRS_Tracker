@@ -23,6 +23,7 @@ extern int              menuDisplay;
 extern uint32_t         menuTime;
 extern int              myBeaconsIndex;
 extern int              myBeaconsSize;
+extern int              loraIndex;
 extern bool             keyboardConnected;
 extern bool             keyDetected;
 extern uint32_t         keyboardTime;
@@ -303,7 +304,7 @@ namespace KEYBOARD_Utils {
             statusState  = true;
             statusTime = millis();
             show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, 2000);
-            STATION_Utils::saveCallsingIndex(myBeaconsIndex);
+            STATION_Utils::saveIndex(0, myBeaconsIndex);
             if (menuDisplay == 200) {
                 menuDisplay = 20;
             }
@@ -345,6 +346,8 @@ namespace KEYBOARD_Utils {
 
         else if (menuDisplay == 210) {
             LoRa_Utils::changeFreq();
+            STATION_Utils::saveIndex(1, loraIndex);
+            menuDisplay = 21;
         } else if (menuDisplay == 220) {
             if (!displayEcoMode) {
                 displayEcoMode = true;

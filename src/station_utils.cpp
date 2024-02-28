@@ -16,6 +16,7 @@ extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
 extern int                  myBeaconsIndex;
+extern int                  loraIndex;
 
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
@@ -444,29 +445,50 @@ namespace STATION_Utils {
         }
     }
 
-    void saveCallsingIndex(int index) {
-        File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt", "w");
-        if(!fileCallsignIndex) {
+    void saveIndex(int type, int index) {
+        String filePath;
+        if (type == 0) {
+            filePath = "/callsignIndex.txt";
+        } else {
+            filePath = "/freqIndex.txt";
+        }
+        File fileIndex = SPIFFS.open(filePath, "w");
+        if(!fileIndex) {
             return;
-        } 
+        }
         String dataToSave = String(index);
-        if (fileCallsignIndex.println(dataToSave)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Callsign Index saved to SPIFFS");
+        if (fileIndex.println(dataToSave)) {
+            if (type == 0) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Callsign Index saved to SPIFFS");
+            } else {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Frequency Index saved to SPIFFS");
+            }
         } 
-        fileCallsignIndex.close();
+        fileIndex.close();
     }
 
-    void loadCallsignIndex() {
-        File fileCallsignIndex = SPIFFS.open("/callsignIndex.txt");
-        if(!fileCallsignIndex) {
+    void loadIndex(int type) {
+        String filePath;
+        if (type == 0) {
+            filePath = "/callsignIndex.txt";
+        } else {
+            filePath = "/freqIndex.txt";
+        }
+        File fileIndex = SPIFFS.open(filePath);
+        if(!fileIndex) {
             return;
         } else {
-            while (fileCallsignIndex.available()) {
-                String firstLine = fileCallsignIndex.readStringUntil('\n');
-                myBeaconsIndex = firstLine.toInt();
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine);
+            while (fileIndex.available()) {
+                String firstLine = fileIndex.readStringUntil('\n');
+                if (type == 0) {
+                    myBeaconsIndex = firstLine.toInt();
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine);
+                } else {
+                    loraIndex = firstLine.toInt();
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa Freq Index: %s", firstLine);
+                }
             }
-            fileCallsignIndex.close();
+            fileIndex.close();
         }
     }
 

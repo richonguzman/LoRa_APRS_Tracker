@@ -171,7 +171,9 @@ void setup() {
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
     BME_Utils::setup();
-    STATION_Utils::loadCallsignIndex();
+    STATION_Utils::loadIndex(0);
+    STATION_Utils::loadIndex(1);
+    
     ackNumberSend = random(1,999);
 
     WiFi.mode(WIFI_OFF);
