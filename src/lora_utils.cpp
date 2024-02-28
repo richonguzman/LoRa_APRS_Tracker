@@ -82,7 +82,7 @@ namespace LoRa_Utils {
         #ifdef HAS_SX126X
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
         SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-        float freq = (float)Config.loramodule.frequency/1000000;
+        float freq = (float)currentLoRaType->frequency/1000000;
         int state = radio.begin(freq);
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX126X");
@@ -91,18 +91,18 @@ namespace LoRa_Utils {
             while (true);
         }
         radio.setDio1Action(setFlag);
-        radio.setSpreadingFactor(Config.loramodule.spreadingFactor);
-        radio.setBandwidth(Config.loramodule.signalBandwidth);
-        radio.setCodingRate(Config.loramodule.codingRate4);
+        radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
+        radio.setBandwidth(currentLoRaType->signalBandwidth);
+        radio.setCodingRate(currentLoRaType->codingRate4);
         radio.setCRC(true);
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
         radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
         #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
-        state = radio.setOutputPower(Config.loramodule.power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+        state = radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
         #endif
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
-        state = radio.setOutputPower(Config.loramodule.power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp) 
+        state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp) 
         #endif
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
