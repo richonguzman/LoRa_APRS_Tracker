@@ -57,7 +57,7 @@
 	],
 	"display": {
 		"showSymbol": true,
-		"ecoMode": true,
+		"ecoMode": false,
 		"timeout": 4,
 		"turn180" : false
     },

@@ -19,6 +19,7 @@ extern TinyGPSPlus          gps;
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
+extern int                  loraIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern int                  lowBatteryPercent;
@@ -41,6 +42,8 @@ extern String               winlinkSubject;
 extern String               winlinkBody;
 extern String               winlinkAlias;
 extern String               winlinkAliasComplete;
+
+String freqChangeWarning;
 
 namespace MENU_Utils {
 
@@ -209,7 +212,14 @@ namespace MENU_Utils {
                 break;
 
             case 210:   // 2.Configuration ---> Change Frequency
-                show_display("LORA__FREQ", "","  Confirm Change?","","","<Back         Select>");
+                if (loraIndex == 0) {
+                    freqChangeWarning = "      EU --> PL";
+                } else if (loraIndex == 1) {
+                    freqChangeWarning = "      PL --> UK";
+                } else if (loraIndex == 2) {
+                    freqChangeWarning = "      UK --> EU";
+                }
+                show_display("LORA__FREQ", "","   Confirm Change?",freqChangeWarning,"","<Back         Select>");
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
