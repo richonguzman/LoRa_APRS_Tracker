@@ -54,10 +54,10 @@ ____________________________________________________
 
 ### 9. Winlink (over APRSlink) --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/09.-Winlink-(connecting-and-use--conexion-y-uso)." target="_blank">here</a>
 
+### 10. Frequencies for different Countries  --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/10.-Frequencies-for-different-Countries.--Frecuencias-para-distintos-paises." target="_blank">here</a>
 
 ____________________________________________________
 ## Timeline (Versions):
-
 
 - 2024.02.29 Now you can change between (EU,PL,UK) LoRa APRS frequencies used worldwide.
 - 2024.02.24 New Partitions: more memory for new code/firmware (still > 500 Rx messages available)
