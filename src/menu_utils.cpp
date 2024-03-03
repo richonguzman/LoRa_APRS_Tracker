@@ -519,8 +519,16 @@ namespace MENU_Utils {
                         thirdRowMainMenu = String(gps.location.lat(), 4) + " " + String(gps.location.lng(), 4);
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        thirdRowMainMenu += " LoRa[";
+                        if (loraIndex == 0) {
+                            thirdRowMainMenu += "EU]";
+                        } else if (loraIndex == 1) {
+                            thirdRowMainMenu += "PL]";
+                        } else if (loraIndex == 2) {
+                            thirdRowMainMenu += "UK]";
+                        }
                     }
-
+                    
                     for(int i = thirdRowMainMenu.length(); i < 18; i++) {
                         thirdRowMainMenu += " ";
                     }

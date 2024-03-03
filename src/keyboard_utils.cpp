@@ -392,7 +392,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 52) {
             menuDisplay = 50111;
         } else if (menuDisplay == 53) {
-            if (gps.location.isUpdated()) {
+            if (gps.location.lat() != 0.0) {
                 String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
                 packet += "winlink";
                 show_display("<<< TX >>>", "", packet,100);

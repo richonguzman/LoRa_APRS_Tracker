@@ -49,7 +49,7 @@ BluetoothSerial                     SerialBT;
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.02.29";
+String      versionDate             = "2024.03.03";
 
 int         myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -156,8 +156,16 @@ void setup() {
     if (Config.notification.ledFlashlight) {
         pinMode(Config.notification.ledFlashlightPin, OUTPUT);
     }
+    String workingFreq = "    LoRa Freq [";
+    if (loraIndex == 0) {
+        workingFreq += "EU]";
+    } else if (loraIndex == 1) {
+        workingFreq += "PL]";
+    } else if (loraIndex == 2) {
+        workingFreq += "UK]";
+    }
 
-    show_display(" LoRa APRS", "", "      (TRACKER)", "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
+    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
