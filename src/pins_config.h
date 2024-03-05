@@ -6,7 +6,7 @@
 #undef OLED_RST
 
 
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(OE5HWN_MeshCom)
+#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(OE5HWN_MeshCom) || defined(HELTEC_V3_GPS)
 #define HAS_BUTTON
 #endif
 
@@ -110,8 +110,8 @@
 #define OLED_SDA            17
 #define OLED_SCL            18
 #define OLED_RST            21
-#define GPS_RX              19
-#define GPS_TX              20
+#define GPS_RX              47
+#define GPS_TX              48
 #define BUTTON_PIN          0
 #define RADIO_SCLK_PIN      9
 #define RADIO_MISO_PIN      11
