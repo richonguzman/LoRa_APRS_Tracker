@@ -156,6 +156,8 @@ void setup() {
     if (Config.notification.ledFlashlight) {
         pinMode(Config.notification.ledFlashlightPin, OUTPUT);
     }
+    STATION_Utils::loadIndex(0);
+    STATION_Utils::loadIndex(1);
     String workingFreq = "    LoRa Freq [";
     if (loraIndex == 0) {
         workingFreq += "EU]";
@@ -179,8 +181,6 @@ void setup() {
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
     BME_Utils::setup();
-    STATION_Utils::loadIndex(0);
-    STATION_Utils::loadIndex(1);
     
     ackNumberSend = random(1,999);
 

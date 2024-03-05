@@ -37,6 +37,8 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
         std::string receivedData = pCharacteristic->getValue();
         String receivedString = "";
         for (int i=0; i<receivedData.length();i++) {
+            //Serial.print(receivedData[i],HEX); // delete
+            //Serial.print(" ");
             receivedString += receivedData[i];
         }
         BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
