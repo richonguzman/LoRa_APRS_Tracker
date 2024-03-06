@@ -10,7 +10,7 @@
 
 extern Configuration    Config;
 extern logging::Logger  logger;
-extern uint32_t         bmeLastReading; 
+extern uint32_t         bmeLastReading;
 
 float newHum, newTemp, newPress, newGas;
 
