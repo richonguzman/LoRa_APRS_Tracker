@@ -262,7 +262,7 @@ namespace MSG_Utils {
                     if (Config.bluetoothType==0) {
                         BLE_Utils::sendToPhone(packet.text.substring(3));
                     } else {
-                        #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+                        #ifdef HAS_BT_CLASSIC
                         BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
                         #endif
                     }

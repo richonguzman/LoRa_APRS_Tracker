@@ -39,7 +39,7 @@ namespace POWER_Utils {
     String batteryChargeDischargeCurrent = "";
 
     double getBatteryVoltage() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         int adc_value = analogRead(35);;
         double voltage = (adc_value * 3.3 ) / 4095.0;  // the battery voltage is divided by 2 with two 100kOhm resistors and connected to ADC1 Channel 7 -> pin 35
         return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
@@ -80,7 +80,7 @@ namespace POWER_Utils {
         }
 
     bool isCharging() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         return 0;
         #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -97,7 +97,7 @@ namespace POWER_Utils {
     }
 
     double getBatteryChargeDischargeCurrent() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         return 0;
         #endif
         #ifdef HAS_AXP192
@@ -112,7 +112,7 @@ namespace POWER_Utils {
     }
 
     bool isBatteryConnected() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         if(getBatteryVoltage() > 1.0) {
             return true;
         } else {
@@ -211,7 +211,7 @@ namespace POWER_Utils {
     }
 
     bool begin(TwoWire &port) {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         return true; // no powerManagment chip for this boards (only a few measure battery voltage).
         #endif
         #ifdef HAS_AXP192
@@ -333,7 +333,7 @@ namespace POWER_Utils {
     }
 
     void lowerCpuFrequency() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
         if (setCpuFrequencyMhz(80)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
         } else {

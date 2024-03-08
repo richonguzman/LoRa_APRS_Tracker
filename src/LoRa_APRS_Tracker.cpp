@@ -42,14 +42,14 @@ ________________________________________________________________________________
 Configuration                       Config;
 HardwareSerial                      neo6m_gps(1);
 TinyGPSPlus                         gps;
-#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+#ifdef HAS_BT_CLASSIC
 BluetoothSerial                     SerialBT;
 #endif
 #ifdef HAS_BUTTON
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.03.05";
+String      versionDate             = "2024.03.08";
 
 int         myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -189,7 +189,7 @@ void setup() {
     if (Config.bluetoothType==0) {
         BLE_Utils::setup();
     } else {
-        #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+        #ifdef HAS_BT_CLASSIC
         BLUETOOTH_Utils::setup();
         #endif
     }
@@ -248,7 +248,7 @@ void loop() {
     if (Config.bluetoothType==0) {
         BLE_Utils::sendToLoRa();
     } else {
-        #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS)
+        #ifdef HAS_BT_CLASSIC
         BLUETOOTH_Utils::sendToLoRa();
         #endif
     }

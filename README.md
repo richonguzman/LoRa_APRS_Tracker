@@ -59,6 +59,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.03.08 ESP32_C3 DIY LoRa + GPS board added. Thanks Julian OE1JLN.
 - 2024.02.29 Now you can change between (EU,PL,UK) LoRa APRS frequencies used worldwide.
 - 2024.02.24 New Partitions: more memory for new code/firmware (still > 500 Rx messages available)
 - 2024.02.21 Winlink Mails through APRSLink ( https://www.winlink.org/APRSLink/ )
