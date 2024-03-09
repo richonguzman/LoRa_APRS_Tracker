@@ -144,12 +144,8 @@ namespace LoRa_Utils {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
         }
-        if (Config.notification.ledTx) {
-            digitalWrite(Config.notification.ledTxPin, HIGH);
-        }
-        if (Config.notification.buzzerActive && Config.notification.txBeep) {
-            NOTIFICATION_Utils::beaconTxBeep();
-        }
+        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
+        if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
         #ifdef HAS_SX126X
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         if (state == RADIOLIB_ERR_NONE) {
@@ -171,9 +167,7 @@ namespace LoRa_Utils {
         LoRa.write((const uint8_t *)newPacket.c_str(), newPacket.length());
         LoRa.endPacket();
         #endif
-        if (Config.notification.ledTx) {
-            digitalWrite(Config.notification.ledTxPin, LOW);
-        }
+        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
         if (Config.ptt.active) {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);

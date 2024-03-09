@@ -147,15 +147,10 @@ void setup() {
         pinMode(Config.notification.buzzerPinVcc, OUTPUT);
         if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
     }
-    if (Config.notification.ledTx) {
-        pinMode(Config.notification.ledTxPin, OUTPUT);
-    }
-    if (Config.notification.ledMessage) {
-        pinMode(Config.notification.ledMessagePin, OUTPUT);
-    }
-    if (Config.notification.ledFlashlight) {
-        pinMode(Config.notification.ledFlashlightPin, OUTPUT);
-    }
+    if (Config.notification.ledTx) pinMode(Config.notification.ledTxPin, OUTPUT);
+    if (Config.notification.ledMessage) pinMode(Config.notification.ledMessagePin, OUTPUT);
+    if (Config.notification.ledFlashlight) pinMode(Config.notification.ledFlashlightPin, OUTPUT);
+    
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
     String workingFreq = "    LoRa Freq [";
@@ -217,9 +212,7 @@ void loop() {
     }
     STATION_Utils::checkSmartBeaconValue();
     
-    if (ackNumberSend >= 999) {
-        ackNumberSend = 1;
-    }
+    if (ackNumberSend >= 999) ackNumberSend = 1;
 
     POWER_Utils::batteryManager();
 
@@ -231,9 +224,7 @@ void loop() {
 
     Utils::checkDisplayEcoMode();
 
-    if (keyboardConnected) {
-        KEYBOARD_Utils::read();
-    }
+    if (keyboardConnected) KEYBOARD_Utils::read();
 
     GPS_Utils::getData();
     bool gps_time_update = gps.time.isUpdated();
@@ -268,12 +259,8 @@ void loop() {
         STATION_Utils::checkStandingUpdateTime();
     }
     STATION_Utils::checkSmartBeaconState();
-    if (sendUpdate && gps_loc_update) {
-        STATION_Utils::sendBeacon("GPS");
-    }
-    if (gps_time_update) {
-        STATION_Utils::checkSmartBeaconInterval(currentSpeed);
-    }
+    if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon("GPS");
+    if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   
     if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
         GPS_Utils::checkStartUpFrames();

@@ -52,18 +52,14 @@ namespace GPS_Utils {
     }
 
     void getData() {
-        if (disableGPS) {
-            return;
-        }
+        if (disableGPS) return;
         while (neo6m_gps.available() > 0) {
             gps.encode(neo6m_gps.read());
         }
     }
 
     void setDateFromData() {
-        if (gps.time.isValid()) {
-            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
-        }
+        if (gps.time.isValid()) setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
     }
 
     void calculateDistanceTraveled() {
@@ -94,9 +90,7 @@ namespace GPS_Utils {
     }
 
     void checkStartUpFrames() {
-        if (disableGPS) {
-            return;
-        }
+        if (disableGPS) return;
         if ((millis() > 8000 && gps.charsProcessed() < 10)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                         "No GPS frames detected! Try to reset the GPS Chip with this "
