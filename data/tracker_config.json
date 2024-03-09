@@ -97,7 +97,8 @@
 		"txBeep": false,
 		"messageRxBeep": false,
 		"stationBeep": false,
-		"lowBatteryBeep": false
+		"lowBatteryBeep": false,
+		"shutDownBeep": false
 	},
 	"lora": [
 		{

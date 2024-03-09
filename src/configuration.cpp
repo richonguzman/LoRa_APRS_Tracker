@@ -70,6 +70,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     notification.messageRxBeep    = data["notification"]["messageRxBeep"].as<bool>();
     notification.stationBeep      = data["notification"]["stationBeep"].as<bool>();
     notification.lowBatteryBeep   = data["notification"]["lowBatteryBeep"].as<bool>();
+    notification.shutDownBeep     = data["notification"]["shutDownBeep"].as<bool>();
 
     JsonArray LoraTypesArray = data["lora"];
     for (int j = 0; j < LoraTypesArray.size(); j++) {

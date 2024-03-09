@@ -59,6 +59,7 @@ public:
     bool    messageRxBeep;
     bool    stationBeep;
     bool    lowBatteryBeep;
+    bool    shutDownBeep;
 };
 
 class LoraType {
