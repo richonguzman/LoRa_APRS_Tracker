@@ -145,7 +145,7 @@ void setup() {
     if (Config.notification.buzzerActive) {
         pinMode(Config.notification.buzzerPinTone, OUTPUT);
         pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-        NOTIFICATION_Utils::start();
+        if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
     }
     if (Config.notification.ledTx) {
         pinMode(Config.notification.ledTxPin, OUTPUT);
