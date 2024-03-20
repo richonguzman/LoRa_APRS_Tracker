@@ -45,7 +45,8 @@ namespace LoRa_Utils {
         float freq = (float)currentLoRaType->frequency/1000000;
         radio.setFrequency(freq);
         radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
-        radio.setBandwidth(currentLoRaType->signalBandwidth);
+        float signalBandwidth = currentLoRaType->signalBandwidth/1000;
+        radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS)
         radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
@@ -92,7 +93,8 @@ namespace LoRa_Utils {
         }
         radio.setDio1Action(setFlag);
         radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
-        radio.setBandwidth(currentLoRaType->signalBandwidth);
+        float signalBandwidth = currentLoRaType->signalBandwidth/1000;
+        radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         radio.setCRC(true);
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
@@ -197,7 +199,9 @@ namespace LoRa_Utils {
             radio.startReceive();
             int state = radio.readData(packet);
             if (state == RADIOLIB_ERR_NONE) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.c_str());
+                if(!packet.isEmpty()) {
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.c_str());
+                }
                 receivedLoraPacket.text       = packet;
                 receivedLoraPacket.rssi       = radio.getRSSI();
                 receivedLoraPacket.snr        = radio.getSNR();
