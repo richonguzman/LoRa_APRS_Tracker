@@ -155,7 +155,7 @@ void setup() {
     STATION_Utils::loadIndex(1);
     String workingFreq = "    LoRa Freq [";
     if (loraIndex == 0) {
-        workingFreq += "EU]";
+        workingFreq += "Eu]";
     } else if (loraIndex == 1) {
         workingFreq += "PL]";
     } else if (loraIndex == 2) {
