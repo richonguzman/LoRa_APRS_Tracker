@@ -9,7 +9,7 @@ namespace NOTIFICATION_Utils {
     void beaconTxBeep();
     void messageBeep();
     void stationHeardBeep();
-    //void shutDownBeep();
+    void shutDownBeep();
     void lowBatteryBeep();
     void start();
 

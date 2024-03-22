@@ -1,5 +1,6 @@
 #include "keyboard_utils.h"
 #include "button_utils.h"
+#include "power_utils.h"
 #include "display.h"
 
 extern int              menuDisplay;
@@ -27,6 +28,10 @@ namespace BUTTON_Utils {
             menuDisplay = 0;
             displayTime = millis();
         }
+    }
+
+    void multiPress() {
+        POWER_Utils::shutdown();
     }
 
 }

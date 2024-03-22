@@ -8,8 +8,8 @@ int pauseDuration = 20;
 int startUpSound[]          = {440, 880, 440, 1760};
 int startUpSoundDuration[]  = {100, 100, 100, 200};
 
-//int shutDownSound[]         = {1720, 880, 400};
-//int shutDownSoundDuration[] = {60, 60, 200};
+int shutDownSound[]         = {1720, 880, 400};
+int shutDownSoundDuration[] = {60, 60, 200};
 
 extern Configuration    Config;
 extern bool             digirepeaterActive;
@@ -48,13 +48,13 @@ namespace NOTIFICATION_Utils {
         digitalWrite(Config.notification.buzzerPinVcc, LOW);
     }
 
-    /*void shutDownBeep() {
+    void shutDownBeep() {
         digitalWrite(Config.notification.buzzerPinVcc, HIGH);
         for (int i = 0; i < sizeof(shutDownSound) / sizeof(shutDownSound[0]); i++) {
             playTone(shutDownSound[i], shutDownSoundDuration[i]);
         }
         digitalWrite(Config.notification.buzzerPinVcc, LOW);
-    }*/
+    }
 
     void lowBatteryBeep() {
         digitalWrite(Config.notification.buzzerPinVcc, HIGH);

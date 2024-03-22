@@ -1,5 +1,6 @@
 #include "configuration.h"
 #include "power_utils.h"
+#include "notification_utils.h"
 #include "pins_config.h"
 #include "logger.h"
 
@@ -344,6 +345,7 @@ namespace POWER_Utils {
 
     void shutdown() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+        if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
         PMU.shutdown();
         #endif
     }

@@ -194,6 +194,7 @@ void setup() {
         userButton.attachClick(BUTTON_Utils::singlePress);
         userButton.attachLongPressStart(BUTTON_Utils::longPress);
         userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+        userButton.attachMultiClick(BUTTON_Utils::multiPress);
         #endif
         KEYBOARD_Utils::setup();
     }
