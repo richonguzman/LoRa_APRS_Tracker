@@ -6,31 +6,10 @@
 #undef OLED_RST
 
 
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(OE5HWN_MeshCom) || defined(HELTEC_V3_GPS)
-#define HAS_BUTTON
-#endif
-
-#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
-#define HAS_SX126X
-#endif
-
-#if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_2) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(ESP32_C3_DIY_LoRa_GPS)
-#define HAS_SX127X
-#endif
-
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-#define HAS_AXP192
-#endif
-
-#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
-#define HAS_AXP2101
-#endif
-
 #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS) && !defined(ESP32_C3_DIY_LoRa_GPS)
 #define OLED_SDA            21
 #define OLED_SCL            22
 #define OLED_RST            16
-#define HAS_BT_CLASSIC
 #endif
 
 #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262)
@@ -90,7 +69,7 @@
 #define BUTTON_PIN          -1
 #endif
 
-#if defined(TTGO_T_Beam_S3_SUPREME_V3)
+#ifdef TTGO_T_Beam_S3_SUPREME_V3
 #define OLED_SDA            17
 #define OLED_SCL            18
 #define OLED_RST            16
@@ -107,7 +86,7 @@
 #define RADIO_BUSY_PIN      4
 #endif
 
-#if defined(HELTEC_V3_GPS)
+#ifdef HELTEC_V3_GPS
 #define OLED_SDA            17
 #define OLED_SCL            18
 #define OLED_RST            21
@@ -124,7 +103,7 @@
 #define BATTERY_PIN         1
 #endif
 
-#if defined(OE5HWN_MeshCom)
+#ifdef OE5HWN_MeshCom
 #define GPS_RX              17
 #define GPS_TX              16
 #define BUTTON_PIN          12
@@ -139,7 +118,7 @@
 #define RADIO_TXEN          13
 #endif
 
-#if defined(ESP32_C3_DIY_LoRa_GPS)
+#ifdef ESP32_C3_DIY_LoRa_GPS
 #define OLED_SDA            8
 #define OLED_SCL            9
 #define OLED_RST            10
