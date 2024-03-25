@@ -6,10 +6,10 @@ namespace AX25_Utils {
 
     String decodeFrame(String frame) {
         String packet = "";
-        for (int a=0; a<6; a++) {
+        for (int a = 0; a < 6; a ++) {
             uint16_t shiftedValue = frame[a] >> 1;
             if (shiftedValue == 32) {
-                a=10;
+                a = 10;
             } else {
                 Serial.print(char(shiftedValue));
                 packet += char(shiftedValue);
