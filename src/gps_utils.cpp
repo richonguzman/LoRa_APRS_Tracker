@@ -17,7 +17,7 @@ extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 extern bool             disableGPS;
 extern bool             sendUpdate;
-extern bool		          sendStandingUpdate;
+extern bool		        sendStandingUpdate;
 
 extern double           currentHeading;
 extern double           previousHeading;

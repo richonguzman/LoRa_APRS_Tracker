@@ -110,8 +110,8 @@ namespace MENU_Utils {
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
-                    String msgSender    = loadedAPRSMessages[messagesIterator].substring(0,loadedAPRSMessages[messagesIterator].indexOf(","));
-                    String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",")+1);
+                    String msgSender    = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
+                    String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",") + 1);
                     show_display("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
                 }
                 break;
@@ -276,27 +276,27 @@ namespace MENU_Utils {
 
             case 300:   //3.Stations ---> Packet Decoder
                 firstLineDecoder = lastReceivedPacket.sender;
-                for(int i=firstLineDecoder.length();i<9;i++) {
+                for(int i = firstLineDecoder.length(); i < 9; i++) {
                     firstLineDecoder += ' ';
                 }
                 firstLineDecoder += lastReceivedPacket.symbol;
 
                 if (lastReceivedPacket.type==0 || lastReceivedPacket.type==4) {      // gps and Mic-E gps
                     courseSpeedAltitude = String(lastReceivedPacket.altitude);
-                    for(int j=courseSpeedAltitude.length();j<4;j++) {
+                    for(int j = courseSpeedAltitude.length(); j < 4; j++) {
                         courseSpeedAltitude = '0' + courseSpeedAltitude;
                     }
                     courseSpeedAltitude = "A=" + courseSpeedAltitude + "m ";
                     speedPacketDec = String(lastReceivedPacket.speed);
-                    for (int k=speedPacketDec.length();k<3;k++) {
+                    for (int k = speedPacketDec.length(); k < 3; k++) {
                         speedPacketDec = ' ' + speedPacketDec;
                     }
                     courseSpeedAltitude += speedPacketDec + "km/h ";
-                    for(int l=courseSpeedAltitude.length();l<17;l++) {
+                    for(int l = courseSpeedAltitude.length(); l < 17; l++) {
                         courseSpeedAltitude += ' ';
                     }
                     coursePacketDec = String(lastReceivedPacket.course);
-                    for(int m=coursePacketDec.length();m<3;m++) {
+                    for(int m = coursePacketDec.length(); m < 3; m++) {
                         coursePacketDec = ' ' + coursePacketDec;
                     }
                     courseSpeedAltitude += coursePacketDec;
@@ -495,7 +495,7 @@ namespace MENU_Utils {
 
                 firstRowMainMenu = currentBeacon->callsign;
                 if (Config.display.showSymbol) {
-                    for (int j=firstRowMainMenu.length();j<9;j++) {
+                    for (int j = firstRowMainMenu.length(); j < 9; j++) {
                         firstRowMainMenu += " ";
                     }
                     if (!symbolAvailable) {
@@ -549,12 +549,12 @@ namespace MENU_Utils {
 
                     String fourthRowAlt = String(gps.altitude.meters(),0);
                     fourthRowAlt.trim();
-                    for (int a=fourthRowAlt.length();a<4;a++) {
+                    for (int a = fourthRowAlt.length(); a < 4; a++) {
                         fourthRowAlt = "0" + fourthRowAlt;
                     }
                     String fourthRowSpeed = String(gps.speed.kmph(),0);
                     fourthRowSpeed.trim();
-                    for (int b=fourthRowSpeed.length(); b<3;b++) {
+                    for (int b = fourthRowSpeed.length(); b < 3; b++) {
                         fourthRowSpeed = " " + fourthRowSpeed;
                     }
                     String fourthRowCourse = String(gps.course.deg(),0);
@@ -562,7 +562,7 @@ namespace MENU_Utils {
                         fourthRowCourse = "---";
                     } else {
                         fourthRowCourse.trim();
-                        for(int c=fourthRowCourse.length();c<3;c++) {
+                        for(int c = fourthRowCourse.length(); c < 3; c++) {
                             fourthRowCourse = "0" + fourthRowCourse;
                         }
                     }

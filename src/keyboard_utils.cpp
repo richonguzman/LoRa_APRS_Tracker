@@ -531,7 +531,7 @@ namespace KEYBOARD_Utils {
                     menuDisplay = 111;
                 }
             } else if (key == 8) {                          // Delete Last Key
-                messageCallsign = messageCallsign.substring(0, messageCallsign.length()-1);
+                messageCallsign = messageCallsign.substring(0, messageCallsign.length() - 1);
             }
             messageCallsign.toUpperCase();
         } else if ((menuDisplay == 111 || menuDisplay == 1300 || menuDisplay == 1310) && key!= 180) {     // Writting Text of Message
@@ -543,7 +543,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && messageText.length() > 0) {                         // Return Pressed: SENDING MESSAGE
                 messageText.trim();
                 if (messageText.length() > 67) {
-                    messageText = messageText.substring(0,67);
+                    messageText = messageText.substring(0, 67);
                 }
                 if (menuDisplay == 111) {
                     MSG_Utils::sendMessage(0, messageCallsign, messageText);
@@ -560,7 +560,7 @@ namespace KEYBOARD_Utils {
                 messageCallsign = "";
                 messageText = "";
             } else if (key == 8) {                          // Delete Last Key
-                messageText = messageText.substring(0, messageText.length()-1);
+                messageText = messageText.substring(0, messageText.length() - 1);
             }
         } else if (menuDisplay == 260 && key == 13) {
             show_display("", "", "    REBOOTING ...", 2000);
@@ -576,15 +576,15 @@ namespace KEYBOARD_Utils {
             winlinkMailNumber = key;
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) {
             winlinkMailNumber = "_?";
-        } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber !="_?") {
+        } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber != "_?") {
             MSG_Utils::sendMessage(1, "WLNK-1", "R" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5020;
-        } else if (menuDisplay == 5031 && key == 13 && winlinkMailNumber !="_?") {
+        } else if (menuDisplay == 5031 && key == 13 && winlinkMailNumber != "_?") {
             MSG_Utils::sendMessage(1, "WLNK-1", "Y" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5083;
-        } else if (menuDisplay == 5041 && key == 13 && winlinkMailNumber !="_?") {
+        } else if (menuDisplay == 5041 && key == 13 && winlinkMailNumber != "_?") {
             menuDisplay = 5042;
         } else if (menuDisplay == 5042) {
             if (winlinkAddressee.length() == 1) {
@@ -599,7 +599,7 @@ namespace KEYBOARD_Utils {
                 winlinkAddressee = "";
                 menuDisplay = 5040;
             } else if (key == 8) {
-                winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
+                winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 5041;
                 winlinkAddressee = "";
@@ -618,7 +618,7 @@ namespace KEYBOARD_Utils {
                 winlinkAlias.trim();
                 menuDisplay = 50611;
             } else if (key == 8) {
-                winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length()-1);
+                winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 5061;
                 winlinkAlias = "";
@@ -636,7 +636,7 @@ namespace KEYBOARD_Utils {
                 winlinkAliasComplete = "";
                 menuDisplay = 5061;
             } else if (key == 8) {
-                winlinkAliasComplete = winlinkAliasComplete.substring(0, winlinkAliasComplete.length()-1);
+                winlinkAliasComplete = winlinkAliasComplete.substring(0, winlinkAliasComplete.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 50610;
                 winlinkAliasComplete = "";
@@ -653,7 +653,7 @@ namespace KEYBOARD_Utils {
                 winlinkAlias = "";
                 menuDisplay = 5062;
             } else if (key == 8) {
-                winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length()-1);
+                winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 5062;
                 winlinkAlias = "";
@@ -668,7 +668,7 @@ namespace KEYBOARD_Utils {
                 winlinkAddressee.trim();
                 menuDisplay = 5082;
             } else if (key == 8) {
-                winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length()-1);
+                winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 5080;
                 winlinkAddressee = "";
@@ -684,7 +684,7 @@ namespace KEYBOARD_Utils {
                 MSG_Utils::sendMessage(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
                 menuDisplay = 5083;
             } else if (key == 8) {
-                winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length()-1);
+                winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length() - 1);
             } else if (key == 180) { 
                 menuDisplay = 5081;
                 winlinkSubject = "";
@@ -700,7 +700,7 @@ namespace KEYBOARD_Utils {
                 MSG_Utils::sendMessage(1, "WLNK-1", winlinkBody);
                 menuDisplay = 5084;
             } else if (key == 8) {
-                winlinkBody = winlinkBody.substring(0, winlinkBody.length()-1);
+                winlinkBody = winlinkBody.substring(0, winlinkBody.length() - 1);
             } else if (key == 180) { 
                 winlinkBody = "";
             }
@@ -713,7 +713,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && messageText.length() > 0) {
                 messageText.trim();
                 if (messageText.length() > 67) {
-                    messageText = messageText.substring(0,67);
+                    messageText = messageText.substring(0, 67);
                 }
                 String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encondeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
                 packet += messageText;
@@ -722,7 +722,7 @@ namespace KEYBOARD_Utils {
                 messageText = "";
                 menuDisplay = 63;
             } else if (key == 8) {
-                messageText = messageText.substring(0, messageText.length()-1);
+                messageText = messageText.substring(0, messageText.length() - 1);
             }
         }
 

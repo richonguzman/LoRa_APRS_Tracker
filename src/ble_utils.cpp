@@ -36,7 +36,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         std::string receivedData = pCharacteristic->getValue();
         String receivedString = "";
-        for (int i=0; i<receivedData.length();i++) {
+        for (int i = 0; i < receivedData.length(); i++) {
             //Serial.print(receivedData[i],HEX); // delete
             //Serial.print(" ");
             receivedString += receivedData[i];
@@ -103,7 +103,7 @@ namespace BLE_Utils {
     void txToPhoneOverBLE(String frame) {
         txBLE((byte)KissChar::Fend);
         txBLE((byte)KissCmd::Data);
-        for(int n=0;n<frame.length();n++) {
+        for(int n = 0; n < frame.length(); n++) {
             uint8_t byteCharacter = frame[n];
             if (byteCharacter == KissChar::Fend) {
                 txBLE((byte)KissChar::Fesc);
@@ -122,7 +122,7 @@ namespace BLE_Utils {
         if (!packet.isEmpty()) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE Rx", "%s", packet.c_str());
             String receivedPacketString = "";
-            for (int i=0; i<packet.length();i++) {
+            for (int i = 0; i < packet.length(); i++) {
                 receivedPacketString += packet[i];
             }
             String AX25Frame = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);

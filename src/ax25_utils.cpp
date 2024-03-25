@@ -6,7 +6,7 @@ namespace AX25_Utils {
 
     String decodeFrame(String frame) {
         String packet = "";
-        for (int a=0;a<6;a++) {
+        for (int a=0; a<6; a++) {
             uint16_t shiftedValue = frame[a] >> 1;
             if (shiftedValue == 32) {
                 a=10;
@@ -23,26 +23,26 @@ namespace AX25_Utils {
     }
 
     bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
-        if ((frameSize <14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize-1] != KissChar::Fend)) {
+        if ((frameSize < 14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize - 1] != KissChar::Fend)) {
             return false;
         }
         int payloadFrameStart = 0;
-        for (int i=0;i<frameSize;i++) {                   // where is CONTROL y PID ?
+        for (int i = 0; i < frameSize; i++) {                   // where is CONTROL y PID ?
             if (frame[i] == 0x03 && frame[i+1] == 0xf0) {
                 payloadFrameStart = i+1;
             }
         }
-        decodedFrame->tocall = frame.substring(2,9);      // Extract destination address
-        decodedFrame->sender = frame.substring(9,16);     // Extract source address
+        decodedFrame->tocall = frame.substring(2, 9);      // Extract destination address
+        decodedFrame->sender = frame.substring(9, 16);     // Extract source address
         if (payloadFrameStart >= 21) {                    // is there path1?
-            decodedFrame->path1 = frame.substring(16,23);
+            decodedFrame->path1 = frame.substring(16, 23);
         }
         if (payloadFrameStart >= 28) {                    // is there path2?
-            decodedFrame->path2 = frame.substring(23,30);
+            decodedFrame->path2 = frame.substring(23, 30);
         }
-        decodedFrame->control = frame.substring(payloadFrameStart-1,payloadFrameStart);   // Extract control information  // 0x03
-        decodedFrame->pid = frame.substring(payloadFrameStart,payloadFrameStart+1);       // Extract pid information      // 0xF0
-        decodedFrame->payload = frame.substring(payloadFrameStart+1,frameSize-1);         // Extract payload
+        decodedFrame->control = frame.substring(payloadFrameStart-1, payloadFrameStart);   // Extract control information  // 0x03
+        decodedFrame->pid = frame.substring(payloadFrameStart, payloadFrameStart + 1);       // Extract pid information      // 0xF0
+        decodedFrame->payload = frame.substring(payloadFrameStart + 1, frameSize - 1);         // Extract payload
         return true;
     }
 
@@ -67,10 +67,10 @@ namespace AX25_Utils {
     }
 
     String frameCleaning(String frame) {
-        if (frame.length()>6) {
-            frame = frame.substring(0,6);
-        } else if (frame.length()<6) {
-            for (int i=0;frame.length()<6;i++) { 
+        if (frame.length() > 6) {
+            frame = frame.substring(0, 6);
+        } else if (frame.length() < 6) {
+            for (int i = 0; frame.length() < 6; i++) { 
                 frame += " ";
             }
         }
@@ -90,17 +90,17 @@ namespace AX25_Utils {
         String address;
         std::string concatenatedBinary;
         int ssid;
-        if (frame.indexOf("-")>0) {
-            address = frameCleaning(frame.substring(0,frame.indexOf("-")));
-            ssid = frame.substring(frame.indexOf("-")+1).toInt();
-            if (ssid>15) {
+        if (frame.indexOf("-") > 0) {
+            address = frameCleaning(frame.substring(0, frame.indexOf("-")));
+            ssid = frame.substring(frame.indexOf("-") + 1).toInt();
+            if (ssid > 15) {
                 ssid = 0;
             }
         } else {
             address = frameCleaning(frame);
             ssid = 0;
         }
-        for (int j=0;j<6;j++) {
+        for (int j = 0; j < 6; j++) {
             char c = address[j];
             packet += char(c<<1);
         }
@@ -118,14 +118,14 @@ namespace AX25_Utils {
     String LoRaPacketToAX25Frame(String packet) {
         String encodedPacket = "";
         String tocall = "";
-        String sender = packet.substring(0,packet.indexOf(">"));
+        String sender = packet.substring(0, packet.indexOf(">"));
         bool lastAddress = false;
-        String payload = packet.substring(packet.indexOf(":")+1);
-        String temp = packet.substring(packet.indexOf(">")+1, packet.indexOf(":"));
+        String payload = packet.substring(packet.indexOf(":") + 1);
+        String temp = packet.substring(packet.indexOf(">") + 1, packet.indexOf(":"));
 
         if (temp.indexOf(",")>0) {    
-            tocall = temp.substring(0,temp.indexOf(","));
-            temp = temp.substring(temp.indexOf(",")+1);
+            tocall = temp.substring(0, temp.indexOf(","));
+            temp = temp.substring(temp.indexOf(",") + 1);
         } else {
             tocall = temp;
             temp = "";
@@ -137,15 +137,15 @@ namespace AX25_Utils {
         while (temp.length() > 0) {
             int repeatedPath = 0;
             String address = "";
-            if (temp.indexOf(",")>0) {
-                address = temp.substring(0,temp.indexOf(","));
-                temp = temp.substring(temp.indexOf(",")+1);
+            if (temp.indexOf(",") > 0) {
+                address = temp.substring(0, temp.indexOf(","));
+                temp = temp.substring(temp.indexOf(",") + 1);
             } else {
                 address = temp;
                 temp = "";
                 lastAddress = true;        
             }
-            if (address.indexOf("*")>0) {
+            if (address.indexOf("*") > 0) {
                 repeatedPath = 1;
             }
             encodedPacket += encodeAX25Address(address, repeatedPath, lastAddress);
@@ -153,7 +153,7 @@ namespace AX25_Utils {
 
         encodedPacket += char(0x03);
         encodedPacket += char(0xF0);
-        encodedPacket += packet.substring(packet.indexOf(":")+1);
+        encodedPacket += packet.substring(packet.indexOf(":") + 1);
         return encodedPacket;
     }
 

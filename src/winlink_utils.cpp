@@ -13,10 +13,10 @@ namespace WINLINK_Utils {
 
     void processWinlinkChallenge(String winlinkInteger) {
         String challengeAnswer;
-        for (int i=0; i<winlinkInteger.length(); i++) {
+        for (int i = 0; i < winlinkInteger.length(); i++) {
             String number = String(winlinkInteger[i]);
             int digit = number.toInt();
-            challengeAnswer += Config.winlink.password[digit-1];
+            challengeAnswer += Config.winlink.password[digit - 1];
         }
         challengeAnswer += "AZ6";
         delay(500);

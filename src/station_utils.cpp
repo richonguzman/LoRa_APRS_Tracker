@@ -53,47 +53,47 @@ uint32_t                    lastDeleteListenedTracker;
 namespace STATION_Utils {
 
     String getFirstNearTracker() {
-        return String(firstNearTracker.substring(0,firstNearTracker.indexOf(",")));
+        return String(firstNearTracker.substring(0, firstNearTracker.indexOf(",")));
     }
 
     String getSecondNearTracker() {
-        return String(secondNearTracker.substring(0,secondNearTracker.indexOf(",")));
+        return String(secondNearTracker.substring(0, secondNearTracker.indexOf(",")));
     }
 
     String getThirdNearTracker() {
-        return String(thirdNearTracker.substring(0,thirdNearTracker.indexOf(",")));
+        return String(thirdNearTracker.substring(0, thirdNearTracker.indexOf(",")));
     }
 
     String getFourthNearTracker() {
-        return String(fourthNearTracker.substring(0,fourthNearTracker.indexOf(",")));
+        return String(fourthNearTracker.substring(0, fourthNearTracker.indexOf(",")));
     }
 
     void deleteListenedTrackersbyTime() {
         String firstNearTrackermillis, secondNearTrackermillis, thirdNearTrackermillis, fourthNearTrackermillis;
         uint32_t firstTrackermillis, secondTrackermillis, thirdTrackermillis, fourthTrackermillis;
         if (firstNearTracker != "") {
-            firstNearTrackermillis = firstNearTracker.substring(firstNearTracker.indexOf(",")+1);
+            firstNearTrackermillis = firstNearTracker.substring(firstNearTracker.indexOf(",") + 1);
             firstTrackermillis = firstNearTrackermillis.toInt();
             if ((millis() - firstTrackermillis) > Config.rememberStationTime*60*1000) {
                 firstNearTracker = "";
             }
         }
         if (secondNearTracker != "") {
-            secondNearTrackermillis = secondNearTracker.substring(secondNearTracker.indexOf(",")+1);
+            secondNearTrackermillis = secondNearTracker.substring(secondNearTracker.indexOf(",") + 1);
             secondTrackermillis = secondNearTrackermillis.toInt();
             if ((millis() - secondTrackermillis) > Config.rememberStationTime*60*1000) {
                 secondNearTracker = "";
             }
         }
         if (thirdNearTracker != "") {
-            thirdNearTrackermillis = thirdNearTracker.substring(thirdNearTracker.indexOf(",")+1);
+            thirdNearTrackermillis = thirdNearTracker.substring(thirdNearTracker.indexOf(",") + 1);
             thirdTrackermillis = thirdNearTrackermillis.toInt();
             if ((millis() - thirdTrackermillis) > Config.rememberStationTime*60*1000) {
                 thirdNearTracker = "";
             }
         }
         if (fourthNearTracker != "") {
-            fourthNearTrackermillis = fourthNearTracker.substring(fourthNearTracker.indexOf(",")+1);
+            fourthNearTrackermillis = fourthNearTracker.substring(fourthNearTracker.indexOf(",") + 1);
             fourthTrackermillis = fourthNearTrackermillis.toInt();
             if ((millis() - fourthTrackermillis) > Config.rememberStationTime*60*1000) {
                 fourthNearTracker = "";
@@ -132,23 +132,23 @@ namespace STATION_Utils {
         float thirdDistance   = 0.0;
         float fourthDistance  = 0.0;
         if (firstNearTracker != "") {
-            firstNearTrackerCallsign = firstNearTracker.substring(0,firstNearTracker.indexOf(">"));
-            firstNearTrackerDistance = firstNearTracker.substring(firstNearTracker.indexOf(">")+1,firstNearTracker.indexOf("km"));
+            firstNearTrackerCallsign = firstNearTracker.substring(0, firstNearTracker.indexOf(">"));
+            firstNearTrackerDistance = firstNearTracker.substring(firstNearTracker.indexOf(">") + 1, firstNearTracker.indexOf("km"));
             firstDistance = firstNearTrackerDistance.toFloat();
         }
         if (secondNearTracker != "") {
-            secondNearTrackerCallsign = secondNearTracker.substring(0,secondNearTracker.indexOf(">"));
-            secondNearTrackerDistance = secondNearTracker.substring(secondNearTracker.indexOf(">")+1,secondNearTracker.indexOf("km"));
+            secondNearTrackerCallsign = secondNearTracker.substring(0, secondNearTracker.indexOf(">"));
+            secondNearTrackerDistance = secondNearTracker.substring(secondNearTracker.indexOf(">") + 1, secondNearTracker.indexOf("km"));
             secondDistance = secondNearTrackerDistance.toFloat();
         }
         if (thirdNearTracker != "") {
-            thirdNearTrackerCallsign = thirdNearTracker.substring(0,thirdNearTracker.indexOf(">"));
-            thirdNearTrackerDistance = thirdNearTracker.substring(thirdNearTracker.indexOf(">")+1,thirdNearTracker.indexOf("km"));
+            thirdNearTrackerCallsign = thirdNearTracker.substring(0, thirdNearTracker.indexOf(">"));
+            thirdNearTrackerDistance = thirdNearTracker.substring(thirdNearTracker.indexOf(">") + 1, thirdNearTracker.indexOf("km"));
             thirdDistance = thirdNearTrackerDistance.toFloat();
         }
         if (fourthNearTracker != "") {
-            fourthNearTrackerCallsign = fourthNearTracker.substring(0,fourthNearTracker.indexOf(">"));
-            fourthNearTrackerDistance = fourthNearTracker.substring(fourthNearTracker.indexOf(">")+1,fourthNearTracker.indexOf("km"));
+            fourthNearTrackerCallsign = fourthNearTracker.substring(0, fourthNearTracker.indexOf(">"));
+            fourthNearTrackerDistance = fourthNearTracker.substring(fourthNearTracker.indexOf(">") + 1, fourthNearTracker.indexOf("km"));
             fourthDistance = fourthNearTrackerDistance.toFloat();
         } 
 
@@ -362,7 +362,7 @@ namespace STATION_Utils {
     }
 
     void checkStandingUpdateTime() {
-        if (!sendUpdate && lastTx >= Config.standingUpdateTime*60*1000) {
+        if (!sendUpdate && lastTx >= Config.standingUpdateTime * 60 * 1000) {
             sendUpdate = true;
             sendStandingUpdate = true;
         }
@@ -379,7 +379,7 @@ namespace STATION_Utils {
     void checkSmartBeaconState() {
         if (!smartBeaconValue) {
             uint32_t lastTxSmartBeacon = millis() - lastTxTime;
-            if (lastTxSmartBeacon >= Config.nonSmartBeaconRate*60*1000) {
+            if (lastTxSmartBeacon >= Config.nonSmartBeaconRate * 60 * 1000) {
                 sendUpdate = true;
             }
         }
@@ -438,7 +438,7 @@ namespace STATION_Utils {
         if (Config.bme.active && Config.bme.sendTelemetry) {
             lastTx = millis() - lastTxTime;
             telemetryTx = millis() - lastTelemetryTx;
-            if (telemetryTx > 10*60*1000 && lastTx > 10*1000) {
+            if (telemetryTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
                 sendBeacon("Wx");
                 lastTelemetryTx = millis();
             }

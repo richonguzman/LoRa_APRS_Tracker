@@ -76,7 +76,7 @@ namespace Utils {
         if (statusState) {
             lastTx = millis() - lastTxTime;
             uint32_t statusTx = millis() - statusTime;
-            if (statusTx > 10*60*1000 && lastTx > 10*1000) {
+            if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
                 LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, "https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate));
                 statusState = false;
                 lastTx = millis();
@@ -86,7 +86,7 @@ namespace Utils {
 
     void checkDisplayEcoMode() {
         uint32_t lastDisplayTime = millis() - displayTime;
-        if (displayEcoMode && menuDisplay==0 && millis()>10*1000 && lastDisplayTime >= Config.display.timeout*1000) {
+        if (displayEcoMode && menuDisplay == 0 && millis() > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
             display_toggle(false);
             displayState = false;
         }

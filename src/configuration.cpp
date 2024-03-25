@@ -120,7 +120,7 @@ bool Configuration::validateMicE(String currentBeaconMicE) {
     String miceMessageTypes[] = {"111", "110", "101", "100", "011", "010", "001" , "000"};
     int arraySize = sizeof(miceMessageTypes) / sizeof(miceMessageTypes[0]);
     bool validType = false;
-    for (int i=0; i<arraySize;i++) {
+    for (int i = 0; i < arraySize; i++) {
         if (currentBeaconMicE == miceMessageTypes[i]) {
             validType = true;
         }
