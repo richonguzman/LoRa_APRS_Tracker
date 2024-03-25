@@ -11,7 +11,7 @@ namespace AX25_Utils {
             if (shiftedValue == 32) {
                 a = 10;
             } else {
-                Serial.print(char(shiftedValue));
+                //Serial.print(char(shiftedValue));
                 packet += char(shiftedValue);
             }
         }
