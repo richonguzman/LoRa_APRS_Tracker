@@ -7,7 +7,7 @@ namespace MENU_Utils {
     
     String checkBTType();
     String checkProcessActive(bool process);
-    String checkScreenBrightness(int bright);
+    String checkScreenBrightness(uint8_t bright);
     void showOnScreen();
 
 }

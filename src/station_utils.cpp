@@ -15,8 +15,8 @@ extern Configuration        Config;
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
-extern int                  myBeaconsIndex;
-extern int                  loraIndex;
+extern uint8_t              myBeaconsIndex;
+extern uint8_t              loraIndex;
 
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
@@ -25,7 +25,7 @@ extern uint32_t             telemetryTx;
 extern uint32_t             lastTelemetryTx;
 
 extern bool                 sendUpdate;
-extern int                  updateCounter;
+extern uint8_t              updateCounter;
 extern bool                 sendStandingUpdate;
 
 extern uint32_t             txInterval;
@@ -40,7 +40,7 @@ extern double               lastTxDistance;
 
 extern bool                 miceActive;
 extern bool                 smartBeaconValue;
-extern int                  winlinkStatus;
+extern uint8_t              winlinkStatus;
 
 String                      firstNearTracker;
 String                      secondNearTracker;
@@ -445,7 +445,7 @@ namespace STATION_Utils {
         }
     }
 
-    void saveIndex(int type, int index) {
+    void saveIndex(uint8_t type, uint8_t index) {
         String filePath;
         if (type == 0) {
             filePath = "/callsignIndex.txt";
@@ -467,7 +467,7 @@ namespace STATION_Utils {
         fileIndex.close();
     }
 
-    void loadIndex(int type) {
+    void loadIndex(uint8_t type) {
         String filePath;
         if (type == 0) {
             filePath = "/callsignIndex.txt";

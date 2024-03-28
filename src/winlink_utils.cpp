@@ -5,7 +5,7 @@
 #include "logger.h"
 
 extern Configuration    Config;
-extern int              winlinkStatus;
+extern uint8_t          winlinkStatus;
 extern int              menuDisplay;
 extern logging::Logger  logger;
 

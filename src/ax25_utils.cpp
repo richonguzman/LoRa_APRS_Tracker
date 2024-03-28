@@ -85,7 +85,7 @@ namespace AX25_Utils {
         return result;
     }
 
-    String encodeAX25Address(String frame, int type, bool lastAddress) {
+    String encodeAX25Address(String frame, uint8_t type, bool lastAddress) {
         String packet = "";
         String address;
         std::string concatenatedBinary;
@@ -104,7 +104,7 @@ namespace AX25_Utils {
             char c = address[j];
             packet += char(c<<1);
         }
-        std::string firstSSIDBit = std::to_string(type); //type=0 (sender or path not repeated) type=1 (tocall or path bein repeated)
+        std::string firstSSIDBit = std::to_string(type); //type=0 (sender or path not repeated) type=1 (tocall or path being repeated)
         std::string lastSSIDBit = "0";
         if (lastAddress) {
             lastSSIDBit = "1";            // address is the last from AX.25 Frame

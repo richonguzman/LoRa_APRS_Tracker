@@ -11,7 +11,7 @@
 extern logging::Logger  logger;
 extern Configuration    Config;
 extern LoraType         *currentLoRaType;
-extern int              loraIndex;
+extern uint8_t          loraIndex;
 extern int              loraIndexSize;
 
 

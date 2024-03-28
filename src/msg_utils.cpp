@@ -29,7 +29,7 @@ extern uint32_t             messageLedTime;
 extern bool                 digirepeaterActive;
 
 extern int                  ackNumberSend;
-extern int                  winlinkStatus;
+extern uint8_t              winlinkStatus;
 
 extern APRSPacket           lastReceivedPacket;
 extern uint32_t             ackTime;
@@ -218,7 +218,7 @@ namespace MSG_Utils {
         }
     }
 
-    void sendMessage(int typeOfMessage, String station, String textMessage) {
+    void sendMessage(uint8_t typeOfMessage, String station, String textMessage) {
         String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, station, textMessage);
         if (textMessage.indexOf("ack") == 0) {
             if (station != "WLNK-1") {  // don't show Winlink ACK

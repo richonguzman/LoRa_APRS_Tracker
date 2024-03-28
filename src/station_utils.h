@@ -19,8 +19,8 @@ namespace STATION_Utils {
     void checkSmartBeaconState();
     void sendBeacon(String type);
     void checkTelemetryTx();
-    void saveIndex(int type, int index);
-    void loadIndex(int type);
+    void saveIndex(uint8_t type, uint8_t index);
+    void loadIndex(uint8_t type);
 
 }
 

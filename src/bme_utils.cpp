@@ -177,7 +177,7 @@ namespace BME_Utils {
         String wx, tempStr, humStr, presStr;
 
         uint32_t lastReading = millis() - bmeLastReading;
-        if (lastReading > 60*1000) {
+        if (lastReading > 60 * 1000) {
             #if defined(BME280Sensor) || defined(BMP280Sensor)
             bme.takeForcedMeasurement();
             newTemp   = bme.readTemperature();

@@ -19,10 +19,10 @@ extern TinyGPSPlus          gps;
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
-extern int                  loraIndex;
+extern uint8_t              loraIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
-extern int                  lowBatteryPercent;
+extern uint8_t              lowBatteryPercent;
 extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
@@ -35,7 +35,7 @@ extern bool                 screenBrightness;
 extern bool                 disableGPS;
 extern APRSPacket           lastReceivedPacket;
 
-extern int                  winlinkStatus;
+extern uint8_t              winlinkStatus;
 extern String               winlinkMailNumber;
 extern String               winlinkAddressee;
 extern String               winlinkSubject;
@@ -63,7 +63,7 @@ namespace MENU_Utils {
         }
     }
 
-    String checkScreenBrightness(int bright) {
+    String checkScreenBrightness(uint8_t bright) {
         if (bright == 255) {
             return "MAX";
         } else {
