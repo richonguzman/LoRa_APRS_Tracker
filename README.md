@@ -34,7 +34,7 @@ ____________________________________________________
 
 # WIKI (English / Español en camino...)
 
-### Supported Boards and buying links --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/Z.-------Supported-Boards-and-Buying-Links" target="_blank">here</a>.
+### Supported Boards and buying links --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/Z.-------Supported-Boards-and-Buying-Links" target="_blank">here</a>
 
 ### 1. Installation Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/01.-Installation-Guide-%23-Guia-de-Instalacion" target="_blank">here</a>
 
