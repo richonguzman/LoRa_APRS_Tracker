@@ -291,7 +291,7 @@ namespace APRSPacketLib {
         return(s);
     }
 
-    String encondeGPS(float latitude, float longitude, float course, float speed, String symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, String packetType) {
+    String encodeGPS(float latitude, float longitude, float course, float speed, String symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, String packetType) {
         String encodedData;
         uint32_t aprs_lat, aprs_lon;
         aprs_lat = 900000000 - latitude * 10000000;
