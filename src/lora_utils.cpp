@@ -1,12 +1,17 @@
-#include <RadioLib.h>
 #include <logger.h>
-#include <LoRa.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
 #include "pins_config.h"
 #include "msg_utils.h"
 #include "display.h"
+#ifdef HAS_SX127X
+#include <LoRa.h>
+#endif
+#ifdef HAS_SX126X
+#include <RadioLib.h>
+#endif
+
 
 extern logging::Logger  logger;
 extern Configuration    Config;
