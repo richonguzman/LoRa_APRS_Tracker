@@ -49,7 +49,7 @@ BluetoothSerial                     SerialBT;
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.03.28";
+String      versionDate             = "2024.04.12";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -134,14 +134,18 @@ logging::Logger                     logger;
 
 void setup() {
     Serial.begin(115200);
-
     #ifndef DEBUG
     logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();
+    
+    /* para HELTEC WIRELESS TRACKER!
+    pinMode(internalLedPin ,OUTPUT);
+	digitalWrite(internalLedPin, LOW);*/
 
     setup_display();
+
     if (Config.notification.buzzerActive) {
         pinMode(Config.notification.buzzerPinTone, OUTPUT);
         pinMode(Config.notification.buzzerPinVcc, OUTPUT);
@@ -163,6 +167,9 @@ void setup() {
     }
 
     show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
+    /*#ifdef HAS_TFT
+    cleanTFT();
+    #endif*/
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
@@ -181,6 +188,7 @@ void setup() {
 
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
+
     if (Config.bluetoothType==0) {
         BLE_Utils::setup();
     } else {

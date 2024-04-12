@@ -5,9 +5,11 @@
 #include "logger.h"
 
 #ifndef TTGO_T_Beam_S3_SUPREME_V3
+#ifndef HELTEC_WIRELESS_TRACKER
 #define I2C_SDA 21
 #define I2C_SCL 22
 #define IRQ_PIN 35
+#endif
 #endif
 
 #ifdef TTGO_T_Beam_S3_SUPREME_V3
@@ -54,6 +56,9 @@ namespace POWER_Utils {
         double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
         return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
         #endif
+        #ifdef HELTEC_WIRELESS_TRACKER
+        return 0;
+        #endif        
     }
 
     String getBatteryInfoVoltage() {
@@ -81,7 +86,7 @@ namespace POWER_Utils {
         }
 
     bool isCharging() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER)
         return 0;
         #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -98,7 +103,7 @@ namespace POWER_Utils {
     }
 
     double getBatteryChargeDischargeCurrent() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER)
         return 0;
         #endif
         #ifdef HAS_AXP192
@@ -113,7 +118,7 @@ namespace POWER_Utils {
     }
 
     bool isBatteryConnected() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER)
         if(getBatteryVoltage() > 1.0) {
             return true;
         } else {
@@ -212,7 +217,7 @@ namespace POWER_Utils {
     }
 
     bool begin(TwoWire &port) {
-        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER)
         return true; // no powerManagment chip for this boards (only a few measure battery voltage).
         #endif
         #ifdef HAS_AXP192
@@ -330,6 +335,10 @@ namespace POWER_Utils {
         #endif
         #ifdef HELTEC_V3_GPS
         pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.
+        #endif
+        #ifdef HELTEC_WIRELESS_TRACKER
+        pinMode(VGNSS_CTRL,OUTPUT); // this is for GPS and TFT screen
+        digitalWrite(VGNSS_CTRL, HIGH);
         #endif
     }
 

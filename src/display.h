@@ -3,6 +3,7 @@
 
 void setup_display();
 void display_toggle(bool toggle);
+void cleanTFT();
 
 void show_display(String header, int wait = 0);
 void show_display(String header, String line1, int wait = 0);

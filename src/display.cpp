@@ -1,4 +1,3 @@
-#include <Adafruit_GFX.h>
 #include <logger.h>
 #include <Wire.h>
 #include "custom_characters.h"
@@ -6,6 +5,14 @@
 #include "pins_config.h"
 #include "display.h"
 #include "TimeLib.h"
+
+#ifdef HAS_TFT
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI(); 
+
+#else
+#include <Adafruit_GFX.h>
 
 #define ssd1306 //comment this line with "//" when using SH1106 screen instead of SSD1306
 
@@ -18,12 +25,16 @@
 
 #ifdef ssd1306
 #include <Adafruit_SSD1306.h>
+Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
 #else
 #include <Adafruit_SH110X.h>
+Adafruit_SH1106G display(128, 64, &Wire, OLED_RST);
 #endif
 
 #define SYM_HEIGHT 14
 #define SYM_WIDTH  16
+
+#endif
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
@@ -46,16 +57,23 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 
 extern logging::Logger logger;
 
-#ifdef ssd1306
-Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
-#else
-Adafruit_SH1106G display(128, 64, &Wire, OLED_RST);
-#endif
+void cleanTFT() {
+    #ifdef HAS_TFT
+    tft.fillScreen(TFT_BLACK);
+    #endif
+}
 
 // cppcheck-suppress unusedFunction
 void setup_display() {
     delay(500);
-    #ifdef OLED_DISPLAY_HAS_RST_PIN // 
+    #ifdef HAS_TFT
+    tft.init();
+    tft.begin();
+    tft.setRotation(1);
+    tft.setTextFont(0);
+    tft.fillScreen(TFT_BLACK);
+    #else    
+    #ifdef OLED_DISPLAY_HAS_RST_PIN
     pinMode(OLED_RST, OUTPUT);
     digitalWrite(OLED_RST, LOW);
     delay(20);
@@ -92,10 +110,14 @@ void setup_display() {
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
 }
 
 // cppcheck-suppress unusedFunction
 void display_toggle(bool toggle) {
+    #ifdef HAS_TFT
+    //algo
+    #else
     if (toggle) {
         #ifdef ssd1306
         display.ssd1306_command(SSD1306_DISPLAYON);
@@ -105,10 +127,18 @@ void display_toggle(bool toggle) {
         display.ssd1306_command(SSD1306_DISPLAYOFF);
         #endif
     }
+    #endif
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -123,11 +153,22 @@ void show_display(String header, int wait) {
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
     delay(wait);
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    tft.setTextSize(1);
+    tft.setCursor(0, 16);
+    tft.print(line1);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -145,11 +186,24 @@ void show_display(String header, String line1, int wait) {
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
     delay(wait);
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    tft.setTextSize(1);
+    tft.setCursor(0, 16);
+    tft.print(line1);
+    tft.setCursor(0, 25);
+    tft.print(line2);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -169,11 +223,26 @@ void show_display(String header, String line1, String line2, int wait) {
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
     delay(wait);
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    tft.setTextSize(1);
+    tft.setCursor(0, 16);
+    tft.print(line1);
+    tft.setCursor(0, 25);
+    tft.print(line2);
+    tft.setCursor(0, 34);
+    tft.print(line3);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -195,11 +264,28 @@ void show_display(String header, String line1, String line2, String line3, int w
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
     delay(wait);
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    tft.setTextSize(1);
+    tft.setCursor(0, 16);
+    tft.print(line1);
+    tft.setCursor(0, 25);
+    tft.print(line2);
+    tft.setCursor(0, 34);
+    tft.print(line3);
+    tft.setCursor(0, 43);
+    tft.print(line4);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -223,11 +309,30 @@ void show_display(String header, String line1, String line2, String line3, Strin
     display.ssd1306_command(screenBrightness);
     #endif
     display.display();
+    #endif
     delay(wait);
 }
 
 // cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
+    #ifdef HAS_TFT
+    cleanTFT();
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.print(header);
+    tft.setTextSize(1);
+    tft.setCursor(0, 16);
+    tft.print(line1);
+    tft.setCursor(0, 25);
+    tft.print(line2);
+    tft.setCursor(0, 34);
+    tft.print(line3);
+    tft.setCursor(0, 43);
+    tft.print(line4);
+    tft.setCursor(0, 52);
+    tft.print(line5);
+    #else
     display.clearDisplay();
     #ifdef ssd1306
     display.setTextColor(WHITE);
@@ -281,5 +386,6 @@ void show_display(String header, String line1, String line2, String line3, Strin
     }
     
     display.display();
+    #endif
     delay(wait);
 }

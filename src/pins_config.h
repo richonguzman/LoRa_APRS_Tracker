@@ -134,4 +134,22 @@
 #define BATTERY_PIN         1
 #endif
 
+#ifdef HELTEC_WIRELESS_TRACKER
+#define VGNSS_CTRL          3   // Heltec Tracker needs this (pulled low?) for GPS and TFT
+#define GPS_RX              34
+#define GPS_TX              33
+#define GPS_PPS             36
+#define GPS_RESET           35
+#define BUTTON_PIN          0
+//#define BATTERY_PIN             1
+//#define ADC_CTRL                2   // active HIGH, powers the voltage divider. Only on V05 = V1.1
+#define RADIO_SCLK_PIN      9
+#define RADIO_MISO_PIN      11
+#define RADIO_MOSI_PIN      10
+#define RADIO_CS_PIN        8
+#define RADIO_RST_PIN       12
+#define RADIO_DIO1_PIN      14  // SX1262 IRQ
+#define RADIO_BUSY_PIN      13  // SX1262 BUSY
+#endif
+
 #endif

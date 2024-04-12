@@ -760,6 +760,7 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
+        #ifndef HELTEC_WIRELESS_TRACKER 
         Wire.beginTransmission(CARDKB_ADDR);
         if (Wire.endTransmission() == 0) {
             keyboardConnected = true;
@@ -767,6 +768,7 @@ namespace KEYBOARD_Utils {
         } else {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "No Keyboard Connected to I2C");
         }
+        #endif
     }
 
 }
