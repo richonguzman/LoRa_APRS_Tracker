@@ -317,6 +317,7 @@ void show_display(String header, String line1, String line2, String line3, Strin
 void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
+    //tft.setTextColor(TFT_RED,TFT_BLACK);
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
     tft.setTextSize(2);
     tft.setCursor(0, 0);

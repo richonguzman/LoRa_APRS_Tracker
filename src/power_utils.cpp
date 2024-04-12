@@ -50,15 +50,12 @@ namespace POWER_Utils {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
         return PMU.getBattVoltage() / 1000.0;
         #endif
-        #if defined(HELTEC_V3_GPS) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(ESP32_C3_DIY_LoRa_GPS)
         int adc_value = analogRead(BATTERY_PIN);
         double voltage = (adc_value * 3.3) / 4095.0;
         double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-        return (voltage / inputDivider) + 0.3; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
-        #endif
-        #ifdef HELTEC_WIRELESS_TRACKER
-        return 0;
-        #endif        
+        return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+        #endif      
     }
 
     String getBatteryInfoVoltage() {
@@ -135,7 +132,7 @@ namespace POWER_Utils {
         if (!(rate_limit_check_battery++ % 60))
             BatteryIsConnected = isBatteryConnected();
         if (BatteryIsConnected) {
-            #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom)
+            #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(OE5HWN_MeshCom)
             batteryVoltage       = String(getBatteryVoltage(), 2);
             #endif
             #ifdef HAS_AXP2101
@@ -333,12 +330,13 @@ namespace POWER_Utils {
         PMU.setChargerConstantCurr(XPOWERS_AXP2101_CHG_CUR_800MA);
         PMU.setSysPowerDownVoltage(2600);
         #endif
-        #ifdef HELTEC_V3_GPS
-        pinMode(BATTERY_PIN, INPUT);    // This could or should be elsewhere, but this was my point of entry.
-        #endif
-        #ifdef HELTEC_WIRELESS_TRACKER
-        pinMode(VGNSS_CTRL,OUTPUT); // this is for GPS and TFT screen
-        digitalWrite(VGNSS_CTRL, HIGH);
+
+        #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
+        pinMode(VExt_CTRL,OUTPUT); // this is for GPS and TFT screen on Wireless_Tracker and only for Oled in Heltec V3
+        digitalWrite(VExt_CTRL, HIGH);
+        pinMode(ADC_CTRL, OUTPUT);
+        digitalWrite(ADC_CTRL, HIGH);
+        pinMode(BATTERY_PIN, INPUT);
         #endif
     }
 

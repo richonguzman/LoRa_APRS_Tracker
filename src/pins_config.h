@@ -86,23 +86,6 @@
 #define RADIO_BUSY_PIN      4
 #endif
 
-#ifdef HELTEC_V3_GPS
-#define OLED_SDA            17
-#define OLED_SCL            18
-#define OLED_RST            21
-#define GPS_RX              47
-#define GPS_TX              48
-#define BUTTON_PIN          0
-#define RADIO_SCLK_PIN      9
-#define RADIO_MISO_PIN      11
-#define RADIO_MOSI_PIN      10
-#define RADIO_CS_PIN        8
-#define RADIO_RST_PIN       12
-#define RADIO_DIO1_PIN      14
-#define RADIO_BUSY_PIN      13
-#define BATTERY_PIN         1
-#endif
-
 #ifdef OE5HWN_MeshCom
 #define GPS_RX              17
 #define GPS_TX              16
@@ -134,15 +117,34 @@
 #define BATTERY_PIN         1
 #endif
 
+#ifdef HELTEC_V3_GPS
+#define OLED_SDA            17
+#define OLED_SCL            18
+#define OLED_RST            21
+#define GPS_RX              47
+#define GPS_TX              48
+#define BUTTON_PIN          0
+#define BATTERY_PIN         1
+#define VExt_CTRL           36
+#define ADC_CTRL            37
+#define RADIO_SCLK_PIN      9
+#define RADIO_MISO_PIN      11
+#define RADIO_MOSI_PIN      10
+#define RADIO_CS_PIN        8
+#define RADIO_RST_PIN       12
+#define RADIO_DIO1_PIN      14
+#define RADIO_BUSY_PIN      13
+#endif
+
 #ifdef HELTEC_WIRELESS_TRACKER
-#define VGNSS_CTRL          3   // Heltec Tracker needs this (pulled low?) for GPS and TFT
 #define GPS_RX              34
 #define GPS_TX              33
 #define GPS_PPS             36
 #define GPS_RESET           35
 #define BUTTON_PIN          0
-//#define BATTERY_PIN             1
-//#define ADC_CTRL                2   // active HIGH, powers the voltage divider. Only on V05 = V1.1
+#define BATTERY_PIN         1
+#define ADC_CTRL            2   // active HIGH, powers the voltage divider. Only on V05 = V1.1
+#define VExt_CTRL           3   // Heltec Tracker needs this (pulled low?) for GPS and TFT
 #define RADIO_SCLK_PIN      9
 #define RADIO_MISO_PIN      11
 #define RADIO_MOSI_PIN      10
