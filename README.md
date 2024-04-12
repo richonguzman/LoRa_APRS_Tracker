@@ -59,6 +59,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.04.12 Added HELTEC Wireless Tracker support.
 - 2024.03.22 3 times pressing middle button for T-Beams turns the Tracker off.
 - 2024.03.08 ESP32_C3 DIY LoRa + GPS board added. Thanks Julian OE1JLN.
 - 2024.02.29 Now you can change between (EU,PL,UK) LoRa APRS frequencies used worldwide.
