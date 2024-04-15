@@ -134,15 +134,12 @@ logging::Logger                     logger;
 
 void setup() {
     Serial.begin(115200);
+
     #ifndef DEBUG
     logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();
-    
-    /* para HELTEC WIRELESS TRACKER!
-    pinMode(internalLedPin ,OUTPUT);
-	digitalWrite(internalLedPin, LOW);*/
 
     setup_display();
 
@@ -177,7 +174,6 @@ void setup() {
         pinMode(Config.ptt.io_pin, OUTPUT);
         digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
     }
-
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
@@ -213,8 +209,8 @@ void setup() {
     menuDisplay = 0;
 }
 
-void loop() {}
-    /*currentBeacon = &Config.beacons[myBeaconsIndex];
+void loop() {
+    currentBeacon = &Config.beacons[myBeaconsIndex];
     if (statusState) {
         Config.validateConfigFile(currentBeacon->callsign);
         miceActive = Config.validateMicE(currentBeacon->micE);
@@ -276,4 +272,4 @@ void loop() {}
         MENU_Utils::showOnScreen();
         refreshDisplayTime = millis();
     }
-}*/
+}

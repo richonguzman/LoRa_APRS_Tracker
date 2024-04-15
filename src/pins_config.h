@@ -6,7 +6,7 @@
 #undef OLED_RST
 
 
-#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS) && !defined(ESP32_C3_DIY_LoRa_GPS)
+#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_V3_GPS) && !defined(ESP32_C3_DIY_LoRa_GPS) || !defined(TTGO_T_DECK_GPS)
 #define OLED_SDA            21
 #define OLED_SCL            22
 #define OLED_RST            16
@@ -159,13 +159,13 @@
 #define RADIO_BUSY_PIN      13  // SX1262 BUSY
 #endif
 
-#ifdef TTGO_T_DECK
+#ifdef TTGO_T_DECK_GPS
 #define GPS_RX              43
 #define GPS_TX              44
 #define BOARD_I2C_SDA       18
 #define BOARD_I2C_SCL       8
 #define BOARD_POWERON       10
-#define BOARD_SDCARD_CS     39
+//#define BOARD_SDCARD_CS     39
 
 #define RADIO_SCLK_PIN      40
 #define RADIO_MISO_PIN      38
@@ -180,11 +180,11 @@
 #define BOARD_I2S_DOUT  6*/
 
 // trackbal
-/*#define TrackBallCenter     0
+#define TrackBallCenter     0
 #define TrackBallUp         3   // G S1
 #define TrackBallDown       15  // G S3
 #define TrackBallLeft       1   // G S4
-#define TrackBallRight      2   // G S2*/
+#define TrackBallRight      2   // G S2
 
 #endif
 
