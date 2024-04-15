@@ -21,20 +21,21 @@
 #if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS)
 #define GPS_RX              12
 #define GPS_TX              34
-#define BUTTON_PIN          -1
+//#define BUTTON_PIN          -1
+#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 #define LORA_SCK            5
 #define LORA_MISO           19
 #define LORA_MOSI           27
 #define LORA_CS             18  // CS  --> NSS
 #define LORA_RST            23
 #define LORA_IRQ            26  // IRQ --> DIO0
-#define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 #endif
 
 #ifdef ESP32_DIY_1W_LoRa_GPS
 #define GPS_RX              17
 #define GPS_TX              16
 #define BUTTON_PIN          15
+#define BATTERY_PIN         35
 #define RADIO_SCLK_PIN      18
 #define RADIO_MISO_PIN      19
 #define RADIO_MOSI_PIN      23
@@ -61,12 +62,14 @@
 #define GPS_RX              15
 #define GPS_TX              12
 #define BUTTON_PIN          39
+#define BATTERY_PIN         35
 #endif
 
 #ifdef TTGO_T_LORA32_V2_1_TNC
 #define GPS_RX              -1
 #define GPS_TX              -1
-#define BUTTON_PIN          -1
+#define BATTERY_PIN         35
+//#define BUTTON_PIN          -1
 #endif
 
 #ifdef TTGO_T_Beam_S3_SUPREME_V3
@@ -90,6 +93,7 @@
 #define GPS_RX              17
 #define GPS_TX              16
 #define BUTTON_PIN          12
+#define BATTERY_PIN         35
 #define RADIO_SCLK_PIN      18
 #define RADIO_MISO_PIN      19
 #define RADIO_MOSI_PIN      23
@@ -107,14 +111,15 @@
 #define OLED_RST            10
 #define GPS_RX              20
 #define GPS_TX              21
-#define BUTTON_PIN          -1
+#define BATTERY_PIN         1
+//#define BUTTON_PIN          -1
 #define LORA_SCK            4
 #define LORA_MISO           5
 #define LORA_MOSI           6
 #define LORA_CS             7  // CS  --> NSS
 #define LORA_RST            3
 #define LORA_IRQ            2  // IRQ --> DIO0
-#define BATTERY_PIN         1
+
 #endif
 
 #ifdef HELTEC_V3_GPS

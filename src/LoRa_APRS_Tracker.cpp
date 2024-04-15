@@ -45,11 +45,11 @@ TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
 BluetoothSerial                     SerialBT;
 #endif
-#ifdef HAS_BUTTON
+#ifdef BUTTON_PIN
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.04.12";
+String      versionDate             = "2024.04.15";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -167,9 +167,9 @@ void setup() {
     }
 
     show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
-    /*#ifdef HAS_TFT
+    #ifdef HAS_TFT
     cleanTFT();
-    #endif*/
+    #endif
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
 
@@ -198,7 +198,7 @@ void setup() {
     }
 
     if (!Config.simplifiedTrackerMode) {
-        #ifdef HAS_BUTTON
+        #ifdef BUTTON_PIN
         userButton.attachClick(BUTTON_Utils::singlePress);
         userButton.attachLongPressStart(BUTTON_Utils::longPress);
         userButton.attachDoubleClick(BUTTON_Utils::doublePress);
@@ -226,7 +226,7 @@ void loop() {
     POWER_Utils::batteryManager();
 
     if (!Config.simplifiedTrackerMode) {
-        #ifdef HAS_BUTTON
+        #ifdef BUTTON_PIN
         userButton.tick();
         #endif
     }

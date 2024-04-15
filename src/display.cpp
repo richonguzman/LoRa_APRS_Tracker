@@ -63,7 +63,6 @@ void cleanTFT() {
     #endif
 }
 
-// cppcheck-suppress unusedFunction
 void setup_display() {
     delay(500);
     #ifdef HAS_TFT
@@ -113,24 +112,24 @@ void setup_display() {
     #endif
 }
 
-// cppcheck-suppress unusedFunction
 void display_toggle(bool toggle) {
-    #ifdef HAS_TFT
-    //algo
-    #else
     if (toggle) {
+        #ifdef HAS_TFT
+        digitalWrite(TFT_BL, HIGH);
+        #endif
         #ifdef ssd1306
         display.ssd1306_command(SSD1306_DISPLAYON);
         #endif
     } else {
+        #ifdef HAS_TFT
+        digitalWrite(TFT_BL, LOW);
+        #endif
         #ifdef ssd1306
         display.ssd1306_command(SSD1306_DISPLAYOFF);
         #endif
     }
-    #endif
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
@@ -157,7 +156,6 @@ void show_display(String header, int wait) {
     delay(wait);
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, String line1, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
@@ -190,7 +188,6 @@ void show_display(String header, String line1, int wait) {
     delay(wait);
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
@@ -227,7 +224,6 @@ void show_display(String header, String line1, String line2, int wait) {
     delay(wait);
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
@@ -268,7 +264,6 @@ void show_display(String header, String line1, String line2, String line3, int w
     delay(wait);
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
@@ -313,10 +308,11 @@ void show_display(String header, String line1, String line2, String line3, Strin
     delay(wait);
 }
 
-// cppcheck-suppress unusedFunction
 void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
     #ifdef HAS_TFT
-    cleanTFT();
+    if (menuDisplay != 0) {
+        cleanTFT();
+    }
     //tft.setTextColor(TFT_RED,TFT_BLACK);
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
     tft.setTextSize(2);
