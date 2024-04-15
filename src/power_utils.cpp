@@ -279,7 +279,7 @@ namespace POWER_Utils {
     }
 
     void setup() {
-        Wire.end();
+        //Wire.end();
         #ifdef HAS_AXP192
         Wire.begin(SDA, SCL);
         if (begin(Wire)) {
@@ -344,17 +344,16 @@ namespace POWER_Utils {
 
         #if defined(TTGO_T_DECK_GPS)
         pinMode(BOARD_POWERON, OUTPUT);
-        //pinMode(BOARD_SDCARD_CS, OUTPUT);
+        digitalWrite(BOARD_POWERON, HIGH);
+
+        pinMode(BOARD_SDCARD_CS, OUTPUT);
         pinMode(RADIO_CS_PIN, OUTPUT);
         pinMode(TFT_CS, OUTPUT);
 
-        digitalWrite(BOARD_POWERON, HIGH);
-        //delay(3000);
-        //digitalWrite(BOARD_SDCARD_CS, HIGH);
+        digitalWrite(BOARD_SDCARD_CS, HIGH);
         digitalWrite(RADIO_CS_PIN, HIGH);
         digitalWrite(TFT_CS, HIGH);
         
-
 
         pinMode(TrackBallCenter, INPUT_PULLUP);
         pinMode(TrackBallUp, INPUT_PULLUP);
@@ -362,7 +361,9 @@ namespace POWER_Utils {
         pinMode(TrackBallLeft, INPUT_PULLUP);
         pinMode(TrackBallRight, INPUT_PULLUP);
 
+        delay(500);
         Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
+
         #endif
     }
 

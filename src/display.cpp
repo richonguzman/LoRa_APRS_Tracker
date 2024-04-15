@@ -11,6 +11,17 @@
 
 TFT_eSPI tft = TFT_eSPI(); 
 
+#ifdef HELTEC_WIRELESS_TRACKER
+#define bigSizeFont 2
+#define smallSizeFont 1
+#define lineSpacing 9
+#endif
+#ifdef TTGO_T_DECK_GPS
+#define bigSizeFont 4
+#define smallSizeFont 2
+#define lineSpacing 18
+#endif
+
 #else
 #include <Adafruit_GFX.h>
 
@@ -134,7 +145,7 @@ void show_display(String header, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
     #else
@@ -160,11 +171,11 @@ void show_display(String header, String line1, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
-    tft.setTextSize(1);
-    tft.setCursor(0, 16);
+    tft.setTextSize(smallSizeFont);
+    tft.setCursor(0, ((lineSpacing * 2) - 2));
     tft.print(line1);
     #else
     display.clearDisplay();
@@ -192,13 +203,13 @@ void show_display(String header, String line1, String line2, int wait) {
     #ifdef HAS_TFT
     cleanTFT();
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
-    tft.setTextSize(1);
-    tft.setCursor(0, 16);
+    tft.setTextSize(smallSizeFont);
+    tft.setCursor(0, ((lineSpacing * 2) - 2));
     tft.print(line1);
-    tft.setCursor(0, 25);
+    tft.setCursor(0, ((lineSpacing * 3) - 2));
     tft.print(line2);
     #else
     display.clearDisplay();
@@ -228,15 +239,15 @@ void show_display(String header, String line1, String line2, String line3, int w
     #ifdef HAS_TFT
     cleanTFT();
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
-    tft.setTextSize(1);
-    tft.setCursor(0, 16);
+    tft.setTextSize(smallSizeFont);
+    tft.setCursor(0, ((lineSpacing * 2) - 2));
     tft.print(line1);
-    tft.setCursor(0, 25);
+    tft.setCursor(0, ((lineSpacing * 3) - 2));
     tft.print(line2);
-    tft.setCursor(0, 34);
+    tft.setCursor(0, ((lineSpacing * 4) - 2));
     tft.print(line3);
     #else
     display.clearDisplay();
@@ -268,17 +279,17 @@ void show_display(String header, String line1, String line2, String line3, Strin
     #ifdef HAS_TFT
     cleanTFT();
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
-    tft.setTextSize(1);
-    tft.setCursor(0, 16);
+    tft.setTextSize(smallSizeFont);
+    tft.setCursor(0, ((lineSpacing * 2) - 2));
     tft.print(line1);
-    tft.setCursor(0, 25);
+    tft.setCursor(0, ((lineSpacing * 3) - 2));
     tft.print(line2);
-    tft.setCursor(0, 34);
+    tft.setCursor(0, ((lineSpacing * 4) - 2));
     tft.print(line3);
-    tft.setCursor(0, 43);
+    tft.setCursor(0, ((lineSpacing * 5) - 2));
     tft.print(line4);
     #else
     display.clearDisplay();
@@ -315,19 +326,19 @@ void show_display(String header, String line1, String line2, String line3, Strin
     }
     //tft.setTextColor(TFT_RED,TFT_BLACK);
     tft.setTextColor(TFT_WHITE,TFT_BLACK);
-    tft.setTextSize(2);
+    tft.setTextSize(bigSizeFont);
     tft.setCursor(0, 0);
     tft.print(header);
-    tft.setTextSize(1);
-    tft.setCursor(0, 16);
+    tft.setTextSize(smallSizeFont);
+    tft.setCursor(0, ((lineSpacing * 2) - 2));
     tft.print(line1);
-    tft.setCursor(0, 25);
+    tft.setCursor(0, ((lineSpacing * 3) - 2));
     tft.print(line2);
-    tft.setCursor(0, 34);
+    tft.setCursor(0, ((lineSpacing * 4) - 2));
     tft.print(line3);
-    tft.setCursor(0, 43);
+    tft.setCursor(0, ((lineSpacing * 5) - 2));
     tft.print(line4);
-    tft.setCursor(0, 52);
+    tft.setCursor(0, ((lineSpacing *6) - 2));
     tft.print(line5);
     #else
     display.clearDisplay();

@@ -165,7 +165,7 @@
 #define BOARD_I2C_SDA       18
 #define BOARD_I2C_SCL       8
 #define BOARD_POWERON       10
-//#define BOARD_SDCARD_CS     39
+#define BOARD_SDCARD_CS     39
 
 #define RADIO_SCLK_PIN      40
 #define RADIO_MISO_PIN      38
@@ -175,7 +175,7 @@
 #define RADIO_DIO1_PIN      45
 #define RADIO_BUSY_PIN      13
 
-/*#define BOARD_I2S_WS    5
+/*#define BOARD_I2S_WS    5     // esto es apra el audio!
 #define BOARD_I2S_BCK   7
 #define BOARD_I2S_DOUT  6*/
 

@@ -12,7 +12,12 @@
 #include "msg_utils.h"
 #include "display.h"
 
-#define CARDKB_ADDR 0x5F    // CARDKB from m5stack.com
+#ifdef TTGO_T_DECK_GPS
+#define KB_ADDR     0x55    // T-Deck internal keyboard
+#else
+#define KB_ADDR     0x5F    // CARDKB from m5stack.com
+#endif
+
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
@@ -745,13 +750,13 @@ namespace KEYBOARD_Utils {
         if (lastKey > 30*1000) {
             keyDetected = false;
         }
-        Wire.requestFrom(CARDKB_ADDR, 1);
+        Wire.requestFrom(KB_ADDR, 1);
         while(Wire.available()) {
             char c = Wire.read();
             if (c != 0) {
 
                 // just for debugging
-                //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
+                Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
 
                 keyboardTime = millis();
                 processPressedKey(c);      
@@ -760,8 +765,8 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
-        #ifndef HELTEC_WIRELESS_TRACKER 
-        Wire.beginTransmission(CARDKB_ADDR);
+        #ifndef HELTEC_WIRELESS_TRACKER
+        Wire.beginTransmission(KB_ADDR);
         if (Wire.endTransmission() == 0) {
             keyboardConnected = true;
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Keyboard Connected to I2C");
