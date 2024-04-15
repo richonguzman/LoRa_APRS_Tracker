@@ -159,4 +159,35 @@
 #define RADIO_BUSY_PIN      13  // SX1262 BUSY
 #endif
 
+#ifdef TTGO_T_DECK
+#define GPS_RX              43
+#define GPS_TX              44
+#define BOARD_I2C_SDA       18
+#define BOARD_I2C_SCL       8
+#define BOARD_POWERON       10
+#define BOARD_SDCARD_CS     39
+
+#define RADIO_SCLK_PIN      40
+#define RADIO_MISO_PIN      38
+#define RADIO_MOSI_PIN      41
+#define RADIO_CS_PIN        9
+#define RADIO_RST_PIN       17
+#define RADIO_DIO1_PIN      45
+#define RADIO_BUSY_PIN      13
+
+/*#define BOARD_I2S_WS    5
+#define BOARD_I2S_BCK   7
+#define BOARD_I2S_DOUT  6*/
+
+// trackbal
+/*#define TrackBallCenter     0
+#define TrackBallUp         3   // G S1
+#define TrackBallDown       15  // G S3
+#define TrackBallLeft       1   // G S4
+#define TrackBallRight      2   // G S2*/
+
+#endif
+
+
+
 #endif
