@@ -54,6 +54,14 @@ extern String           winlinkBody;
 extern String           winlinkAlias;
 extern String           winlinkAliasComplete;
 
+bool mouseUpState           = false;
+bool mouseDownState         = false;
+bool mouseLeftState         = false;
+bool mouseRightState        = false;
+int debounceInterval        = 200;
+uint32_t lastDebounceTime   = millis();
+
+
 namespace KEYBOARD_Utils {
 
     void upArrow() {
@@ -744,7 +752,37 @@ namespace KEYBOARD_Utils {
             rightArrow();
         }
     }
-      
+
+    void mouseRead() {
+        if (!digitalRead(TrackBallCenter)) {
+            processPressedKey(13);
+        } else if (digitalRead(TrackBallUp) != mouseUpState) {//&& digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+            if (millis() - lastDebounceTime > debounceInterval) {
+                lastDebounceTime = millis();
+                mouseUpState = digitalRead(TrackBallUp);
+                upArrow();
+            }
+        } else if (digitalRead(TrackBallDown) != mouseDownState) {//] && !digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+            if (millis() - lastDebounceTime > debounceInterval) {
+                lastDebounceTime = millis();
+                mouseDownState = digitalRead(TrackBallDown);
+                downArrow();
+            }
+        } else if (digitalRead(TrackBallLeft) != mouseLeftState) {//&& digitalRead(TrackBallDown) && !digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+            if (millis() - lastDebounceTime > debounceInterval) {
+                lastDebounceTime = millis();
+                mouseLeftState = digitalRead(TrackBallLeft);
+                leftArrow();
+            }
+        } else if (digitalRead(TrackBallRight) != mouseRightState) {//&& digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && !digitalRead(TrackBallRight)) {
+            if (millis() - lastDebounceTime > debounceInterval) {
+                lastDebounceTime = millis();
+                mouseRightState = digitalRead(TrackBallRight);
+                rightArrow();
+            }
+        }
+    }
+
     void read() {
         uint32_t lastKey = millis() - keyboardTime;
         if (lastKey > 30*1000) {

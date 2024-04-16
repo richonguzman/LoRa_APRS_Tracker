@@ -230,6 +230,9 @@ void loop() {
     Utils::checkDisplayEcoMode();
 
     if (keyboardConnected) KEYBOARD_Utils::read();
+    #ifdef TTGO_T_DECK_GPS
+    KEYBOARD_Utils::mouseRead();
+    #endif
 
     GPS_Utils::getData();
     bool gps_time_update = gps.time.isUpdated();
