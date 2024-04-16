@@ -766,6 +766,7 @@ namespace KEYBOARD_Utils {
     }
 
     void mouseRead() {
+        #ifdef TTGO_T_DECK_GPS
         int ballUp      = digitalRead(TrackBallUp);
         int ballDown    = digitalRead(TrackBallDown);
         int ballLeft    = digitalRead(TrackBallLeft);
@@ -811,6 +812,7 @@ namespace KEYBOARD_Utils {
             clearTrackballCounter();
             rightArrow();
         }
+        #endif
     }
 
     void read() {
