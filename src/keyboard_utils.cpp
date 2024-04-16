@@ -54,12 +54,17 @@ extern String           winlinkBody;
 extern String           winlinkAlias;
 extern String           winlinkAliasComplete;
 
-bool mouseUpState           = false;
-bool mouseDownState         = false;
-bool mouseLeftState         = false;
-bool mouseRightState        = false;
-int debounceInterval        = 200;
+bool mouseUpState           = 0;
+bool mouseDownState         = 0;
+bool mouseLeftState         = 0;
+bool mouseRightState        = 0;
+int debounceInterval        = 50;
 uint32_t lastDebounceTime   = millis();
+int upCounter               = 0;
+int downCounter             = 0;
+int leftCounter             = 0;
+int rightCounter            = 0;
+int trackBallSensitivity    = 5;
 
 
 namespace KEYBOARD_Utils {
@@ -753,33 +758,58 @@ namespace KEYBOARD_Utils {
         }
     }
 
+    void clearTrackballCounter() {
+        upCounter       = 0;
+        downCounter     = 0;
+        leftCounter     = 0;
+        rightCounter    = 0;
+    }
+
     void mouseRead() {
+        int ballUp      = digitalRead(TrackBallUp);
+        int ballDown    = digitalRead(TrackBallDown);
+        int ballLeft    = digitalRead(TrackBallLeft);
+        int ballRight   = digitalRead(TrackBallRight);
+
         if (!digitalRead(TrackBallCenter)) {
             processPressedKey(13);
-        } else if (digitalRead(TrackBallUp) != mouseUpState) {//&& digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+        } else if (ballUp != mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
             if (millis() - lastDebounceTime > debounceInterval) {
                 lastDebounceTime = millis();
-                mouseUpState = digitalRead(TrackBallUp);
-                upArrow();
+                mouseUpState = ballUp;
+                upCounter++;
             }
-        } else if (digitalRead(TrackBallDown) != mouseDownState) {//] && !digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+        } else if (ballDown != mouseDownState && ballUp == mouseUpState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
             if (millis() - lastDebounceTime > debounceInterval) {
                 lastDebounceTime = millis();
-                mouseDownState = digitalRead(TrackBallDown);
-                downArrow();
+                mouseDownState = ballDown;
+                downCounter++;
             }
-        } else if (digitalRead(TrackBallLeft) != mouseLeftState) {//&& digitalRead(TrackBallDown) && !digitalRead(TrackBallLeft) && digitalRead(TrackBallRight)) {
+        } else if (ballLeft != mouseLeftState && ballUp == mouseUpState && ballDown == mouseDownState && ballRight == mouseRightState) {
             if (millis() - lastDebounceTime > debounceInterval) {
                 lastDebounceTime = millis();
-                mouseLeftState = digitalRead(TrackBallLeft);
-                leftArrow();
+                mouseLeftState = ballLeft;
+                leftCounter++;
             }
-        } else if (digitalRead(TrackBallRight) != mouseRightState) {//&& digitalRead(TrackBallDown) && digitalRead(TrackBallLeft) && !digitalRead(TrackBallRight)) {
+        } else if (ballRight != mouseRightState && ballUp == mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState) {
             if (millis() - lastDebounceTime > debounceInterval) {
                 lastDebounceTime = millis();
-                mouseRightState = digitalRead(TrackBallRight);
-                rightArrow();
+                mouseRightState = ballRight;
+                rightCounter++;
             }
+        }
+        if (upCounter == trackBallSensitivity) {
+            clearTrackballCounter();
+            upArrow();
+        } else if (downCounter == trackBallSensitivity) {
+            clearTrackballCounter();
+            downArrow();
+        } else if (leftCounter == trackBallSensitivity) {
+            clearTrackballCounter();
+            leftArrow();
+        } else if (rightCounter == trackBallSensitivity) {
+            clearTrackballCounter();
+            rightArrow();
         }
     }
 
@@ -794,7 +824,7 @@ namespace KEYBOARD_Utils {
             if (c != 0) {
 
                 // just for debugging
-                Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
+                //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
 
                 keyboardTime = millis();
                 processPressedKey(c);      

@@ -65,6 +65,7 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
 //#define OLED_DISPLAY_HAS_RST_PIN
+int lastMenuDisplay = 0;
 
 extern logging::Logger logger;
 
@@ -321,7 +322,8 @@ void show_display(String header, String line1, String line2, String line3, Strin
 
 void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
     #ifdef HAS_TFT
-    if (menuDisplay != 0) {
+    if (menuDisplay != lastMenuDisplay) {
+        lastMenuDisplay = menuDisplay;
         cleanTFT();
     }
     //tft.setTextColor(TFT_RED,TFT_BLACK);

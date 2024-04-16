@@ -426,9 +426,6 @@ namespace STATION_Utils {
         #endif
         show_display("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
-        #ifdef HAS_TFT
-        cleanTFT();
-        #endif
         
         if (smartBeaconValue) {
             lastTxLat       = gps.location.lat();

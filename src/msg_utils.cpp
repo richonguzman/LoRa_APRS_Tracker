@@ -220,6 +220,9 @@ namespace MSG_Utils {
 
     void sendMessage(uint8_t typeOfMessage, String station, String textMessage) {
         String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, station, textMessage);
+        #if HAS_TFT
+        cleanTFT();
+        #endif
         if (textMessage.indexOf("ack") == 0) {
             if (station != "WLNK-1") {  // don't show Winlink ACK
                 show_display("<<ACK Tx>>", 500);
