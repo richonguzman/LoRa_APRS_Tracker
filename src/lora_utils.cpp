@@ -55,9 +55,11 @@ namespace LoRa_Utils {
         radio.setCodingRate(currentLoRaType->codingRate4);
         #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
         radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+        radio.setCurrentLimit(140);
         #endif
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
-        radio.setOutputPower(currentLoRaType->power); 
+        radio.setOutputPower(currentLoRaType->power);
+        radio.setCurrentLimit(140);     // still needs to be validated
         #endif
         #endif
         #ifdef HAS_SX127X
@@ -107,9 +109,11 @@ namespace LoRa_Utils {
         #endif
         #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
         state = radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+        radio.setCurrentLimit(140);
         #endif
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
-        state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp) 
+        state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
+        radio.setCurrentLimit(140); // still needs to be validated
         #endif
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
