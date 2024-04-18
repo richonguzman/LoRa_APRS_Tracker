@@ -13,7 +13,7 @@
 #include "display.h"
 
 #ifdef TTGO_T_DECK_GPS
-#define KB_ADDR     0x55    // T-Deck internal keyboard
+#define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
 #else
 #define KB_ADDR     0x5F    // CARDKB from m5stack.com
 #endif
