@@ -340,6 +340,7 @@ namespace POWER_Utils {
         pinMode(ADC_CTRL, OUTPUT);
         digitalWrite(ADC_CTRL, HIGH);
         pinMode(BATTERY_PIN, INPUT);
+        Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
         #if defined(TTGO_T_DECK_GPS)
@@ -368,7 +369,7 @@ namespace POWER_Utils {
     }
 
     void lowerCpuFrequency() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS)
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
         if (setCpuFrequencyMhz(80)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
         } else {

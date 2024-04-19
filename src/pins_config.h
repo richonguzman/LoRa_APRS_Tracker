@@ -150,6 +150,8 @@
 #define BATTERY_PIN         1
 #define ADC_CTRL            2   // active HIGH, powers the voltage divider. Only on V05 = V1.1
 #define VExt_CTRL           3   // Heltec Tracker needs this (pulled low?) for GPS and TFT
+#define BOARD_I2C_SDA       7
+#define BOARD_I2C_SCL       6
 #define RADIO_SCLK_PIN      9
 #define RADIO_MISO_PIN      11
 #define RADIO_MOSI_PIN      10

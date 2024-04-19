@@ -15,7 +15,7 @@
 #ifdef TTGO_T_DECK_GPS
 #define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
 #else
-#define KB_ADDR     0x5F    // CARDKB from m5stack.com
+#define KB_ADDR     0x5F    // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
 #endif
 
 
@@ -835,7 +835,6 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
-        #ifndef HELTEC_WIRELESS_TRACKER
         Wire.beginTransmission(KB_ADDR);
         if (Wire.endTransmission() == 0) {
             keyboardConnected = true;
@@ -843,7 +842,6 @@ namespace KEYBOARD_Utils {
         } else {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "No Keyboard Connected to I2C");
         }
-        #endif
     }
 
 }
