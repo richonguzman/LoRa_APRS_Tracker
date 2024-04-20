@@ -401,26 +401,30 @@ namespace STATION_Utils {
                 packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
             }
         }
-        if (currentBeacon->comment != "") {
-            updateCounter++;
-            if (updateCounter >= Config.sendCommentAfterXBeacons) {
-                packet += currentBeacon->comment;
-                updateCounter = 0;
-            } 
-        }
+        String comment = currentBeacon->comment;    // local string to combine users comment and batteryInfo
+
         if (Config.sendBatteryInfo) {
             String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-            packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+            comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
             #endif
             #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-            packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+            comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
             #endif
             #if defined(HELTEC_V3_GPS)
-            packet += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
+            comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
             #endif
         }
+
+        if (comment != "") {
+            updateCounter++;
+            if (updateCounter >= Config.sendCommentAfterXBeacons) {
+                packet += comment;
+                updateCounter = 0;
+            } 
+        }
+
         #ifdef HAS_TFT
         cleanTFT();
         #endif
