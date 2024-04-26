@@ -285,7 +285,7 @@ namespace MSG_Utils {
                     if (lastReceivedPacket.message.indexOf("{") >= 0) {
                         String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                         ackMessage.trim();
-                        outputBufferPackets.push_back(lastReceivedPacket.sender + "," + ackMessage) ;
+                        outputBufferPackets.push_back(lastReceivedPacket.sender + "," + ackMessage);
                         ackTime = millis();
                         lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
                     }
@@ -334,13 +334,12 @@ namespace MSG_Utils {
                             ackTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
-                        } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
-                            Serial.println("Estamos conetados a WINLINK!!!!");
+                        } else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
+                            Serial.println("We were already logged to WINLINK!!!!");
                             show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
                             winlinkStatus = 5;
-                            //menuDisplay = 800;
-                        } */
-                        else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
+                            menuDisplay = 5000;
+                        } else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Reception ACK");
                             winlinkStatus = 4;
                             menuDisplay = 502;
