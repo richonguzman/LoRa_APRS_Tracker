@@ -386,55 +386,66 @@ namespace STATION_Utils {
     }
 
     void sendBeacon(String type) {
-        String packet;
-        if (Config.bme.sendTelemetry && type == "Wx") {
-            if (miceActive) {
-                packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign,"_", currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
+        if (lastTxTime <= (millis() - 5000)) {
+            String packet;
+            if (Config.bme.sendTelemetry && type == "Wx") {
+                if (miceActive) {
+                    packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign,"_", currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
+                } else {
+                    packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
+                }
+                packet += BME_Utils::readDataSensor("APRS");
             } else {
-                packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
+                if (miceActive) {
+                    packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
+                } else {
+                    packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                }
             }
-            packet += BME_Utils::readDataSensor("APRS");
-        } else {
-            if (miceActive) {
-                packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
-            } else {
-                packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+            if (currentBeacon->comment != "") {
+                updateCounter++;
+                if (updateCounter >= Config.sendCommentAfterXBeacons) {
+                    packet += currentBeacon->comment;
+                    updateCounter = 0;
+                } 
             }
-        }
-        if (currentBeacon->comment != "") {
-            updateCounter++;
-            if (updateCounter >= Config.sendCommentAfterXBeacons) {
-                packet += currentBeacon->comment;
-                updateCounter = 0;
-            } 
-        }
-        if (Config.sendBatteryInfo) {
-            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-            String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-            #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-            packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+            if (Config.sendBatteryInfo) {
+                String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+                String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
+                TelemetryCounter++;
+                if (TelemetryCounter >= 1000) {
+                    TelemetryCounter = 0;
+                }
+            
+                #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+                    packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+                #endif
+                #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+                    packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+                #endif
+                #if defined(HELTEC_V3_GPS)
+                    packet += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
+                #endif
+            }
+            #ifdef HAS_TFT
+            cleanTFT();
             #endif
-            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-            packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
-            #endif
-            #if defined(HELTEC_V3_GPS)
-            packet += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
-            #endif
-        }
-        #ifdef HAS_TFT
-        cleanTFT();
-        #endif
-        show_display("<<< TX >>>", "", packet,100);
-        LoRa_Utils::sendNewPacket(packet);
+            show_display("<<< TX >>>", "", packet,100);
+            LoRa_Utils::sendNewPacket(packet);
+            #ifdef HAS_TFT
+            cleanTFT();
         
-        if (smartBeaconValue) {
-            lastTxLat       = gps.location.lat();
-            lastTxLng       = gps.location.lng();
-            previousHeading = currentHeading;
-            lastTxDistance  = 0.0;
+            #endif
+        
+            if (smartBeaconValue) {
+                lastTxLat       = gps.location.lat();
+                lastTxLng       = gps.location.lng();
+                previousHeading = currentHeading;
+                lastTxDistance  = 0.0;
+            }
+            lastTxTime = millis();
+            sendUpdate = false;
         }
-        lastTxTime = millis();
-        sendUpdate = false;
     }
 
     void checkTelemetryTx() {
