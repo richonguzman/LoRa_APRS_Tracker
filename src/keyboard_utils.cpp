@@ -322,6 +322,7 @@ namespace KEYBOARD_Utils {
             displayTime = millis();
             statusState  = true;
             statusTime = millis();
+            winlinkCommentState = false;
             show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             if (menuDisplay == 200) {
