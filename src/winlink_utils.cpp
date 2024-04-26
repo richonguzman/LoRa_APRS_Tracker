@@ -23,7 +23,9 @@ namespace WINLINK_Utils {
                 challengeAnswer += Config.winlink.password[digit - 1];
             }
         }
-        challengeAnswer += "AZ6";
+        challengeAnswer += char(random(65,90));
+        challengeAnswer += char(random(48,57));
+        challengeAnswer += char(random(65,90));
         delay(500);
         MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
     }
