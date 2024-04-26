@@ -127,6 +127,7 @@ String      winlinkSubject          = "";
 String      winlinkBody             = "";
 String      winlinkAlias            = "";
 String      winlinkAliasComplete    = "";
+bool        winlinkCommentState     = false;
 
 APRSPacket                          lastReceivedPacket;
 

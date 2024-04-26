@@ -245,7 +245,7 @@ namespace MSG_Utils {
 
     void processOutputBuffer() {
         uint32_t lastOutputBufferTx = millis() - ackTime;
-        if (!outputBufferPackets.empty() && lastOutputBufferTx >= 4200) {
+        if (!outputBufferPackets.empty() && lastOutputBufferTx >= 4500) {
             sendMessage(0, outputBufferPackets[0].substring(0, outputBufferPackets[0].indexOf(",")), outputBufferPackets[0].substring(outputBufferPackets[0].indexOf(",") + 1));
             outputBufferPackets.pop_front();
             ackTime = millis();
@@ -261,14 +261,12 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender!=currentBeacon->callsign) {
 
-                if (lastReceivedPacket.sender != "WLNK-1") {
-                    if (Config.bluetoothType == 0) {
-                        BLE_Utils::sendToPhone(packet.text.substring(3));
-                    } else {
-                        #ifdef HAS_BT_CLASSIC
-                        BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
-                        #endif
-                    }
+                if (Config.bluetoothType == 0) {
+                    BLE_Utils::sendToPhone(packet.text.substring(3));
+                } else {
+                    #ifdef HAS_BT_CLASSIC
+                    BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+                    #endif
                 }
 
                 if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {

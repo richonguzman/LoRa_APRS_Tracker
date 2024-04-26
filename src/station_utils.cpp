@@ -41,6 +41,7 @@ extern double               lastTxDistance;
 extern bool                 miceActive;
 extern bool                 smartBeaconValue;
 extern uint8_t              winlinkStatus;
+extern bool                 winlinkCommentState;
 
 String                      firstNearTracker;
 String                      secondNearTracker;
@@ -386,7 +387,8 @@ namespace STATION_Utils {
     }
 
     void sendBeacon(String type) {
-        String packet;
+        String packet, comment;
+        int sendCommentAfterXBeacons;
         if (Config.bme.sendTelemetry && type == "Wx") {
             if (miceActive) {
                 packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign,"_", currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
@@ -401,10 +403,17 @@ namespace STATION_Utils {
                 packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
             }
         }
-        if (currentBeacon->comment != "") {
+        if (winlinkCommentState) {
+            comment = " winlink";
+            sendCommentAfterXBeacons = 1;
+        } else {
+            sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
+            comment = currentBeacon->comment;
+        }
+        if (comment != "") {
             updateCounter++;
-            if (updateCounter >= Config.sendCommentAfterXBeacons) {
-                packet += currentBeacon->comment;
+            if (updateCounter >= sendCommentAfterXBeacons) {
+                packet += comment;
                 updateCounter = 0;
             } 
         }

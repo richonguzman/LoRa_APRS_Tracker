@@ -16,11 +16,15 @@ namespace WINLINK_Utils {
         for (int i = 0; i < winlinkInteger.length(); i++) {
             String number = String(winlinkInteger[i]);
             int digit = number.toInt();
-            challengeAnswer += Config.winlink.password[digit - 1];
+            if (digit > Config.winlink.password.length()) {
+                show_display("__WINLINK_", "" , "PASS Length<REQUIRED", "", "" , "", 2000);
+                challengeAnswer += Config.winlink.password[0];
+            } else {
+                challengeAnswer += Config.winlink.password[digit - 1];
+            }
         }
         challengeAnswer += "AZ6";
         delay(500);
-        //Serial.println("el challenge creado es " + challengeAnswer);
         MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
     }
 

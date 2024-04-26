@@ -53,6 +53,7 @@ extern String           winlinkSubject;
 extern String           winlinkBody;
 extern String           winlinkAlias;
 extern String           winlinkAliasComplete;
+extern bool             winlinkCommentState;
 
 bool mouseUpState           = 0;
 bool mouseDownState         = 0;
@@ -410,13 +411,12 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 52) {
             menuDisplay = 50111;
         } else if (menuDisplay == 53) {
-            if (gps.location.lat() != 0.0) {
-                String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
-                packet += "winlink";
-                show_display("<<< TX >>>", "", packet,100);
-                LoRa_Utils::sendNewPacket(packet);
+            if (winlinkCommentState) {
+                winlinkCommentState = false;
+                show_display("_WINLINK_>", "", "  WLNK COMMENTs OFF!", 2000);
             } else {
-                show_display("___INFO___", "", " WAITING FOR GPS FIX", 2000);
+                winlinkCommentState = true;
+                show_display("_WINLINK_>", "", "  WLNK COMMENTs ON!", 2000);
             }
         } else if (menuDisplay == 5000) {
             MSG_Utils::sendMessage(1, "WLNK-1", "L");
