@@ -407,8 +407,21 @@ namespace STATION_Utils {
             comment = " winlink";
             sendCommentAfterXBeacons = 1;
         } else {
-            sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
             comment = currentBeacon->comment;
+            sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
+        }
+        if (Config.sendBatteryInfo) {
+            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+            String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
+            #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+            comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+            #endif
+            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+            comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+            #endif
+            #if defined(HELTEC_V3_GPS)
+            comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
+            #endif
         }
         if (comment != "") {
             updateCounter++;
@@ -416,20 +429,7 @@ namespace STATION_Utils {
                 packet += comment;
                 updateCounter = 0;
             } 
-        }
-        if (Config.sendBatteryInfo) {
-            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-            String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-            #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-            packet += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
-            #endif
-            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-            packet += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
-            #endif
-            #if defined(HELTEC_V3_GPS)
-            packet += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
-            #endif
-        }
+        }        
         #ifdef HAS_TFT
         cleanTFT();
         #endif
