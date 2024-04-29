@@ -332,12 +332,12 @@ namespace MSG_Utils {
                             ackTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
-                        } else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
+                        } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
                             Serial.println("We were already logged to WINLINK!!!!");
                             show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
                             winlinkStatus = 5;
                             menuDisplay = 5000;
-                        } else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
+                        } */else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Reception ACK");
                             winlinkStatus = 4;
                             menuDisplay = 502;
