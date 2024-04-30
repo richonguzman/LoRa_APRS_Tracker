@@ -119,7 +119,6 @@
 #define LORA_CS             7  // CS  --> NSS
 #define LORA_RST            3
 #define LORA_IRQ            2  // IRQ --> DIO0
-
 #endif
 
 #ifdef HELTEC_V3_GPS

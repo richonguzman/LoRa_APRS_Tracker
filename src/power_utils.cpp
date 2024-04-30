@@ -340,6 +340,8 @@ namespace POWER_Utils {
         pinMode(ADC_CTRL, OUTPUT);
         digitalWrite(ADC_CTRL, HIGH);
         pinMode(BATTERY_PIN, INPUT);
+        #endif
+        #if defined(HELTEC_WIRELESS_TRACKER)
         Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
