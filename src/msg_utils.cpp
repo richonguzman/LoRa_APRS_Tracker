@@ -324,7 +324,7 @@ namespace MSG_Utils {
                             ackTime = millis();
                             winlinkStatus = 2;
                             menuDisplay = 500;
-                        } else if (winlinkStatus <= 2 && lastReceivedPacket.message.indexOf("Login [") == 0) {
+                        } else if (/*winlinkStatus <= 2 && */lastReceivedPacket.message.indexOf("Login [") == 0) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge received");
                             String winlinkChallenge = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]"));
                             //Serial.println("the challenge is " + winlinkChallenge);
@@ -332,7 +332,11 @@ namespace MSG_Utils {
                             ackTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
-                        } /*else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
+                        } /*
+                        
+                        que pasa si es que se reinicio pero esta logeado en las 2 horas?
+
+                        else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
                             Serial.println("We were already logged to WINLINK!!!!");
                             show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
                             winlinkStatus = 5;
@@ -341,7 +345,7 @@ namespace MSG_Utils {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Reception ACK");
                             winlinkStatus = 4;
                             menuDisplay = 502;
-                        } else if (lastReceivedPacket.message.indexOf("Login valid") > 0) {
+                        } else if (lastReceivedPacket.message.indexOf("Login valid for") > 0) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
                             ackTime = millis();
                             winlinkStatus = 5;
