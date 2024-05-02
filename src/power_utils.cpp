@@ -46,14 +46,30 @@ namespace POWER_Utils {
         return (PMU.getBattVoltage() / 1000.0);
     #else
         #ifdef BATTERY_PIN
-            int adc_value = analogRead(BATTERY_PIN);
-            double voltage = (adc_value * 3.3 ) / 4095.0;
+            #ifdef ADC_CTRL
+                #ifdef HELTEC_WIRELESS_TRACKER
+                digitalWrite(ADC_CTRL, HIGH);
+                #endif
+                #ifdef HELTEC_V3_GPS
+                digitalWrite(ADC_CTRL, LOW);
+                #endif
+            #endif
+                int adc_value = analogRead(BATTERY_PIN);
+            #ifdef ADC_CTRL
+                #ifdef HELTEC_WIRELESS_TRACKER
+                digitalWrite(ADC_CTRL, LOW);
+                #endif
+                #ifdef HELTEC_V3_GPS
+                digitalWrite(ADC_CTRL, HIGH);
+                #endif
+            #endif
+                double voltage = (adc_value * 3.3 ) / 4095.0;
             #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
-            return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
+                return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(ESP32_C3_DIY_LoRa_GPS)
-            double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-            return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+                double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
             #endif
         #else
             return 0.0;
@@ -279,7 +295,6 @@ namespace POWER_Utils {
     }
 
     void setup() {
-        //Wire.end();
         #ifdef HAS_AXP192
         Wire.begin(SDA, SCL);
         if (begin(Wire)) {
@@ -334,13 +349,19 @@ namespace POWER_Utils {
         PMU.setSysPowerDownVoltage(2600);
         #endif
 
-        #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
-        pinMode(VExt_CTRL,OUTPUT); // this is for GPS and TFT screen on Wireless_Tracker and only for Oled in Heltec V3
-        digitalWrite(VExt_CTRL, HIGH);
-        pinMode(ADC_CTRL, OUTPUT);
-        digitalWrite(ADC_CTRL, HIGH);
+        #ifdef BATTERY_PIN
         pinMode(BATTERY_PIN, INPUT);
         #endif
+
+        #ifdef VEXT_CTRL
+        pinMode(VEXT_CTRL,OUTPUT); // this is for GPS and TFT screen on Wireless_Tracker and only for Oled in Heltec V3
+        digitalWrite(VEXT_CTRL, HIGH);
+        #endif
+        
+        #ifdef ADC_CTRL
+        pinMode(ADC_CTRL, OUTPUT);
+        #endif
+
         #if defined(HELTEC_WIRELESS_TRACKER)
         Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
@@ -366,7 +387,6 @@ namespace POWER_Utils {
 
         delay(500);
         Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
-
         #endif
     }
 
