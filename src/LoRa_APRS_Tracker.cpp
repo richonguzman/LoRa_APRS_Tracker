@@ -19,7 +19,6 @@ ________________________________________________________________________________
 #include <logger.h>
 #include <WiFi.h>
 #include <vector>
-#include <deque>
 #include "APRSPacketLib.h"
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
@@ -49,7 +48,7 @@ BluetoothSerial                     SerialBT;
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.05.02";
+String      versionDate             = "2024.05.05";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -63,7 +62,7 @@ int         menuDisplay             = 100;
 int         messagesIterator        = 0;
 std::vector<String>                 loadedAPRSMessages;
 std::vector<String>                 loadedWLNKMails;
-std::deque<String>                  outputBufferPackets;
+std::vector<String>                 outputMessagesBuffer;
 
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
@@ -118,7 +117,7 @@ bool        miceActive              = false;
 bool        smartBeaconValue        = true;
 
 int         ackNumberSend;
-uint32_t    ackTime                 = millis();
+uint32_t    lastMsgRxTime           = millis();
 
 uint8_t     winlinkStatus           = 0;
 String      winlinkMailNumber       = "_?";
