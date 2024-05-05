@@ -419,7 +419,7 @@ namespace STATION_Utils {
             #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
             comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
             #endif
-            #if defined(HELTEC_V3_GPS)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
             comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
             #endif
         }
