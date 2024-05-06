@@ -63,6 +63,7 @@ int         messagesIterator        = 0;
 std::vector<String>                 loadedAPRSMessages;
 std::vector<String>                 loadedWLNKMails;
 std::vector<String>                 outputMessagesBuffer;
+std::vector<String>                 outputAckRequestBuffer;
 
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
@@ -117,6 +118,9 @@ bool        miceActive              = false;
 bool        smartBeaconValue        = true;
 
 int         ackNumberSend;
+bool        ackRequestState         = false;
+String      ackDataExpected         = "";
+uint32_t    lastRetryTime           = millis();
 uint32_t    lastMsgRxTime           = millis();
 
 uint8_t     winlinkStatus           = 0;

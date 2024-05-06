@@ -17,6 +17,8 @@ extern logging::Logger      logger;
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern std::vector<String>  outputMessagesBuffer;
+extern std::vector<String>  outputAckRequestBuffer;
+
 extern Configuration        Config;
 
 extern int                  menuDisplay;
@@ -28,10 +30,13 @@ extern uint32_t             messageLedTime;
 extern bool                 digirepeaterActive;
 
 extern int                  ackNumberSend;
+extern String               ackDataExpected;
+extern bool                 ackRequestState;
 extern uint8_t              winlinkStatus;
 
 extern APRSPacket           lastReceivedPacket;
 extern uint32_t             lastMsgRxTime;
+extern uint32_t             lastRetryTime;
 
 String  lastMessageSaved      = "";
 int     numAPRSMessages       = 0;
@@ -243,29 +248,71 @@ namespace MSG_Utils {
     }       
 
     void processOutputBuffer() {    // todos los mensajes de salida deben llegar a este buffer !!!
+
+        /*  no olvidar revisar que los mensajes no se envien muy pronto despues de gps
+            ni los de gps despues de mensajes       
+            lastOutputBufferTx ????
+            lastMsgRxTime??
+        */
+
         uint32_t lastOutputBufferTx = millis() - lastMsgRxTime;
         if (!outputMessagesBuffer.empty() && lastOutputBufferTx >= 4500) {
-            /* buffer = CALLSING, payload (si tiene { es con ack)
-            si payload tiene "{" se pasa al buffer con ackRequest      */
             String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
             String payload = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
-
-            if (payload.indexOf("{") > 0) {   // tiene ackRequest
-                // se mete en otro buffer
-                // se saca de este buffer base
-                sendMessage(0, addressee, payload);
+            if (payload.indexOf("{") > 0) {   // message Has ack Request
+                outputAckRequestBuffer.push_back("5," + addressee + "," + payload);  // 5 is for ack packets retries
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                lastMsgRxTime = millis();
-
-            } else {     // se procesa como sin ack
+                lastMsgRxTime = millis();   // ??
+            } else {     // Normal message without ack Request
                 /*unit32-t lastPacketTx = millis() - lastTxTime;
                 if (lastPacketTx > 7 * 1000) {            // no enviar un mensaje antes de 7 segundos del ultimo gps.
                 }*/
                 sendMessage(0, addressee, payload);
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                lastMsgRxTime = millis();               
-            }           
+                lastMsgRxTime = millis();      //   ?          
+            }
         }
+        if (outputAckRequestBuffer.empty()) {
+            ackRequestState = false;            /// validar que donde se escuchan packets se revise si recibio X ack para sacarlo de los retrys
+        } else if (!outputAckRequestBuffer.empty() && lastOutputBufferTx >= 4500) {
+            /*  asegurarse que la creacion del mensaje desde su origen agregue el ackNumber y no en el sendMessage!!! */
+            bool sendRetry = false;
+            String triesLeftString = outputAckRequestBuffer[0].substring(0 , outputAckRequestBuffer[0].indexOf(","));
+            int triesLeft = triesLeftString.toInt();
+            switch (triesLeft) {
+                case 5:
+                    sendRetry = true;
+                    break;
+                case 4:
+                    if (millis() - lastRetryTime > 30 * 1000) sendRetry = true;
+                    break;
+                case 3:
+                    if (millis() - lastRetryTime > 30 * 1000) sendRetry = true;
+                    break;
+                case 2:
+                    if (millis() - lastRetryTime > 90 * 1000) sendRetry = true;
+                    break;
+                case 1:
+                    if (millis() - lastRetryTime > 180 * 1000) sendRetry = true;
+                    break;
+            }
+            if (sendRetry) {
+                String rest = outputAckRequestBuffer[0].substring(outputAckRequestBuffer[0].indexOf(",") + 1);
+                String addressee = rest.substring(0, rest.indexOf(","));
+                String payload = rest.substring(rest.indexOf(",") + 1);
+                ackDataExpected = payload.substring(payload.indexOf("{") + 1);
+                ackRequestState = true;
+                sendMessage(1, addressee, payload);     // cambiar "1" !!!
+                lastRetryTime = millis();
+                if (triesLeft == 1) {
+                    outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
+                } else {
+                    outputAckRequestBuffer[0] = String(triesLeft - 1) + "," + addressee + "," + payload;
+                }
+            }
+
+        }
+        
     }
 
     void checkReceivedMessage(ReceivedLoRaPacket packet) {

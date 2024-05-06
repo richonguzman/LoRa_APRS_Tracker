@@ -330,8 +330,8 @@ namespace KEYBOARD_Utils {
             if (menuDisplay == 200) {
                 menuDisplay = 20;
             }
-        } else if ((menuDisplay>=1 && menuDisplay<=3) || (menuDisplay>=11 &&menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=27) || (menuDisplay>=30 && menuDisplay<=31)) {
-            menuDisplay = menuDisplay*10;
+        } else if ((menuDisplay >= 1 && menuDisplay <= 3) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 30 && menuDisplay <= 31)) {
+            menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory("APRS");
             if (MSG_Utils::warnNoAPRSMessages()) {
