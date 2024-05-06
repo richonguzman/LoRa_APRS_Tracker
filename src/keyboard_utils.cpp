@@ -349,21 +349,21 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 1300;
             } else {
                 show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
-                outputMessagesBuffer.push_back("ANSRVR,CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay = 1310;
             } else {
                 show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
-                outputMessagesBuffer.push_back("APRSPH,HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 132) {
             show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
-            outputMessagesBuffer.push_back("ANSRVR,U HOTG");
+            MSG_Utils::addToOutputBuffer(0, "ANSRVR", "U HOTG");
         } else if (menuDisplay == 133) {
             show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
-            outputMessagesBuffer.push_back("ANSRVR,K HOTG");
+            MSG_Utils::addToOutputBuffer(0, "ANSRVR", "K HOTG");
         }
 
         else if (menuDisplay == 210) {
@@ -396,7 +396,7 @@ namespace KEYBOARD_Utils {
 
         else if (menuDisplay == 4) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
-            outputMessagesBuffer.push_back("CA2RXU-15,wrl");
+            MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
         }
 
         else if (menuDisplay == 5) {
@@ -423,7 +423,7 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 5000) {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "L");
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "L");
         } else if (menuDisplay == 5010) {
             menuDisplay = 50100;
         } else if (menuDisplay == 50100) {
@@ -462,16 +462,16 @@ namespace KEYBOARD_Utils {
             menuDisplay = 50620;
         } else if (menuDisplay == 5063) {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "AL");
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "AL");
         } else if (menuDisplay == 5070) {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "B");
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "B");
             menuDisplay = 5;
         } else if (menuDisplay == 5080) {
             menuDisplay = 5081;
         } else if (menuDisplay == 5084) {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "/EX");
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "/EX");
             winlinkAddressee = "";
             winlinkSubject = "";
             winlinkBody = "";
@@ -571,15 +571,15 @@ namespace KEYBOARD_Utils {
                     messageText = messageText.substring(0, 67);
                 }
                 if (menuDisplay == 111) {
-                    outputMessagesBuffer.push_back(messageCallsign + "," + messageText);
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
                     menuDisplay = 11;
                 } else if (menuDisplay == 1300) {
                     messageCallsign = "ANSRVR";
-                    outputMessagesBuffer.push_back(messageCallsign + ",CQ HOTG " + messageText);
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "CQ HOTG " + messageText);
                     menuDisplay = 130;
                 } else if (menuDisplay == 1310) {
                     messageCallsign = "APRSPH";
-                    outputMessagesBuffer.push_back(messageCallsign + ",HOTG " + messageText);
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "HOTG " + messageText);
                     menuDisplay = 131;
                 }
                 messageCallsign = "";
@@ -603,12 +603,12 @@ namespace KEYBOARD_Utils {
             winlinkMailNumber = "_?";
         } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber != "_?") {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "R" + winlinkMailNumber);
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "R" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5020;
         } else if (menuDisplay == 5031 && key == 13 && winlinkMailNumber != "_?") {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "Y" + winlinkMailNumber);
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "Y" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5083;
         } else if (menuDisplay == 5041 && key == 13 && winlinkMailNumber != "_?") {
@@ -622,7 +622,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && winlinkAddressee.length() > 0) {
                 winlinkAddressee.trim();
                 // reemplazar con buffer
-                MSG_Utils::sendMessage(1, "WLNK-1", "F" + winlinkMailNumber + " " + winlinkAddressee);
+                MSG_Utils::addToOutputBuffer(1, "WLNK-1", "F" + winlinkMailNumber + " " + winlinkAddressee);
                 winlinkMailNumber = "_?";
                 winlinkAddressee = "";
                 menuDisplay = 5040;
@@ -634,7 +634,7 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 5051 && key == 13 && winlinkMailNumber !="_?") {
             // reemplazar con buffer
-            MSG_Utils::sendMessage(1, "WLNK-1", "K" + winlinkMailNumber);
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "K" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5050;
         } else if (menuDisplay == 50610) {
@@ -661,7 +661,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && winlinkAliasComplete.length()>= 1) {
                 winlinkAliasComplete.trim();
                 // reemplazar con buffer
-                MSG_Utils::sendMessage(1, "WLNK-1", "A " + winlinkAlias + "=" + winlinkAliasComplete);
+                MSG_Utils::addToOutputBuffer(1, "WLNK-1", "A " + winlinkAlias + "=" + winlinkAliasComplete);
                 winlinkAlias = "";
                 winlinkAliasComplete = "";
                 menuDisplay = 5061;
@@ -680,7 +680,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && winlinkAlias.length()>= 1) {
                 winlinkAlias.trim();
                 // reemplazar con buffer
-                MSG_Utils::sendMessage(1, "WLNK-1", "A " + winlinkAlias + "=");
+                MSG_Utils::addToOutputBuffer(1, "WLNK-1", "A " + winlinkAlias + "=");
                 winlinkAlias = "";
                 menuDisplay = 5062;
             } else if (key == 8) {
@@ -713,7 +713,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && winlinkSubject.length() > 0) {
                 winlinkSubject.trim();
                 // reemplazar con buffer
-                MSG_Utils::sendMessage(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
+                MSG_Utils::addToOutputBuffer(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
                 menuDisplay = 5083;
             } else if (key == 8) {
                 winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length() - 1);
@@ -730,7 +730,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && winlinkBody.length() <= 67) {
                 winlinkBody.trim();
                 // reemplazar con buffer
-                MSG_Utils::sendMessage(1, "WLNK-1", winlinkBody);
+                MSG_Utils::addToOutputBuffer(1, "WLNK-1", winlinkBody);
                 menuDisplay = 5084;
             } else if (key == 8) {
                 winlinkBody = winlinkBody.substring(0, winlinkBody.length() - 1);

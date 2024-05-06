@@ -32,7 +32,8 @@ extern bool                 digirepeaterActive;
 extern String               ackCallsignRequest;
 extern String               ackNumberRequest;
 
-extern int                  ackNumberSend;
+extern int                  ackRequestNumber;   //si
+//extern int                  ackNumberSend;
 extern String               ackDataExpected;
 extern bool                 ackRequestState;
 extern uint8_t              winlinkStatus;
@@ -230,7 +231,7 @@ namespace MSG_Utils {
         #if HAS_TFT
         cleanTFT();
         #endif
-        if (textMessage.indexOf("ack") == 0) {
+        /*if (textMessage.indexOf("ack") == 0) {
             if (station != "WLNK-1") {  // don't show Winlink ACK
                 show_display("<<ACK Tx>>", 500);
             }
@@ -246,9 +247,27 @@ namespace MSG_Utils {
         if (typeOfMessage == 1) {   //forced to send MSG with ack confirmation
             ackNumberSend++;
             newPacket += "{" + String(ackNumberSend);
-        }
+        }*/
+
+        // MSG_Utils::addToOutputBuffer
         LoRa_Utils::sendNewPacket(newPacket);
-    }       
+    }
+
+    String ackRequestNumberGenerator() {
+        ackRequestNumber++;
+        if (ackRequestNumber > 999) {
+            ackRequestNumber = 1;
+        }
+        return String(ackRequestNumber);
+    }
+
+    void addToOutputBuffer(uint8_t typeOfMessage, String station, String textMessage) {
+        if (typeOfMessage == 1) {
+            outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+        } else {
+            outputMessagesBuffer.push_back(station + "," + textMessage);
+        }
+    }
 
     void processOutputBuffer() {    // todos los mensajes de salida deben llegar a este buffer !!!
 
@@ -270,7 +289,7 @@ namespace MSG_Utils {
                 /*unit32-t lastPacketTx = millis() - lastTxTime;
                 if (lastPacketTx > 7 * 1000) {            // no enviar un mensaje antes de 7 segundos del ultimo gps.
                 }*/
-                sendMessage(0, addressee, payload);
+                sendMessage(0, addressee, payload);     //????? cero??
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
                 lastMsgRxTime = millis();      //   ?          
             }
@@ -305,7 +324,7 @@ namespace MSG_Utils {
                 String payload = rest.substring(rest.indexOf(",") + 1);
                 ackNumberRequest = payload.substring(payload.indexOf("{") + 1);
                 ackRequestState = true;
-                sendMessage(1, ackCallsignRequest, payload);     // cambiar "1" !!!
+                sendMessage(1, ackCallsignRequest, payload);     // cambiar "1" !!!          //????? cero??
                 lastRetryTime = millis();
                 if (triesLeft == 1) {
                     outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
@@ -361,7 +380,7 @@ namespace MSG_Utils {
                     if (lastReceivedPacket.message.indexOf("{") >= 0) {
                         String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                         ackMessage.trim();
-                        outputMessagesBuffer.push_back(lastReceivedPacket.sender + "," + ackMessage);
+                        addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);
                         lastMsgRxTime = millis();
                         lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
                     }
@@ -370,7 +389,7 @@ namespace MSG_Utils {
                     }
                     if (lastReceivedPacket.message.indexOf("ping") == 0 || lastReceivedPacket.message.indexOf("Ping") == 0 || lastReceivedPacket.message.indexOf("PING") == 0) {
                         lastMsgRxTime = millis();
-                        outputMessagesBuffer.push_back(lastReceivedPacket.sender + ",pong, 73!");
+                        addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
                     }
                     if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
                         Serial.println("Weather Report Received");

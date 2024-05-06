@@ -121,7 +121,7 @@ bool        smartBeaconValue        = true;
 String      ackCallsignRequest      = "";   // de quien espero ack
 String      ackNumberRequest        = "";   // cual ack espero
 
-int         ackNumberSend;
+int         ackRequestNumber;                   // si
 bool        ackRequestState         = false;
 String      ackDataExpected         = "";
 uint32_t    lastRetryTime           = millis();
@@ -188,7 +188,7 @@ void setup() {
     LoRa_Utils::setup();
     BME_Utils::setup();
     
-    ackNumberSend = random(1,999);
+    ackRequestNumber = random(1,999);
 
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
@@ -225,7 +225,7 @@ void loop() {
     }
     STATION_Utils::checkSmartBeaconValue();
     
-    if (ackNumberSend >= 999) ackNumberSend = 1;
+    //if (ackNumberSend >= 999) ackNumberSend = 1;        // mover ??
 
     POWER_Utils::batteryManager();
 

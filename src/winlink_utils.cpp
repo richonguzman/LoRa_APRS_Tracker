@@ -26,8 +26,7 @@ namespace WINLINK_Utils {
         challengeAnswer += char(random(65,90));
         challengeAnswer += char(random(48,57));
         challengeAnswer += char(random(65,90));
-        delay(500);
-        MSG_Utils::sendMessage(1, "WLNK-1", challengeAnswer);
+        MSG_Utils::addToOutputBuffer(1, "WLNK-1", challengeAnswer);
     }
 
     void login() {
@@ -37,7 +36,7 @@ namespace WINLINK_Utils {
             menuDisplay = 5000;
         } else {
             winlinkStatus = 1;
-            MSG_Utils::sendMessage(1, "WLNK-1", "L");
+            MSG_Utils::addToOutputBuffer(1, "WLNK-1", "Start");
             menuDisplay = 500;
         }
     }
