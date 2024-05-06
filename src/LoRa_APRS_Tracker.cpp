@@ -117,6 +117,10 @@ bool        miceActive              = false;
 
 bool        smartBeaconValue        = true;
 
+
+String      ackCallsignRequest      = "";   // de quien espero ack
+String      ackNumberRequest        = "";   // cual ack espero
+
 int         ackNumberSend;
 bool        ackRequestState         = false;
 String      ackDataExpected         = "";

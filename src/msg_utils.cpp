@@ -29,6 +29,9 @@ extern uint32_t             messageLedTime;
 
 extern bool                 digirepeaterActive;
 
+extern String               ackCallsignRequest;
+extern String               ackNumberRequest;
+
 extern int                  ackNumberSend;
 extern String               ackDataExpected;
 extern bool                 ackRequestState;
@@ -298,16 +301,16 @@ namespace MSG_Utils {
             }
             if (sendRetry) {
                 String rest = outputAckRequestBuffer[0].substring(outputAckRequestBuffer[0].indexOf(",") + 1);
-                String addressee = rest.substring(0, rest.indexOf(","));
+                ackCallsignRequest = rest.substring(0, rest.indexOf(","));
                 String payload = rest.substring(rest.indexOf(",") + 1);
-                ackDataExpected = payload.substring(payload.indexOf("{") + 1);
+                ackNumberRequest = payload.substring(payload.indexOf("{") + 1);
                 ackRequestState = true;
-                sendMessage(1, addressee, payload);     // cambiar "1" !!!
+                sendMessage(1, ackCallsignRequest, payload);     // cambiar "1" !!!
                 lastRetryTime = millis();
                 if (triesLeft == 1) {
                     outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                 } else {
-                    outputAckRequestBuffer[0] = String(triesLeft - 1) + "," + addressee + "," + payload;
+                    outputAckRequestBuffer[0] = String(triesLeft - 1) + "," + ackCallsignRequest + "," + payload;
                 }
             }
 
@@ -344,6 +347,17 @@ namespace MSG_Utils {
                 }
                 lastHeardTracker = lastReceivedPacket.sender;
                 if (lastReceivedPacket.type == 1 && lastReceivedPacket.addressee == currentBeacon->callsign) {
+                    
+                    //
+                    String ackAnswer = "";
+                    if (ackRequestState && lastReceivedPacket.message.indexOf("ack") == 0) {
+                        ackAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3);
+                        if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == ackAnswer) {
+                            // lo saco del buffer de ackrequest
+                        } 
+                    }
+                    //
+
                     if (lastReceivedPacket.message.indexOf("{") >= 0) {
                         String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                         ackMessage.trim();
@@ -381,19 +395,19 @@ namespace MSG_Utils {
                         menuDisplay = 40;
                         menuTime = millis();
                     } else if (lastReceivedPacket.sender == "WLNK-1") {
-                        String winlinkAckAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3);
-                        if (winlinkStatus == 1 && winlinkAckAnswer.toInt() == ackNumberSend) {
+                        if (winlinkStatus == 0) {
+                            if (!Config.simplifiedTrackerMode) {
+                                lastMsgRxTime = millis();
+                                saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
+                            }
+                        } else if (winlinkStatus == 1 && ackNumberRequest == ackAnswer) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Waiting Challenge");
                             lastMsgRxTime = millis();
                             winlinkStatus = 2;
                             menuDisplay = 500;
-                        } else if (/*winlinkStatus <= 2 && */lastReceivedPacket.message.indexOf("Login [") == 0) {
+                        } else if (lastReceivedPacket.message.indexOf("Login [") == 0) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge received");
-                            String winlinkChallenge = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]"));
-                            //Serial.println("the challenge is " + winlinkChallenge);
-                            WINLINK_Utils::processWinlinkChallenge(winlinkChallenge);
-                            // controlar en proceso anterior tirar al outputMessagesBuffer tambien!
-                            // controlar en proceso anterior tirar al outputMessagesBuffer tambien!
+                            WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
                             // controlar en proceso anterior tirar al outputMessagesBuffer tambien!
                             lastMsgRxTime = millis();
                             winlinkStatus = 3;
@@ -406,8 +420,8 @@ namespace MSG_Utils {
                             show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
                             winlinkStatus = 5;
                             menuDisplay = 5000;
-                        } */else if (winlinkStatus == 3 && winlinkAckAnswer.toInt() == ackNumberSend) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Reception ACK");
+                        } */else if (winlinkStatus == 3 && ackNumberRequest == ackAnswer) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Answer Send"); // edit show_display : Challenge Answer Send!!!!
                             lastMsgRxTime = millis();
                             winlinkStatus = 4;
                             menuDisplay = 502;
@@ -425,12 +439,7 @@ namespace MSG_Utils {
                             lastMsgRxTime = millis();
                             show_display("<WLNK Rx >", "", lastReceivedPacket.message , "", 3000);
                             saveNewMessage("WLNK", lastReceivedPacket.sender, lastReceivedPacket.message);
-                        } else if (winlinkStatus == 0) {
-                            if (!Config.simplifiedTrackerMode) {
-                                lastMsgRxTime = millis();
-                                saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
-                            }
-                        }
+                        } 
                     } else {
                         if (!Config.simplifiedTrackerMode) {
                             lastMsgRxTime = millis();
