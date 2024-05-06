@@ -277,6 +277,7 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender!=currentBeacon->callsign) {
 
+                // segun bluetoothType y si estan activos?
                 if (Config.bluetoothType == 0) {
                     BLE_Utils::sendToPhone(packet.text.substring(3));
                 } else {
@@ -308,9 +309,7 @@ namespace MSG_Utils {
                     }
                     if (lastReceivedPacket.message.indexOf("ping") == 0 || lastReceivedPacket.message.indexOf("Ping") == 0 || lastReceivedPacket.message.indexOf("PING") == 0) {
                         lastMsgRxTime = millis();
-                        //delay(100);
-                        // agregar a buffer!!!
-                        sendMessage(0, lastReceivedPacket.sender, "pong, 73!");
+                        outputMessagesBuffer.push_back(lastReceivedPacket.sender + ",pong, 73!");
                     }
                     if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
                         Serial.println("Weather Report Received");
