@@ -435,3 +435,20 @@ void show_display(String header, String line1, String line2, String line3, Strin
     #endif
     delay(wait);
 }
+
+void startupScreen(uint8_t index, String version) {
+    String workingFreq = "    LoRa Freq [";
+    if (index == 0) {
+        workingFreq += "Eu]";
+    } else if (index == 1) {
+        workingFreq += "PL]";
+    } else if (index == 2) {
+        workingFreq += "UK]";
+    }
+    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + version, 4000);
+    #ifdef HAS_TFT
+    cleanTFT();
+    #endif
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
+}

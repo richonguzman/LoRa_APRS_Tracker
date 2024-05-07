@@ -33,6 +33,8 @@ namespace POWER_Utils {
     void activateLoRa();
     void deactivateLoRa();
 
+    void externalPinSetup();
+
     bool begin(TwoWire &port);
     void setup();
 

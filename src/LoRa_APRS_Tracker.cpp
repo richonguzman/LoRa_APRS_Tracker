@@ -149,40 +149,13 @@ void setup() {
     #endif
 
     POWER_Utils::setup();
-
     setup_display();
+    POWER_Utils::externalPinSetup();
 
-    if (Config.notification.buzzerActive) {
-        pinMode(Config.notification.buzzerPinTone, OUTPUT);
-        pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-        if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
-    }
-    if (Config.notification.ledTx) pinMode(Config.notification.ledTxPin, OUTPUT);
-    if (Config.notification.ledMessage) pinMode(Config.notification.ledMessagePin, OUTPUT);
-    if (Config.notification.ledFlashlight) pinMode(Config.notification.ledFlashlightPin, OUTPUT);
-    
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
-    String workingFreq = "    LoRa Freq [";
-    if (loraIndex == 0) {
-        workingFreq += "Eu]";
-    } else if (loraIndex == 1) {
-        workingFreq += "PL]";
-    } else if (loraIndex == 2) {
-        workingFreq += "UK]";
-    }
-
-    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + versionDate, 4000);
-    #ifdef HAS_TFT
-    cleanTFT();
-    #endif
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", versionDate);
-
-    if (Config.ptt.active) {
-        pinMode(Config.ptt.io_pin, OUTPUT);
-        digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
-    }
+    startupScreen(loraIndex, versionDate);
+    
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
