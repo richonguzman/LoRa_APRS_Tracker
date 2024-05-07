@@ -117,16 +117,12 @@ bool        miceActive              = false;
 
 bool        smartBeaconValue        = true;
 
-int         ackRequestNumber;                       // numero generado para los request que se pediran
-uint32_t    lastMsgRxTime           = millis();     // tiempo que se actualiza de cada mensaje recibido
-bool        ackRequestState         = false;        // activa proceso escucha/espera de ack enviado.
-String      ackCallsignRequest      = "";           // de quien espero ack
-String      ackNumberRequest        = "";           // cual ack espero
-
-//
-String      ackDataExpected         = "";
+int         ackRequestNumber;
+bool        ackRequestState         = false;
+String      ackCallsignRequest      = "";
+String      ackNumberRequest        = "";
+uint32_t    lastMsgRxTime           = millis();
 uint32_t    lastRetryTime           = millis();
-//
 
 uint8_t     winlinkStatus           = 0;
 String      winlinkMailNumber       = "_?";
@@ -155,7 +151,7 @@ void setup() {
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
     startupScreen(loraIndex, versionDate);
-    
+
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];

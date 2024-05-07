@@ -34,9 +34,7 @@ extern String               ackNumberRequest;
 extern bool                 ackRequestState;
 extern int                  ackRequestNumber;
 
-//
 extern uint32_t             lastTxTime;
-extern String               ackDataExpected;
 
 extern uint8_t              winlinkStatus;
 
