@@ -43,6 +43,9 @@ extern bool                 smartBeaconValue;
 extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
+extern bool                 wxRequestStatus;
+extern uint32_t             wxRequestTime;
+
 String                      firstNearTracker;
 String                      secondNearTracker;
 String                      thirdNearTracker;
@@ -370,10 +373,13 @@ namespace STATION_Utils {
     }
 
     void checkSmartBeaconValue() {
-        if (winlinkStatus != 0) {
-            smartBeaconValue = false;
-        } else {
+        if (wxRequestStatus && (millis() - wxRequestTime) > 20000) {
+            wxRequestStatus = false;
+        }
+        if(winlinkStatus == 0 && !wxRequestStatus) {
             smartBeaconValue = currentBeacon->smartBeaconState;
+        } else {
+            smartBeaconValue = false;
         }
     }
 

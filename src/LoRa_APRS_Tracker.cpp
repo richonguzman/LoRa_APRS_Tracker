@@ -133,6 +133,8 @@ String      winlinkAlias            = "";
 String      winlinkAliasComplete    = "";
 bool        winlinkCommentState     = false;
 
+bool        wxRequestStatus         = false;
+uint32_t    wxRequestTime           = 0;
 uint32_t    batteryMeasurmentTime   = 0;
 
 APRSPacket                          lastReceivedPacket;
@@ -192,7 +194,10 @@ void setup() {
 void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
     if (statusState) {
-        Config.validateConfigFile(currentBeacon->callsign);
+        if (Config.validateConfigFile(currentBeacon->callsign)) {
+            KEYBOARD_Utils::rightArrow();
+            currentBeacon = &Config.beacons[myBeaconsIndex];
+        }
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
     STATION_Utils::checkSmartBeaconValue();

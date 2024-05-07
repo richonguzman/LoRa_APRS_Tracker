@@ -38,6 +38,9 @@ extern uint32_t             lastTxTime;
 
 extern uint8_t              winlinkStatus;
 
+extern bool                 wxRequestStatus;
+extern uint32_t             wxRequestTime;
+
 extern APRSPacket           lastReceivedPacket;
 extern uint32_t             lastMsgRxTime;
 extern uint32_t             lastRetryTime;
@@ -235,6 +238,8 @@ namespace MSG_Utils {
             show_display("<<ACK Tx>>", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {
             show_display("<WEATHER>","", "--- Sending Query ---",  1000);
+            wxRequestTime = millis();
+            wxRequestStatus = true;
         } else {
             if (station == "WLNK-1") {
                 show_display("WINLINK Tx", "", newPacket, 1000);

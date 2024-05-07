@@ -105,7 +105,7 @@ public:
     bool    disableGPS;
 
     Configuration();
-    void validateConfigFile(String currentBeaconCallsign);
+    bool validateConfigFile(String currentBeaconCallsign);
     bool validateMicE(String currentBeaconMicE);
 
 private:

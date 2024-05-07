@@ -106,13 +106,13 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     configFile.close();
 }
 
-void Configuration::validateConfigFile(String currentBeaconCallsign) {
+bool Configuration::validateConfigFile(String currentBeaconCallsign) {
     if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
-        show_display("ERROR", "Change all callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
-        while (true) {
-            delay(1000);
-        }
+        show_display("ERROR", "Change callsigns!", "'tracker_config.json'", "upload it via --> ", "'Upload File System image'");
+        return true;
+    } else {
+        return false;
     }
 }
 
