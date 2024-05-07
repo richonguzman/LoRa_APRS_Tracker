@@ -358,8 +358,7 @@ namespace MSG_Utils {
                 }
                 lastHeardTracker = lastReceivedPacket.sender;
                 if (lastReceivedPacket.type == 1 && lastReceivedPacket.addressee == currentBeacon->callsign) {
-                    
-                    //
+
                     String ackAnswer = "";
                     if (ackRequestState && lastReceivedPacket.message.indexOf("ack") == 0) {
                         ackAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3);
@@ -368,7 +367,6 @@ namespace MSG_Utils {
                             ackRequestState = false;
                         } 
                     }
-                    //
 
                     if (lastReceivedPacket.message.indexOf("{") >= 0) {
                         String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
@@ -418,13 +416,14 @@ namespace MSG_Utils {
                             winlinkStatus = 2;
                             menuDisplay = 500;
                         } else if (lastReceivedPacket.message.indexOf("Login [") == 0) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge received");
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received");
                             WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Sended");
                             lastMsgRxTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
                         } else if (winlinkStatus == 3 && ackNumberRequest == ackAnswer) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Answer Send"); // edit show_display : Challenge Answer Send!!!!
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Ack Received"); // edit show_display : Challenge Answer Send!!!!
                             lastMsgRxTime = millis();
                             winlinkStatus = 4;
                             menuDisplay = 502;
@@ -447,7 +446,9 @@ namespace MSG_Utils {
                         if (!Config.simplifiedTrackerMode) {
                             lastMsgRxTime = millis();
                             show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
-                            saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
+                            if (lastReceivedPacket.message.indexOf("ack") != 0) {
+                                saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
+                            }                            
                         }
                     }
                 } else {
