@@ -117,15 +117,16 @@ bool        miceActive              = false;
 
 bool        smartBeaconValue        = true;
 
+int         ackRequestNumber;                       // numero generado para los request que se pediran
+uint32_t    lastMsgRxTime           = millis();     // tiempo que se actualiza de cada mensaje recibido
+bool        ackRequestState         = false;        // activa proceso escucha/espera de ack enviado.
+String      ackCallsignRequest      = "";           // de quien espero ack
+String      ackNumberRequest        = "";           // cual ack espero
 
-String      ackCallsignRequest      = "";   // de quien espero ack
-String      ackNumberRequest        = "";   // cual ack espero
-
-int         ackRequestNumber;                   // si
-bool        ackRequestState         = false;
+//
 String      ackDataExpected         = "";
 uint32_t    lastRetryTime           = millis();
-uint32_t    lastMsgRxTime           = millis();
+//
 
 uint8_t     winlinkStatus           = 0;
 String      winlinkMailNumber       = "_?";
@@ -224,8 +225,6 @@ void loop() {
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
     STATION_Utils::checkSmartBeaconValue();
-    
-    //if (ackNumberSend >= 999) ackNumberSend = 1;        // mover ??
 
     POWER_Utils::batteryManager();
 

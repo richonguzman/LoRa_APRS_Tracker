@@ -31,11 +31,13 @@ extern bool                 digirepeaterActive;
 
 extern String               ackCallsignRequest;
 extern String               ackNumberRequest;
-
-extern int                  ackRequestNumber;   //si
-//extern int                  ackNumberSend;
-extern String               ackDataExpected;
 extern bool                 ackRequestState;
+extern int                  ackRequestNumber;
+
+//
+extern uint32_t             lastTxTime;
+extern String               ackDataExpected;
+
 extern uint8_t              winlinkStatus;
 
 extern APRSPacket           lastReceivedPacket;
@@ -226,15 +228,13 @@ namespace MSG_Utils {
         }
     }
 
-    void sendMessage(uint8_t typeOfMessage, String station, String textMessage) {
+    void sendMessage(String station, String textMessage) {
         String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, station, textMessage);
         #if HAS_TFT
         cleanTFT();
         #endif
-        /*if (textMessage.indexOf("ack") == 0) {
-            if (station != "WLNK-1") {  // don't show Winlink ACK
-                show_display("<<ACK Tx>>", 500);
-            }
+        if (textMessage.indexOf("ack") == 0 && station != "WLNK-1") {  // don't show Winlink ACK
+            show_display("<<ACK Tx>>", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {
             show_display("<WEATHER>","", "--- Sending Query ---",  1000);
         } else {
@@ -244,12 +244,6 @@ namespace MSG_Utils {
                 show_display("MSG Tx >>", "", newPacket, 1000);
             }
         }
-        if (typeOfMessage == 1) {   //forced to send MSG with ack confirmation
-            ackNumberSend++;
-            newPacket += "{" + String(ackNumberSend);
-        }*/
-
-        // MSG_Utils::addToOutputBuffer
         LoRa_Utils::sendNewPacket(newPacket);
     }
 
@@ -269,75 +263,73 @@ namespace MSG_Utils {
         }
     }
 
-    void processOutputBuffer() {    // todos los mensajes de salida deben llegar a este buffer !!!
-
-        /*  no olvidar revisar que los mensajes no se envien muy pronto despues de gps
-            ni los de gps despues de mensajes       
-            lastOutputBufferTx ????
-            lastMsgRxTime??
-        */
-
-        uint32_t lastOutputBufferTx = millis() - lastMsgRxTime;
-        if (!outputMessagesBuffer.empty() && lastOutputBufferTx >= 4500) {
+    void processOutputBuffer() {
+        if (!outputMessagesBuffer.empty() && (millis() - lastMsgRxTime) >= 4500 && (millis() - lastTxTime) > 3000) {
             String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
-            String payload = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
-            if (payload.indexOf("{") > 0) {   // message Has ack Request
-                outputAckRequestBuffer.push_back("5," + addressee + "," + payload);  // 5 is for ack packets retries
+            String message = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
+            if (message.indexOf("{") > 0) {     // message with ack Request
+                outputAckRequestBuffer.push_back("6," + addressee + "," + message);  // 5 is for ack packets retries
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                lastMsgRxTime = millis();   // ??
-            } else {     // Normal message without ack Request
-                /*unit32-t lastPacketTx = millis() - lastTxTime;
-                if (lastPacketTx > 7 * 1000) {            // no enviar un mensaje antes de 7 segundos del ultimo gps.
-                }*/
-                sendMessage(0, addressee, payload);     //????? cero??
+            } else {                            // message without ack Request
+                sendMessage(addressee, message);
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                lastMsgRxTime = millis();      //   ?          
+                lastTxTime = millis();
             }
         }
         if (outputAckRequestBuffer.empty()) {
-            ackRequestState = false;            /// validar que donde se escuchan packets se revise si recibio X ack para sacarlo de los retrys
-        } else if (!outputAckRequestBuffer.empty() && lastOutputBufferTx >= 4500) {
-            /*  asegurarse que la creacion del mensaje desde su origen agregue el ackNumber y no en el sendMessage!!! */
+            ackRequestState = false;
+        } else if (!outputAckRequestBuffer.empty() && (millis() - lastMsgRxTime) >= 4500 && (millis() - lastTxTime) > 3000) {
             bool sendRetry = false;
-            String triesLeftString = outputAckRequestBuffer[0].substring(0 , outputAckRequestBuffer[0].indexOf(","));
-            int triesLeft = triesLeftString.toInt();
-            switch (triesLeft) {
-                case 5:
+            String triesLeft = outputAckRequestBuffer[0].substring(0 , outputAckRequestBuffer[0].indexOf(","));
+            switch (triesLeft.toInt()) {
+                case 6:
                     sendRetry = true;
+                    ackRequestState = true;
+                    break;
+                case 5:
+                    if (millis() - lastRetryTime > 30 * 1000) sendRetry = true;
                     break;
                 case 4:
-                    if (millis() - lastRetryTime > 30 * 1000) sendRetry = true;
+                    if (millis() - lastRetryTime > 60 * 1000) sendRetry = true;
                     break;
                 case 3:
-                    if (millis() - lastRetryTime > 30 * 1000) sendRetry = true;
+                    if (millis() - lastRetryTime > 120 * 1000) sendRetry = true;
                     break;
                 case 2:
-                    if (millis() - lastRetryTime > 90 * 1000) sendRetry = true;
+                    if (millis() - lastRetryTime > 120 * 1000) sendRetry = true;
                     break;
                 case 1:
-                    if (millis() - lastRetryTime > 180 * 1000) sendRetry = true;
+                    if (millis() - lastRetryTime > 120 * 1000) sendRetry = true;
+                    break;
+                case 0:
+                    if (millis() - lastRetryTime > 30 * 1000) {
+                        ackRequestNumber = false;
+                        outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
+                    }
                     break;
             }
             if (sendRetry) {
                 String rest = outputAckRequestBuffer[0].substring(outputAckRequestBuffer[0].indexOf(",") + 1);
                 ackCallsignRequest = rest.substring(0, rest.indexOf(","));
                 String payload = rest.substring(rest.indexOf(",") + 1);
-                ackNumberRequest = payload.substring(payload.indexOf("{") + 1);
-                ackRequestState = true;
-                sendMessage(1, ackCallsignRequest, payload);     // cambiar "1" !!!          //????? cero??
+                ackNumberRequest = payload.substring(payload.indexOf("{") + 1);                
+                sendMessage(ackCallsignRequest, payload);
+                lastTxTime = millis();
                 lastRetryTime = millis();
-                if (triesLeft == 1) {
-                    outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
-                } else {
-                    outputAckRequestBuffer[0] = String(triesLeft - 1) + "," + ackCallsignRequest + "," + payload;
-                }
+                outputAckRequestBuffer[0] = String(triesLeft.toInt() - 1) + "," + ackCallsignRequest + "," + payload;
             }
-
         }
-        
     }
 
     void checkReceivedMessage(ReceivedLoRaPacket packet) {
+
+        /*
+        
+        agregar revisor de no escuchar o pescar el mismo packet que recien escucho hace X segundos...  buffer de 5 o 10?
+        
+        */
+
+
         if(packet.text.isEmpty()) {
             return;
         }
@@ -372,7 +364,8 @@ namespace MSG_Utils {
                     if (ackRequestState && lastReceivedPacket.message.indexOf("ack") == 0) {
                         ackAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3);
                         if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == ackAnswer) {
-                            // lo saco del buffer de ackrequest
+                            outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
+                            ackRequestState = false;
                         } 
                     }
                     //
@@ -380,7 +373,7 @@ namespace MSG_Utils {
                     if (lastReceivedPacket.message.indexOf("{") >= 0) {
                         String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                         ackMessage.trim();
-                        addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);
+                        MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);
                         lastMsgRxTime = millis();
                         lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
                     }
@@ -389,7 +382,7 @@ namespace MSG_Utils {
                     }
                     if (lastReceivedPacket.message.indexOf("ping") == 0 || lastReceivedPacket.message.indexOf("Ping") == 0 || lastReceivedPacket.message.indexOf("PING") == 0) {
                         lastMsgRxTime = millis();
-                        addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
+                        MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
                     }
                     if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
                         Serial.println("Weather Report Received");
@@ -427,19 +420,10 @@ namespace MSG_Utils {
                         } else if (lastReceivedPacket.message.indexOf("Login [") == 0) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge received");
                             WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
-                            // controlar en proceso anterior tirar al outputMessagesBuffer tambien!
                             lastMsgRxTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
-                        } /*                        
-                        que pasa si es que se reinicio pero esta logeado en las 2 horas?
-
-                        else if (winlinkStatus == 2 && lastReceivedPacket.message.indexOf("Login [") == -1) {
-                            Serial.println("We were already logged to WINLINK!!!!");
-                            show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
-                            winlinkStatus = 5;
-                            menuDisplay = 5000;
-                        } */else if (winlinkStatus == 3 && ackNumberRequest == ackAnswer) {
+                        } else if (winlinkStatus == 3 && ackNumberRequest == ackAnswer) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Answer Send"); // edit show_display : Challenge Answer Send!!!!
                             lastMsgRxTime = millis();
                             winlinkStatus = 4;

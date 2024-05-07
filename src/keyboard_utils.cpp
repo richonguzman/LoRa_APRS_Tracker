@@ -461,16 +461,13 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 5062) {
             menuDisplay = 50620;
         } else if (menuDisplay == 5063) {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "AL");
         } else if (menuDisplay == 5070) {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "B");
             menuDisplay = 5;
         } else if (menuDisplay == 5080) {
             menuDisplay = 5081;
         } else if (menuDisplay == 5084) {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "/EX");
             winlinkAddressee = "";
             winlinkSubject = "";
@@ -602,12 +599,10 @@ namespace KEYBOARD_Utils {
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) {
             winlinkMailNumber = "_?";
         } else if (menuDisplay == 5021 && key == 13 && winlinkMailNumber != "_?") {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "R" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5020;
         } else if (menuDisplay == 5031 && key == 13 && winlinkMailNumber != "_?") {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "Y" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5083;
@@ -621,7 +616,6 @@ namespace KEYBOARD_Utils {
                 winlinkAddressee += key;
             } else if (key == 13 && winlinkAddressee.length() > 0) {
                 winlinkAddressee.trim();
-                // reemplazar con buffer
                 MSG_Utils::addToOutputBuffer(1, "WLNK-1", "F" + winlinkMailNumber + " " + winlinkAddressee);
                 winlinkMailNumber = "_?";
                 winlinkAddressee = "";
@@ -633,7 +627,6 @@ namespace KEYBOARD_Utils {
                 winlinkAddressee = "";
             }
         } else if (menuDisplay == 5051 && key == 13 && winlinkMailNumber !="_?") {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "K" + winlinkMailNumber);
             winlinkMailNumber = "_?";
             menuDisplay = 5050;
@@ -660,7 +653,6 @@ namespace KEYBOARD_Utils {
                 winlinkAliasComplete += key;
             } else if (key == 13 && winlinkAliasComplete.length()>= 1) {
                 winlinkAliasComplete.trim();
-                // reemplazar con buffer
                 MSG_Utils::addToOutputBuffer(1, "WLNK-1", "A " + winlinkAlias + "=" + winlinkAliasComplete);
                 winlinkAlias = "";
                 winlinkAliasComplete = "";
@@ -679,7 +671,6 @@ namespace KEYBOARD_Utils {
                 winlinkAlias += key;
             } else if (key == 13 && winlinkAlias.length()>= 1) {
                 winlinkAlias.trim();
-                // reemplazar con buffer
                 MSG_Utils::addToOutputBuffer(1, "WLNK-1", "A " + winlinkAlias + "=");
                 winlinkAlias = "";
                 menuDisplay = 5062;
@@ -712,7 +703,6 @@ namespace KEYBOARD_Utils {
                 winlinkSubject += key;
             } else if (key == 13 && winlinkSubject.length() > 0) {
                 winlinkSubject.trim();
-                // reemplazar con buffer
                 MSG_Utils::addToOutputBuffer(1, "WLNK-1", "SP " + winlinkAddressee + " " + winlinkSubject);
                 menuDisplay = 5083;
             } else if (key == 8) {
@@ -729,7 +719,6 @@ namespace KEYBOARD_Utils {
                 winlinkBody += key;
             } else if (key == 13 && winlinkBody.length() <= 67) {
                 winlinkBody.trim();
-                // reemplazar con buffer
                 MSG_Utils::addToOutputBuffer(1, "WLNK-1", winlinkBody);
                 menuDisplay = 5084;
             } else if (key == 8) {

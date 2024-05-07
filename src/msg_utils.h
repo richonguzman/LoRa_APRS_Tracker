@@ -16,7 +16,7 @@ namespace MSG_Utils {
     void    ledNotification();
     void    deleteFile(String typeOfFile);
     void    saveNewMessage(String typeMessage, String station, String newMessage);
-    void    sendMessage(uint8_t typeOfMessage, String station, String textMessage);
+    void    sendMessage(String station, String textMessage);
     String  ackRequestNumberGenerator();
     void    addToOutputBuffer(uint8_t typeOfMessage, String station, String textMessage);
     void    processOutputBuffer();
