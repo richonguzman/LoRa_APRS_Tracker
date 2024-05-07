@@ -2,6 +2,7 @@
 #include "power_utils.h"
 #include "notification_utils.h"
 #include "pins_config.h"
+#include "ble_utils.h"
 #include "logger.h"
 
 #ifndef TTGO_T_Beam_S3_SUPREME_V3
@@ -444,11 +445,30 @@ namespace POWER_Utils {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
         if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
         PMU.shutdown();
-        //#endif
         #else
-        esp_sleep_enable_timer_wakeup(10 * 1000000); // 10 seconds
-        esp_deep_sleep_start();
 
+        if (Config.bluetoothType==0) {
+            BLE_Utils::stop();
+        } else {
+            // turn off BT classic ???
+        }
+
+        #ifdef VEXT_CTRL
+        digitalWrite(VEXT_CTRL, LOW);
+        #endif
+
+        #ifdef ADC_CTRL
+        #ifdef HELTEC_WIRELESS_TRACKER
+        digitalWrite(ADC_CTRL, LOW);
+        #endif
+        #ifdef HELTEC_V3_GPS
+        digitalWrite(ADC_CTRL, HIGH);
+        #endif
+        #endif
+
+        long DEEP_SLEEP_TIME_SEC = 1296000; // 30 days
+        esp_sleep_enable_timer_wakeup(1000000ULL * DEEP_SLEEP_TIME_SEC);
+        esp_deep_sleep_start();
         #endif
     }
 

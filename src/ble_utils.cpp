@@ -48,6 +48,10 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 
 
 namespace BLE_Utils {
+
+    void stop() {
+        BLEDevice::deinit();
+    }
   
     void setup() {
         uint8_t dmac[6];

@@ -5,6 +5,7 @@
 
 namespace BLE_Utils {
 
+    void stop();
     void setup();
     void sendToLoRa();
     void txBLE(uint8_t p);
