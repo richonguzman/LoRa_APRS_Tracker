@@ -48,7 +48,7 @@ BluetoothSerial                     SerialBT;
 OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.05.06";
+String      versionDate             = "2024.05.07";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -132,6 +132,8 @@ String      winlinkBody             = "";
 String      winlinkAlias            = "";
 String      winlinkAliasComplete    = "";
 bool        winlinkCommentState     = false;
+
+uint32_t    batteryMeasurmentTime   = 0;
 
 APRSPacket                          lastReceivedPacket;
 

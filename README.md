@@ -59,6 +59,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.05.07 HELTEC V3 and Wireless Tracker Battery Measurments at 30seg to avoid accelerated discharge.
 - 2024.05.06 New Output Buffer for Messages with retry posibilities.
 - 2024.04.25 Added Lilygo TTGO T-Deck (add Neo6Mv2 GPS) support.
 - 2024.04.12 Added HELTEC Wireless Tracker support.

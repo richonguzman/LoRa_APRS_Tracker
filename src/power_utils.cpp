@@ -32,6 +32,7 @@ XPowersAXP2101 PMU;
 extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             disableGPS;
+extern uint32_t         batteryMeasurmentTime;
 
 bool    pmuInterrupt;
 float   lora32BatReadingCorr = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
@@ -63,6 +64,7 @@ namespace POWER_Utils {
                 #ifdef HELTEC_V3_GPS
                 digitalWrite(ADC_CTRL, HIGH);
                 #endif
+                batteryMeasurmentTime = millis();
             #endif
                 double voltage = (adc_value * 3.3 ) / 4095.0;
             #if defined(TTGO_T_Beam_V0_7) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
@@ -163,7 +165,11 @@ namespace POWER_Utils {
     }
 
     void batteryManager() {
+        #ifdef ADC_CTRL
+        if(batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
+        #else
         obtainBatteryInfo();
+        #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
         handleChargingLed();
         #endif
