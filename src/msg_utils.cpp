@@ -260,7 +260,20 @@ namespace MSG_Utils {
 
     void addToOutputBuffer(uint8_t typeOfMessage, String station, String textMessage) {
         if (typeOfMessage == 1) {
-            outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+            bool alreadyInBuffer = false;
+            for (int i = 0; i < outputMessagesBuffer.size(); i++) {
+                if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
+                    alreadyInBuffer = true;
+                }
+            }
+            for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
+                if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
+                    alreadyInBuffer = true;
+                }
+            }
+            if (!alreadyInBuffer) {
+                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+            }
         } else {
             outputMessagesBuffer.push_back(station + "," + textMessage);
         }
@@ -271,7 +284,7 @@ namespace MSG_Utils {
             String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
             String message = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
             if (message.indexOf("{") > 0) {     // message with ack Request
-                outputAckRequestBuffer.push_back("6," + addressee + "," + message);  // 5 is for ack packets retries
+                outputAckRequestBuffer.push_back("6," + addressee + "," + message);  // 6 is for ack packets retries
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
             } else {                            // message without ack Request
                 sendMessage(addressee, message);
