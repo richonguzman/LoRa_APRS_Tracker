@@ -43,6 +43,7 @@ extern String               winlinkBody;
 extern String               winlinkAlias;
 extern String               winlinkAliasComplete;
 extern bool                 winlinkCommentState;
+extern bool                 bmeSensorFound;
 
 String freqChangeWarning;
 
@@ -571,7 +572,11 @@ namespace MENU_Utils {
                         if (time_now % 10 < 5) {
                             fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                         } else {
-                            fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
+                            if (bmeSensorFound) {
+                                fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
+                            } else {
+                                fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
+                            }
                         }
                     } else {
                         fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;

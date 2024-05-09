@@ -46,12 +46,15 @@ extern bool                 winlinkCommentState;
 extern bool                 wxRequestStatus;
 extern uint32_t             wxRequestTime;
 
+extern bool                 bmeSensorFound;
+
 String                      firstNearTracker;
 String                      secondNearTracker;
 String                      thirdNearTracker;
 String                      fourthNearTracker;
 
 uint32_t                    lastDeleteListenedTracker;
+
 
 
 namespace STATION_Utils {
@@ -401,7 +404,11 @@ namespace STATION_Utils {
             } else {
                 packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             }
-            packet += BME_Utils::readDataSensor("APRS");
+            if (bmeSensorFound) {
+                packet += BME_Utils::readDataSensor("APRS");
+            } else {
+                packet += ".../...g...t...r...p...P...h..b.....BME MODULE NOT FOUND! ";
+            }            
         } else {
             if (miceActive) {
                 packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
