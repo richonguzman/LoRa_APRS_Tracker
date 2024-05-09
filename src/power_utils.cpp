@@ -1,3 +1,4 @@
+#include <SPI.h>
 #include "configuration.h"
 #include "power_utils.h"
 #include "notification_utils.h"
@@ -471,6 +472,24 @@ namespace POWER_Utils {
         digitalWrite(ADC_CTRL, HIGH);
         #endif
         #endif
+
+
+        #ifdef HELTEC_WIRELESS_TRACKER
+        Serial.flush();
+        SPI.endTransaction();           
+        SPI.end();
+        pinMode(RADIO_DIO1_PIN, ANALOG);
+        pinMode(RADIO_RST_PIN, ANALOG);
+        pinMode(RADIO_BUSY_PIN, ANALOG);
+        pinMode(RADIO_SCLK_PIN, ANALOG);
+        pinMode(RADIO_MISO_PIN, ANALOG);
+        pinMode(RADIO_MOSI_PIN, ANALOG);
+
+        pinMode(RADIO_CS_PIN, OUTPUT);
+        digitalWrite(RADIO_CS_PIN, HIGH);
+        gpio_hold_en((gpio_num_t)RADIO_CS_PIN);
+        #endif
+
 
         long DEEP_SLEEP_TIME_SEC = 1296000; // 30 days
         esp_sleep_enable_timer_wakeup(1000000ULL * DEEP_SLEEP_TIME_SEC);
