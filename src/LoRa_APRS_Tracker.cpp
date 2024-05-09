@@ -167,7 +167,7 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
 
-    if (Config.bluetoothType==0) {
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 3) {
         BLE_Utils::setup();
     } else {
         #ifdef HAS_BT_CLASSIC
@@ -227,7 +227,7 @@ void loop() {
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedTrackersByTimeAndDelete();
-    if (Config.bluetoothType == 0) {
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 3) {
         BLE_Utils::sendToLoRa();
     } else {
         #ifdef HAS_BT_CLASSIC

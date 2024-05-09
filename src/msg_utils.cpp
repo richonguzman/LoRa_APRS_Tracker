@@ -264,11 +264,17 @@ namespace MSG_Utils {
             for (int i = 0; i < outputMessagesBuffer.size(); i++) {
                 if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
                     alreadyInBuffer = true;
+                    //
+                    Serial.println(station + " : " + textMessage + " ya estaba en buffer base");
+                    //
                 }
             }
             for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
                 if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
                     alreadyInBuffer = true;
+                    //
+                    Serial.println(station + " : " + textMessage + " ya estaba en buffer Ack");
+                    //
                 }
             }
             if (!alreadyInBuffer) {
@@ -354,8 +360,7 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender!=currentBeacon->callsign) {
 
-                // segun bluetoothType y si estan activos?
-                if (Config.bluetoothType == 0) {
+                if (Config.bluetoothType == 0 || Config.bluetoothType == 3) {
                     BLE_Utils::sendToPhone(packet.text.substring(3));
                 } else {
                     #ifdef HAS_BT_CLASSIC

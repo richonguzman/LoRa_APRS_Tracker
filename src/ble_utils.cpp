@@ -1,9 +1,11 @@
 #include <NimBLEDevice.h>
+#include "configuration.h"
 #include "ax25_utils.h"
 #include "lora_utils.h"
 #include "ble_utils.h"
 #include "display.h"
 #include "logger.h"
+
 
 #define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
 #define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
@@ -13,6 +15,7 @@ BLEServer *pServer;
 BLECharacteristic *pCharacteristicTx;
 BLECharacteristic *pCharacteristicRx;
 
+extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
 extern bool             bluetoothConnected;
@@ -41,7 +44,11 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             //Serial.print(" ");
             receivedString += receivedData[i];
         }
-        BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
+        if (Config.bluetoothType == 0) {
+            BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
+        } else if (Config.bluetoothType == 3) {
+            BLEToLoRaPacket = receivedString;
+        }
         sendBleToLoRa = true;
     }
 };
@@ -129,8 +136,11 @@ namespace BLE_Utils {
             for (int i = 0; i < packet.length(); i++) {
                 receivedPacketString += packet[i];
             }
-            String AX25Frame = AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString);
-            txToPhoneOverBLE(AX25Frame);      
+            if (Config.bluetoothType == 0) {
+                txToPhoneOverBLE(AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString));
+            } else if (Config.bluetoothType == 3) {
+                txToPhoneOverBLE(receivedPacketString);                
+            }
         }
     }
 
