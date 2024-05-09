@@ -259,29 +259,50 @@ namespace MSG_Utils {
     }
 
     void addToOutputBuffer(uint8_t typeOfMessage, String station, String textMessage) {
+        bool alreadyInBuffer;
         if (typeOfMessage == 1) {
-            bool alreadyInBuffer = false;
+            alreadyInBuffer = false;
             for (int i = 0; i < outputMessagesBuffer.size(); i++) {
+                //
+                Serial.print("1-A) revisando buffer para : "); Serial.println(station + " : " + textMessage);
                 if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
                     alreadyInBuffer = true;
                     //
                     Serial.println(station + " : " + textMessage + " ya estaba en buffer base");
-                    //
                 }
             }
             for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
+                //
+                Serial.print("1-B) revisando ackRequestbuffer para : "); Serial.println(station + " : " + textMessage);
                 if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
                     alreadyInBuffer = true;
                     //
                     Serial.println(station + " : " + textMessage + " ya estaba en buffer Ack");
-                    //
                 }
             }
             if (!alreadyInBuffer) {
-                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+                String ackAlBuffer = ackRequestNumberGenerator();
+                // despues solo llamar una vez al ackRequestNumberGenerator();
+                Serial.print("1-C) agregado ackRequest --> "); Serial.println(station + "," + textMessage + "{" + ackAlBuffer);
+                //
+                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackAlBuffer);
             }
-        } else {
-            outputMessagesBuffer.push_back(station + "," + textMessage);
+        } else if (typeOfMessage == 0) {
+            alreadyInBuffer = false;
+            for (int k = 0; k < outputMessagesBuffer.size(); k++) {
+                //
+                Serial.print("0-A) revisando buffer para : "); Serial.println(station + " : " + textMessage);
+                if (outputMessagesBuffer[k].indexOf(station + "," + textMessage) == 0) {
+                    alreadyInBuffer = true;
+                    //
+                    Serial.println(station + " : " + textMessage + " ya estaba en buffer base");
+                }
+            }
+            if (!alreadyInBuffer) {
+                //
+                Serial.print("0-C) agregado a buffer --> "); Serial.println(station + "," + textMessage);
+                outputMessagesBuffer.push_back(station + "," + textMessage);
+            }
         }
     }
 
@@ -326,7 +347,14 @@ namespace MSG_Utils {
                 case 0:
                     if (millis() - lastRetryTime > 30 * 1000) {
                         ackRequestNumber = false;
+                        //
+                        Serial.print("sacando del buffer por 6 repeticiones = ");
+                        Serial.println(outputAckRequestBuffer[0]);
+                        //
                         outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
+                        if (winlinkStatus > 0 && winlinkStatus < 5) {
+                            winlinkStatus = 0;
+                        }                     
                     }
                     break;
             }
@@ -380,12 +408,13 @@ namespace MSG_Utils {
                 lastHeardTracker = lastReceivedPacket.sender;
                 if (lastReceivedPacket.type == 1 && lastReceivedPacket.addressee == currentBeacon->callsign) {
 
-                    String ackAnswer = "";
                     if (ackRequestState && lastReceivedPacket.message.indexOf("ack") == 0) {
-                        ackAnswer = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3);
-                        if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == ackAnswer) {
+                        Serial.println(lastReceivedPacket.message);
+                        if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
                             outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                             ackRequestState = false;
+                            //
+                            Serial.print("sacando de ackRequest : "); Serial.println(lastReceivedPacket.sender + "   "  + lastReceivedPacket.message);
                         } 
                     }
 
@@ -431,20 +460,20 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
                                 saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
                             }
-                        } else if (winlinkStatus == 1 && ackNumberRequest == ackAnswer) {
+                        } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Waiting Challenge");
                             lastMsgRxTime = millis();
                             winlinkStatus = 2;
                             menuDisplay = 500;
-                        } else if (lastReceivedPacket.message.indexOf("Login [") == 0) {
+                        } else if ((winlinkStatus == 2 || winlinkStatus == 3) &&lastReceivedPacket.message.indexOf("Login [") == 0) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received");
                             WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Sended");
                             lastMsgRxTime = millis();
                             winlinkStatus = 3;
                             menuDisplay = 501;
-                        } else if (winlinkStatus == 3 && ackNumberRequest == ackAnswer) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Ack Received"); // edit show_display : Challenge Answer Send!!!!
+                        } else if (winlinkStatus == 3 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Ack Received");
                             lastMsgRxTime = millis();
                             winlinkStatus = 4;
                             menuDisplay = 502;
