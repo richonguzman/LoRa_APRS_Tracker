@@ -469,11 +469,11 @@ namespace MSG_Utils {
                             menuDisplay = 40;
                             menuTime = millis();
                         } else if (lastReceivedPacket.sender == "WLNK-1") {
-                            if (winlinkStatus == 0) {
-                                if (!Config.simplifiedTrackerMode) {
-                                    lastMsgRxTime = millis();
+                            if (winlinkStatus == 0 && !Config.simplifiedTrackerMode) {
+                                lastMsgRxTime = millis();
+                                if (lastReceivedPacket.message.indexOf("ack") != 0) {
                                     saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
-                                }
+                                }                                    
                             } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Waiting Challenge");
                                 lastMsgRxTime = millis();
