@@ -31,7 +31,11 @@ namespace BME_Utils {
     void setup() {
         if (Config.bme.active) {
             bool status;
+            #ifdef HELTEC_V3_GPS
+            status = bme.begin(0x76, &Wire1);
+            #else
             status = bme.begin(0x76);
+            #endif
             if (!status) {
                 show_display("ERROR", "", "BME/BMP sensor active", "but no sensor found...", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");

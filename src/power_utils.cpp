@@ -411,8 +411,12 @@ namespace POWER_Utils {
         pinMode(ADC_CTRL, OUTPUT);
         #endif
 
-        #if defined(HELTEC_WIRELESS_TRACKER)
+        #ifdef HELTEC_WIRELESS_TRACKER
         Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
+        #endif
+
+        #ifdef HELTEC_V3_GPS
+        Wire1.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
         #if defined(TTGO_T_DECK_GPS)
@@ -476,7 +480,7 @@ namespace POWER_Utils {
 
 
         #ifdef HELTEC_WIRELESS_TRACKER
-        Serial.flush();
+        /*Serial.flush();           // not working yet
         SPI.endTransaction();           
         SPI.end();
         pinMode(RADIO_DIO1_PIN, ANALOG);
@@ -488,7 +492,7 @@ namespace POWER_Utils {
 
         pinMode(RADIO_CS_PIN, OUTPUT);
         digitalWrite(RADIO_CS_PIN, HIGH);
-        gpio_hold_en((gpio_num_t)RADIO_CS_PIN);
+        gpio_hold_en((gpio_num_t)RADIO_CS_PIN);*/
         #endif
 
 

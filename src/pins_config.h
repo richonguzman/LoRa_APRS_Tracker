@@ -143,6 +143,8 @@
 #define OLED_SDA            17
 #define OLED_SCL            18
 #define OLED_RST            21
+#define BOARD_I2C_SDA       45
+#define BOARD_I2C_SCL       46
 #define GPS_RX              47
 #define GPS_TX              48
 #define BUTTON_PIN          0
