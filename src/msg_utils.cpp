@@ -246,9 +246,9 @@ namespace MSG_Utils {
             wxRequestStatus = true;
         } else {
             if (station == "WLNK-1") {
-                show_display("WINLINK Tx", "", newPacket, 1000);
+                show_display("WINLINK Tx", "", newPacket, 100);
             } else {
-                show_display("MSG Tx >>", "", newPacket, 1000);
+                show_display("MSG Tx >>", "", newPacket, 100);
             }
         }
         LoRa_Utils::sendNewPacket(newPacket);
@@ -266,45 +266,33 @@ namespace MSG_Utils {
         bool alreadyInBuffer;
         if (typeOfMessage == 1) {
             alreadyInBuffer = false;
-            for (int i = 0; i < outputMessagesBuffer.size(); i++) {
-                //
-                Serial.print("1-A) revisando buffer para : "); Serial.println(station + " : " + textMessage);
-                if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
-                    alreadyInBuffer = true;
-                    //
-                    Serial.println(station + " : " + textMessage + " ya estaba en buffer base");
+            if (!outputMessagesBuffer.empty()) {
+                for (int i = 0; i < outputMessagesBuffer.size(); i++) {
+                    if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
+                        alreadyInBuffer = true;
+                    }
                 }
             }
-            for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
-                //
-                Serial.print("1-B) revisando ackRequestbuffer para : "); Serial.println(station + " : " + textMessage);
-                if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
-                    alreadyInBuffer = true;
-                    //
-                    Serial.println(station + " : " + textMessage + " ya estaba en buffer Ack");
+            if (!outputAckRequestBuffer.empty()) {
+                for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
+                    if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
+                        alreadyInBuffer = true;
+                    }
                 }
-            }
+            }               
             if (!alreadyInBuffer) {
-                String ackAlBuffer = ackRequestNumberGenerator();
-                // despues solo llamar una vez al ackRequestNumberGenerator();
-                Serial.print("1-C) agregado ackRequest --> "); Serial.println(station + "," + textMessage + "{" + ackAlBuffer);
-                //
-                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackAlBuffer);
+                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
             }
         } else if (typeOfMessage == 0) {
             alreadyInBuffer = false;
-            for (int k = 0; k < outputMessagesBuffer.size(); k++) {
-                //
-                Serial.print("0-A) revisando buffer para : "); Serial.println(station + " : " + textMessage);
-                if (outputMessagesBuffer[k].indexOf(station + "," + textMessage) == 0) {
-                    alreadyInBuffer = true;
-                    //
-                    Serial.println(station + " : " + textMessage + " ya estaba en buffer base");
+            if (!outputMessagesBuffer.empty()) {
+                for (int k = 0; k < outputMessagesBuffer.size(); k++) {
+                    if (outputMessagesBuffer[k].indexOf(station + "," + textMessage) == 0) {
+                        alreadyInBuffer = true;
+                    }
                 }
             }
             if (!alreadyInBuffer) {
-                //
-                Serial.print("0-C) agregado a buffer --> "); Serial.println(station + "," + textMessage);
                 outputMessagesBuffer.push_back(station + "," + textMessage);
             }
         }
@@ -420,6 +408,7 @@ namespace MSG_Utils {
                         BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
                         #endif
                     }
+
                     if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
                         String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);
                         if (digiRepeatedPacket == "X") {
@@ -446,6 +435,7 @@ namespace MSG_Utils {
                             lastMsgRxTime = millis();
                             lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
                         }
+
                         if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
                             NOTIFICATION_Utils::messageBeep();
                         }
@@ -453,6 +443,7 @@ namespace MSG_Utils {
                             lastMsgRxTime = millis();
                             MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
                         }
+
                         if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
                             Serial.println("Weather Report Received");
                             String wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ") + 3);
@@ -486,10 +477,9 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 2;
                                 menuDisplay = 500;
-                            } else if ((winlinkStatus == 2 || winlinkStatus == 3) &&lastReceivedPacket.message.indexOf("Login [") == 0) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received");
+                            } else if ((winlinkStatus >= 1 || winlinkStatus <= 3) &&lastReceivedPacket.message.indexOf("Login [") == 0) {
                                 WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Added/Sended");
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received/Processed/Sended");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
