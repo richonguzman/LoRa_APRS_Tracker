@@ -25,15 +25,15 @@ extern bool             disableGPS;
 extern bool             sendUpdate;
 extern bool		        sendStandingUpdate;
 
-extern double           currentHeading;
-extern double           previousHeading;
-
 extern uint32_t         lastTxTime;
 extern uint32_t         txInterval;
 extern double           lastTxLat;
 extern double           lastTxLng;
 extern double           lastTxDistance;
 extern uint32_t         lastTx;
+
+double      currentHeading          = 0;
+double      previousHeading         = 0;
 
 namespace GPS_Utils {
 

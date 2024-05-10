@@ -59,31 +59,18 @@ LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
 int         menuDisplay             = 100;
 
-int         messagesIterator        = 0;
-std::vector<String>                 loadedAPRSMessages;
-std::vector<String>                 loadedWLNKMails;
-
+bool        statusState             = true;
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
 uint32_t    displayTime             = millis();
 uint32_t    refreshDisplayTime      = millis();
 
 bool        sendUpdate              = true;
-uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
-bool	    sendStandingUpdate      = false;
-bool        statusState             = true;
-uint32_t    statusTime              = millis();
+
 bool        bluetoothConnected      = false;
 bool        bluetoothActive         = Config.bluetoothActive;
 bool        sendBleToLoRa           = false;
 String      BLEToLoRaPacket         = "";
-
-bool        messageLed              = false;
-uint32_t    messageLedTime          = millis();
-uint8_t     lowBatteryPercent       = 21;
-
-uint32_t    lastTelemetryTx         = millis();
-uint32_t    telemetryTx             = millis();
 
 uint32_t    lastTx                  = 0.0;
 uint32_t    txInterval              = 60000L;
@@ -91,20 +78,8 @@ uint32_t    lastTxTime              = millis();
 double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
-double      currentHeading          = 0;
-double      previousHeading         = 0;
 
 uint32_t    menuTime                = millis();
-bool        symbolAvailable         = true;
-
-uint32_t    bmeLastReading          = -60000;
-
-uint8_t     screenBrightness        = 1;
-bool        keyboardConnected       = false;
-bool        keyDetected             = false;
-uint32_t    keyboardTime            = millis();
-String      messageCallsign         = "";
-String      messageText             = "";
 
 bool        flashlight              = false;
 bool        digirepeaterActive      = false;
@@ -116,10 +91,6 @@ bool        miceActive              = false;
 bool        smartBeaconValue        = true;
 
 int         ackRequestNumber;
-
-bool        wxRequestStatus         = false;
-uint32_t    wxRequestTime           = 0;
-uint32_t    batteryMeasurmentTime   = 0;
 
 APRSPacket                          lastReceivedPacket;
 
@@ -196,7 +167,7 @@ void loop() {
 
     Utils::checkDisplayEcoMode();
 
-    if (keyboardConnected) KEYBOARD_Utils::read();
+    KEYBOARD_Utils::read();
     #ifdef TTGO_T_DECK_GPS
     KEYBOARD_Utils::mouseRead();
     #endif

@@ -14,9 +14,6 @@
 
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
-extern std::vector<String>  loadedAPRSMessages;
-extern std::vector<String>  loadedWLNKMails;
-
 extern Configuration        Config;
 
 extern int                  menuDisplay;
@@ -45,6 +42,8 @@ bool    noAPRSMsgWarning        = false;
 bool    noWLNKMsgWarning        = false;
 String  lastHeardTracker        = "NONE";
 
+std::vector<String>             loadedAPRSMessages;
+std::vector<String>             loadedWLNKMails;
 std::vector<String>             outputMessagesBuffer;
 std::vector<String>             outputAckRequestBuffer;
 std::vector<String>             packet25SegBuffer;
@@ -55,6 +54,9 @@ String      ackCallsignRequest  = "";
 String      ackNumberRequest    = "";
 uint32_t    lastMsgRxTime       = millis();
 uint32_t    lastRetryTime       = millis();
+
+bool        messageLed          = false;
+uint32_t    messageLedTime      = millis();
 
 
 namespace MSG_Utils {

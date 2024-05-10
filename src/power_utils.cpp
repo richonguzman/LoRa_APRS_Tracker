@@ -33,10 +33,11 @@ XPowersAXP2101 PMU;
 extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             disableGPS;
-extern uint32_t         batteryMeasurmentTime;
 
-bool    pmuInterrupt;
-float   lora32BatReadingCorr = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+uint32_t    batteryMeasurmentTime   = 0;
+
+bool        pmuInterrupt;
+float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 
 namespace POWER_Utils {
 

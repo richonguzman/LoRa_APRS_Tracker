@@ -10,11 +10,11 @@
 
 extern Configuration    Config;
 extern logging::Logger  logger;
-extern uint32_t         bmeLastReading;
 
 float newHum, newTemp, newPress, newGas;
 
-bool bmeSensorFound     = false;
+bool        bmeSensorFound      = false;
+uint32_t    bmeLastReading      = -60000;
 
 namespace BME_Utils {
 

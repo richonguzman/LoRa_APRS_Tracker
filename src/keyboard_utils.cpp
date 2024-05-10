@@ -29,9 +29,6 @@ extern uint32_t         menuTime;
 extern uint8_t          myBeaconsIndex;
 extern int              myBeaconsSize;
 extern uint8_t          loraIndex;
-extern bool             keyboardConnected;
-extern bool             keyDetected;
-extern uint32_t         keyboardTime;
 extern bool             displayState;
 extern uint32_t         displayTime;
 extern bool             displayEcoMode;
@@ -57,17 +54,26 @@ extern bool             winlinkCommentState;
 
 extern std::vector<String>  outputMessagesBuffer;
 
-bool mouseUpState           = 0;
-bool mouseDownState         = 0;
-bool mouseLeftState         = 0;
-bool mouseRightState        = 0;
-int debounceInterval        = 50;
-uint32_t lastDebounceTime   = millis();
-int upCounter               = 0;
-int downCounter             = 0;
-int leftCounter             = 0;
-int rightCounter            = 0;
-int trackBallSensitivity    = 5;
+bool        keyboardConnected       = false;
+bool        keyDetected             = false;
+uint32_t    keyboardTime            = millis();
+
+String      messageCallsign         = "";
+String      messageText             = "";
+
+int         messagesIterator        = 0;
+
+bool        mouseUpState            = 0;
+bool        mouseDownState          = 0;
+bool        mouseLeftState          = 0;
+bool        mouseRightState         = 0;
+int         debounceInterval        = 50;
+uint32_t    lastDebounceTime        = millis();
+int         upCounter               = 0;
+int         downCounter             = 0;
+int         leftCounter             = 0;
+int         rightCounter            = 0;
+int         trackBallSensitivity    = 5;
 
 
 namespace KEYBOARD_Utils {
@@ -820,20 +826,21 @@ namespace KEYBOARD_Utils {
     }
 
     void read() {
-        uint32_t lastKey = millis() - keyboardTime;
-        if (lastKey > 30*1000) {
-            keyDetected = false;
-        }
-        Wire.requestFrom(KB_ADDR, 1);
-        while(Wire.available()) {
-            char c = Wire.read();
-            if (c != 0) {
+        if (keyboardConnected) {
+            uint32_t lastKey = millis() - keyboardTime;
+            if (lastKey > 30*1000) {
+                keyDetected = false;
+            }
+            Wire.requestFrom(KB_ADDR, 1);
+            while(Wire.available()) {
+                char c = Wire.read();
+                if (c != 0) {
+                    // just for debugging
+                    //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
 
-                // just for debugging
-                //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
-
-                keyboardTime = millis();
-                processPressedKey(c);      
+                    keyboardTime = millis();
+                    processPressedKey(c);      
+                }
             }
         }
     }

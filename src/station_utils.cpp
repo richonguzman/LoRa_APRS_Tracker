@@ -21,12 +21,7 @@ extern uint8_t              loraIndex;
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
 
-extern uint32_t             telemetryTx;
-extern uint32_t             lastTelemetryTx;
-
 extern bool                 sendUpdate;
-extern uint8_t              updateCounter;
-extern bool                 sendStandingUpdate;
 
 extern uint32_t             txInterval;
 extern uint32_t             lastTx;
@@ -43,17 +38,22 @@ extern bool                 smartBeaconValue;
 extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
-extern bool                 wxRequestStatus;
-extern uint32_t             wxRequestTime;
-
 extern bool                 bmeSensorFound;
 
-String                      firstNearTracker;
-String                      secondNearTracker;
-String                      thirdNearTracker;
-String                      fourthNearTracker;
+bool	    sendStandingUpdate      = false;
+uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
+bool        wxRequestStatus         = false;
+uint32_t    wxRequestTime           = 0;
 
-uint32_t                    lastDeleteListenedTracker;
+uint32_t    lastTelemetryTx         = millis();
+uint32_t    telemetryTx             = millis();
+
+String      firstNearTracker;
+String      secondNearTracker;
+String      thirdNearTracker;
+String      fourthNearTracker;
+
+uint32_t    lastDeleteListenedTracker;
 
 
 

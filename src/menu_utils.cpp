@@ -22,7 +22,6 @@ extern int                  messagesIterator;
 extern uint8_t              loraIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
-extern uint8_t              lowBatteryPercent;
 extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
@@ -45,7 +44,8 @@ extern String               winlinkAliasComplete;
 extern bool                 winlinkCommentState;
 extern bool                 bmeSensorFound;
 
-String freqChangeWarning;
+String      freqChangeWarning;
+uint8_t     lowBatteryPercent       = 21;
 
 namespace MENU_Utils {
 

@@ -6,8 +6,7 @@
 
 extern Beacon           *currentBeacon;
 extern Configuration    Config;
-extern bool             statusState;
-extern uint32_t         statusTime;
+
 extern uint32_t         lastTx;
 extern uint32_t         lastTxTime;
 
@@ -17,6 +16,10 @@ extern bool             displayState;
 extern int              menuDisplay;
 extern String           versionDate;
 extern bool             flashlight;
+
+extern bool             statusState;
+
+uint32_t    statusTime              = millis();
 
 namespace Utils {
   
