@@ -28,6 +28,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         Beacon bcn;
 
         bcn.callsign          = BeaconsArray[i]["callsign"].as<String>();
+        bcn.callsign.toUpperCase();
         bcn.symbol            = BeaconsArray[i]["symbol"].as<String>();
         bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
         bcn.micE              = BeaconsArray[i]["micE"].as<String>();
