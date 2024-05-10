@@ -380,11 +380,6 @@ namespace MSG_Utils {
         }
     }
 
-    void addTo25SegBuffer(String station, String textMessage) {
-        packet25SegBuffer.push_back(station + "," + textMessage);
-        packet25SegTimeBuffer.push_back(millis());
-    }
-
     bool check25SegBuffer(String station, String textMessage) {
         if (!packet25SegBuffer.empty()) {
             bool shouldBeIgnored = false;
@@ -396,11 +391,13 @@ namespace MSG_Utils {
             if (shouldBeIgnored) {
                 return false;
             } else {
-                addTo25SegBuffer(station, textMessage);
+                packet25SegBuffer.push_back(station + "," + textMessage);
+                packet25SegTimeBuffer.push_back(millis());
                 return true;
             }
         } else {
-            addTo25SegBuffer(station, textMessage);
+            packet25SegBuffer.push_back(station + "," + textMessage);
+            packet25SegTimeBuffer.push_back(millis());
             return true;
         }    
     }
@@ -440,11 +437,8 @@ namespace MSG_Utils {
                             if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
                                 outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                                 ackRequestState = false;
-                                //
-                                Serial.print("sacando de ackRequest : "); Serial.println(lastReceivedPacket.sender + "   "  + lastReceivedPacket.message);
-                            } 
+                            }
                         }
-
                         if (lastReceivedPacket.message.indexOf("{") >= 0) {
                             String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                             ackMessage.trim();
@@ -495,7 +489,7 @@ namespace MSG_Utils {
                             } else if ((winlinkStatus == 2 || winlinkStatus == 3) &&lastReceivedPacket.message.indexOf("Login [") == 0) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received");
                                 WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Sended");
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Added/Sended");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
