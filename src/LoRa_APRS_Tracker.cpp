@@ -62,8 +62,6 @@ int         menuDisplay             = 100;
 int         messagesIterator        = 0;
 std::vector<String>                 loadedAPRSMessages;
 std::vector<String>                 loadedWLNKMails;
-std::vector<String>                 outputMessagesBuffer;
-std::vector<String>                 outputAckRequestBuffer;
 
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
@@ -118,20 +116,6 @@ bool        miceActive              = false;
 bool        smartBeaconValue        = true;
 
 int         ackRequestNumber;
-bool        ackRequestState         = false;
-String      ackCallsignRequest      = "";
-String      ackNumberRequest        = "";
-uint32_t    lastMsgRxTime           = millis();
-uint32_t    lastRetryTime           = millis();
-
-uint8_t     winlinkStatus           = 0;
-String      winlinkMailNumber       = "_?";
-String      winlinkAddressee        = "";
-String      winlinkSubject          = "";
-String      winlinkBody             = "";
-String      winlinkAlias            = "";
-String      winlinkAliasComplete    = "";
-bool        winlinkCommentState     = false;
 
 bool        wxRequestStatus         = false;
 uint32_t    wxRequestTime           = 0;
@@ -224,6 +208,7 @@ void loop() {
 
     MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
     MSG_Utils::processOutputBuffer();
+    MSG_Utils::clean25SegBuffer();
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedTrackersByTimeAndDelete();

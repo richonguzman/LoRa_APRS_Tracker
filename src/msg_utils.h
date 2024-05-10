@@ -20,6 +20,9 @@ namespace MSG_Utils {
     String  ackRequestNumberGenerator();
     void    addToOutputBuffer(uint8_t typeOfMessage, String station, String textMessage);
     void    processOutputBuffer();
+    void    clean25SegBuffer();
+    void    addTo25SegBuffer(String station, String textMessage);
+    bool    check25SegBuffer(String station, String textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
     
 }
