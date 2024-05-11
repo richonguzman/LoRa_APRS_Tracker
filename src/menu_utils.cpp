@@ -630,12 +630,12 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected" ;
                 }
-                show_display(String(firstRowMainMenu),
-                            String(secondRowMainMenu),
-                            String(thirdRowMainMenu),
-                            String(fourthRowMainMenu),
-                            String(fifthRowMainMenu),
-                            String(sixthRowMainMenu));
+                show_display(firstRowMainMenu,
+                             secondRowMainMenu,
+                             thirdRowMainMenu,
+                             fourthRowMainMenu,
+                             fifthRowMainMenu,
+                             sixthRowMainMenu);
                 break;
         }
     }
