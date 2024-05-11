@@ -61,6 +61,7 @@ namespace LoRa_Utils {
         radio.setOutputPower(currentLoRaType->power);
         radio.setCurrentLimit(140);     // still needs to be validated
         #endif
+        radio.setRxBoostedGainMode(true);
         #endif
         #ifdef HAS_SX127X
         LoRa.setFrequency(currentLoRaType->frequency);
@@ -115,6 +116,7 @@ namespace LoRa_Utils {
         state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
         radio.setCurrentLimit(140); // still needs to be validated
         #endif
+        radio.setRxBoostedGainMode(true);
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
         } else {
