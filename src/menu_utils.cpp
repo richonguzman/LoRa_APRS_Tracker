@@ -523,9 +523,10 @@ namespace MENU_Utils {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                         thirdRowMainMenu += " LoRa[";
                         switch (loraIndex) {
-                            case 0: thirdRowMainMenu += "Eu]"; break;
-                            case 1: thirdRowMainMenu += "PL]"; break;
-                            case 2: thirdRowMainMenu += "UK]"; break;
+                            case 0:  thirdRowMainMenu += "Eu]"; break;
+                            case 1:  thirdRowMainMenu += "PL]"; break;
+                            case 2:  thirdRowMainMenu += "UK]"; break;
+                            default: thirdRowMainMenu += "??]";
                         }
                     }
                     
@@ -625,9 +626,9 @@ namespace MENU_Utils {
                             sixthRowMainMenu = "Battery  " + String(batteryVoltage) + "V   " + batteryCharge + "%";
                         }
                     #endif
-                } else
+                } else {
                     sixthRowMainMenu = "No Battery Connected" ;
-
+                }
                 show_display(firstRowMainMenu,
                              secondRowMainMenu,
                              thirdRowMainMenu,
