@@ -407,7 +407,7 @@ namespace STATION_Utils {
             if (bmeSensorFound) {
                 packet += BME_Utils::readDataSensor("APRS");
             } else {
-                packet += ".../...g...t...r...p...P...h..b.....BME MODULE NOT FOUND! ";
+                packet += ".../...g...t...r...p...P...h..b.....";
             }            
         } else {
             if (miceActive) {
