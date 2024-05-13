@@ -80,8 +80,9 @@
 	},
 	"bme": {
 		"active": false,
-		"sendTelemetry": false,
-		"heightCorrection": 0
+		"heightCorrection": 0,
+		"temperatureCorrection": 0.0,
+		"sendTelemetry": false
 	},
 	"notification": {
 		"ledTx": false,
