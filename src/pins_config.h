@@ -185,11 +185,11 @@
 #ifdef TTGO_T_DECK_GPS
     #define GPS_RX              43
     #define GPS_TX              44
-    #define BOARD_I2C_SDA       18
-    #define BOARD_I2C_SCL       8
     #define BOARD_POWERON       10
     #define BOARD_SDCARD_CS     39
-
+    #define BATTERY_PIN         4
+    #define BOARD_I2C_SDA       18
+    #define BOARD_I2C_SCL       8
     #define RADIO_SCLK_PIN      40
     #define RADIO_MISO_PIN      38
     #define RADIO_MOSI_PIN      41
