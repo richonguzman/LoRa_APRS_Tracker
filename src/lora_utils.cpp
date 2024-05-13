@@ -163,10 +163,6 @@ namespace LoRa_Utils {
             int state = radio.transmit("\x3c\xff\x01" + newPacket);
             if (state == RADIOLIB_ERR_NONE) {
                 //Serial.println(F("success!"));
-            } else if (state == RADIOLIB_ERR_PACKET_TOO_LONG) {
-                Serial.println(F("too long!"));
-            } else if (state == RADIOLIB_ERR_TX_TIMEOUT) {
-                Serial.println(F("timeout!"));
             } else {
                 Serial.print(F("failed, code "));
                 Serial.println(state);
@@ -220,10 +216,6 @@ namespace LoRa_Utils {
                     receivedLoraPacket.rssi       = radio.getRSSI();
                     receivedLoraPacket.snr        = radio.getSNR();
                     receivedLoraPacket.freqError  = radio.getFrequencyError();
-                } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
-                    // timeout occurred while waiting for a packet
-                } else if (state == RADIOLIB_ERR_CRC_MISMATCH) {
-                    Serial.println(F("CRC error!"));
                 } else {
                     Serial.print(F("failed, code "));
                     Serial.println(state);
