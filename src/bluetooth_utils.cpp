@@ -65,18 +65,14 @@ namespace BLUETOOTH_Utils {
         if (size == 0) {
             return;
         }
-
         shouldSendToLoRa = false;
         serialReceived.clear();
-
         bool isNmea = buffer[0] == '$';
-
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "bluetooth", "Received buffer size %d. Nmea=%d. %s", size, isNmea, buffer);
 
         for (int i = 0; i < size; i++) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "[%d/%d] %x -> %c", i + 1, size, buffer[i], buffer[i]);
         }
-
         for (int i = 0; i < size; i++) {
             char c = (char) buffer[i];
             if (isNmea) {
@@ -85,18 +81,10 @@ namespace BLUETOOTH_Utils {
                 serialReceived += c;
             }
         }
-
         // Test if we have to send frame
         isNmea = serialReceived.indexOf("$G") != -1 || serialReceived.indexOf("$B") != -1;
-
-        if (isNmea) {
-            useKiss = false;
-        }
-
-        if (isNmea || serialReceived.isEmpty()) {
-            return;
-        }
-
+        if (isNmea) useKiss = false;
+        if (isNmea || serialReceived.isEmpty()) return;
         if (validateKISSFrame(serialReceived)) {
             bool dataFrame;
             String decodeKiss = decode_kiss(serialReceived, dataFrame);
@@ -107,12 +95,9 @@ namespace BLUETOOTH_Utils {
         } else {
             useKiss = false;
         }
-
         if (validateTNC2Frame(serialReceived)) {
             shouldSendToLoRa = true;
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "bluetooth",
-                        "Data received should be transmitted to RF => %s", serialReceived.c_str());
-            // because we can't send data here
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "bluetooth", "Data received should be transmitted to RF => %s", serialReceived.c_str());
         }
     }
 

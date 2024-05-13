@@ -11,9 +11,9 @@
 #include "APRSPacketLib.h"
 
 #ifdef HIGH_GPS_BAUDRATE
-#define GPS_BAUD  115200
+    #define GPS_BAUD  115200
 #else
-#define GPS_BAUD  9600
+    #define GPS_BAUD  9600
 #endif
 
 extern Configuration    Config;
@@ -39,9 +39,9 @@ namespace GPS_Utils {
 
     void setup() {
         #ifdef TTGO_T_LORA32_V2_1_TNC
-        disableGPS = true;
+            disableGPS = true;
         #else
-        disableGPS = Config.disableGPS;
+            disableGPS = Config.disableGPS;
         #endif
         if (disableGPS) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");

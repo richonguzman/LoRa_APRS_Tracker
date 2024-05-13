@@ -13,9 +13,9 @@
 #include "display.h"
 
 #ifdef TTGO_T_DECK_GPS
-#define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
+    #define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
 #else
-#define KB_ADDR     0x5F    // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
+    #define KB_ADDR     0x5F    // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
 #endif
 
 
@@ -777,51 +777,51 @@ namespace KEYBOARD_Utils {
 
     void mouseRead() {
         #ifdef TTGO_T_DECK_GPS
-        int ballUp      = digitalRead(TrackBallUp);
-        int ballDown    = digitalRead(TrackBallDown);
-        int ballLeft    = digitalRead(TrackBallLeft);
-        int ballRight   = digitalRead(TrackBallRight);
+            int ballUp      = digitalRead(TrackBallUp);
+            int ballDown    = digitalRead(TrackBallDown);
+            int ballLeft    = digitalRead(TrackBallLeft);
+            int ballRight   = digitalRead(TrackBallRight);
 
-        if (!digitalRead(TrackBallCenter)) {
-            processPressedKey(13);
-        } else if (ballUp != mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
-            if (millis() - lastDebounceTime > debounceInterval) {
-                lastDebounceTime = millis();
-                mouseUpState = ballUp;
-                upCounter++;
+            if (!digitalRead(TrackBallCenter)) {
+                processPressedKey(13);
+            } else if (ballUp != mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
+                if (millis() - lastDebounceTime > debounceInterval) {
+                    lastDebounceTime = millis();
+                    mouseUpState = ballUp;
+                    upCounter++;
+                }
+            } else if (ballDown != mouseDownState && ballUp == mouseUpState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
+                if (millis() - lastDebounceTime > debounceInterval) {
+                    lastDebounceTime = millis();
+                    mouseDownState = ballDown;
+                    downCounter++;
+                }
+            } else if (ballLeft != mouseLeftState && ballUp == mouseUpState && ballDown == mouseDownState && ballRight == mouseRightState) {
+                if (millis() - lastDebounceTime > debounceInterval) {
+                    lastDebounceTime = millis();
+                    mouseLeftState = ballLeft;
+                    leftCounter++;
+                }
+            } else if (ballRight != mouseRightState && ballUp == mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState) {
+                if (millis() - lastDebounceTime > debounceInterval) {
+                    lastDebounceTime = millis();
+                    mouseRightState = ballRight;
+                    rightCounter++;
+                }
             }
-        } else if (ballDown != mouseDownState && ballUp == mouseUpState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
-            if (millis() - lastDebounceTime > debounceInterval) {
-                lastDebounceTime = millis();
-                mouseDownState = ballDown;
-                downCounter++;
+            if (upCounter == trackBallSensitivity) {
+                clearTrackballCounter();
+                upArrow();
+            } else if (downCounter == trackBallSensitivity) {
+                clearTrackballCounter();
+                downArrow();
+            } else if (leftCounter == trackBallSensitivity) {
+                clearTrackballCounter();
+                leftArrow();
+            } else if (rightCounter == trackBallSensitivity) {
+                clearTrackballCounter();
+                rightArrow();
             }
-        } else if (ballLeft != mouseLeftState && ballUp == mouseUpState && ballDown == mouseDownState && ballRight == mouseRightState) {
-            if (millis() - lastDebounceTime > debounceInterval) {
-                lastDebounceTime = millis();
-                mouseLeftState = ballLeft;
-                leftCounter++;
-            }
-        } else if (ballRight != mouseRightState && ballUp == mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState) {
-            if (millis() - lastDebounceTime > debounceInterval) {
-                lastDebounceTime = millis();
-                mouseRightState = ballRight;
-                rightCounter++;
-            }
-        }
-        if (upCounter == trackBallSensitivity) {
-            clearTrackballCounter();
-            upArrow();
-        } else if (downCounter == trackBallSensitivity) {
-            clearTrackballCounter();
-            downArrow();
-        } else if (leftCounter == trackBallSensitivity) {
-            clearTrackballCounter();
-            leftArrow();
-        } else if (rightCounter == trackBallSensitivity) {
-            clearTrackballCounter();
-            rightArrow();
-        }
         #endif
     }
 

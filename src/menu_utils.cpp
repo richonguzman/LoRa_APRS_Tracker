@@ -599,13 +599,13 @@ namespace MENU_Utils {
 					    sixthRowMainMenu = "Bat: " + batteryVoltage + "V";
                     #endif
                     #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-                    if (batteryCharge.toInt() == 0) {
-                        sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
-                    } else if (batteryCharge.toInt() > 0) {
-                        sixthRowMainMenu = "Bat: " + batteryVoltage + "V (charging)";
-                    } else {
-                        sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
-                    }
+                        if (batteryCharge.toInt() == 0) {
+                            sixthRowMainMenu = "Battery Charged " + batteryVoltage + "V";
+                        } else if (batteryCharge.toInt() > 0) {
+                            sixthRowMainMenu = "Bat: " + batteryVoltage + "V (charging)";
+                        } else {
+                            sixthRowMainMenu = "Battery " + batteryVoltage + "V " + batteryCharge + "mA";
+                        }
                     #endif
                     #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
                         if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {

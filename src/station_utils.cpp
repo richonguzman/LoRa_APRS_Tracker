@@ -427,13 +427,13 @@ namespace STATION_Utils {
             String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-            comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+                comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
             #endif
             #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
-            comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+                comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
-            comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
+                comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
             #endif
         }
         if (comment != "") {
@@ -444,7 +444,7 @@ namespace STATION_Utils {
             } 
         }        
         #ifdef HAS_TFT
-        cleanTFT();
+            cleanTFT();
         #endif
         show_display("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);

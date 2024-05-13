@@ -42,10 +42,10 @@ Configuration                       Config;
 HardwareSerial                      neo6m_gps(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
-BluetoothSerial                     SerialBT;
+    BluetoothSerial                     SerialBT;
 #endif
 #ifdef BUTTON_PIN
-OneButton userButton                = OneButton(BUTTON_PIN, true, true);
+    OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
 String      versionDate             = "2024.05.10";
@@ -100,7 +100,7 @@ void setup() {
     Serial.begin(115200);
 
     #ifndef DEBUG
-    logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
+        logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();
@@ -126,16 +126,16 @@ void setup() {
         BLE_Utils::setup();
     } else {
         #ifdef HAS_BT_CLASSIC
-        BLUETOOTH_Utils::setup();
+            BLUETOOTH_Utils::setup();
         #endif
     }
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-        userButton.attachClick(BUTTON_Utils::singlePress);
-        userButton.attachLongPressStart(BUTTON_Utils::longPress);
-        userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-        userButton.attachMultiClick(BUTTON_Utils::multiPress);
+            userButton.attachClick(BUTTON_Utils::singlePress);
+            userButton.attachLongPressStart(BUTTON_Utils::longPress);
+            userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+            userButton.attachMultiClick(BUTTON_Utils::multiPress);
         #endif
         KEYBOARD_Utils::setup();
     }
@@ -161,7 +161,7 @@ void loop() {
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-        userButton.tick();
+            userButton.tick();
         #endif
     }
 
@@ -169,7 +169,7 @@ void loop() {
 
     KEYBOARD_Utils::read();
     #ifdef TTGO_T_DECK_GPS
-    KEYBOARD_Utils::mouseRead();
+        KEYBOARD_Utils::mouseRead();
     #endif
 
     GPS_Utils::getData();
@@ -187,7 +187,7 @@ void loop() {
         BLE_Utils::sendToLoRa();
     } else {
         #ifdef HAS_BT_CLASSIC
-        BLUETOOTH_Utils::sendToLoRa();
+            BLUETOOTH_Utils::sendToLoRa();
         #endif
     }
 
