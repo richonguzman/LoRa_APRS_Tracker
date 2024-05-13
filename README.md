@@ -59,7 +59,8 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2024.05.10 PacketBuffer for Rx (25Seg) Tx outputPacketBuffer for sending with ACK Request.
+- 2024.05.13 BME modules will be autodetected (I2C Address and if it is BME280/BMP280/BME680).
+- 2024.05.10 PacketBuffer for Rx (25 Seg) and Tx outputPacketBuffer for sending with ACK Request.
 - 2024.05.07 HELTEC V3 and Wireless Tracker Battery Measurements at 30seg to avoid accelerated discharge.
 - 2024.05.06 New Output Buffer for Messages with retry posibilities.
 - 2024.04.25 Added Lilygo TTGO T-Deck (add Neo6Mv2 GPS) support.
