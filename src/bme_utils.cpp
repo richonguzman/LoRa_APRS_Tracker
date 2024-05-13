@@ -42,9 +42,6 @@ namespace BME_Utils {
             if (err == 0) {
                 if (addr == 0x76 || addr == 0x77) {
                     wxModuleAddress = addr;
-                    //
-                    Serial.println("Sensor encontrado : " + String(wxModuleAddress,DEC));
-                    //
                     return;
                 }
             }
@@ -58,26 +55,26 @@ namespace BME_Utils {
                 bool wxModuleFound = false;
                 #ifdef HELTEC_V3_GPS
                     if (bme280.begin(wxModuleAddress, &Wire1)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME280 sensor found");
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
                         wxModuleType = 1;
                         wxModuleFound = true;
                     } 
                     if (!wxModuleFound) {
                         if (bme680.begin(wxModuleAddress, &Wire1)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME680 sensor found");
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
                             wxModuleType = 3;
                             wxModuleFound = true;
                         }
                     }
                 #else
                     if (bme280.begin(wxModuleAddress)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME280 sensor found");
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
                         wxModuleType = 1;
                         wxModuleFound = true;
                     }
                     if (!wxModuleFound) {
                         if (bme680.begin(wxModuleAddress)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME680 sensor found");
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
                             wxModuleType = 3;
                             wxModuleFound = true;
                         }
@@ -85,7 +82,7 @@ namespace BME_Utils {
                 #endif
                 if (!wxModuleFound) {
                     if (bmp280.begin(wxModuleAddress)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BMP280 sensor found");
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP280 sensor found");
                         wxModuleType = 2;
                         wxModuleFound = true;
                     }
