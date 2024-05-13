@@ -72,15 +72,9 @@ namespace LoRa_Utils {
         #endif
         String loraCountryFreq;
         switch (loraIndex) {
-            case 0:
-                loraCountryFreq = "EU/WORLD";
-                break;
-            case 1:
-                loraCountryFreq = "POLAND";
-                break;
-            case 2:
-                loraCountryFreq = "UK";
-                break;
+            case 0: loraCountryFreq = "EU/WORLD"; break;
+            case 1: loraCountryFreq = "POLAND"; break;
+            case 2: loraCountryFreq = "UK"; break;
         }
         String currentLoRainfo = "LoRa " + loraCountryFreq + " / Freq: " + String(currentLoRaType->frequency)  + " / SF:" + String(currentLoRaType->spreadingFactor) + " / CR: " + String(currentLoRaType->codingRate4);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());

@@ -215,14 +215,12 @@ namespace MENU_Utils {
                 break;
 
             case 210:   // 2.Configuration ---> Change Frequency
-                if (loraIndex == 0) {
-                    freqChangeWarning = "      Eu --> PL";
-                } else if (loraIndex == 1) {
-                    freqChangeWarning = "      PL --> UK";
-                } else if (loraIndex == 2) {
-                    freqChangeWarning = "      UK --> Eu";
+                switch (loraIndex) {
+                    case 0: freqChangeWarning = "      Eu --> PL"; break;
+                    case 1: freqChangeWarning = "      PL --> UK"; break;
+                    case 2: freqChangeWarning = "      UK --> Eu"; break;
                 }
-                show_display("LORA__FREQ", "","   Confirm Change?",freqChangeWarning,"","<Back         Select>");
+                show_display("LORA__FREQ", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
@@ -523,12 +521,10 @@ namespace MENU_Utils {
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                         thirdRowMainMenu += " LoRa[";
-                        if (loraIndex == 0) {
-                            thirdRowMainMenu += "Eu]";
-                        } else if (loraIndex == 1) {
-                            thirdRowMainMenu += "PL]";
-                        } else if (loraIndex == 2) {
-                            thirdRowMainMenu += "UK]";
+                        switch (loraIndex) {
+                            case 0: thirdRowMainMenu += "Eu]"; break;
+                            case 1: thirdRowMainMenu += "PL]"; break;
+                            case 2: thirdRowMainMenu += "UK]"; break;
                         }
                     }
                     
@@ -631,12 +627,12 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected" ;
                 }
-                show_display(String(firstRowMainMenu),
-                            String(secondRowMainMenu),
-                            String(thirdRowMainMenu),
-                            String(fourthRowMainMenu),
-                            String(fifthRowMainMenu),
-                            String(sixthRowMainMenu));
+                show_display(firstRowMainMenu,
+                            secondRowMainMenu,
+                            thirdRowMainMenu,
+                            fourthRowMainMenu,
+                            fifthRowMainMenu,
+                            sixthRowMainMenu);
                 break;
         }
     }
