@@ -38,7 +38,7 @@ extern bool                 smartBeaconValue;
 extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
-extern bool                 bmeSensorFound;
+extern int                  wxModuleType;//                 bmeSensorFound;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -404,7 +404,7 @@ namespace STATION_Utils {
             } else {
                 packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             }
-            if (bmeSensorFound) {
+            if (wxModuleType != 0) {//bmeSensorFound) {
                 packet += BME_Utils::readDataSensor("APRS");
             } else {
                 packet += ".../...g...t...r...p...P...h..b.....";

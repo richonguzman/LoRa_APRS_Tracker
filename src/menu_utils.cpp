@@ -42,7 +42,8 @@ extern String               winlinkBody;
 extern String               winlinkAlias;
 extern String               winlinkAliasComplete;
 extern bool                 winlinkCommentState;
-extern bool                 bmeSensorFound;
+extern int                  wxModuleType;
+//extern bool                 bmeSensorFound;
 
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
@@ -572,7 +573,7 @@ namespace MENU_Utils {
                         if (time_now % 10 < 5) {
                             fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                         } else {
-                            if (bmeSensorFound) {
+                            if (wxModuleType != 0) {//bmeSensorFound) {
                                 fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
                             } else {
                                 fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
