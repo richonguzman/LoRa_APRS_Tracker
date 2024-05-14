@@ -365,7 +365,6 @@ namespace MSG_Utils {
             String deltaTimeString = packet25SegBuffer[0].substring(0, packet25SegBuffer[0].indexOf(","));
             uint32_t deltaTime = deltaTimeString.toInt();
             if ((millis() - deltaTime) >  25 * 1000) {
-                Serial.println(packet25SegBuffer[0]);
                 packet25SegBuffer.erase(packet25SegBuffer.begin());
             }
         }
