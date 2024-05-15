@@ -410,7 +410,7 @@ namespace MENU_Utils {
                 show_display("WLNK__MENU", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
                 break;
             case 5051:    // WINLINK: Delete Mail //
-                show_display("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "<Back          Enter>");
+                show_display("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "", "<Back          Enter>");
                 break;
             
             case 5060:    // WINLINK: Alias Menu //

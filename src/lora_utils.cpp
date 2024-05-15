@@ -129,7 +129,7 @@ namespace LoRa_Utils {
             long freq = currentLoRaType->frequency;
             if (!LoRa.begin(freq)) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
-                show_display("ERROR", "Starting LoRa failed!");
+                show_display("ERROR", "Starting LoRa failed!", "");
                 while (true) {
                     delay(1000);
                 }

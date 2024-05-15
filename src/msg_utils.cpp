@@ -240,7 +240,7 @@ namespace MSG_Utils {
         cleanTFT();
         #endif
         if (textMessage.indexOf("ack") == 0 && station != "WLNK-1") {  // don't show Winlink ACK
-            show_display("<<ACK Tx>>", 500);
+            show_display("<<ACK Tx>>", "", "", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {
             show_display("<WEATHER>","", "--- Sending Query ---",  1000);
             wxRequestTime = millis();
@@ -502,13 +502,13 @@ namespace MSG_Utils {
                                 winlinkStatus = 0;
                             } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
                                 lastMsgRxTime = millis();
-                                show_display("<WLNK Rx >", "", lastReceivedPacket.message , "", 3000);
+                                show_display("<WLNK Rx >", "", lastReceivedPacket.message, 3000);
                                 saveNewMessage("WLNK", lastReceivedPacket.sender, lastReceivedPacket.message);
                             } 
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
-                                show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , 3000);
+                                show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
                                 if (lastReceivedPacket.message.indexOf("ack") != 0) {
                                     saveNewMessage("APRS", lastReceivedPacket.sender, lastReceivedPacket.message);
                                 }                            

@@ -88,7 +88,7 @@ namespace BME_Utils {
                     }
                 }
                 if (!wxModuleFound) {
-                    show_display("ERROR", "", "BME/BMP sensor active", "but no sensor found...", "", 2000);
+                    show_display("ERROR", "BME/BMP sensor active", "but no sensor found...", 2000);
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
                 } else {
                     switch (wxModuleType) {

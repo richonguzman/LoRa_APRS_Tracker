@@ -331,7 +331,7 @@ namespace KEYBOARD_Utils {
             statusState  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, 2000);
+            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             if (menuDisplay == 200) {
                 menuDisplay = 20;
@@ -354,21 +354,21 @@ namespace KEYBOARD_Utils {
             if (keyDetected) {
                 menuDisplay = 1300;
             } else {
-                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
+                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
                 MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay = 1310;
             } else {
-                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", 2000);
+                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
                 MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 132) {
-            show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", 2000);
+            show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", "U HOTG");
         } else if (menuDisplay == 133) {
-            show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", 2000);
+            show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", "K HOTG");
         }
 
@@ -393,11 +393,11 @@ namespace KEYBOARD_Utils {
                 screenBrightness = 1;
             }
         } else if (menuDisplay == 240) {
-            show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+            show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
-            show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+            show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
-            show_display("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", 2000); /////////////////////////
+            show_display("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } 
 
         else if (menuDisplay == 4) {
@@ -489,32 +489,32 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 60) {
             if (Config.notification.ledFlashlight) {
                 if (flashlight) {
-                    show_display("__EXTRAS__", "","     Flashlight","   Status --> OFF","", 2000);
+                    show_display("__EXTRAS__", "","     Flashlight","   Status --> OFF", "", "", 2000);
                     flashlight = false;
                 } else {
-                    show_display("__EXTRAS__", "","     Flashlight","   Status --> ON","", 2000);
+                    show_display("__EXTRAS__", "","     Flashlight","   Status --> ON", "", "", 2000);
                     flashlight = true;
                 }
             } else {
-                show_display("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!","", 2000);
+                show_display("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
         } else if (menuDisplay == 61) {
             if (digirepeaterActive) {
-                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF","", 2000);
+                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater OFF");
                 digirepeaterActive = false;
             } else {
-                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", 2000);
+                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater ON");
                 digirepeaterActive = true;
             }
         } else if (menuDisplay == 62) {
             if (sosActive) {
-                show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF","", 2000);
+                show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode OFF");
                 sosActive = false;
             } else {
-                show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON","", 2000);
+                show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
                 sosActive = true;
             }
