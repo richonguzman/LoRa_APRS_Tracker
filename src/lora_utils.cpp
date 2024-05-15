@@ -35,6 +35,9 @@ namespace LoRa_Utils {
 
     void setFlag() {
         #ifdef HAS_SX126X
+            if(!enableInterrupt) {
+                return;
+            }
             transmissionFlag = true;
         #endif
     }
@@ -113,6 +116,7 @@ namespace LoRa_Utils {
             radio.setRxBoostedGainMode(true);
             if (state == RADIOLIB_ERR_NONE) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+                radio.startReceive();
             } else {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
                 while (true);
@@ -154,6 +158,7 @@ namespace LoRa_Utils {
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
         #ifdef HAS_SX126X
+            enableInterrupt = false;
             int state = radio.transmit("\x3c\xff\x01" + newPacket);
             if (state == RADIOLIB_ERR_NONE) {
                 //Serial.println(F("success!"));
@@ -161,6 +166,8 @@ namespace LoRa_Utils {
                 Serial.print(F("failed, code "));
                 Serial.println(state);
             }
+            enableInterrupt = true;
+            radio.startReceive();
         #endif
         #ifdef HAS_SX127X
             LoRa.beginPacket();
@@ -200,7 +207,10 @@ namespace LoRa_Utils {
         #ifdef HAS_SX126X
             if (transmissionFlag) {
                 transmissionFlag = false;
-                radio.startReceive();
+                //enableInterrupt = false;
+
+
+                //radio.startReceive();
                 int state = radio.readData(packet);
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
@@ -214,6 +224,7 @@ namespace LoRa_Utils {
                     Serial.print(F("failed, code "));
                     Serial.println(state);
                 }
+                //enableInterrupt = true;
             }
         #endif
         return receivedLoraPacket;
