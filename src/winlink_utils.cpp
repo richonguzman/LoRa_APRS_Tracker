@@ -25,7 +25,7 @@ String      challengeAnswer;
 
 namespace WINLINK_Utils {
 
-    void processWinlinkChallenge(String winlinkInteger) {
+    void processWinlinkChallenge(const String& winlinkInteger) {
         if (lastChallengeTime == 0 || (millis() - lastChallengeTime) > 10 * 60 * 10000) {
             challengeAnswer = "";
             for (int i = 0; i < winlinkInteger.length(); i++) {

@@ -5,7 +5,7 @@
 
 namespace WINLINK_Utils {
 
-    void processWinlinkChallenge(String winlinkInteger);
+    void processWinlinkChallenge(const String& winlinkInteger);
     void login();
 
 }

@@ -145,7 +145,7 @@ namespace LoRa_Utils {
         #endif
     }
 
-    void sendNewPacket(const String &newPacket) {
+    void sendNewPacket(const String& newPacket) {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());

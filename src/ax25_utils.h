@@ -35,13 +35,13 @@ enum KissCmd {
 
 namespace AX25_Utils {
 
-    String decodeFrame(String frame);
-    bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame);
-    String AX25FrameToLoRaPacket(String frame);
-    String frameCleaning(String frame);
-    std::string intToBinaryString(int value, int bitLength);
-    String encodeAX25Address(String frame, uint8_t type, bool lastAddress);
-    String LoRaPacketToAX25Frame(String packet);
+    String decodeFrame(const String& frame);
+    bool decodeAX25(const String& frame, int frameSize, AX25Frame* decodedFrame);
+    String AX25FrameToLoRaPacket(const String& frame);
+    String frameCleaning(const String& frameToClean);
+    std::string intToBinaryString(uint8_t value, uint8_t bitLength);
+    String encodeAX25Address(const String& frame, uint8_t type, bool lastAddress);
+    String LoRaPacketToAX25Frame(const String& packet);
 
 }
 

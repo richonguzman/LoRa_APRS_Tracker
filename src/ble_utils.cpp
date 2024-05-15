@@ -111,7 +111,7 @@ namespace BLE_Utils {
         delay(3);
     }
 
-    void txToPhoneOverBLE(String frame) {
+    void txToPhoneOverBLE(const String& frame) {
         txBLE((byte)KissChar::Fend);
         txBLE((byte)KissCmd::Data);
         for(int n = 0; n < frame.length(); n++) {

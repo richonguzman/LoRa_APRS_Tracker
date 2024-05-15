@@ -339,14 +339,14 @@ namespace KEYBOARD_Utils {
         } else if ((menuDisplay >= 1 && menuDisplay <= 3) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 30 && menuDisplay <= 31)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
-            MSG_Utils::loadMessagesFromMemory("APRS");
+            MSG_Utils::loadMessagesFromMemory(0);
             if (MSG_Utils::warnNoAPRSMessages()) {
                 menuDisplay = 10;
             } else {
                 menuDisplay = 100;
             }
         } else if (menuDisplay == 120) {
-            MSG_Utils::deleteFile("APRS");
+            MSG_Utils::deleteFile(0);
             show_display("___INFO___", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
@@ -411,7 +411,7 @@ namespace KEYBOARD_Utils {
             WINLINK_Utils::login();
             menuDisplay = 500;
         } else if (menuDisplay == 51) {
-            MSG_Utils::loadMessagesFromMemory("WLNK");
+            MSG_Utils::loadMessagesFromMemory(1);
             if (MSG_Utils::warnNoWLNKMails()) {
                 menuDisplay = 51;
             } else {
@@ -433,7 +433,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 5010) {
             menuDisplay = 50100;
         } else if (menuDisplay == 50100) {
-            MSG_Utils::loadMessagesFromMemory("WLNK");
+            MSG_Utils::loadMessagesFromMemory(1);
             if (MSG_Utils::warnNoWLNKMails()) {
                 menuDisplay = 50100;
             } else {
@@ -442,7 +442,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 50110) {
             menuDisplay = 50111;
         } else if (menuDisplay == 50111) {
-            MSG_Utils::deleteFile("WLNK");
+            MSG_Utils::deleteFile(1);
             show_display("___INFO___", "", " ALL MAILS DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             if (winlinkStatus == 0) {

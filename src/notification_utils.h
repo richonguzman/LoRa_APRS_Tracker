@@ -5,7 +5,7 @@
 
 namespace NOTIFICATION_Utils {
 
-    void playTone(int frequency, int duration);
+    void playTone(int frequency, uint8_t duration);
     void beaconTxBeep();
     void messageBeep();
     void stationHeardBeep();

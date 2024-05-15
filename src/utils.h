@@ -6,7 +6,7 @@
 
 namespace Utils {
 
-    char *getMaidenheadLocator(double lat, double lon, int size);
+    char *getMaidenheadLocator(double lat, double lon, uint8_t size);
     String createDateString(time_t t);
     String createTimeString(time_t t);
     void checkStatus();

@@ -4,7 +4,7 @@ namespace AX25_Utils {
 
     AX25Frame decodedFrame;
 
-    String decodeFrame(String frame) {
+    String decodeFrame(const String& frame) {
         String packet = "";
         for (int a = 0; a < 6; a ++) {
             uint16_t shiftedValue = frame[a] >> 1;
@@ -22,7 +22,7 @@ namespace AX25_Utils {
         return packet;
     }
 
-    bool decodeAX25(String frame, int frameSize, AX25Frame* decodedFrame) {
+    bool decodeAX25(const String& frame, int frameSize, AX25Frame* decodedFrame) {
         if ((frameSize < 14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize - 1] != KissChar::Fend)) {
             return false;
         }
@@ -46,7 +46,7 @@ namespace AX25_Utils {
         return true;
     }
 
-    String AX25FrameToLoRaPacket(String frame) {
+    String AX25FrameToLoRaPacket(const String& frame) {
         //Serial.println(frame);
         if (decodeAX25(frame, frame.length(), &decodedFrame)) {
             String packetToLoRa = "";
@@ -66,7 +66,8 @@ namespace AX25_Utils {
         }
     }
 
-    String frameCleaning(String frame) {
+    String frameCleaning(const String& frameToClean) {
+        String frame = frameToClean;
         if (frame.length() > 6) {
             frame = frame.substring(0, 6);
         } else if (frame.length() < 6) {
@@ -77,7 +78,7 @@ namespace AX25_Utils {
         return frame;
     }
 
-    std::string intToBinaryString(int value, int bitLength) {
+    std::string intToBinaryString(uint8_t value, uint8_t bitLength) {
         std::string result = "";
         for (int i = bitLength - 1; i >= 0; i--) {
             result += ((value >> i) & 1) ? '1' : '0';
@@ -85,7 +86,7 @@ namespace AX25_Utils {
         return result;
     }
 
-    String encodeAX25Address(String frame, uint8_t type, bool lastAddress) {
+    String encodeAX25Address(const String& frame, uint8_t type, bool lastAddress) {
         String packet = "";
         String address;
         std::string concatenatedBinary;
@@ -115,7 +116,7 @@ namespace AX25_Utils {
         return packet;
     }
 
-    String LoRaPacketToAX25Frame(String packet) {
+    String LoRaPacketToAX25Frame(const String& packet) {
         String encodedPacket = "";
         String tocall = "";
         String sender = packet.substring(0, packet.indexOf(">"));

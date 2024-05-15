@@ -15,7 +15,7 @@ namespace LoRa_Utils {
     void setFlag();
     void changeFreq();
     void setup();
-    void sendNewPacket(const String &newPacket);
+    void sendNewPacket(const String& newPacket);
     ReceivedLoRaPacket receivePacket();
 
 }

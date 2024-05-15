@@ -29,7 +29,7 @@ namespace Utils {
         return (char) x + 65;
     }
 
-    char *getMaidenheadLocator(double lat, double lon, int size) {
+    char *getMaidenheadLocator(double lat, double lon, uint8_t size) {
         double LON_F[]={20,2.0,0.083333,0.008333,0.0003472083333333333};
         double LAT_F[]={10,1.0,0.0416665,0.004166,0.0001735833333333333};
         int i;

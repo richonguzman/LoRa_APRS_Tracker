@@ -206,7 +206,7 @@ void loop() {
         STATION_Utils::checkStandingUpdateTime();
     }
     STATION_Utils::checkSmartBeaconState();
-    if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon("GPS");
+    if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
     if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
   
     if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {

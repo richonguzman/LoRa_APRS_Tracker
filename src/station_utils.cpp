@@ -131,7 +131,7 @@ namespace STATION_Utils {
         }
     }
 
-    void orderListenedTrackersByDistance(String callsign, float distance, float course) {
+    void orderListenedTrackersByDistance(const String& callsign, float distance, float course) {
         String firstNearTrackerDistance, secondNearTrackerDistance, thirdNearTrackerDistance, fourthNearTrackerDistance, newTrackerInfo, firstNearTrackerCallsign, secondNearTrackerCallsign,thirdNearTrackerCallsign, fourthNearTrackerCallsign;
         newTrackerInfo = callsign + "> " + String(distance,2) + "km " + String(int(course)) + "," + String(millis());
         float firstDistance   = 0.0;
@@ -395,10 +395,10 @@ namespace STATION_Utils {
         }
     }
 
-    void sendBeacon(String type) {
+    void sendBeacon(uint8_t type) {
         String packet, comment;
         int sendCommentAfterXBeacons;
-        if (Config.bme.sendTelemetry && type == "Wx") {
+        if (Config.bme.sendTelemetry && type == 1) { // WX
             if (miceActive) {
                 packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign,"_", currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
             } else {
@@ -464,7 +464,7 @@ namespace STATION_Utils {
             lastTx = millis() - lastTxTime;
             telemetryTx = millis() - lastTelemetryTx;
             if (telemetryTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
-                sendBeacon("Wx");
+                sendBeacon(1);
                 lastTelemetryTx = millis();
             }
         }
