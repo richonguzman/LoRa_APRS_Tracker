@@ -6,7 +6,6 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
-#include "utils.h"
 
 #include "APRSPacketLib.h"
 

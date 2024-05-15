@@ -1,13 +1,11 @@
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
-#include <vector>
 #include "APRSPacketLib.h"
 #include "station_utils.h"
 #include "configuration.h"
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "bme_utils.h"
-#include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
 

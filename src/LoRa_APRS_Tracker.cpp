@@ -18,9 +18,7 @@ ________________________________________________________________________________
 #include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
-#include <vector>
 #include "APRSPacketLib.h"
-#include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
 #include "configuration.h"
@@ -35,7 +33,6 @@ ________________________________________________________________________________
 #include "bme_utils.h"
 #include "ble_utils.h"
 #include "display.h"
-#include "SPIFFS.h"
 #include "utils.h"
 
 Configuration                       Config;

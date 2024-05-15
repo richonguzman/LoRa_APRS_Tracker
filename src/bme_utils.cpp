@@ -1,6 +1,5 @@
 #include "bme_utils.h"
 #include "configuration.h"
-#include "gps_utils.h"
 #include "display.h"
 #include <logger.h>
 

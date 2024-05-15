@@ -6,7 +6,6 @@
 #include "winlink_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
-#include "button_utils.h"
 #include "power_utils.h"
 #include "pins_config.h"
 #include "msg_utils.h"
