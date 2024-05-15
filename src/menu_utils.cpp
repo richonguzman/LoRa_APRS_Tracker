@@ -569,8 +569,8 @@ namespace MENU_Utils {
                         if (time_now % 10 < 5) {
                             fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                         } else {
-                            if (wxModuleType != 0) {//bmeSensorFound) {
-                                fourthRowMainMenu = BME_Utils::readDataSensor("OLED");
+                            if (wxModuleType != 0) {
+                                fourthRowMainMenu = BME_Utils::readDataSensor(1);
                             } else {
                                 fourthRowMainMenu = "A=" + fourthRowAlt + "m  " + fourthRowSpeed + "km/h  " + fourthRowCourse;
                             }

@@ -122,23 +122,23 @@ namespace BME_Utils {
         }
     }
 
-    String generateTempString(float bmeTemp, String type) {
+    String generateTempString(float bmeTemp, uint8_t type) {
         String strTemp;
-        if (type=="OLED") {
+        if (type == 1) {    // OLED
             strTemp = String((int)bmeTemp);
         } else {
             strTemp = String((int)((bmeTemp * 1.8) + 32));
         }
         switch (strTemp.length()) {
             case 1:
-                if (type=="OLED") {
+                if (type == 1) {
                     return "  " + strTemp;
                 } else {
                     return "00" + strTemp;
                 }
                 break;
             case 2:
-                if (type=="OLED") {
+                if (type == 1) {
                     return " " + strTemp;
                 } else {
                     return "0" + strTemp;
@@ -152,12 +152,12 @@ namespace BME_Utils {
         }
     }
 
-    String generateHumString(float bmeHum, String type) {
+    String generateHumString(float bmeHum, uint8_t type) {
         String strHum;
         strHum = String((int)bmeHum);
         switch (strHum.length()) {
             case 1:
-                if (type=="OLED") {
+                if (type == 1) {
                     return " " + strHum;
                 } else {
                     return "0" + strHum;
@@ -168,7 +168,7 @@ namespace BME_Utils {
                 break;
             case 3:
                 if ((int)bmeHum == 100) {
-                    if (type=="OLED") {
+                    if (type == 1) {
                         return "  ";
                     } else {
                         return "00";
@@ -182,36 +182,36 @@ namespace BME_Utils {
         }
     }
 
-    String generatePresString(float bmePress, String type) {
-        String strPress;
-        strPress = String((int)bmePress);
+    String generatePresString(float bmePress, uint8_t type) {
+        String strPress = String((int)bmePress);
+        String decPress = String(int((bmePress - int(bmePress)) * 10));
         switch (strPress.length()) {
             case 1:
-                if (type=="OLED") {
+                if (type == 1) {
                     return "000" + strPress;
                 } else {
-                    return "000" + strPress + "0";
+                    return "000" + strPress + decPress;
                 }
                 break;
             case 2:
-                if (type=="OLED") {
+                if (type == 1) {
                     return "00" + strPress;
                 } else {
-                    return "00" + strPress + "0";
+                    return "00" + strPress + decPress;
                 }
                 break;
             case 3:
-                if (type=="OLED") {
+                if (type == 1) {
                     return "0" + strPress;
                 } else {
-                    return "0" + strPress + "0";
+                    return "0" + strPress + decPress;
                 }
                 break;
             case 4:
-                if (type=="OLED") {
+                if (type == 1) {
                     return strPress;
                 } else {
-                    return strPress + "0";
+                    return strPress + decPress;
                 }
                 break;
             case 5:
@@ -222,7 +222,7 @@ namespace BME_Utils {
         }
     }
 
-    String readDataSensor(String type) {
+    String readDataSensor(uint8_t type) {
         String wx, tempStr, humStr, presStr;
         uint32_t lastReading = millis() - bmeLastReading;
         if (lastReading > 60 * 1000) {
@@ -255,7 +255,7 @@ namespace BME_Utils {
         
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
             Serial.println("BME/BMP Module data failed");
-            if (type == "OLED") {
+            if (type == 1) {
                 wx = " - C    - %    - hPa";
             } else {
                 wx = ".../...g...t...r...p...P...h..b.....";
@@ -269,7 +269,7 @@ namespace BME_Utils {
                 humStr  = "..";
             }
             presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
-            if (type == "OLED") {
+            if (type == 1) {
                 if (wxModuleType == 1 || wxModuleType == 3) {
                     wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
                 } else if (wxModuleType == 2) {

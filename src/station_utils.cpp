@@ -404,8 +404,8 @@ namespace STATION_Utils {
             } else {
                 packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             }
-            if (wxModuleType != 0) {//bmeSensorFound) {
-                packet += BME_Utils::readDataSensor("APRS");
+            if (wxModuleType != 0) {
+                packet += BME_Utils::readDataSensor(0);
             } else {
                 packet += ".../...g...t...r...p...P...h..b.....";
             }            
