@@ -145,7 +145,7 @@ void display_toggle(bool toggle) {
     }
 }
 
-void show_display(String header, String line1, String line2, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         cleanTFT();
         tft.setTextColor(TFT_WHITE,TFT_BLACK);
@@ -181,7 +181,7 @@ void show_display(String header, String line1, String line2, int wait) {
     delay(wait);
 }
 
-void show_display(String header, String line1, String line2, String line3, String line4, String line5, int wait) {
+void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
         if (menuDisplay != lastMenuDisplay) {
             lastMenuDisplay = menuDisplay;
@@ -298,14 +298,12 @@ void show_display(String header, String line1, String line2, String line3, Strin
     delay(wait);
 }
 
-void startupScreen(uint8_t index, String version) {
+void startupScreen(uint8_t index, const String& version) {
     String workingFreq = "    LoRa Freq [";
-    if (index == 0) {
-        workingFreq += "Eu]";
-    } else if (index == 1) {
-        workingFreq += "PL]";
-    } else if (index == 2) {
-        workingFreq += "UK]";
+    switch (index) {
+        case 0: workingFreq += "Eu]"; break;
+        case 1: workingFreq += "PL]"; break;
+        case 2: workingFreq += "UK]"; break;
     }
     show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + version, 4000);
     #ifdef HAS_TFT

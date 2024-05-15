@@ -6,7 +6,7 @@
 namespace GPS_Utils {
 
     void setup();
-    void calculateDistanceCourse(String Callsign, double checkpointLatitude, double checkPointLongitude);
+    void calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude);
     void getData();
     void setDateFromData();
     void calculateDistanceTraveled();
