@@ -199,7 +199,7 @@ namespace LoRa_Utils {
                 receivedLoraPacket.rssi       = LoRa.packetRssi();
                 receivedLoraPacket.snr        = LoRa.packetSnr();
                 receivedLoraPacket.freqError  = LoRa.packetFrequencyError();
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", packet.c_str());
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", packet.substring(3).c_str());
             }
         #endif
         #ifdef HAS_SX126X
@@ -208,7 +208,7 @@ namespace LoRa_Utils {
                 int state = radio.readData(packet);
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.c_str());
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.substring(3).c_str());
                     }
                     receivedLoraPacket.text       = packet;
                     receivedLoraPacket.rssi       = radio.getRSSI();
