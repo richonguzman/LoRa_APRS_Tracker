@@ -43,7 +43,7 @@ namespace GPS_Utils {
             disableGPS = Config.disableGPS;
         #endif
         if (disableGPS) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "GPS disabled");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "GPS disabled");
             return;
         }
         neo6m_gps.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
@@ -96,10 +96,10 @@ namespace GPS_Utils {
 
     void checkStartUpFrames() {
         if (disableGPS) return;
-        if ((millis() > 8000 && gps.charsProcessed() < 10)) {
+        if ((millis() > 10000 && gps.charsProcessed() < 10)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                         "No GPS frames detected! Try to reset the GPS Chip with this "
-                        "firmware: https://github.com/lora-aprs/TTGO-T-Beam_GPS-reset");
+                        "firmware: https://github.com/richonguzman/TTGO_T_BEAM_GPS_RESET");
             show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
         }
     }

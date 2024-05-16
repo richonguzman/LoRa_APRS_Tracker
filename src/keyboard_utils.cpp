@@ -400,7 +400,7 @@ namespace KEYBOARD_Utils {
         } 
 
         else if (menuDisplay == 4) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Loop", "%s", "wrl");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
         }
 
@@ -500,21 +500,21 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 61) {
             if (digirepeaterActive) {
                 show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater OFF");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater OFF");
                 digirepeaterActive = false;
             } else {
                 show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "DigiRepeater ON");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater ON");
                 digirepeaterActive = true;
             }
         } else if (menuDisplay == 62) {
             if (sosActive) {
                 show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode OFF");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode OFF");
                 sosActive = false;
             } else {
                 show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "%s", "S.O.S Mode ON");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode ON");
                 sosActive = true;
             }
         } else if (menuDisplay == 63) {
@@ -850,7 +850,7 @@ namespace KEYBOARD_Utils {
             keyboardConnected = true;
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Keyboard Connected to I2C");
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "No Keyboard Connected to I2C");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "No Keyboard Connected to I2C");
         }
     }
 

@@ -482,9 +482,9 @@ namespace STATION_Utils {
         String dataToSave = String(index);
         if (fileIndex.println(dataToSave)) {
             if (type == 0) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Callsign Index saved to SPIFFS");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Callsign Index saved to SPIFFS");
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "New Frequency Index saved to SPIFFS");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Frequency Index saved to SPIFFS");
             }
         } 
         fileIndex.close();
@@ -505,10 +505,10 @@ namespace STATION_Utils {
                 String firstLine = fileIndex.readStringUntil('\n');
                 if (type == 0) {
                     myBeaconsIndex = firstLine.toInt();
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Callsign Index: %s", firstLine);
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Callsign Index: %s", firstLine);
                 } else {
                     loraIndex = firstLine.toInt();
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa Freq Index: %s", firstLine);
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "LoRa Freq Index: %s", firstLine);
                 }
             }
             fileIndex.close();

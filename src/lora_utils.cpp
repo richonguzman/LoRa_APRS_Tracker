@@ -33,7 +33,7 @@ extern int              loraIndexSize;
 
 namespace LoRa_Utils {
 
-    void setFlag() {
+    void setFlag(void) {
         #ifdef HAS_SX126X
             if(!enableInterrupt) {
                 return;
@@ -80,13 +80,13 @@ namespace LoRa_Utils {
             case 2: loraCountryFreq = "UK"; break;
         }
         String currentLoRainfo = "LoRa " + loraCountryFreq + " / Freq: " + String(currentLoRaType->frequency)  + " / SF:" + String(currentLoRaType->spreadingFactor) + " / CR: " + String(currentLoRaType->codingRate4);
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
         show_display("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
     }
 
     void setup() {
         #ifdef HAS_SX126X
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
             float freq = (float)currentLoRaType->frequency/1000000;
             int state = radio.begin(freq);
@@ -123,7 +123,7 @@ namespace LoRa_Utils {
             }
         #endif
         #ifdef HAS_SX127X
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Set SPI pins!");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
             SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
             LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ);
             long freq = currentLoRaType->frequency;
@@ -140,8 +140,6 @@ namespace LoRa_Utils {
             LoRa.enableCrc();
             LoRa.setTxPower(currentLoRaType->power);
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-            String currentLoRainfo = "LoRa Freq: " + String(currentLoRaType->frequency)  + " / SF:" + String(currentLoRaType->spreadingFactor) + " / CR: " + String(currentLoRaType->codingRate4);
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
         #endif
     }
 
@@ -207,10 +205,6 @@ namespace LoRa_Utils {
         #ifdef HAS_SX126X
             if (transmissionFlag) {
                 transmissionFlag = false;
-                //enableInterrupt = false;
-
-
-                //radio.startReceive();
                 int state = radio.readData(packet);
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
@@ -224,7 +218,6 @@ namespace LoRa_Utils {
                     Serial.print(F("failed, code "));
                     Serial.println(state);
                 }
-                //enableInterrupt = true;
             }
         #endif
         return receivedLoraPacket;

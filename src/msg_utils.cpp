@@ -102,7 +102,7 @@ namespace MSG_Utils {
         for (String s1 : v1) {
             numAPRSMessages++;
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
     
         File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
         if(!fileToReadWLNK) {
@@ -120,7 +120,7 @@ namespace MSG_Utils {
         for (String s2 : v2) {
             numWLNKMessages++;
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
     }
 
     void loadMessagesFromMemory(uint8_t typeOfMessage) {
@@ -476,7 +476,7 @@ namespace MSG_Utils {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.message);
                                 }                                    
                             } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Waiting Challenge");
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Waiting Challenge");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 2;
                                 menuDisplay = 500;
@@ -487,7 +487,7 @@ namespace MSG_Utils {
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
                             } else if (winlinkStatus == 3 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Ack Received");
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Challenge Ack Received");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 4;
                                 menuDisplay = 502;
@@ -498,6 +498,7 @@ namespace MSG_Utils {
                                 show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
                                 menuDisplay = 5000;
                             } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
                                 show_display("_WINLINK_>", "", "    LOG OUT !!!", 2000);
                                 winlinkStatus = 0;

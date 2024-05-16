@@ -65,7 +65,6 @@ uint32_t    refreshDisplayTime      = millis();
 bool        sendUpdate              = true;
 
 bool        bluetoothConnected      = false;
-bool        bluetoothActive         = Config.bluetoothActive;
 bool        sendBleToLoRa           = false;
 String      BLEToLoRaPacket         = "";
 
@@ -92,10 +91,11 @@ int         ackRequestNumber;
 APRSPacket                          lastReceivedPacket;
 
 logging::Logger                     logger;
+#define DEBUG
 
 void setup() {
     Serial.begin(115200);
-
+    
     #ifndef DEBUG
         logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
@@ -117,7 +117,7 @@ void setup() {
     ackRequestNumber = random(1,999);
 
     WiFi.mode(WIFI_OFF);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "WiFi controller stopped");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
     if (Config.bluetoothType == 0 || Config.bluetoothType == 3) {
         BLE_Utils::setup();
@@ -138,7 +138,7 @@ void setup() {
     }
 
     POWER_Utils::lowerCpuFrequency();
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
 }

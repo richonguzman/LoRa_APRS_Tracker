@@ -247,28 +247,28 @@ namespace POWER_Utils {
             pinMode(Config.notification.buzzerPinVcc, OUTPUT);
             if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
         } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins bad/not defined");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
             while (1);
         }
 
         if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
             pinMode(Config.notification.ledTxPin, OUTPUT);
         } else if (Config.notification.ledTx && Config.notification.ledTxPin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Tx Pin bad/not defined");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Tx Pin not defined");
             while (1);
         }
 
         if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
             pinMode(Config.notification.ledMessagePin, OUTPUT);
         } else if (Config.notification.ledMessage && Config.notification.ledMessagePin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Message Pin bad/not defined");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Message Pin not defined");
             while (1);
         }
 
         if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
             pinMode(Config.notification.ledFlashlightPin, OUTPUT);
         } else if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Flashlight Pin bad/not defined");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Flashlight Pin not defined");
             while (1);
         }
 
@@ -276,7 +276,7 @@ namespace POWER_Utils {
             pinMode(Config.ptt.io_pin, OUTPUT);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         } else if (Config.ptt.active && Config.ptt.io_pin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "PTT Pin bad/not defined");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "PTT Pin not defined");
             while (1);
         }
     }
@@ -446,7 +446,7 @@ namespace POWER_Utils {
     void lowerCpuFrequency() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
             if (setCpuFrequencyMhz(80)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CPU frequency set to 80MHz");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "CPU frequency set to 80MHz");
             } else {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
             }
@@ -454,6 +454,7 @@ namespace POWER_Utils {
     }
 
     void shutdown() {
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
             PMU.shutdown();
