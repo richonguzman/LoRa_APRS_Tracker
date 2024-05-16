@@ -2,7 +2,7 @@
 #include "configuration.h"
 #include "power_utils.h"
 #include "notification_utils.h"
-#include "pins_config.h"
+#include "boards_pinout.h"
 #include "ble_utils.h"
 #include "logger.h"
 

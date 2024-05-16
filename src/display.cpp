@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include "custom_characters.h"
 #include "configuration.h"
-#include "pins_config.h"
+#include "boards_pinout.h"
 #include "display.h"
 #include "TimeLib.h"
 

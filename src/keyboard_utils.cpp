@@ -7,7 +7,7 @@
 #include "station_utils.h"
 #include "configuration.h"
 #include "power_utils.h"
-#include "pins_config.h"
+#include "boards_pinout.h"
 #include "msg_utils.h"
 #include "display.h"
 

@@ -2,7 +2,7 @@
 #include "TimeLib.h"
 #include "configuration.h"
 #include "station_utils.h"
-#include "pins_config.h"
+#include "boards_pinout.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
