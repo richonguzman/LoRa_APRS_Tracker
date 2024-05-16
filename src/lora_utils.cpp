@@ -5,11 +5,7 @@
 #include "boards_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
-
-#if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
-    #include <RadioLib.h>
-#endif
-
+#include <RadioLib.h>
 
 extern logging::Logger  logger;
 extern Configuration    Config;
