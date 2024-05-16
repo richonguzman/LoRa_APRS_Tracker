@@ -1,3 +1,4 @@
+#include <RadioLib.h>
 #include <logger.h>
 #include <SPI.h>
 #include "notification_utils.h"
@@ -5,7 +6,6 @@
 #include "boards_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
-#include <RadioLib.h>
 
 extern logging::Logger  logger;
 extern Configuration    Config;
