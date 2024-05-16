@@ -8,7 +8,7 @@
 #ifdef HAS_SX127X
     #include <LoRa.h>
 #endif
-#if defined(HAS_SX1262) || defined(HAS_SX1268)
+#if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
     #include <RadioLib.h>
 #endif
 
@@ -19,22 +19,24 @@ extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;
 extern int              loraIndexSize;
 
+bool transmissionFlag = true;
+bool enableInterrupt = true;
 
-#if defined(HAS_SX1268)
-    SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
-    bool transmissionFlag = true;
-    bool enableInterrupt = true;
-#endif
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
-    bool transmissionFlag = true;
-    bool enableInterrupt = true;
 #endif
+#if defined(HAS_SX1268)
+    SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+#endif
+#if defined(HAS_SX1278)
+    SX1278 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
+#endif
+
 
 namespace LoRa_Utils {
 
     void setFlag(void) {
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
             if(!enableInterrupt) {
                 return;
             }
@@ -49,7 +51,7 @@ namespace LoRa_Utils {
             loraIndex++;
         }
         currentLoRaType = &Config.loraTypes[loraIndex];
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
             float freq = (float)currentLoRaType->frequency/1000000;
             radio.setFrequency(freq);
             radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
@@ -58,13 +60,13 @@ namespace LoRa_Utils {
             radio.setCodingRate(currentLoRaType->codingRate4);
             #if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
                 radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
-                radio.setCurrentLimit(140);
             #endif
             #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
                 radio.setOutputPower(currentLoRaType->power);
-                radio.setCurrentLimit(140);     // still needs to be validated
             #endif
-            radio.setRxBoostedGainMode(true);
+            #if defined(HAS_SX1278)
+                radio.setOutputPower(currentLoRaType->power);
+            #endif
         #endif
         #ifdef HAS_SX127X
             LoRa.setFrequency(currentLoRaType->frequency);
@@ -85,18 +87,27 @@ namespace LoRa_Utils {
     }
 
     void setup() {
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
             float freq = (float)currentLoRaType->frequency/1000000;
             int state = radio.begin(freq);
             if (state == RADIOLIB_ERR_NONE) {
+                #if defined(HAS_SX1262) || defined(HAS_SX1268)
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX126X");
+                #else
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX127X ...");
+                #endif
             } else {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
                 while (true);
             }
-            radio.setDio1Action(setFlag);
+            #if defined(HAS_SX1262) || defined(HAS_SX1268)
+                radio.setDio1Action(setFlag);
+            #endif
+            #if defined(HAS_SX1278)// || defined(HAS_SX1276)
+                radio.setDio0Action(setFlag, RISING);
+            #endif
             radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
             float signalBandwidth = currentLoRaType->signalBandwidth/1000;
             radio.setBandwidth(signalBandwidth);
@@ -111,9 +122,15 @@ namespace LoRa_Utils {
             #endif
             #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
                 state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
-                radio.setCurrentLimit(140); // still needs to be validated
+                radio.setCurrentLimit(140); // check correct value for 1W !!!!
             #endif
+            #if defined(HAS_SX1278)
+                state = radio.setOutputPower(currentLoRaType->power);
+                radio.setCurrentLimit(100); // to be validated (80 , 100)?
+            #endif
+            #if defined(HAS_SX1262) || defined(HAS_SX1268)
             radio.setRxBoostedGainMode(true);
+            #endif
             if (state == RADIOLIB_ERR_NONE) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
                 radio.startReceive();
@@ -155,7 +172,7 @@ namespace LoRa_Utils {
         }
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)  || defined(HAS_SX1278)
             enableInterrupt = false;
             int state = radio.transmit("\x3c\xff\x01" + newPacket);
             if (state == RADIOLIB_ERR_NONE) {
@@ -202,7 +219,7 @@ namespace LoRa_Utils {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", packet.substring(3).c_str());
             }
         #endif
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_SX1278)
             if (transmissionFlag) {
                 transmissionFlag = false;
                 int state = radio.readData(packet);
@@ -215,7 +232,7 @@ namespace LoRa_Utils {
                     receivedLoraPacket.snr        = radio.getSNR();
                     receivedLoraPacket.freqError  = radio.getFrequencyError();
                 } else {
-                    Serial.print(F("failed, code "));
+                    Serial.print(F("failed, code "));   // 7 = CRC mismatch
                     Serial.println(state);
                 }
             }
