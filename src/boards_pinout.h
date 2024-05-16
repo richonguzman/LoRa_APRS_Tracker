@@ -165,7 +165,6 @@
 #endif
 
 
-
 #ifdef ESP32_DIY_1W_LoRa_GPS
     #define OLED_SDA            21
     #define OLED_SCL            22
@@ -184,9 +183,6 @@
     #define RADIO_RXEN          32
     #define RADIO_TXEN          25
 #endif
-
-
-
 
 
 #ifdef OE5HWN_MeshCom
