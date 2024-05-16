@@ -13,8 +13,8 @@ extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;
 extern int              loraIndexSize;
 
-bool transmissionFlag = true;
-bool enableInterrupt = true;
+bool transmissionFlag   = true;
+bool enableInterrupt    = true;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -25,7 +25,9 @@ bool enableInterrupt = true;
 #if defined(HAS_SX1278)
     SX1278 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
 #endif
-
+#if defined(HAS_SX1276)
+    SX1276 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
+#endif
 
 namespace LoRa_Utils {
 
@@ -94,9 +96,11 @@ namespace LoRa_Utils {
         radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         radio.setCRC(true);
+
         #if defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
             radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
+
         #if defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_V1_0_SX1268) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(TTGO_T_DECK_GPS)
             state = radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
             radio.setCurrentLimit(140);
@@ -109,9 +113,11 @@ namespace LoRa_Utils {
             state = radio.setOutputPower(currentLoRaType->power);
             radio.setCurrentLimit(100); // to be validated (80 , 100)?
         #endif
+
         #if defined(HAS_SX1262) || defined(HAS_SX1268)
         radio.setRxBoostedGainMode(true);
         #endif
+
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
             radio.startReceive();
@@ -142,14 +148,14 @@ namespace LoRa_Utils {
             Serial.print(F("failed, code "));
             Serial.println(state);
         }
-        enableInterrupt = true;
-        radio.startReceive();
-
+        
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
         if (Config.ptt.active) {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }
+        enableInterrupt = true;
+        radio.startReceive();
         #ifdef HAS_TFT
             cleanTFT();
         #endif
