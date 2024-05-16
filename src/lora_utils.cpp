@@ -8,7 +8,7 @@
 #ifdef HAS_SX127X
     #include <LoRa.h>
 #endif
-#ifdef HAS_SX126X
+#if defined(HAS_SX1262) || defined(HAS_SX1268)
     #include <RadioLib.h>
 #endif
 
@@ -20,12 +20,12 @@ extern uint8_t          loraIndex;
 extern int              loraIndexSize;
 
 
-#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(OE5HWN_MeshCom)
+#if defined(HAS_SX1268)
     SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
     bool transmissionFlag = true;
     bool enableInterrupt = true;
 #endif
-#if defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
+#if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
     bool transmissionFlag = true;
     bool enableInterrupt = true;
@@ -34,7 +34,7 @@ extern int              loraIndexSize;
 namespace LoRa_Utils {
 
     void setFlag(void) {
-        #ifdef HAS_SX126X
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)
             if(!enableInterrupt) {
                 return;
             }
@@ -49,7 +49,7 @@ namespace LoRa_Utils {
             loraIndex++;
         }
         currentLoRaType = &Config.loraTypes[loraIndex];
-        #ifdef HAS_SX126X
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)
             float freq = (float)currentLoRaType->frequency/1000000;
             radio.setFrequency(freq);
             radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
@@ -85,7 +85,7 @@ namespace LoRa_Utils {
     }
 
     void setup() {
-        #ifdef HAS_SX126X
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
             float freq = (float)currentLoRaType->frequency/1000000;
@@ -155,7 +155,7 @@ namespace LoRa_Utils {
         }
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
-        #ifdef HAS_SX126X
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)
             enableInterrupt = false;
             int state = radio.transmit("\x3c\xff\x01" + newPacket);
             if (state == RADIOLIB_ERR_NONE) {
@@ -202,7 +202,7 @@ namespace LoRa_Utils {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx", "---> %s", packet.substring(3).c_str());
             }
         #endif
-        #ifdef HAS_SX126X
+        #if defined(HAS_SX1262) || defined(HAS_SX1268)
             if (transmissionFlag) {
                 transmissionFlag = false;
                 int state = radio.readData(packet);

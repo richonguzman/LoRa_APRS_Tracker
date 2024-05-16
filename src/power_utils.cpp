@@ -444,6 +444,7 @@ namespace POWER_Utils {
     }
 
     void lowerCpuFrequency() {
+        // later for all boards!
         #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
             if (setCpuFrequencyMhz(80)) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "CPU frequency set to 80MHz");
@@ -460,7 +461,7 @@ namespace POWER_Utils {
             PMU.shutdown();
         #else
 
-            if (Config.bluetoothType==0) {
+            if (Config.bluetoothType == 0) {
                 BLE_Utils::stop();
             } else {
                 // turn off BT classic ???
