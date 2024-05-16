@@ -6,7 +6,7 @@
 #undef OLED_RST
 
 
-#if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_2)
+#if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_0)
     #define OLED_SDA            21
     #define OLED_SCL            22
     #define OLED_RST            16
@@ -22,7 +22,7 @@
 #endif
 
 
-#if defined(TTGO_T_Beam_V1_0_SX1268) || defined(TTGO_T_Beam_V1_2_SX1262)
+#if defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_V1_0_SX1268)
     #define OLED_SDA            21
     #define OLED_SCL            22
     #define OLED_RST            16
@@ -57,7 +57,7 @@
 #endif
 
 
-#if defined(ESP32_DIY_LoRa_GPS) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC)
+#if defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(ESP32_DIY_LoRa_GPS)
     #define OLED_SDA            21
     #define OLED_SCL            22
     #define OLED_RST            16
@@ -75,6 +75,49 @@
     #define RADIO_CS_PIN        18  // CS  --> NSS
     #define RADIO_RST_PIN       23
     #define RADIO_BUSY_PIN      26  // IRQ --> DIO0
+#endif
+
+
+#ifdef HELTEC_V3_GPS
+    #define OLED_SDA            17
+    #define OLED_SCL            18
+    #define OLED_RST            21
+    #define BOARD_I2C_SDA       41
+    #define BOARD_I2C_SCL       42
+    #define GPS_RX              47
+    #define GPS_TX              48
+    #define BUTTON_PIN          0
+    #define BATTERY_PIN         1
+    #define VEXT_CTRL           36
+    #define ADC_CTRL            37  // Heltec V3 needs ADC_CTRL = LOW powers the voltage divider to read BatteryPin
+    #define RADIO_SCLK_PIN      9
+    #define RADIO_MISO_PIN      11
+    #define RADIO_MOSI_PIN      10
+    #define RADIO_CS_PIN        8
+    #define RADIO_RST_PIN       12
+    #define RADIO_DIO1_PIN      14
+    #define RADIO_BUSY_PIN      13
+#endif
+
+
+#ifdef HELTEC_WIRELESS_TRACKER
+    #define GPS_RX              34
+    #define GPS_TX              33
+    #define GPS_PPS             36
+    #define GPS_RESET           35
+    #define BUTTON_PIN          0
+    #define BATTERY_PIN         1
+    #define ADC_CTRL            2   // HELTEC Wireless Tracker ADC_CTRL = HIGH powers the voltage divider to read BatteryPin. Only on V05 = V1.1
+    #define VEXT_CTRL           3   // To turn on GPS and TFT
+    #define BOARD_I2C_SDA       7
+    #define BOARD_I2C_SCL       6
+    #define RADIO_SCLK_PIN      9
+    #define RADIO_MISO_PIN      11
+    #define RADIO_MOSI_PIN      10
+    #define RADIO_CS_PIN        8
+    #define RADIO_RST_PIN       12
+    #define RADIO_DIO1_PIN      14
+    #define RADIO_BUSY_PIN      13
 #endif
 
 
@@ -152,47 +195,10 @@
 #endif
 
 
-#ifdef HELTEC_V3_GPS
-    #define OLED_SDA            17
-    #define OLED_SCL            18
-    #define OLED_RST            21
-    #define BOARD_I2C_SDA       41
-    #define BOARD_I2C_SCL       42
-    #define GPS_RX              47
-    #define GPS_TX              48
-    #define BUTTON_PIN          0
-    #define BATTERY_PIN         1
-    #define VEXT_CTRL           36
-    #define ADC_CTRL            37  // Heltec V3 needs ADC_CTRL = LOW powers the voltage divider to read BatteryPin
-    #define RADIO_SCLK_PIN      9
-    #define RADIO_MISO_PIN      11
-    #define RADIO_MOSI_PIN      10
-    #define RADIO_CS_PIN        8
-    #define RADIO_RST_PIN       12
-    #define RADIO_DIO1_PIN      14
-    #define RADIO_BUSY_PIN      13
-#endif
 
 
-#ifdef HELTEC_WIRELESS_TRACKER
-    #define GPS_RX              34
-    #define GPS_TX              33
-    #define GPS_PPS             36
-    #define GPS_RESET           35
-    #define BUTTON_PIN          0
-    #define BATTERY_PIN         1
-    #define ADC_CTRL            2   // HELTEC Wireless Tracker ADC_CTRL = HIGH powers the voltage divider to read BatteryPin. Only on V05 = V1.1
-    #define VEXT_CTRL           3   // To turn on GPS and TFT
-    #define BOARD_I2C_SDA       7
-    #define BOARD_I2C_SCL       6
-    #define RADIO_SCLK_PIN      9
-    #define RADIO_MISO_PIN      11
-    #define RADIO_MOSI_PIN      10
-    #define RADIO_CS_PIN        8
-    #define RADIO_RST_PIN       12
-    #define RADIO_DIO1_PIN      14
-    #define RADIO_BUSY_PIN      13
-#endif
+
+
 
 
 #ifdef TTGO_T_DECK_GPS

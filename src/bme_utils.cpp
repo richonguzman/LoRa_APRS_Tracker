@@ -17,11 +17,11 @@ uint8_t     wxModuleAddress     = 0x00;
 
 
 Adafruit_BME280     bme280;
-Adafruit_BME680     bme680;
 #ifdef HELTEC_V3_GPS
 Adafruit_BMP280     bmp280(&Wire1);
 #else
 Adafruit_BMP280     bmp280;
+Adafruit_BME680     bme680;
 #endif
 
    
@@ -39,6 +39,7 @@ namespace BME_Utils {
             err = Wire.endTransmission();
             #endif
             if (err == 0) {
+                //Serial.println(addr); this shows any connected board to I2C
                 if (addr == 0x76 || addr == 0x77) {
                     wxModuleAddress = addr;
                     return;
@@ -58,13 +59,6 @@ namespace BME_Utils {
                         wxModuleType = 1;
                         wxModuleFound = true;
                     } 
-                    if (!wxModuleFound) {
-                        if (bme680.begin(wxModuleAddress, &Wire1)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
-                            wxModuleType = 3;
-                            wxModuleFound = true;
-                        }
-                    }
                 #else
                     if (bme280.begin(wxModuleAddress)) {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
@@ -109,11 +103,13 @@ namespace BME_Utils {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
                             break;
                         case 3:
-                            bme680.setTemperatureOversampling(BME680_OS_1X);
-                            bme680.setHumidityOversampling(BME680_OS_1X);
-                            bme680.setPressureOversampling(BME680_OS_1X);
-                            bme680.setIIRFilterSize(BME680_FILTER_SIZE_0);
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
+                            #ifndef HELTEC_V3_GPS
+                                bme680.setTemperatureOversampling(BME680_OS_1X);
+                                bme680.setHumidityOversampling(BME680_OS_1X);
+                                bme680.setPressureOversampling(BME680_OS_1X);
+                                bme680.setIIRFilterSize(BME680_FILTER_SIZE_0);
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
+                            #endif
                             break;
                     }
                 }
@@ -239,14 +235,16 @@ namespace BME_Utils {
                     newHum      = 0;
                     break;
                 case 3: // BME680
-                    bme680.performReading();
-                    delay(50);
-                    if (bme680.endReading()) {
-                        newTemp     = bme680.temperature;
-                        newPress    = (bme680.pressure / 100.0F);
-                        newHum      = bme680.humidity;
-                        newGas      = bme680.gas_resistance / 1000.0; // in Kilo ohms
-                    }
+                    #ifndef HELTEC_V3_GPS
+                        bme680.performReading();
+                        delay(50);
+                        if (bme680.endReading()) {
+                            newTemp     = bme680.temperature;
+                            newPress    = (bme680.pressure / 100.0F);
+                            newHum      = bme680.humidity;
+                            newGas      = bme680.gas_resistance / 1000.0; // in Kilo ohms
+                        }
+                    #endif
                     break;
             }
             bmeLastReading = millis();
