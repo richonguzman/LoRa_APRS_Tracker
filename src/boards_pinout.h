@@ -83,6 +83,12 @@
     #define GPS_TX              12
     #define BUTTON_PIN          39
     #define BATTERY_PIN         35
+    #define RADIO_SCLK_PIN      5
+    #define RADIO_MISO_PIN      19
+    #define RADIO_MOSI_PIN      27
+    #define RADIO_CS_PIN        18
+    #define RADIO_RST_PIN       23
+    #define RADIO_BUSY_PIN      26
 #endif
 
 
@@ -134,9 +140,9 @@
     #define LORA_SCK            4
     #define LORA_MISO           5
     #define LORA_MOSI           6
-    #define LORA_CS             7  // CS  --> NSS
+    #define LORA_CS             7
     #define LORA_RST            3
-    #define LORA_IRQ            2  // IRQ --> DIO0
+    #define LORA_IRQ            2
 #endif
 
 
@@ -178,8 +184,8 @@
     #define RADIO_MOSI_PIN      10
     #define RADIO_CS_PIN        8
     #define RADIO_RST_PIN       12
-    #define RADIO_DIO1_PIN      14  // SX1262 IRQ
-    #define RADIO_BUSY_PIN      13  // SX1262 BUSY
+    #define RADIO_DIO1_PIN      14
+    #define RADIO_BUSY_PIN      13
 #endif
 
 
