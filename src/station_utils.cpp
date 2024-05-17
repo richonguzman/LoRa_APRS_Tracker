@@ -22,7 +22,6 @@ extern uint32_t             lastTxTime;
 extern bool                 sendUpdate;
 
 extern uint32_t             txInterval;
-extern uint32_t             lastTx;
 
 extern double               currentHeading;
 extern double               previousHeading;
@@ -36,7 +35,7 @@ extern bool                 smartBeaconValue;
 extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
-extern int                  wxModuleType;//                 bmeSensorFound;
+extern int                  wxModuleType;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
