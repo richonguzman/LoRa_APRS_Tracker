@@ -13,8 +13,8 @@ extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;
 extern int              loraIndexSize;
 
-bool transmissionFlag   = true;
-bool enableInterrupt    = true;
+bool operationDone   = true;
+bool transmitFlag    = true;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -32,10 +32,7 @@ bool enableInterrupt    = true;
 namespace LoRa_Utils {
 
     void setFlag(void) {
-        if(!enableInterrupt) {
-            return;
-        }
-        transmissionFlag = true;
+        operationDone = true;
     }
 
     void changeFreq() {
@@ -120,7 +117,6 @@ namespace LoRa_Utils {
 
         if (state == RADIOLIB_ERR_NONE) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-            radio.startReceive();
         } else {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
             while (true);
@@ -140,8 +136,8 @@ namespace LoRa_Utils {
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
         
-        enableInterrupt = false;
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
+        transmitFlag = true;
         if (state == RADIOLIB_ERR_NONE) {
             //Serial.println(F("success!"));
         } else {
@@ -154,8 +150,6 @@ namespace LoRa_Utils {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }
-        enableInterrupt = true;
-        radio.startReceive();
         #ifdef HAS_TFT
             cleanTFT();
         #endif
@@ -164,20 +158,25 @@ namespace LoRa_Utils {
     ReceivedLoRaPacket receivePacket() {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
-        if (transmissionFlag) {
-            transmissionFlag = false;
-            int state = radio.readData(packet);
-            if (state == RADIOLIB_ERR_NONE) {
-                if(!packet.isEmpty()) {
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.substring(3).c_str());
-                }
-                receivedLoraPacket.text       = packet;
-                receivedLoraPacket.rssi       = radio.getRSSI();
-                receivedLoraPacket.snr        = radio.getSNR();
-                receivedLoraPacket.freqError  = radio.getFrequencyError();
+        if (operationDone) {
+            operationDone = false;
+            if (transmitFlag) {
+                radio.startReceive();
+                transmitFlag = false;
             } else {
-                Serial.print(F("failed, code "));   // 7 = CRC mismatch
-                Serial.println(state);
+                int state = radio.readData(packet);
+                if (state == RADIOLIB_ERR_NONE) {
+                    if(!packet.isEmpty()) {
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.substring(3).c_str());
+                        receivedLoraPacket.text       = packet;
+                        receivedLoraPacket.rssi       = radio.getRSSI();
+                        receivedLoraPacket.snr        = radio.getSNR();
+                        receivedLoraPacket.freqError  = radio.getFrequencyError();
+                    }
+                } else {
+                    Serial.print(F("failed, code "));   // 7 = CRC mismatch
+                    Serial.println(state);
+                }
             }
         }
         return receivedLoraPacket;
