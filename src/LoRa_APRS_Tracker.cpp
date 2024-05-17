@@ -91,7 +91,7 @@ int         ackRequestNumber;
 APRSPacket                          lastReceivedPacket;
 
 logging::Logger                     logger;
-#define DEBUG
+//#define DEBUG
 
 void setup() {
     Serial.begin(115200);
