@@ -80,6 +80,7 @@ namespace AX25_Utils {
 
     std::string intToBinaryString(uint8_t value, uint8_t bitLength) {
         std::string result = "";
+        //result.reserve(bitLength);
         for (int i = bitLength - 1; i >= 0; i--) {
             result += ((value >> i) & 1) ? '1' : '0';
         }
