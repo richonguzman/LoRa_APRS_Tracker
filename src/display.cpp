@@ -101,9 +101,6 @@ void setup_display() {
                 while (true) {
                 }
             }
-            if (Config.display.turn180) {
-                display.setRotation(2);
-            }
         #else
             if (!display.begin(0x3c, true)) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
@@ -111,6 +108,9 @@ void setup_display() {
                 }
             }
         #endif
+        if (Config.display.turn180) {
+            display.setRotation(2);
+        }
         display.clearDisplay();
         #ifdef ssd1306
             display.setTextColor(WHITE);
@@ -122,6 +122,8 @@ void setup_display() {
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
+        #else
+            display.setContrast(screenBrightness);
         #endif
         display.display();
     #endif
@@ -131,16 +133,22 @@ void display_toggle(bool toggle) {
     if (toggle) {
         #ifdef HAS_TFT
             digitalWrite(TFT_BL, HIGH);
-        #endif
-        #ifdef ssd1306
-            display.ssd1306_command(SSD1306_DISPLAYON);
+        #else
+            #ifdef ssd1306
+                display.ssd1306_command(SSD1306_DISPLAYON);
+            #else
+                display.oled_command(SH110X_DISPLAYON);
+            #endif
         #endif
     } else {
         #ifdef HAS_TFT
             digitalWrite(TFT_BL, LOW);
-        #endif
-        #ifdef ssd1306
-            display.ssd1306_command(SSD1306_DISPLAYOFF);
+        #else
+            #ifdef ssd1306
+                display.ssd1306_command(SSD1306_DISPLAYOFF);
+            #else
+                display.oled_command(SH110X_DISPLAYOFF);
+            #endif
         #endif
     }
 }
@@ -175,6 +183,8 @@ void show_display(const String& header, const String& line1, const String& line2
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
+        #else
+            display.setContrast(screenBrightness);
         #endif
         display.display();
     #endif
@@ -264,6 +274,8 @@ void show_display(const String& header, const String& line1, const String& line2
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
+        #else
+            display.setContrast(screenBrightness);
         #endif
 
         if (menuDisplay == 0 && Config.display.showSymbol) {
