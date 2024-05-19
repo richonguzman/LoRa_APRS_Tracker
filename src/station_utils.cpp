@@ -42,7 +42,7 @@ uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
 bool        wxRequestStatus         = false;
 uint32_t    wxRequestTime           = 0;
 
-uint32_t    lastTelemetryTx         = millis();
+uint32_t    lastTelemetryTx         = 0;
 uint32_t    telemetryTx             = millis();
 
 String      firstNearTracker;
@@ -460,7 +460,7 @@ namespace STATION_Utils {
         if (Config.bme.active && Config.bme.sendTelemetry) {
             lastTx = millis() - lastTxTime;
             telemetryTx = millis() - lastTelemetryTx;
-            if (telemetryTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
+            if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {
                 sendBeacon(1);
                 lastTelemetryTx = millis();
             }
