@@ -1,16 +1,16 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
-			"symbol": "[",
+			"callsign": "OE6PLD-7",
+			"symbol": "p",
 			"overlay": "/",
 			"micE": "",
-			"comment": "",
+			"comment": "Hr. BOB on tour",
 			"smartBeacon": {
 				"active": true,
-				"slowRate": 120,
+				"slowRate": 60,
 				"slowSpeed": 3,
-				"fastRate": 60,
+				"fastRate": 30,
 				"fastSpeed": 15,
 				"minTxDist": 50,
 				"minDeltaBeacon": 20,
@@ -71,7 +71,7 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
-		"bluetoothType": 1,
+		"bluetoothType": 0,
 		"bluetoothActive": true,
 		"disableGPS": false
 	},
@@ -86,7 +86,7 @@
 	},
 	"notification": {
 		"ledTx": false,
-		"ledTxPin": 13,
+		"ledTxPin": 16,
 		"ledMessage": false,
 		"ledMessagePin": 2,
 		"ledFlashlight": false,
@@ -102,13 +102,7 @@
 		"shutDownBeep": false
 	},
 	"lora": [
-		{
-			"frequency": 433775000,
-			"spreadingFactor": 12,
-			"signalBandwidth": 125000,
-			"codingRate4": 5,
-			"power": 20
-		},
+		
 		{
 			"frequency": 434855000,
 			"spreadingFactor": 9,
