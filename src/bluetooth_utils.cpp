@@ -14,7 +14,7 @@ extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 extern bool             bluetoothConnected;
 
-bool bluetoothActive    = Config.bluetoothActive;
+bool bluetoothActive;
 
 namespace BLUETOOTH_Utils {
     String serialReceived;
@@ -22,6 +22,7 @@ namespace BLUETOOTH_Utils {
     bool useKiss = false;
 
     void setup() {
+        bluetoothActive = Config.bluetoothActive;
         if (!bluetoothActive) {
             btStop();
             esp_bt_controller_disable();

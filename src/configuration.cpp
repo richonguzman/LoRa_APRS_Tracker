@@ -16,7 +16,7 @@ Configuration::Configuration() {
 }
 
 void Configuration::readFile(fs::FS &fs, const char *fileName) {
-    StaticJsonDocument<2560> data;
+    StaticJsonDocument<2800> data;
     File configFile = fs.open(fileName, "r");
     DeserializationError error = deserializeJson(data, configFile);
     if (error) {

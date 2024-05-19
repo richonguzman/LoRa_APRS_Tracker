@@ -119,7 +119,7 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 3) {
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
         BLE_Utils::setup();
     } else {
         #ifdef HAS_BT_CLASSIC

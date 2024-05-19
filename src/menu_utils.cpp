@@ -43,7 +43,6 @@ extern String               winlinkAlias;
 extern String               winlinkAliasComplete;
 extern bool                 winlinkCommentState;
 extern int                  wxModuleType;
-//extern bool                 bmeSensorFound;
 
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
