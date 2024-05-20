@@ -422,7 +422,7 @@ namespace STATION_Utils {
             #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
                 comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
             #endif
-            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262)
+            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
                 comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
