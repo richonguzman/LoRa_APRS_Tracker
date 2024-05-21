@@ -50,10 +50,19 @@ uint8_t     lowBatteryPercent       = 21;
 namespace MENU_Utils {
 
     String checkBTType() {
-        if (Config.bluetoothType == 0) {
-            return "BLE iPhone";
-        } else {
-            return "BT Android";
+        switch (Config.bluetoothType) {
+            case 0:
+                return "BLE iPhone";
+                break;
+            case 1:
+                return "BT Android";
+                break;
+            case 2:
+                return "BLE Text";
+                break;
+            default:
+                return "no BT";
+                break;
         }
     }
 
