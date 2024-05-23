@@ -134,7 +134,9 @@ namespace BLE_Utils {
         }
         if (Config.bluetoothType == 0) {
             txBLE((byte)KissChar::Fend);
-        }        
+        } else if (Config.bluetoothType == 2) {
+            txBLE('\n');
+        }   
     }
 
     void sendToPhone(const String& packet) {
