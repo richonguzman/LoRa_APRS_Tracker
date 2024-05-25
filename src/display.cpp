@@ -135,7 +135,7 @@ void display_toggle(bool toggle) {
             digitalWrite(TFT_BL, HIGH);
         #else
             #ifdef ssd1306
-                display.ssd1306_command(SSD1306_DISPLAYON);
+                display.ssd1306_command(SSD1306_DISPLAYON); 
             #else
                 display.oled_command(SH110X_DISPLAYON);
             #endif
