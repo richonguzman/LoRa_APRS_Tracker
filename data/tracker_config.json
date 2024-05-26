@@ -74,7 +74,10 @@
 		"bluetoothType": 1,
 		"bluetoothActive": false,
 		"disableGPS": false,
-		"doubleTx": true
+		"doubleTx": true,
+		"tx1freq":433775000,
+		"tx2freq":439912500
+
 	},
 	"winlink": {
 		"password": "ABCDEF"
