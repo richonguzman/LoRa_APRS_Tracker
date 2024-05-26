@@ -104,7 +104,8 @@ public:
     int     bluetoothType;
     bool    bluetoothActive;
     bool    disableGPS;
-
+    bool    doubleTx;
+    
     Configuration();
     bool validateConfigFile(const String& currentBeaconCallsign);
     bool validateMicE(const String& currentBeaconMicE);

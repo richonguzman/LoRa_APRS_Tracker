@@ -135,7 +135,7 @@ void display_toggle(bool toggle) {
             digitalWrite(TFT_BL, HIGH);
         #else
             #ifdef ssd1306
-                display.ssd1306_command(SSD1306_DISPLAYON); 
+                display.ssd1306_command(SSD1306_DISPLAYON);
             #else
                 display.oled_command(SH110X_DISPLAYON);
             #endif
@@ -317,10 +317,10 @@ void startupScreen(uint8_t index, const String& version) {
         case 1: workingFreq += "PL]"; break;
         case 2: workingFreq += "UK]"; break;
     }
-    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "Richonguzman / CA2RXU", "      " + version, 4000);
+    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "CA2RXU/EA5SW Mods", "      " + version, 4000);
     #ifdef HAS_TFT
         cleanTFT();
     #endif
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "(CA2RXU/EA5SW Mods) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
 }
