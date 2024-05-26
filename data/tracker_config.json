@@ -1,43 +1,43 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "EA5SW-9",
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
 			"smartBeacon": {
 				"active": true,
-				"slowRate": 120,
-				"slowSpeed": 3,
-				"fastRate": 60,
-				"fastSpeed": 15,
-				"minTxDist": 50,
+				"slowRate": 30,
+				"slowSpeed": 2,
+				"fastRate": 15,
+				"fastSpeed": 10,
+				"minTxDist": 25,
 				"minDeltaBeacon": 20,
 				"turnMinDeg": 12,
 				"turnSlope": 60
 			}			
 		},
 		{
-			"callsign": "NOCALL-7",
-			"symbol": ">",
+			"callsign": "EA5SW-8",
+			"symbol": "(",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
 			"smartBeacon": {
 				"active": true,
-				"slowRate": 120,
+				"slowRate": 60,
 				"slowSpeed": 10,
-				"fastRate": 60,
+				"fastRate": 90,
 				"fastSpeed": 70,
-				"minTxDist": 100,
+				"minTxDist": 20,
 				"minDeltaBeacon": 12,
 				"turnMinDeg": 10,
 				"turnSlope": 80
 			}
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "EA5SW-7",
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
@@ -72,8 +72,9 @@
 		"sendAltitude": true,
 		"sendBatteryInfo": false,
 		"bluetoothType": 1,
-		"bluetoothActive": true,
-		"disableGPS": false
+		"bluetoothActive": false,
+		"disableGPS": false,
+		"doubleTx": true
 	},
 	"winlink": {
 		"password": "ABCDEF"
