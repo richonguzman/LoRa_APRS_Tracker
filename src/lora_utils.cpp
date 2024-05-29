@@ -181,4 +181,8 @@ namespace LoRa_Utils {
         return receivedLoraPacket;
     }
 
+    void sleepRadio() {
+        radio.sleep();
+    }
+
 }
