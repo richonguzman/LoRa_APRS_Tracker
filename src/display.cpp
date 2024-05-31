@@ -298,6 +298,7 @@ void show_display(const String& header, const String& line1, const String& line2
         
         display.display();
     #endif
+    sleep(wait);
 }
 
 void startupScreen(uint8_t index, const String& version) {
