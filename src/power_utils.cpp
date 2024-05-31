@@ -483,11 +483,11 @@ namespace POWER_Utils {
                 #endif
             #endif
 
+            LoRa_Utils::sleepRadio();
+
             long DEEP_SLEEP_TIME_SEC = 1296000; // 30 days
             esp_sleep_enable_timer_wakeup(1000000ULL * DEEP_SLEEP_TIME_SEC);
-            LoRa_Utils::sleepRadio();
-            transmitFlag = true;
-            delay(100);
+            delay(500);           
             esp_deep_sleep_start();
         #endif
     }
