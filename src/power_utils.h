@@ -10,36 +10,36 @@
 
 namespace POWER_Utils {
 
-    double getBatteryVoltage();
-    String getBatteryInfoVoltage();
-    String getBatteryInfoCurrent();
-    bool getBatteryInfoIsConnected();
+    double  getBatteryVoltage();
+    String  getBatteryInfoVoltage();
+    String  getBatteryInfoCurrent();
+    bool    getBatteryInfoIsConnected();
 
-    void enableChgLed();
-    void disableChgLed();
+    void    enableChgLed();
+    void    disableChgLed();
 
-    bool isCharging();
-    void handleChargingLed();
-    double getBatteryChargeDischargeCurrent();
-    bool isBatteryConnected();
-    void obtainBatteryInfo();
-    void batteryManager();
+    bool    isCharging();
+    void    handleChargingLed();
+    double  getBatteryChargeDischargeCurrent();
+    bool    isBatteryConnected();
+    void    obtainBatteryInfo();
+    void    batteryManager();
 
-    void activateMeasurement();
+    void    activateMeasurement();
 
-    void activateGPS();
-    void deactivateGPS();
+    void    activateGPS();
+    void    deactivateGPS();
 
-    void activateLoRa();
-    void deactivateLoRa();
+    void    activateLoRa();
+    void    deactivateLoRa();
 
-    void externalPinSetup();
+    void    externalPinSetup();
 
-    bool begin(TwoWire &port);
-    void setup();
+    bool    begin(TwoWire &port);
+    void    setup();
 
-    void lowerCpuFrequency();
-    void shutdown();
+    void    lowerCpuFrequency();
+    void    shutdown();
   
 }
 

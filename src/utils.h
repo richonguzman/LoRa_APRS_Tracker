@@ -6,13 +6,13 @@
 
 namespace Utils {
 
-    char *getMaidenheadLocator(double lat, double lon, uint8_t size);
-    String createDateString(time_t t);
-    String createTimeString(time_t t);
-    void checkStatus();
-    void checkDisplayEcoMode();
-    String getSmartBeaconState();
-    void checkFlashlight();
+    char    *getMaidenheadLocator(double lat, double lon, uint8_t size);
+    String  createDateString(time_t t);
+    String  createTimeString(time_t t);
+    void    checkStatus();
+    void    checkDisplayEcoMode();
+    String  getSmartBeaconState();
+    void    checkFlashlight();
 
 }
 
