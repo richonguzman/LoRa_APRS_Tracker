@@ -431,7 +431,7 @@ namespace STATION_Utils {
                 comment += String(batteryVoltage.toFloat()/1000,2);
                 comment += "V (";
                 comment += batteryChargeCurrent;
-                cooment += "%)";
+                comment += "%)";
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
                 comment += " Bat=";
