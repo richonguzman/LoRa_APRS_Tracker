@@ -192,6 +192,9 @@ void show_display(const String& header, const String& line1, const String& line2
 }
 
 void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
+    String const* const lines[] = {
+        &line1, &line2, &line3, &line4, &line5
+    };
     #ifdef HAS_TFT
         if (menuDisplay != lastMenuDisplay) {
             lastMenuDisplay = menuDisplay;
@@ -203,16 +206,10 @@ void show_display(const String& header, const String& line1, const String& line2
         tft.setCursor(0, 0);
         tft.print(header);
         tft.setTextSize(smallSizeFont);
-        tft.setCursor(0, ((lineSpacing * 2) - 2));
-        tft.print(line1);
-        tft.setCursor(0, ((lineSpacing * 3) - 2));
-        tft.print(line2);
-        tft.setCursor(0, ((lineSpacing * 4) - 2));
-        tft.print(line3);
-        tft.setCursor(0, ((lineSpacing * 5) - 2));
-        tft.print(line4);
-        tft.setCursor(0, ((lineSpacing *6) - 2));
-        tft.print(line5);
+        for (int i=0; i<5; i++) {
+            tft.setCursor(0, ((lineSpacing * (2+i)) - 2));
+            tft.print(*lines[i]);
+        }
 
         if (menuDisplay == 0 && Config.display.showSymbol) {
             int symbol = 100;
@@ -261,16 +258,10 @@ void show_display(const String& header, const String& line1, const String& line2
         display.setCursor(0, 0);
         display.println(header);
         display.setTextSize(1);
-        display.setCursor(0, 16);
-        display.println(line1);
-        display.setCursor(0, 26);
-        display.println(line2);
-        display.setCursor(0, 36);
-        display.println(line3);
-        display.setCursor(0, 46);
-        display.println(line4);
-        display.setCursor(0, 56);
-        display.println(line5);
+        for (int i=0; i<5; i++) {
+            display.setCursor(0, 16 + 10*i);
+            display.println(*lines[i]);
+        }
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
@@ -307,7 +298,6 @@ void show_display(const String& header, const String& line1, const String& line2
         
         display.display();
     #endif
-    delay(wait);
 }
 
 void startupScreen(uint8_t index, const String& version) {
