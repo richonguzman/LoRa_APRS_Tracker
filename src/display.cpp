@@ -192,7 +192,7 @@ void show_display(const String& header, const String& line1, const String& line2
 }
 
 void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
-    String const* const lines[] = {
+    String const* const lines[] = {  // array of references is not allowed
         &line1, &line2, &line3, &line4, &line5
     };
     #ifdef HAS_TFT
