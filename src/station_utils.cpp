@@ -420,13 +420,23 @@ namespace STATION_Utils {
             String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
-                comment += " Bat=" + batteryVoltage + "V (" + batteryChargeCurrent + "mA)";
+                comment += " Bat=";
+                comment += batteryVoltage;
+                comment += "V (";
+                comment += batteryChargeCurrent;
+                comment += "mA)";
             #endif
             #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
-                comment += " Bat=" + String(batteryVoltage.toFloat()/1000,2) + "V (" + batteryChargeCurrent + "%)";
+                comment += " Bat=";
+                comment += String(batteryVoltage.toFloat()/1000,2);
+                comment += "V (";
+                comment += batteryChargeCurrent;
+                cooment += "%)";
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
-                comment += " Bat=" + String(batteryVoltage.toFloat(),2) + "V";
+                comment += " Bat=";
+                comment += String(batteryVoltage.toFloat(),2);
+                comment += "V";
             #endif
         }
         if (comment != "") {

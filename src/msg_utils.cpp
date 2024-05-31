@@ -432,7 +432,8 @@ namespace MSG_Utils {
                             }
                         }
                         if (lastReceivedPacket.message.indexOf("{") >= 0) {
-                            String ackMessage = "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
+                            String ackMessage = "ack";
+                            ackMessage += lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
                             ackMessage.trim();
                             MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);
                             lastMsgRxTime = millis();
@@ -464,8 +465,19 @@ namespace MSG_Utils {
                             String windCleaning   = humCleaning.substring(humCleaning.indexOf(",")+1);
                             String windDegrees    = windCleaning.substring(windCleaning.indexOf(",")+1,windCleaning.indexOf("\n"));
 
-                            String fifthLineWR    = temperature + "C  " + pressure + "hPa  " + humidity +"%";
-                            String sixthLineWR    = "(wind " + windSpeed + "m/s " + windDegrees + "deg)";
+                            String fifthLineWR = temperature;
+                            fifthLineWR += "C  ";
+                            fifthLineWR += pressure;
+                            fifthLineWR += "hPa  ";
+                            fifthLineWR += humidity;
+                            fifthLineWR += "%";
+
+                            String sixthLineWR = "(wind ";
+                            sixthLineWR += windSpeed;
+                            sixthLineWR += "m/s ";
+                            sixthLineWR += windDegrees;
+                            sixthLineWR += "deg)";
+
                             show_display("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
                             menuDisplay = 40;
                             menuTime = millis();

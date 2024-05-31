@@ -268,14 +268,30 @@ namespace BME_Utils {
             presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
             if (type == 1) {
                 if (wxModuleType == 1 || wxModuleType == 3) {
-                    wx = tempStr + "C   " + humStr + "%   " + presStr + "hPa";
+                    wx = tempStr;
+                    wx += "C   ";
+                    wx += humStr;
+                    wx += "%   ";
+                    wx += presStr;
+                    wx += "hPa";
                 } else if (wxModuleType == 2) {
-                    wx = "T: " + tempStr + "C " + "P: " + presStr + "hPa";
+                    wx = "T: ";
+                    wx += tempStr;
+                    wx += "C P: ";
+                    wx += presStr;
+                    wx += "hPa";
                 }
             } else {
-                wx = ".../...g...t" + tempStr + "r...p...P...h" + humStr + "b" + presStr;
+                wx = ".../...g...t";
+                wx += tempStr;
+                wx += "r...p...P...h";
+                wx += humStr;
+                wx += "b";
+                wx += presStr;
                 if (wxModuleType == 3) {
-                    wx += "Gas: " + String(newGas) + "Kohms";
+                    wx += "Gas: ";
+                    wx += String(newGas);
+                    wx += "Kohms";
                 }
             }
             return wx;

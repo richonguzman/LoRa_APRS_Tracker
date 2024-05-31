@@ -33,10 +33,12 @@ namespace APRSPacketLib {
             north_south = "N";
             latitude += degrees.substring(0, degrees.indexOf("."));
         }
-        convDeg = abs(degrees.toFloat()) - abs(int(degrees.toFloat()));
+        convDeg  = abs(degrees.toFloat()) - abs(int(degrees.toFloat()));
         convDeg2 = (convDeg * 60)/100;
         convDeg3 = String(convDeg2,6);
-        latitude += convDeg3.substring(convDeg3.indexOf(".") + 1, convDeg3.indexOf(".") + 3) + "." + convDeg3.substring(convDeg3.indexOf(".") + 3, convDeg3.indexOf(".") + 5);
+        latitude += convDeg3.substring(convDeg3.indexOf(".") + 1, convDeg3.indexOf(".") + 3);
+        latitude += ".";
+        latitude += convDeg3.substring(convDeg3.indexOf(".") + 3, convDeg3.indexOf(".") + 5);
         latitude += north_south;
         return latitude;
     }
@@ -58,10 +60,12 @@ namespace APRSPacketLib {
             east_west = "E";
             longitude += degrees.substring(0, degrees.indexOf("."));
         }
-        convDeg = abs(degrees.toFloat()) - abs(int(degrees.toFloat()));
+        convDeg  = abs(degrees.toFloat()) - abs(int(degrees.toFloat()));
         convDeg2 = (convDeg * 60)/100;
         convDeg3 = String(convDeg2,6);
-        longitude += convDeg3.substring(convDeg3.indexOf(".") + 1, convDeg3.indexOf(".") + 3) + "." + convDeg3.substring(convDeg3.indexOf(".") + 3, convDeg3.indexOf(".") + 5);
+        longitude += convDeg3.substring(convDeg3.indexOf(".") + 1, convDeg3.indexOf(".") + 3);
+        longitude += ".";
+        longitude += convDeg3.substring(convDeg3.indexOf(".") + 3, convDeg3.indexOf(".") + 5);
         longitude += east_west;
         return longitude;
     }
@@ -71,12 +75,12 @@ namespace APRSPacketLib {
             alt_m = 0;
         }
         uint32_t altoff;
-        altoff=alt_m + 10000;
-        buf[0]=(altoff/8281) + 33;
-        altoff=altoff%8281;
-        buf[1]=(altoff/91) + 33;	
-        buf[2]=(altoff%91) + 33;
-        buf[3]='}';
+        altoff = alt_m + 10000;
+        buf[0] = (altoff/8281) + 33;
+        altoff = altoff%8281;
+        buf[1] = (altoff/91) + 33;	
+        buf[2] = (altoff%91) + 33;
+        buf[3] = '}';
     }
 
     void encodeMiceCourseSpeed(uint8_t *buf, uint32_t speed_kt, uint32_t course_deg) {
@@ -98,11 +102,11 @@ namespace APRSPacketLib {
             course_deg = 0;
         }
         uint32_t course_hun = course_deg/100;
-        DC28 = (speed_kt-ten * 10) * 10 + course_hun + 32;
-        buf[1] = DC28;				
+        DC28    = (speed_kt-ten * 10) * 10 + course_hun + 32;
+        buf[1]  = DC28;				
 
-        SE28 = (course_deg - course_hun * 100) + 28;
-        buf[2] = SE28;
+        SE28    = (course_deg - course_hun * 100) + 28;
+        buf[2]  = SE28;
     }
 
     void encodeMiceLongitude(uint8_t *buf, gpsLongitudeStruct *lon) { 
@@ -129,8 +133,8 @@ namespace APRSPacketLib {
         buf[1] = m28;
         
         uint32_t h28;
-        h28 = 28 + lon->minuteHundredths;
-        buf[2] = h28;
+        h28     = 28 + lon->minuteHundredths;
+        buf[2]  = h28;
     }
 
     void encodeMiceDestinationField(const String& msgType, uint8_t *buf, const gpsLatitudeStruct *lat, const gpsLongitudeStruct *lon) {
@@ -152,7 +156,7 @@ namespace APRSPacketLib {
         }
         buf[3] = (lat->minutes - temp * 10 + 0x30) + (lat->north ? 0x20 : 0);             // North validation
 
-        temp = lat->minuteHundredths/10;            // minute hundredths
+        temp   = lat->minuteHundredths/10;            // minute hundredths
         buf[4] = (temp + 0x30) + ((lon->degrees >= 100 || lon->degrees <= 9) ? 0x20 : 0);   // Longitude Offset
         buf[5] = (lat->minuteHundredths - temp * 10 + 0x30) + (!lon->east ? 0x20 : 0);            // West validation
     }
@@ -177,10 +181,10 @@ namespace APRSPacketLib {
         gpsLongitudeStruct miceLongitudeStruct;
         String lng = gpsDecimalToDegreesLongitude(longitude);
         char longitudeArray[10];
-        strncpy(longitudeArray,lng.c_str(),9);
+        strncpy(longitudeArray,lng.c_str(), 9);
         miceLongitudeStruct.degrees             = 100 * (longitudeArray[0] - '0') + 10 * (longitudeArray[1] - '0') + longitudeArray[2] - '0';
-        miceLongitudeStruct.minutes             = 10 * (longitudeArray[3] - '0') + longitudeArray[4] - '0';
-        miceLongitudeStruct.minuteHundredths    = 10 * (longitudeArray[6] - '0') + longitudeArray[7] - '0';
+        miceLongitudeStruct.minutes             = 10  * (longitudeArray[3] - '0') + longitudeArray[4] - '0';
+        miceLongitudeStruct.minuteHundredths    = 10  * (longitudeArray[6] - '0') + longitudeArray[7] - '0';
         if (longitudeArray[8] == 'E') {
             miceLongitudeStruct.east = 1;
         } else {
@@ -190,8 +194,8 @@ namespace APRSPacketLib {
     }
 
     String generateMiceGPSBeacon(const String& miceMsgType, const String& callsign, const String& symbol, const String& overlay, const String& path, float latitude, float longitude, float course, float speed, int altitude) {
-        gpsLatitudeStruct latitudeStruct = gpsDecimalToDegreesMiceLatitude(latitude);
-        gpsLongitudeStruct longitudeStruct = gpsDecimalToDegreesMiceLongitude(longitude);
+        gpsLatitudeStruct latitudeStruct    = gpsDecimalToDegreesMiceLatitude(latitude);
+        gpsLongitudeStruct longitudeStruct  = gpsDecimalToDegreesMiceLongitude(longitude);
 
         uint8_t miceDestinationArray[7];
         encodeMiceDestinationField(miceMsgType, &miceDestinationArray[0], &latitudeStruct, &longitudeStruct);
@@ -213,18 +217,25 @@ namespace APRSPacketLib {
         miceInfoFieldArray[13] = 0x00;      // por repetidor?
         String miceInformationField = (char*)miceInfoFieldArray;
 
-        String miceAPRSPacket = callsign + ">" + miceDestination;
+        String miceAPRSPacket = callsign;
+        miceAPRSPacket += ">";
+        miceAPRSPacket += miceDestination;
         if (path != "") {
-            miceAPRSPacket += "," + path;
+            miceAPRSPacket += ",";
+            miceAPRSPacket += path;
         }
-        miceAPRSPacket += ":" + miceInformationField;
+        miceAPRSPacket += ":";
+        miceAPRSPacket += miceInformationField;
         return miceAPRSPacket;
     }
 
     String generateBasePacket(const String& callsign, const String& tocall, const String& path) {
-        String packet = callsign + ">" + tocall;
+        String packet = callsign;
+        packet += ">";
+        packet += tocall;
         if (path != "") {
-            packet += "," + path;
+            packet += ",";
+            packet += path;
         }
         return packet;
     }
@@ -245,6 +256,7 @@ namespace APRSPacketLib {
 
     String generateDigiRepeatedPacket(APRSPacket packet, const String& callsign) {
         if (packet.path.indexOf("WIDE1-") >= 0) {
+
             String hop = packet.path.substring(packet.path.indexOf("WIDE1-") + 6, packet.path.indexOf("WIDE1-") + 7);
             if (hop.toInt() >= 1 && hop.toInt() <= 7) {
                 if (hop.toInt() == 1) {
@@ -252,7 +264,13 @@ namespace APRSPacketLib {
                 } else {
                     packet.path.replace("WIDE1-" + hop , callsign + "*,WIDE1-" + String(hop.toInt() - 1));
                 }
-                String repeatedPacket = packet.sender + ">" + packet.tocall + "," + packet.path;
+
+                String repeatedPacket = packet.sender;
+                repeatedPacket += ">";
+                repeatedPacket += packet.tocall;
+                repeatedPacket += ",";
+                repeatedPacket += packet.path;
+
                 switch (packet.type) { 
                     case 0: // gps
                         repeatedPacket += ":!";
@@ -261,7 +279,9 @@ namespace APRSPacketLib {
                         for(int i = packet.addressee.length(); i < 9; i++) {
                             packet.addressee += ' ';
                         }
-                        repeatedPacket += "::" + packet.addressee + ":";
+                        repeatedPacket += "::";
+                        repeatedPacket += packet.addressee;
+                        repeatedPacket += ":";
                         break;
                     case 2: // status
                         repeatedPacket += ":>";
@@ -446,7 +466,7 @@ namespace APRSPacketLib {
     }
 
     String decodeMiceSymbol(const String& informationField) {
-        return informationField.substring(6, 7);
+        return informationField.substring(6,7);
     }
 
     String decodeMiceOverlay(const String& informationField) {
@@ -493,11 +513,11 @@ namespace APRSPacketLib {
     }
 
     float gpsDegreesToDecimalLatitude(const String& degreesLatitude) {
-        int degrees = degreesLatitude.substring(0, 2).toInt();
-        int minute = degreesLatitude.substring(2, 4).toInt();
-        int minuteHundredths = degreesLatitude.substring(5, 7).toInt();
-        String northSouth = degreesLatitude.substring(7);
-        float decimalLatitude = degrees + (minute/60.0) + (minuteHundredths/10000.0);
+        int degrees             = degreesLatitude.substring(0, 2).toInt();
+        int minute              = degreesLatitude.substring(2, 4).toInt();
+        int minuteHundredths    = degreesLatitude.substring(5, 7).toInt();
+        String northSouth       = degreesLatitude.substring(7);
+        float decimalLatitude   = degrees + (minute/60.0) + (minuteHundredths/10000.0);
         if (northSouth == "N") {
             return decimalLatitude;
         } else { 
@@ -506,11 +526,11 @@ namespace APRSPacketLib {
     }
 
     float gpsDegreesToDecimalLongitude(const String& degreesLongitude) {
-        int degrees = degreesLongitude.substring(0, 3).toInt();
-        int minute = degreesLongitude.substring(3, 5).toInt();
-        int minuteHundredths = degreesLongitude.substring(6, 8).toInt();
-        String westEast = degreesLongitude.substring(8);
-        float decimalLongitude = degrees + (minute/60.0) + (minuteHundredths/10000.0);
+        int degrees             = degreesLongitude.substring(0, 3).toInt();
+        int minute              = degreesLongitude.substring(3, 5).toInt();
+        int minuteHundredths    = degreesLongitude.substring(6, 8).toInt();
+        String westEast         = degreesLongitude.substring(8);
+        float decimalLongitude  = degrees + (minute/60.0) + (minuteHundredths/10000.0);
         if (westEast == "W") {
             return -decimalLongitude;
         } else { 
@@ -591,11 +611,11 @@ namespace APRSPacketLib {
         aprsPacket.sender = receivedPacket.substring(0, receivedPacket.indexOf(">"));
         String temp0 = receivedPacket.substring(receivedPacket.indexOf(">") + 1, receivedPacket.indexOf(":"));
         if (temp0.indexOf(",") > 2) {
-            aprsPacket.tocall = temp0.substring(0, temp0.indexOf(","));
-            aprsPacket.path = temp0.substring(temp0.indexOf(",") + 1, temp0.indexOf(":"));
+            aprsPacket.tocall   = temp0.substring(0, temp0.indexOf(","));
+            aprsPacket.path     = temp0.substring(temp0.indexOf(",") + 1, temp0.indexOf(":"));
         } else {
-            aprsPacket.tocall = temp0;
-            aprsPacket.path = "";
+            aprsPacket.tocall   = temp0;
+            aprsPacket.path     = "";
         }
         if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
             aprsPacket.type = 0;
