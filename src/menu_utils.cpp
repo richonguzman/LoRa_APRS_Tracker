@@ -555,11 +555,8 @@ namespace MENU_Utils {
                     thirdRowMainMenu += String(gps.satellites.value());
                     thirdRowMainMenu += hdopState;
 
-                    String fourthRowAlt = String(gps.altitude.meters(),0);
-                    fourthRowAlt.trim();
-                    for (int a = fourthRowAlt.length(); a < 4; a++) {
-                        fourthRowAlt = "0" + fourthRowAlt;
-                    }
+                    char fourthRowAlt[5] = {0};
+                    snprintf(fourthRowAlt, sizeof fourthRowAlt, "%04.0f", gps.altitude.meters());
                     String fourthRowSpeed = String(gps.speed.kmph(),0);
                     fourthRowSpeed.trim();
                     for (int b = fourthRowSpeed.length(); b < 3; b++) {
