@@ -51,19 +51,23 @@ uint8_t     lowBatteryPercent       = 21;
 namespace MENU_Utils {
 
     static
-    char const* checkBTType() {
+    String const& BluetoothTypeAsString() {
+        static String const bluetoothLowEnergy = "BLE iPhone";
+        static String const bluetooth = "BT Android";
+        static String const bluetoothLowEnergyText = "BLE Text";
+        static String const none = "no BT";
         switch (Config.bluetoothType) {
             case BluetoothType::BluetoothLowEnergy:
-                return "BLE iPhone";
+                return bluetoothLowEnergy;
                 break;
             case BluetoothType::Bluetooth:
-                return "BT Android";
+                return bluetooth;
                 break;
             case BluetoothType::BluetoothLowEnergyText:
-                return "BLE Text";
+                return bluetoothLowEnergyText;
                 break;
             default:
-                return "no BT";
+                return none;
                 break;
         }
     }
@@ -200,16 +204,16 @@ namespace MENU_Utils {
                 show_display("_CONFIG___", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + stateAsString(bluetoothActive) + ")",lastLine);
+                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + stateAsString(bluetoothActive) + ")", "  Status",lastLine);
+                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
-                show_display("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + stateAsString(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
+                show_display("_CONFIG___", "  Display",  "> " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
             case 24:    // 2.Configuration ---> Status
-                show_display("_CONFIG___", "  " + checkBTType() + " (" + stateAsString(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
+                show_display("_CONFIG___", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
             case 25:    // 2.Configuration ---> Notifications
                 show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
