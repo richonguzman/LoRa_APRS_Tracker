@@ -59,16 +59,12 @@ namespace MENU_Utils {
         switch (Config.bluetoothType) {
             case BluetoothType::BluetoothLowEnergy:
                 return bluetoothLowEnergy;
-                break;
             case BluetoothType::Bluetooth:
                 return bluetooth;
-                break;
             case BluetoothType::BluetoothLowEnergyText:
                 return bluetoothLowEnergyText;
-                break;
             default:
                 return none;
-                break;
         }
     }
 
