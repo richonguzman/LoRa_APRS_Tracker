@@ -11,6 +11,7 @@
 #include "bme_utils.h"
 #include "display.h"
 #include "utils.h"
+#include "types.hpp"
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
@@ -51,13 +52,13 @@ namespace MENU_Utils {
 
     String checkBTType() {
         switch (Config.bluetoothType) {
-            case 0:
+            case BluetoothType::BluetoothLowEnegry:
                 return "BLE iPhone";
                 break;
-            case 1:
+            case BluetoothType::Bluetooth:
                 return "BT Android";
                 break;
-            case 2:
+            case BluetoothType::BluetoothLowEnergyText:
                 return "BLE Text";
                 break;
             default:
