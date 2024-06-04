@@ -4,12 +4,7 @@
 #include <Arduino.h>
 
 namespace MENU_Utils {
-    
-    String  BluetoothTypeAsString();
-    String  stateAsString(bool process);
-    String  checkScreenBrightness(uint8_t bright);
     void    showOnScreen();
-
 }
 
 #endif
