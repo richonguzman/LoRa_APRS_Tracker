@@ -51,9 +51,9 @@ uint8_t     lowBatteryPercent       = 21;
 namespace MENU_Utils {
 
     static
-    String checkBTType() {
+    char const* checkBTType() {
         switch (Config.bluetoothType) {
-            case BluetoothType::BluetoothLowEnegry:
+            case BluetoothType::BluetoothLowEnergy:
                 return "BLE iPhone";
                 break;
             case BluetoothType::Bluetooth:
