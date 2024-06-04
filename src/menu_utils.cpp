@@ -73,21 +73,23 @@ namespace MENU_Utils {
     }
 
     static
-    String stateAsString(bool const process) {
-        if (process) {
-            return "ON";
-        } else {
-            return "OFF";
-        }
+    String const& stateAsString(bool const process) {
+        static String const on  = "ON";
+        static String const off = "OFF";
+        if (process)
+            return on;
+        else
+            return off;
     }
 
     static
-    String screenBrightnessAsString(uint8_t const bright) {
-        if (bright == 255) {
-            return "MAX";
-        } else {
-            return "MIN";
-        }
+    String const& screenBrightnessAsString(uint8_t const bright) {
+        static String const max = "MAX";
+        static String const min = "min";
+        if (bright == 255)
+            return max;
+        else
+            return min;
     }
 
     void showOnScreen() {
