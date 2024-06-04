@@ -50,6 +50,7 @@ uint8_t     lowBatteryPercent       = 21;
 
 namespace MENU_Utils {
 
+    static
     String checkBTType() {
         switch (Config.bluetoothType) {
             case BluetoothType::BluetoothLowEnegry:
@@ -67,6 +68,7 @@ namespace MENU_Utils {
         }
     }
 
+    static
     String checkProcessActive(bool process) {
         if (process) {
             return "ON";
@@ -75,6 +77,7 @@ namespace MENU_Utils {
         }
     }
 
+    static
     String checkScreenBrightness(uint8_t bright) {
         if (bright == 255) {
             return "MAX";
