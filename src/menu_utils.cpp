@@ -11,6 +11,7 @@
 #include "bme_utils.h"
 #include "display.h"
 #include "utils.h"
+#include "types.hpp"
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
@@ -49,37 +50,42 @@ uint8_t     lowBatteryPercent       = 21;
 
 namespace MENU_Utils {
 
-    String checkBTType() {
+    static
+    String const& BluetoothTypeAsString() {
+        static String const bluetoothLowEnergy = "BLE iPhone";
+        static String const bluetooth = "BT Android";
+        static String const bluetoothLowEnergyText = "BLE Text";
+        static String const none = "no BT";
         switch (Config.bluetoothType) {
-            case 0:
-                return "BLE iPhone";
-                break;
-            case 1:
-                return "BT Android";
-                break;
-            case 2:
-                return "BLE Text";
-                break;
+            case BluetoothType::BluetoothLowEnergy:
+                return bluetoothLowEnergy;
+            case BluetoothType::Bluetooth:
+                return bluetooth;
+            case BluetoothType::BluetoothLowEnergyText:
+                return bluetoothLowEnergyText;
             default:
-                return "no BT";
-                break;
+                return none;
         }
     }
 
-    String checkProcessActive(bool process) {
-        if (process) {
-            return "ON";
-        } else {
-            return "OFF";
-        }
+    static
+    String const& stateAsString(bool const process) {
+        static String const on  = "ON";
+        static String const off = "OFF";
+        if (process)
+            return on;
+        else
+            return off;
     }
 
-    String checkScreenBrightness(uint8_t bright) {
-        if (bright == 255) {
-            return "MAX";
-        } else {
-            return "MIN";
-        }
+    static
+    String const& screenBrightnessAsString(uint8_t const bright) {
+        static String const max = "MAX";
+        static String const min = "min";
+        if (bright == 255)
+            return max;
+        else
+            return min;
     }
 
     void showOnScreen() {
@@ -196,16 +202,16 @@ namespace MENU_Utils {
                 show_display("_CONFIG___", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
-                show_display("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
+                show_display("_CONFIG___", "  Display",  "> " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
             case 24:    // 2.Configuration ---> Status
-                show_display("_CONFIG___", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
+                show_display("_CONFIG___", "  " + BluetoothTypeAsString() + " (" + stateAsString(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
             case 25:    // 2.Configuration ---> Notifications
                 show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
@@ -232,10 +238,10 @@ namespace MENU_Utils {
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
+                show_display("_DISPLAY__", "", "> ECO Mode    (" + stateAsString(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
             case 221:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
+                show_display("_DISPLAY__", "", "  ECO Mode    (" + stateAsString(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
 
             case 230:
@@ -345,17 +351,17 @@ namespace MENU_Utils {
                 if (winlinkStatus == 5) {
                     menuDisplay = 5000;
                 } else {
-                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + stateAsString(winlinkCommentState) + ")" , lastLine);
                 }
                 break;
             case 51:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + stateAsString(winlinkCommentState) + ")" , lastLine);
                 break;
             case 52:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Wnlk Comment (" + stateAsString(winlinkCommentState) + ")" , lastLine);
                 break;
             case 53:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Wnlk Comment (" + stateAsString(winlinkCommentState) + ")" , lastLine);
                 break;
 
             case 500:    // 5.Winlink ---> Login
@@ -476,16 +482,16 @@ namespace MENU_Utils {
 
 //////////
             case 60:    // 6. Extras ---> Flashlight
-                show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                show_display("__EXTRAS__", "> Flashlight    (" + stateAsString(flashlight) + ")", "  DigiRepeater  (" + stateAsString(digirepeaterActive) + ")", "  S.O.S.        (" + stateAsString(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 61:    // 6. Extras ---> Digirepeater
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                show_display("__EXTRAS__", "  Flashlight    (" + stateAsString(flashlight) + ")", "> DigiRepeater  (" + stateAsString(digirepeaterActive) + ")", "  S.O.S.        (" + stateAsString(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                show_display("__EXTRAS__", "  Flashlight    (" + stateAsString(flashlight) + ")", "  DigiRepeater  (" + stateAsString(digirepeaterActive) + ")", "> S.O.S.        (" + stateAsString(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 63:    // 6. Extras ---> Extra Comment.
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
+                show_display("__EXTRAS__", "  Flashlight    (" + stateAsString(flashlight) + ")", "  DigiRepeater  (" + stateAsString(digirepeaterActive) + ")", "  S.O.S.        (" + stateAsString(sosActive) + ")","> Send GPS + Comment",lastLine);
                 break;
             case 630:
                 if (messageText.length() <= 67) {
