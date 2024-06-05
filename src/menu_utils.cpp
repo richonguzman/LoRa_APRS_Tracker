@@ -70,13 +70,23 @@ namespace MENU_Utils {
         }
     }
 
-    String checkScreenBrightness(uint8_t bright) {
+    const String screenBrightnessAsString(const uint8_t bright) {
         if (bright == 255) {
             return "MAX";
         } else {
             return "MIN";
         }
     }
+
+    /*const String& screenBrightnessAsString(uint8_t const bright) {
+        static const String max = "MAX";
+        static const String min = "min";
+        if (bright == 255) {
+            return max;
+        } else {
+            return min;
+        }
+    }*/
 
     void showOnScreen() {
         String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
@@ -228,10 +238,10 @@ namespace MENU_Utils {
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
+                show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
             case 221:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + checkScreenBrightness(screenBrightness) + ")","",lastLine);
+                show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
 
             case 230:
