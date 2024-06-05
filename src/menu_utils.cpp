@@ -53,16 +53,12 @@ namespace MENU_Utils {
         switch (Config.bluetoothType) {
             case 0:
                 return "BLE iPhone";
-                break;
             case 1:
                 return "BT Android";
-                break;
             case 2:
                 return "BLE Text";
-                break;
             default:
                 return "no BT";
-                break;
         }
     }
 

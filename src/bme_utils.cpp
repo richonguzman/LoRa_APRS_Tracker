@@ -131,17 +131,14 @@ namespace BME_Utils {
                 } else {
                     return "00" + strTemp;
                 }
-                break;
             case 2:
                 if (type == 1) {
                     return " " + strTemp;
                 } else {
                     return "0" + strTemp;
                 }
-                break;
             case 3:
                 return strTemp;
-                break;
             default:
                 return "-999";
         }
@@ -157,10 +154,8 @@ namespace BME_Utils {
                 } else {
                     return "0" + strHum;
                 }
-                break;
             case 2:
                 return strHum;
-                break;
             case 3:
                 if ((int)bmeHum == 100) {
                     if (type == 1) {
@@ -171,7 +166,6 @@ namespace BME_Utils {
                 } else {
                     return "-99";
                 }
-                break;
             default:
                 return "-99";
         }
@@ -187,31 +181,26 @@ namespace BME_Utils {
                 } else {
                     return "000" + strPress + decPress;
                 }
-                break;
             case 2:
                 if (type == 1) {
                     return "00" + strPress;
                 } else {
                     return "00" + strPress + decPress;
                 }
-                break;
             case 3:
                 if (type == 1) {
                     return "0" + strPress;
                 } else {
                     return "0" + strPress + decPress;
                 }
-                break;
             case 4:
                 if (type == 1) {
                     return strPress;
                 } else {
                     return strPress + decPress;
                 }
-                break;
             case 5:
                 return strPress;
-                break;
             default:
                 return "-99999";
         }
