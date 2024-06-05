@@ -5,6 +5,7 @@
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "ble_utils.h"
+#include "display.h"
 #include "logger.h"
 
 
@@ -461,6 +462,7 @@ namespace POWER_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
+            display_toggle(false);
             PMU.shutdown();
         #else
 
