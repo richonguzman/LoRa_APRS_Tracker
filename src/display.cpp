@@ -162,16 +162,10 @@ void show_display(const String& header, const String& line1, const String& line2
         tft.setCursor(0, 0);
         tft.print(header);
         tft.setTextSize(smallSizeFont);
-
         for (int i = 0; i < 2; i++) {
             tft.setCursor(0, ((lineSpacing * (2 + i)) - 2));
             tft.print(*lines[i]);
         }
-        /*tft.setCursor(0, ((lineSpacing * 2) - 2));
-        tft.print(line1);
-        tft.setCursor(0, ((lineSpacing * 3) - 2));
-        tft.print(line2);*/
-        
     #else
         display.clearDisplay();
         #ifdef ssd1306
@@ -183,16 +177,10 @@ void show_display(const String& header, const String& line1, const String& line2
         display.setCursor(0, 0);
         display.println(header);
         display.setTextSize(1);
-
         for (int i = 0; i < 2; i++) {
             display.setCursor(0, 16 + (10 * i));
             display.println(*lines[i]);
         }
-
-        /*display.setCursor(0, 16);
-        display.println(line1);
-        display.setCursor(0, 26);
-        display.println(line2);*/
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
@@ -217,23 +205,10 @@ void show_display(const String& header, const String& line1, const String& line2
         tft.setCursor(0, 0);
         tft.print(header);
         tft.setTextSize(smallSizeFont);
-
         for (int i = 0; i < 5; i++) {
             tft.setCursor(0, ((lineSpacing * (2 + i)) - 2));
             tft.print(*lines[i]);
         }
-
-        /*tft.setCursor(0, ((lineSpacing * 2) - 2));
-        tft.print(line1);
-        tft.setCursor(0, ((lineSpacing * 3) - 2));
-        tft.print(line2);
-        tft.setCursor(0, ((lineSpacing * 4) - 2));
-        tft.print(line3);
-        tft.setCursor(0, ((lineSpacing * 5) - 2));
-        tft.print(line4);
-        tft.setCursor(0, ((lineSpacing *6) - 2));
-        tft.print(line5);*/
-
         if (menuDisplay == 0 && Config.display.showSymbol) {
             int symbol = 100;
             for (int i = 0; i < symbolArraySize; i++) {
@@ -281,23 +256,10 @@ void show_display(const String& header, const String& line1, const String& line2
         display.setCursor(0, 0);
         display.println(header);
         display.setTextSize(1);
-
         for (int i = 0; i < 5; i++) {
             display.setCursor(0, 16 + (10 * i));
             display.println(*lines[i]);
-        }  
-
-        /*display.setCursor(0, 16);
-        display.println(line1);
-        display.setCursor(0, 26);
-        display.println(line2);
-        display.setCursor(0, 36);
-        display.println(line3);
-        display.setCursor(0, 46);
-        display.println(line4);
-        display.setCursor(0, 56);
-        display.println(line5);*/
-
+        }
         #ifdef ssd1306
             display.ssd1306_command(SSD1306_SETCONTRAST);
             display.ssd1306_command(screenBrightness);
