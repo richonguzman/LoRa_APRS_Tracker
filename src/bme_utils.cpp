@@ -117,7 +117,7 @@ namespace BME_Utils {
         }
     }
 
-    String generateTempString(float bmeTemp, uint8_t type) {
+    const String generateTempString(const float bmeTemp, const uint8_t type) {
         String strTemp;
         if (type == 1) {    // OLED
             strTemp = String((int)bmeTemp);
@@ -144,7 +144,7 @@ namespace BME_Utils {
         }
     }
 
-    String generateHumString(float bmeHum, uint8_t type) {
+    const String generateHumString(const float bmeHum, const uint8_t type) {
         String strHum;
         strHum = String((int)bmeHum);
         switch (strHum.length()) {
@@ -171,7 +171,7 @@ namespace BME_Utils {
         }
     }
 
-    String generatePresString(float bmePress, uint8_t type) {
+    const String generatePresString(const float bmePress, const uint8_t type) {
         String strPress = String((int)bmePress);
         String decPress = String(int((bmePress - int(bmePress)) * 10));
         switch (strPress.length()) {
@@ -206,7 +206,7 @@ namespace BME_Utils {
         }
     }
 
-    String readDataSensor(uint8_t type) {
+    const String readDataSensor(const uint8_t type) {
         String wx, tempStr, humStr, presStr;
         uint32_t lastReading = millis() - bmeLastReading;
         if (lastReading > 60 * 1000) {
