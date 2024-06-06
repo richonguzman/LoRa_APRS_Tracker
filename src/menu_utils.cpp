@@ -74,19 +74,9 @@ namespace MENU_Utils {
         if (bright == 255) {
             return "MAX";
         } else {
-            return "MIN";
+            return "min";
         }
     }
-
-    /*const String& screenBrightnessAsString(uint8_t const bright) {
-        static const String max = "MAX";
-        static const String min = "min";
-        if (bright == 255) {
-            return max;
-        } else {
-            return min;
-        }
-    }*/
 
     void showOnScreen() {
         String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
