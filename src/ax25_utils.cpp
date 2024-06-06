@@ -81,7 +81,7 @@ namespace AX25_Utils {
         return frame;
     }
 
-    std::string intToBinaryString(uint8_t value, uint8_t bitLength) {
+    std::string intToBinaryString(uint8_t value, const uint8_t bitLength) {
         std::string result = "";
         //result.reserve(bitLength);
         for (int i = bitLength - 1; i >= 0; i--) {
@@ -90,7 +90,7 @@ namespace AX25_Utils {
         return result;
     }
 
-    String encodeAX25Address(const String& frame, uint8_t type, bool lastAddress) {
+    String encodeAX25Address(const String& frame, uint8_t type, const bool lastAddress) {
         String packet = "";
         String address;
         std::string concatenatedBinary;

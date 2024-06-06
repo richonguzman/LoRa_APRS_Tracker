@@ -11,8 +11,8 @@
 namespace POWER_Utils {
 
     double  getBatteryVoltage();
-    String  getBatteryInfoVoltage();
-    String  getBatteryInfoCurrent();
+    const String getBatteryInfoVoltage();
+    const String getBatteryInfoCurrent();
     bool    getBatteryInfoIsConnected();
 
     void    enableChgLed();

@@ -5,10 +5,10 @@
 
 namespace MENU_Utils {
     
-    String  checkBTType();
-    String  checkProcessActive(bool process);
+    const String checkBTType();
+    const String checkProcessActive(const bool process);
     const String screenBrightnessAsString(const uint8_t bright);
-    void    showOnScreen();
+    void  showOnScreen();
 
 }
 

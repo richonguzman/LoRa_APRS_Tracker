@@ -68,7 +68,7 @@ namespace MSG_Utils {
         return noWLNKMsgWarning;
     }
 
-    String getLastHeardTracker() {
+    const String getLastHeardTracker() {
         return lastHeardTracker;
     }
 
@@ -256,7 +256,7 @@ namespace MSG_Utils {
         LoRa_Utils::sendNewPacket(newPacket);
     }
 
-    String ackRequestNumberGenerator() {
+    const String ackRequestNumberGenerator() {
         ackRequestNumber++;
         if (ackRequestNumber > 999) {
             ackRequestNumber = 1;

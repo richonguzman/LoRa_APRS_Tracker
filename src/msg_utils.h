@@ -8,7 +8,7 @@ namespace MSG_Utils {
 
     bool    warnNoAPRSMessages();
     bool    warnNoWLNKMails();
-    String  getLastHeardTracker();
+    const String getLastHeardTracker();
     int     getNumAPRSMessages();
     int     getNumWLNKMails();
     void    loadNumMessages();
@@ -17,7 +17,7 @@ namespace MSG_Utils {
     void    deleteFile(uint8_t typeOfFile);
     void    saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage);
     void    sendMessage(const String& station, const String& textMessage);
-    String  ackRequestNumberGenerator();
+    const String ackRequestNumberGenerator();
     void    addToOutputBuffer(uint8_t typeOfMessage, const String& station, const String& textMessage);
     void    processOutputBuffer();
     void    clean25SegBuffer();

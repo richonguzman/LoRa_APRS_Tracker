@@ -86,11 +86,11 @@ namespace POWER_Utils {
     #endif    
     }
 
-    String getBatteryInfoVoltage() {
+    const String getBatteryInfoVoltage() {
         return batteryVoltage;
     }
 
-    String getBatteryInfoCurrent() {
+    const String getBatteryInfoCurrent() {
         return batteryChargeDischargeCurrent;
     }
 

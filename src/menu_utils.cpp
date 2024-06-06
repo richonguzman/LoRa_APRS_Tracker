@@ -49,7 +49,7 @@ uint8_t     lowBatteryPercent       = 21;
 
 namespace MENU_Utils {
 
-    String checkBTType() {
+    const String checkBTType() {
         switch (Config.bluetoothType) {
             case 0:
                 return "BLE iPhone";
@@ -62,7 +62,7 @@ namespace MENU_Utils {
         }
     }
 
-    String checkProcessActive(bool process) {
+    const String checkProcessActive(const bool process) {
         if (process) {
             return "ON";
         } else {

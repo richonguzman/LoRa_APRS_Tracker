@@ -56,19 +56,19 @@ uint32_t    lastDeleteListenedTracker;
 
 namespace STATION_Utils {
 
-    String getFirstNearTracker() {
+    const String getFirstNearTracker() {
         return String(firstNearTracker.substring(0, firstNearTracker.indexOf(",")));
     }
 
-    String getSecondNearTracker() {
+    const String getSecondNearTracker() {
         return String(secondNearTracker.substring(0, secondNearTracker.indexOf(",")));
     }
 
-    String getThirdNearTracker() {
+    const String getThirdNearTracker() {
         return String(thirdNearTracker.substring(0, thirdNearTracker.indexOf(",")));
     }
 
-    String getFourthNearTracker() {
+    const String getFourthNearTracker() {
         return String(fourthNearTracker.substring(0, fourthNearTracker.indexOf(",")));
     }
 
