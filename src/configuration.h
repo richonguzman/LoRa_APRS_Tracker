@@ -39,7 +39,6 @@ public:
 class BME {
 public:
     bool    active;
-    int     heightCorrection;
     float   temperatureCorrection;
     bool    sendTelemetry;
 };

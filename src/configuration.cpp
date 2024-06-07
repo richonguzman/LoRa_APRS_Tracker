@@ -54,7 +54,6 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     winlink.password              = data["winlink"]["password"].as<String>();
 
     bme.active                    = data["bme"]["active"].as<bool>();
-    bme.heightCorrection          = data["bme"]["heightCorrection"].as<int>();
     bme.temperatureCorrection     = data["bme"]["temperatureCorrection"].as<float>();
     bme.sendTelemetry             = data["bme"]["sendTelemetry"].as<bool>();
 

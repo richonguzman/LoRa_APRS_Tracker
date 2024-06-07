@@ -1,13 +1,15 @@
+#include <TinyGPS++.h>
+#include <logger.h>
 #include "bme_utils.h"
 #include "configuration.h"
 #include "display.h"
-#include <logger.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 #define CORRECTION_FACTOR (8.2296)      // for meters
 
 extern Configuration    Config;
 extern logging::Logger  logger;
+extern TinyGPSPlus      gps;
 
 float newHum, newTemp, newPress, newGas;
 
@@ -254,7 +256,7 @@ namespace BME_Utils {
             } else if (wxModuleType == 2) {
                 humStr  = "..";
             }
-            presStr = generatePresString(newPress + (Config.bme.heightCorrection/CORRECTION_FACTOR), type);
+            presStr = generatePresString(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), type);
             if (type == 1) {
                 if (wxModuleType == 1 || wxModuleType == 3) {
                     wx = tempStr;
