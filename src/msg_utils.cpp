@@ -403,6 +403,10 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender!=currentBeacon->callsign) {
 
+                if (lastReceivedPacket.message.indexOf("\x3c\xff\x01") != -1) {
+                    lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("\x3c\xff\x01"));
+                }
+
                 if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {
                     if (Config.bluetoothType == 0 || Config.bluetoothType == 2) { // agregar validador si cliente BLE esta conectado?
                         BLE_Utils::sendToPhone(packet.text.substring(3));
@@ -410,9 +414,9 @@ namespace MSG_Utils {
                         #ifdef HAS_BT_CLASSIC
                         BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
                         #endif
-                    }
+                    }                    
 
-                    if (digirepeaterActive && lastReceivedPacket.addressee!=currentBeacon->callsign) {
+                    if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);
                         if (digiRepeatedPacket == "X") {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");
