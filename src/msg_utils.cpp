@@ -301,7 +301,7 @@ namespace MSG_Utils {
     }
 
     void processOutputBuffer() {
-        if (!outputMessagesBuffer.empty() && (millis() - lastMsgRxTime) >= 4500 && (millis() - lastTxTime) > 3000) {
+        if (!outputMessagesBuffer.empty() && (millis() - lastMsgRxTime) >= 6000 && (millis() - lastTxTime) > 3000) {
             String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
             String message = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
             if (message.indexOf("{") > 0) {     // message with ack Request

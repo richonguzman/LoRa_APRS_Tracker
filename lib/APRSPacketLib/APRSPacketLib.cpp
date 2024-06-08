@@ -233,7 +233,7 @@ namespace APRSPacketLib {
         String packet = callsign;
         packet += ">";
         packet += tocall;
-        if (path != "") {
+        if (path.indexOf("WIDE") == 0) {
             packet += ",";
             packet += path;
         }
