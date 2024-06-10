@@ -32,7 +32,9 @@ ____________________________________________________
 
 ____________________________________________________
 
-# WIKI (English / Español en camino...)
+# WIKI (English / Español)
+
+### FAQ: GPS, Bluetooth, Winlink, BME280 and more --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/00.-FAQ-(frequently-asked-questions)" target="_blank">here</a>
 
 ### Supported Boards and buying links --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/Z.-------Supported-Boards-and-Buying-Links" target="_blank">here</a>
 
@@ -40,21 +42,9 @@ ____________________________________________________
 
 ### 2. Tracker Configuration and Explanation for each setting --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/02.-Tracker-Configuration--%23--Configuracion-del-Tracker" target="_blank">here</a>
 
-### 3. Supported Boards and Environment Selection --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/03.-Supported-Boards-and-Environment-Selection-%23-Placas-soportadas-y-seleccion-del-entorno" target="_blank">here</a>
+### 3. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/03.-Upload-Firmware-and-Filesystem-%23-Subir-Firmware-y-sistema-de-archivos" target="_blank">here</a>
 
-### 4. Upload Firmware and Filesystem --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/04.-Upload-Firmware-and-Filesystem-%23-Subir-Firmware-y-sistema-de-archivos" target="_blank">here</a>
-
-### 5. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/05.-Menu-Guide-%23-Guía-del-menú" target="_blank">here</a>
-
-### 6. Bluetooth Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/06.-Bluetooth-Connection-%23-Conexión-Bluetooth" target="_blank">here</a>
-
-### 7. First Time Boot and GPS --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/07.-First-Time-Boot-and-GPS.-Primer-arranque-y-GPS" target="_blank">here</a>
-
-### 8. Adding Keyboard, BME280, Leds and Buzzer Modules --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/08.-Adding-Keyboard,-BME280,-Leds-and-Buzzer--Modules.-Añadir-teclado,-BME280,-LED-y-alarma-sonora." target="_blank">here</a>
-
-### 9. Winlink (over APRSlink) --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/09.-Winlink-(connecting-and-use--conexion-y-uso)." target="_blank">here</a>
-
-### 10. Frequencies for different Countries  --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/10.-Frequencies-for-different-Countries.--Frecuencias-para-distintos-paises." target="_blank">here</a>
+### 4. Tracker Menu Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/04.-Menu-Guide-%23-Guía-del-menú" target="_blank">here</a>
 
 ____________________________________________________
 ## Timeline (Versions):
