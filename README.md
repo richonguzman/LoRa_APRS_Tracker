@@ -50,7 +50,7 @@ ____________________________________________________
 ## Timeline (Versions):
 
 - 2024.06.21 If Tracker Speed > 200km/hr and/or Altitude > 9.000 mts , path ("WIDE1-1") will be omited as its probably a plane.
-- 2024.06.21 Wx Telemetry Tx on Tracker only if standing still > 15min. (On screen Wx Data will be available but won't be sended if moving).
+- 2024.06.21 Wx Telemetry Tx on Tracker only if standing still > 15min. (On screen Wx Data will be available but won't be sent if moving).
 - 2024.06.07 Dynamic Height Correction of the BME280 Pressure readings.
 - 2024.05.21 WEMOS ESP32 Battery Holder + LoRa SX1278 + GPS Module support added.
 - 2024.05.16 all boards now work with Radiolib (LoRa) library from @jgromes.
