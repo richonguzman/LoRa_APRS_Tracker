@@ -66,11 +66,21 @@ namespace Utils {
     }
 
     String createDateString(time_t t) {
-        return String(padding(year(t), 4) + "-" + padding(month(t), 2) + "-" + padding(day(t), 2));
+        String dateString = padding(year(t), 4);
+        dateString += "-";
+        dateString += padding(month(t), 2);
+        dateString += "-";
+        dateString += padding(day(t), 2);
+        return dateString;
     }
 
     String createTimeString(time_t t) {
-        return String(padding(hour(t), 2) + ":" + padding(minute(t), 2) + ":" + padding(second(t), 2));
+        String timeString = padding(hour(t), 2);
+        timeString += ":";
+        timeString += padding(minute(t), 2);
+        timeString += ":";
+        timeString += padding(second(t), 2);
+        return timeString;
     }
 
     void checkStatus() {

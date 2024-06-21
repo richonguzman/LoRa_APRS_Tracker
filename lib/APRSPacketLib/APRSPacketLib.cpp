@@ -254,49 +254,34 @@ namespace APRSPacketLib {
         return generateBasePacket(callsign,tocall,path) + "::" + processedAddressee + ":" + processedMessage;
     }
 
-    String generateDigiRepeatedPacket(APRSPacket packet, const String& callsign) {
-        if (packet.path.indexOf("WIDE1-") >= 0) {
+    String buildDigiPacket(const String& packet, const String& callsign, const String& path, const String& fullPath, bool thirdParty) {
+        String packetToRepeat = packet.substring(0, packet.indexOf(",") + 1);
+        String tempPath = fullPath;
+        tempPath.replace(path, callsign + "*");
+        packetToRepeat += tempPath;
+        if (thirdParty) {
+            packetToRepeat += packet.substring(packet.indexOf(":}"));
+        } else {
+            packetToRepeat += packet.substring(packet.indexOf(":"));
+        }
+        return packetToRepeat;
+    }
 
-            String hop = packet.path.substring(packet.path.indexOf("WIDE1-") + 6, packet.path.indexOf("WIDE1-") + 7);
-            if (hop.toInt() >= 1 && hop.toInt() <= 7) {
-                if (hop.toInt() == 1) {
-                    packet.path.replace("WIDE1-1", callsign + "*");
-                } else {
-                    packet.path.replace("WIDE1-" + hop , callsign + "*,WIDE1-" + String(hop.toInt() - 1));
-                }
+    String generateDigiRepeatedPacket(const String& packet, const String &callsign, const String& path) {
+        bool thirdParty = false;
+        if (packet.indexOf(":}") != -1) thirdParty = true;
 
-                String repeatedPacket = packet.sender;
-                repeatedPacket += ">";
-                repeatedPacket += packet.tocall;
-                repeatedPacket += ",";
-                repeatedPacket += packet.path;
-
-                switch (packet.type) { 
-                    case 0: // gps
-                        repeatedPacket += ":!";
-                        break;
-                    case 1: // message
-                        for(int i = packet.addressee.length(); i < 9; i++) {
-                            packet.addressee += ' ';
-                        }
-                        repeatedPacket += "::";
-                        repeatedPacket += packet.addressee;
-                        repeatedPacket += ":";
-                        break;
-                    case 2: // status
-                        repeatedPacket += ":>";
-                        break;
-                    case 3: // telemetry
-                        repeatedPacket += ":T#";
-                        break;
-                    case 4: // mic-e
-                        repeatedPacket += ":`";
-                        break;
-                    case 5: // object
-                        repeatedPacket += ":;";
-                        break;
-                }
-                return repeatedPacket + packet.message;          
+        String temp;
+        if (thirdParty) { // only header is used
+            const String& header = packet.substring(3, packet.indexOf(":}"));
+            temp = header.substring(header.indexOf(">") + 1);
+        } else {
+            temp = packet.substring(packet.indexOf(">") + 1, packet.indexOf(":"));
+        }
+        if (temp.indexOf(",") > 2) { // checks for path
+            const String& completePath = temp.substring(temp.indexOf(",") + 1);    // after tocall
+            if (completePath.indexOf(path) != -1) {
+                return buildDigiPacket(packet.substring(3), callsign , path, completePath, thirdParty);
             } else {
                 return "X";
             }
@@ -611,8 +596,10 @@ namespace APRSPacketLib {
 
         String temp0;
         if (receivedPacket.indexOf(":}") != -1) {   // 3rd Party
+            aprsPacket.header = receivedPacket.substring(receivedPacket.indexOf(":}"));
             temp0 = receivedPacket.substring(receivedPacket.indexOf(":}") + 2);
         } else {
+            aprsPacket.header = "";
             temp0 = receivedPacket;
         }
         aprsPacket.sender = temp0.substring(0, temp0.indexOf(">"));

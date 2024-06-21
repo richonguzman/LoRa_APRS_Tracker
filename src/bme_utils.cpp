@@ -147,8 +147,7 @@ namespace BME_Utils {
     }
 
     const String generateHumString(const float bmeHum, const uint8_t type) {
-        String strHum;
-        strHum = String((int)bmeHum);
+        String strHum = String((int)bmeHum);
         switch (strHum.length()) {
             case 1:
                 if (type == 1) {
@@ -209,7 +208,6 @@ namespace BME_Utils {
     }
 
     const String readDataSensor(const uint8_t type) {
-        String wx, tempStr, humStr, presStr;
         uint32_t lastReading = millis() - bmeLastReading;
         if (lastReading > 60 * 1000) {
             switch (wxModuleType) {
@@ -241,6 +239,7 @@ namespace BME_Utils {
             bmeLastReading = millis();
         }
         
+        String wx;
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
             Serial.println("BME/BMP Module data failed");
             if (type == 1) {
@@ -250,13 +249,14 @@ namespace BME_Utils {
             }
             return wx;
         } else {
-            tempStr = generateTempString(newTemp + Config.bme.temperatureCorrection, type);
+            String tempStr = generateTempString(newTemp + Config.bme.temperatureCorrection, type);
+            String humStr;
             if (wxModuleType == 1 || wxModuleType == 3) {
                 humStr  = generateHumString(newHum,type);
             } else if (wxModuleType == 2) {
                 humStr  = "..";
             }
-            presStr = generatePresString(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), type);
+            String presStr = generatePresString(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), type);
             if (type == 1) {
                 if (wxModuleType == 1 || wxModuleType == 3) {
                     wx = tempStr;

@@ -50,8 +50,8 @@ namespace AX25_Utils {
     String AX25FrameToLoRaPacket(const String& frame) {
         //Serial.println(frame);
         if (decodeAX25(frame, frame.length(), &decodedFrame)) {
-            String packetToLoRa = "";
-            packetToLoRa = decodeFrame(decodedFrame.sender) + ">" + decodeFrame(decodedFrame.tocall);
+            //String packetToLoRa = "";
+            String packetToLoRa = decodeFrame(decodedFrame.sender) + ">" + decodeFrame(decodedFrame.tocall);
 
             if (decodedFrame.path1[0] != 0) {
                 packetToLoRa += ",";
@@ -91,9 +91,7 @@ namespace AX25_Utils {
     }
 
     String encodeAX25Address(const String& frame, uint8_t type, const bool lastAddress) {
-        String packet = "";
         String address;
-        std::string concatenatedBinary;
         int ssid;
         if (frame.indexOf("-") > 0) {
             address = frameCleaning(frame.substring(0, frame.indexOf("-")));
@@ -105,6 +103,7 @@ namespace AX25_Utils {
             address = frameCleaning(frame);
             ssid = 0;
         }
+        String packet = "";
         for (int j = 0; j < 6; j++) {
             char c = address[j];
             packet += char(c<<1);
@@ -112,23 +111,24 @@ namespace AX25_Utils {
         std::string firstSSIDBit = std::to_string(type); //type=0 (sender or path not repeated) type=1 (tocall or path being repeated)
         std::string lastSSIDBit = "0";
         if (lastAddress) {
-            lastSSIDBit = "1";            // address is the last from AX.25 Frame
+            lastSSIDBit = "1";          // address is the last from AX.25 Frame
         }
-        concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit; // ( CRRSSSSX / HRRSSSSX )
+        std::string concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit; // ( CRRSSSSX / HRRSSSSX )
         long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
         packet += (char)decimalValue;   //SSID 
         return packet;
     }
 
     String LoRaPacketToAX25Frame(const String& packet) {
-        String encodedPacket    = "";
-        String tocall           = "";
-        String sender           = packet.substring(0, packet.indexOf(">"));
-        bool lastAddress        = false;
-        String payload          = packet.substring(packet.indexOf(":") + 1);
-        String temp             = packet.substring(packet.indexOf(">") + 1, packet.indexOf(":"));
+        //String encodedPacket    = "";
+        //String tocall           = "";
+        String  sender      = packet.substring(0, packet.indexOf(">"));
+        bool    lastAddress = false;
+        //String  payload     = packet.substring(packet.indexOf(":") + 1);
+        String  temp        = packet.substring(packet.indexOf(">") + 1, packet.indexOf(":"));
 
-        if (temp.indexOf(",")>0) {    
+        String tocall;
+        if (temp.indexOf(",") != -1) {    
             tocall      = temp.substring(0, temp.indexOf(","));
             temp        = temp.substring(temp.indexOf(",") + 1);
         } else {
@@ -136,12 +136,11 @@ namespace AX25_Utils {
             temp        = "";
             lastAddress = true;
         }
-        encodedPacket = encodeAX25Address(tocall, 1, false);
+        String encodedPacket = encodeAX25Address(tocall, 1, false);
         encodedPacket += encodeAX25Address(sender, 0, lastAddress);
 
         while (temp.length() > 0) {
-            int repeatedPath = 0;
-            String address = "";
+            String address;
             if (temp.indexOf(",") > 0) {
                 address     = temp.substring(0, temp.indexOf(","));
                 temp        = temp.substring(temp.indexOf(",") + 1);
@@ -150,6 +149,7 @@ namespace AX25_Utils {
                 temp        = "";
                 lastAddress = true;        
             }
+            int repeatedPath = 0;
             if (address.indexOf("*") > 0) {
                 repeatedPath = 1;
             }

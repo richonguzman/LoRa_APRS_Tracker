@@ -391,7 +391,7 @@ namespace MSG_Utils {
         } else {
             packet25SegBuffer.push_back(String(millis()) + "," + station + "," + textMessage);
             return true;
-        }    
+        }
     }
     
     void checkReceivedMessage(ReceivedLoRaPacket packet) {
@@ -417,7 +417,7 @@ namespace MSG_Utils {
                     }                    
 
                     if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
-                        String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(lastReceivedPacket, currentBeacon->callsign);
+                        String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(packet.text, currentBeacon->callsign, Config.path);
                         if (digiRepeatedPacket == "X") {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");
                         } else {
@@ -454,20 +454,20 @@ namespace MSG_Utils {
 
                         if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
                             Serial.println("Weather Report Received");
-                            String wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ") + 3);
-                            String place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
-                            String placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
-                            String summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
-                            String sumCleaning    = placeCleaning.substring(placeCleaning.indexOf(",")+2);
-                            String temperature    = sumCleaning.substring(0,sumCleaning.indexOf("P"));
-                            String tempCleaning   = sumCleaning.substring(sumCleaning.indexOf("P")+1);
-                            String pressure       = tempCleaning.substring(0,tempCleaning.indexOf("H"));
-                            String presCleaning   = tempCleaning.substring(tempCleaning.indexOf("H")+1);
-                            String humidity       = presCleaning.substring(0,presCleaning.indexOf("W"));
-                            String humCleaning    = presCleaning.substring(presCleaning.indexOf("W")+1);
-                            String windSpeed      = humCleaning.substring(0,humCleaning.indexOf(","));
-                            String windCleaning   = humCleaning.substring(humCleaning.indexOf(",")+1);
-                            String windDegrees    = windCleaning.substring(windCleaning.indexOf(",")+1,windCleaning.indexOf("\n"));
+                            const String& wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ") + 3);
+                            const String& place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
+                            const String& placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
+                            const String& summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
+                            const String& sumCleaning    = placeCleaning.substring(placeCleaning.indexOf(",")+2);
+                            const String& temperature    = sumCleaning.substring(0,sumCleaning.indexOf("P"));
+                            const String& tempCleaning   = sumCleaning.substring(sumCleaning.indexOf("P")+1);
+                            const String& pressure       = tempCleaning.substring(0,tempCleaning.indexOf("H"));
+                            const String& presCleaning   = tempCleaning.substring(tempCleaning.indexOf("H")+1);
+                            const String& humidity       = presCleaning.substring(0,presCleaning.indexOf("W"));
+                            const String& humCleaning    = presCleaning.substring(presCleaning.indexOf("W")+1);
+                            const String& windSpeed      = humCleaning.substring(0,humCleaning.indexOf(","));
+                            const String& windCleaning   = humCleaning.substring(humCleaning.indexOf(",")+1);
+                            const String& windDegrees    = windCleaning.substring(windCleaning.indexOf(",")+1,windCleaning.indexOf("\n"));
 
                             String fifthLineWR = temperature;
                             fifthLineWR += "C  ";

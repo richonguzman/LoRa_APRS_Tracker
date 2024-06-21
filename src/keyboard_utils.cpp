@@ -427,7 +427,6 @@ namespace KEYBOARD_Utils {
                 show_display("_WINLINK_>", "", "  WLNK COMMENTs ON!", 2000);
             }
         } else if (menuDisplay == 5000) {
-            // reemplazar con buffer
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "L");
         } else if (menuDisplay == 5010) {
             menuDisplay = 50100;
