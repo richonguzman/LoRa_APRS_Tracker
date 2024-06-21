@@ -608,80 +608,89 @@ namespace APRSPacketLib {
             mic-e     = 4
             object    = 5   */
         APRSPacket aprsPacket;
-        aprsPacket.sender = receivedPacket.substring(0, receivedPacket.indexOf(">"));
-        String temp0 = receivedPacket.substring(receivedPacket.indexOf(">") + 1, receivedPacket.indexOf(":"));
-        if (temp0.indexOf(",") > 2) {
-            aprsPacket.tocall   = temp0.substring(0, temp0.indexOf(","));
-            aprsPacket.path     = temp0.substring(temp0.indexOf(",") + 1, temp0.indexOf(":"));
+
+        String temp0;
+        if (receivedPacket.indexOf(":}") != -1) {   // 3rd Party
+            temp0 = receivedPacket.substring(receivedPacket.indexOf(":}") + 2);
         } else {
-            aprsPacket.tocall   = temp0;
+            temp0 = receivedPacket;
+        }
+        aprsPacket.sender = temp0.substring(0, temp0.indexOf(">"));
+
+        String temp1 = temp0.substring(temp0.indexOf(">") + 1, temp0.indexOf(":"));
+        if (temp1.indexOf(",") > 2) {
+            aprsPacket.tocall   = temp1.substring(0, temp1.indexOf(","));
+            aprsPacket.path     = temp1.substring(temp1.indexOf(",") + 1, temp1.indexOf(":"));
+        } else {
+            aprsPacket.tocall   = temp1;
             aprsPacket.path     = "";
         }
-        if (receivedPacket.indexOf(":!") > 10 || receivedPacket.indexOf(":=") > 10 ) {
+
+        if (temp0.indexOf(":!") > 10 || temp0.indexOf(":=") > 10 ) {
             aprsPacket.type = 0;
             String gpsChar = "";
-            if (receivedPacket.indexOf(":!") > 10) {
+            if (temp0.indexOf(":!") > 10) {
                 gpsChar = ":!";
             } else {
                 gpsChar = ":=";
             }
-            int encodedBytePosition = receivedPacket.indexOf(gpsChar) + 14;
-            aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 2);
-            if (String(receivedPacket[encodedBytePosition]) == "G" || String(receivedPacket[encodedBytePosition]) == "Q" || String(receivedPacket[encodedBytePosition]) == "[" || String(receivedPacket[encodedBytePosition]) == "H") {
-                aprsPacket.latitude     = decodeEncodedLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 3, receivedPacket.indexOf(gpsChar) + 7));
-                aprsPacket.longitude    = decodeEncodedLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 7, receivedPacket.indexOf(gpsChar) + 11));
-                aprsPacket.symbol       = receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 11, receivedPacket.indexOf(gpsChar) + 12);
-                aprsPacket.overlay      = receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 2, receivedPacket.indexOf(gpsChar) + 3);
-                if (receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 12, receivedPacket.indexOf(gpsChar) + 13) == " ") {
+            int encodedBytePosition = temp0.indexOf(gpsChar) + 14;
+            aprsPacket.message = temp0.substring(temp0.indexOf(gpsChar) + 2);
+            if (String(temp0[encodedBytePosition]) == "G" || String(temp0[encodedBytePosition]) == "Q" || String(temp0[encodedBytePosition]) == "[" || String(temp0[encodedBytePosition]) == "H") {
+                aprsPacket.latitude     = decodeEncodedLatitude(temp0.substring(temp0.indexOf(gpsChar) + 3, temp0.indexOf(gpsChar) + 7));
+                aprsPacket.longitude    = decodeEncodedLongitude(temp0.substring(temp0.indexOf(gpsChar) + 7, temp0.indexOf(gpsChar) + 11));
+                aprsPacket.symbol       = temp0.substring(temp0.indexOf(gpsChar) + 11, temp0.indexOf(gpsChar) + 12);
+                aprsPacket.overlay      = temp0.substring(temp0.indexOf(gpsChar) + 2, temp0.indexOf(gpsChar) + 3);
+                if (temp0.substring(temp0.indexOf(gpsChar) + 12, temp0.indexOf(gpsChar) + 13) == " ") {
                     aprsPacket.course   = 0;
                     aprsPacket.speed    = 0;
                     aprsPacket.altitude = 0;
                 } else {
-                    if (String(receivedPacket[encodedBytePosition]) == "Q") { // altitude csT
-                        aprsPacket.altitude = decodeEncodedAltitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar)+12, receivedPacket.indexOf(gpsChar)+14));
+                    if (String(temp0[encodedBytePosition]) == "Q") { // altitude csT
+                        aprsPacket.altitude = decodeEncodedAltitude(temp0.substring(temp0.indexOf(gpsChar)+12, temp0.indexOf(gpsChar)+14));
                         aprsPacket.course   = 0;
                         aprsPacket.speed    = 0;
                     } else { // normal csT
-                        aprsPacket.course   = decodeEncodedCourse(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 12, receivedPacket.indexOf(gpsChar) + 13));
-                        aprsPacket.speed    = decodeEncodedSpeed(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 13, receivedPacket.indexOf(gpsChar) + 14));
+                        aprsPacket.course   = decodeEncodedCourse(temp0.substring(temp0.indexOf(gpsChar) + 12, temp0.indexOf(gpsChar) + 13));
+                        aprsPacket.speed    = decodeEncodedSpeed(temp0.substring(temp0.indexOf(gpsChar) + 13, temp0.indexOf(gpsChar) + 14));
                         aprsPacket.altitude = 0;
                     }
                 }
             } else {
-                aprsPacket.latitude     = decodeLatitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 2, receivedPacket.indexOf(gpsChar) + 10));
-                aprsPacket.longitude    = decodeLongitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 11, receivedPacket.indexOf(gpsChar) + 20));
-                aprsPacket.symbol       = receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 20, receivedPacket.indexOf(gpsChar) + 21);
-                aprsPacket.overlay      = receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 10, receivedPacket.indexOf(gpsChar) + 11);
-                if (receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 24, receivedPacket.indexOf(gpsChar) + 25) == "/" && receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 28, receivedPacket.indexOf(gpsChar) + 31) == "/A=") {
-                    aprsPacket.course   = decodeCourse(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 21, receivedPacket.indexOf(gpsChar) + 24));
-                    aprsPacket.speed    = decodeSpeed(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 25, receivedPacket.indexOf(gpsChar) + 28));
-                    aprsPacket.altitude = decodeAltitude(receivedPacket.substring(receivedPacket.indexOf(gpsChar) + 31, receivedPacket.indexOf(gpsChar) + 39));
+                aprsPacket.latitude     = decodeLatitude(temp0.substring(temp0.indexOf(gpsChar) + 2, temp0.indexOf(gpsChar) + 10));
+                aprsPacket.longitude    = decodeLongitude(temp0.substring(temp0.indexOf(gpsChar) + 11, temp0.indexOf(gpsChar) + 20));
+                aprsPacket.symbol       = temp0.substring(temp0.indexOf(gpsChar) + 20, temp0.indexOf(gpsChar) + 21);
+                aprsPacket.overlay      = temp0.substring(temp0.indexOf(gpsChar) + 10, temp0.indexOf(gpsChar) + 11);
+                if (temp0.substring(temp0.indexOf(gpsChar) + 24, temp0.indexOf(gpsChar) + 25) == "/" && temp0.substring(temp0.indexOf(gpsChar) + 28, temp0.indexOf(gpsChar) + 31) == "/A=") {
+                    aprsPacket.course   = decodeCourse(temp0.substring(temp0.indexOf(gpsChar) + 21, temp0.indexOf(gpsChar) + 24));
+                    aprsPacket.speed    = decodeSpeed(temp0.substring(temp0.indexOf(gpsChar) + 25, temp0.indexOf(gpsChar) + 28));
+                    aprsPacket.altitude = decodeAltitude(temp0.substring(temp0.indexOf(gpsChar) + 31, temp0.indexOf(gpsChar) + 39));
                 } else {
                     aprsPacket.course   = 0;
                     aprsPacket.speed    = 0;
                     aprsPacket.altitude = 0;
                 }
             }
-        } else if (receivedPacket.indexOf("::") > 10) {
+        } else if (temp0.indexOf("::") > 10) {
             aprsPacket.type = 1;
-            String temp1 = receivedPacket.substring(receivedPacket.indexOf("::") + 2, receivedPacket.indexOf("::") + 11);
+            String temp1 = temp0.substring(temp0.indexOf("::") + 2, temp0.indexOf("::") + 11);
             temp1.trim();
             aprsPacket.addressee    = temp1;
-            aprsPacket.message      = receivedPacket.substring(receivedPacket.indexOf("::") + 12);
+            aprsPacket.message      = temp0.substring(temp0.indexOf("::") + 12);
             aprsPacket.latitude     = 0;
             aprsPacket.longitude    = 0;
-        } else if (receivedPacket.indexOf(":>") > 10) {
+        } else if (temp0.indexOf(":>") > 10) {
             aprsPacket.type = 2;
-            aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":>") + 2);
-        } else if (receivedPacket.indexOf(":T#") >= 10 && receivedPacket.indexOf(":=/") == -1) {
+            aprsPacket.message = temp0.substring(temp0.indexOf(":>") + 2);
+        } else if (temp0.indexOf(":T#") >= 10 && temp0.indexOf(":=/") == -1) {
             aprsPacket.type = 3;
-            aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":T#") + 3);
-        } else if (receivedPacket.indexOf(":`") > 10 || receivedPacket.indexOf(":'") > 10) {
+            aprsPacket.message = temp0.substring(temp0.indexOf(":T#") + 3);
+        } else if (temp0.indexOf(":`") > 10 || temp0.indexOf(":'") > 10) {
             aprsPacket.type = 4;
-            if (receivedPacket.indexOf(":`") > 10) {
-                aprsPacket.message  = receivedPacket.substring(receivedPacket.indexOf(":`") + 2);
+            if (temp0.indexOf(":`") > 10) {
+                aprsPacket.message  = temp0.substring(temp0.indexOf(":`") + 2);
             } else {
-                aprsPacket.message  = receivedPacket.substring(receivedPacket.indexOf(":'") + 2);
+                aprsPacket.message  = temp0.substring(temp0.indexOf(":'") + 2);
             }
             aprsPacket.miceType     = decodeMiceMsgType(aprsPacket.tocall);
             aprsPacket.symbol       = decodeMiceSymbol(aprsPacket.message);
@@ -691,9 +700,9 @@ namespace APRSPacketLib {
             aprsPacket.speed        = decodeMiceSpeed(aprsPacket.message);
             aprsPacket.course       = decodeMiceCourse(aprsPacket.message);
             aprsPacket.altitude     = decodeMiceAltitude(aprsPacket.message);      
-        } else if (receivedPacket.indexOf(":;") > 10) {
+        } else if (temp0.indexOf(":;") > 10) {
             aprsPacket.type = 5;
-            aprsPacket.message = receivedPacket.substring(receivedPacket.indexOf(":;") + 2);
+            aprsPacket.message = temp0.substring(temp0.indexOf(":;") + 2);
         }
             
         if (aprsPacket.type != 1) {
