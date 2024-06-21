@@ -402,17 +402,21 @@ namespace STATION_Utils {
     void sendBeacon(uint8_t type) {
         String packet;
         if (Config.bme.sendTelemetry && type == 1) { // WX
-            packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
+            packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             if (wxModuleType != 0) {
                 packet += BME_Utils::readDataSensor(0);
             } else {
                 packet += ".../...g...t...r...p...P...h..b.....";
             }            
         } else {
+            String path = Config.path;
+            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) {   // avoid plane speed and altitude
+                path = "";
+            }
             if (miceActive) {
-                packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, Config.path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
+                packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
             } else {
-                packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
             }
         }
         String comment;
@@ -471,7 +475,7 @@ namespace STATION_Utils {
     }
 
     void checkTelemetryTx() {
-        if (Config.bme.active && Config.bme.sendTelemetry) {
+        if (Config.bme.active && Config.bme.sendTelemetry && sendStandingUpdate) {
             lastTx = millis() - lastTxTime;
             telemetryTx = millis() - lastTelemetryTx;
             if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {
