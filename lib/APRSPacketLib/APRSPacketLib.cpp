@@ -271,7 +271,7 @@ namespace APRSPacketLib {
         bool thirdParty = false;
 
         int firstColonIndex = packet.indexOf(":");
-        if (firstColonIndex > 0 && firstColonIndex < packet.length() && packet[firstColonIndex + 1] == '}') thirdParty = true;
+        if (firstColonIndex > 5 && firstColonIndex < (packet.length() - 1) && packet[firstColonIndex + 1] == '}') thirdParty = true;
 
         String temp;
         if (thirdParty) { // only header is used
