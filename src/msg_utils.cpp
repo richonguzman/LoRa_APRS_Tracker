@@ -419,7 +419,7 @@ namespace MSG_Utils {
                     if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(packet.text, currentBeacon->callsign, Config.path);
                         if (digiRepeatedPacket == "X") {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDE1-X)");
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDEn-N)");
                         } else {
                             delay(500);
                             LoRa_Utils::sendNewPacket(digiRepeatedPacket);
