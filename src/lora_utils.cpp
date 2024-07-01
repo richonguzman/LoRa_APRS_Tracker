@@ -52,7 +52,7 @@ namespace LoRa_Utils {
         #if (defined(HAS_SX1268) || defined(HAS_SX1262)) && !defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
         #endif
-        #if defined(HAS_1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
+        #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
         #endif
 

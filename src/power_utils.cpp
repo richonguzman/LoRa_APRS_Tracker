@@ -9,12 +9,10 @@
 #include "logger.h"
 
 
-#ifndef TTGO_T_Beam_S3_SUPREME_V3
-    #ifndef HELTEC_WIRELESS_TRACKER
-        #define I2C_SDA 21
-        #define I2C_SCL 22
-        #define IRQ_PIN 35
-    #endif
+#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_WIRELESS_TRACKER)
+    #define I2C_SDA 21
+    #define I2C_SCL 22
+    #define IRQ_PIN 35
 #endif
 
 #ifdef TTGO_T_Beam_S3_SUPREME_V3
@@ -111,11 +109,10 @@ namespace POWER_Utils {
         }
 
     bool isCharging() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-            return 0;
-        #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             return PMU.isCharging();
+        #else
+            return 0;
         #endif
     }
 
@@ -128,7 +125,7 @@ namespace POWER_Utils {
     }
 
     double getBatteryChargeDischargeCurrent() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
+        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
             return 0;
         #endif
         #ifdef HAS_AXP192
@@ -143,15 +140,14 @@ namespace POWER_Utils {
     }
 
     bool isBatteryConnected() {
-        #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            return PMU.isBatteryConnect();
+        #else
             if(getBatteryVoltage() > 1.0) {
                 return true;
             } else {
                 return false;
             }
-        #endif
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            return PMU.isBatteryConnect();
         #endif
     }
 
@@ -160,11 +156,10 @@ namespace POWER_Utils {
         if (!(rate_limit_check_battery++ % 60))
             BatteryIsConnected = isBatteryConnected();
         if (BatteryIsConnected) {
-            #if defined(HAS_AXP192) || defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(OE5HWN_MeshCom)  || defined(TTGO_T_DECK_GPS) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-                batteryVoltage       = String(getBatteryVoltage(), 2);
-            #endif
             #ifdef HAS_AXP2101
                 batteryVoltage       = String(PMU.getBattVoltage());
+            #else
+                batteryVoltage       = String(getBatteryVoltage(), 2);
             #endif
             batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
         }
@@ -196,13 +191,15 @@ namespace POWER_Utils {
             PMU.setLDO3Voltage(3300);
             PMU.enableLDO3();
         #endif
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            PMU.setALDO3Voltage(3300);
-            PMU.enableALDO3(); 
-        #endif
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            PMU.setALDO4Voltage(3300);
-            PMU.enableALDO4();
+
+        #ifdef HAS_AXP2101
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                PMU.setALDO4Voltage(3300);
+                PMU.enableALDO4();
+            #else
+                PMU.setALDO3Voltage(3300);
+                PMU.enableALDO3();
+            #endif
         #endif
     }
 
@@ -210,11 +207,13 @@ namespace POWER_Utils {
         #ifdef HAS_AXP192
             PMU.disableLDO3();
         #endif
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            PMU.disableALDO3();
-        #endif
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            PMU.disableALDO4();
+
+        #ifdef HAS_AXP2101
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                PMU.disableALDO4();
+            #else
+                PMU.disableALDO3();
+            #endif
         #endif
     }
 
@@ -223,13 +222,15 @@ namespace POWER_Utils {
             PMU.setLDO2Voltage(3300);
             PMU.enableLDO2();
         #endif
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            PMU.setALDO2Voltage(3300);
-            PMU.enableALDO2();
-        #endif
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            PMU.setALDO3Voltage(3300);
-            PMU.enableALDO3();
+
+        #ifdef HAS_AXP2101
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                PMU.setALDO3Voltage(3300);
+                PMU.enableALDO3();
+            #else
+                PMU.setALDO2Voltage(3300);
+                PMU.enableALDO2();
+            #endif
         #endif
     }
 
@@ -237,11 +238,13 @@ namespace POWER_Utils {
         #ifdef HAS_AXP192
             PMU.disableLDO2();
         #endif
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            PMU.disableALDO2();
-        #endif
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            PMU.disableALDO3();
+
+        #ifdef HAS_AXP2101
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                PMU.disableALDO3();
+            #else
+                PMU.disableALDO2();
+            #endif
         #endif
     }
 
@@ -286,9 +289,10 @@ namespace POWER_Utils {
     }
 
     bool begin(TwoWire &port) {
-        #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
+        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
             return true; // no powerManagment chip for this boards (only a few measure battery voltage).
         #endif
+
         #ifdef HAS_AXP192
             bool result = PMU.begin(Wire, AXP192_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
             if (result) {
@@ -303,42 +307,30 @@ namespace POWER_Utils {
             return result;
         #endif
 
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
+        #ifdef HAS_AXP2101
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                bool result = PMU.begin(Wire1, AXP2101_SLAVE_ADDRESS, I2C1_SDA, I2C1_SCL);
+            #else
+                bool result = PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL);
+            #endif
             if (result) {
                 PMU.disableDC2();
                 PMU.disableDC3();
                 PMU.disableDC4();
                 PMU.disableDC5();
-                PMU.disableALDO1();
-                PMU.disableALDO4();
+                #ifndef TTGO_T_Beam_S3_SUPREME_V3
+                    PMU.disableALDO1();
+                    PMU.disableALDO4();
+                #endif
                 PMU.disableBLDO1();
                 PMU.disableBLDO2();
                 PMU.disableDLDO1();
                 PMU.disableDLDO2();
                 PMU.setDC1Voltage(3300);
                 PMU.enableDC1();
-                PMU.setButtonBatteryChargeVoltage(3300);
-                PMU.enableButtonBatteryCharge();
-                PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
-            }
-            return result;
-        #endif
-
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            bool result = PMU.begin(Wire1, AXP2101_SLAVE_ADDRESS, I2C1_SDA, I2C1_SCL);
-            if (result) {
-                PMU.disableDC2();
-                PMU.disableDC3();
-                PMU.disableDC4();
-                PMU.disableDC5();
-                PMU.disableBLDO1();
-                PMU.disableBLDO2();
-                PMU.disableDLDO1();
-                PMU.disableDLDO2();
-                PMU.setDC1Voltage(3300);
-                PMU.enableDC1();
-                PMU.setALDO1Voltage(3300);
+                #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                    PMU.setALDO1Voltage(3300);
+                #endif
                 PMU.setButtonBatteryChargeVoltage(3300);
                 PMU.enableButtonBatteryCharge();
                 PMU.disableIRQ(XPOWERS_AXP2101_ALL_IRQ);
@@ -368,26 +360,21 @@ namespace POWER_Utils {
             PMU.setSysPowerDownVoltage(2600);
         #endif
 
-        #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_915) || defined(TTGO_T_Beam_V1_2_SX1262)
-            Wire.begin(SDA, SCL);
-            if (begin(Wire)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
-            } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
-            }
-        #endif
-
-        #if defined(TTGO_T_Beam_S3_SUPREME_V3)
-            Wire1.begin(I2C1_SDA, I2C1_SCL);
-            Wire.begin(I2C0_SDA, I2C0_SCL);
-            if (begin(Wire1)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
-            } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
-            }
-        #endif
-    
         #ifdef HAS_AXP2101
+            bool beginStatus = false;
+            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+                Wire1.begin(I2C1_SDA, I2C1_SCL);
+                Wire.begin(I2C0_SDA, I2C0_SCL);
+                if (begin(Wire1)) beginStatus = true;
+            #else
+                Wire.begin(SDA, SCL);
+                if (begin(Wire)) beginStatus = true;
+            #endif
+            if (beginStatus) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
+            } else {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
+            }
             activateLoRa();
             if (disableGPS) {
                 deactivateGPS();
@@ -448,14 +435,11 @@ namespace POWER_Utils {
     }
 
     void lowerCpuFrequency() {
-        // later for all boards!
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(HELTEC_V3_GPS) || defined(OE5HWN_MeshCom) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
-            if (setCpuFrequencyMhz(80)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "CPU frequency set to 80MHz");
-            } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
-            }
-        #endif
+        if (setCpuFrequencyMhz(80)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "CPU frequency set to 80MHz");
+        } else {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
+        }
     }
 
     void shutdown() {
