@@ -431,14 +431,14 @@ namespace STATION_Utils {
         if (Config.sendBatteryInfo) {
             String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-            #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+            #ifdef HAS_AXP192
                 comment += " Bat=";
                 comment += batteryVoltage;
                 comment += "V (";
                 comment += batteryChargeCurrent;
                 comment += "mA)";
             #endif
-            #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+            #ifdef HAS_AXP2101
                 comment += " Bat=";
                 comment += String(batteryVoltage.toFloat()/1000,2);
                 comment += "V (";

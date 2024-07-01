@@ -509,7 +509,7 @@ namespace MENU_Utils {
                     }
                 }
 
-                #ifdef TTGO_T_LORA32_V2_1_TNC
+                #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915)
                 secondRowMainMenu = "";
                 thirdRowMainMenu = "    LoRa APRS TNC";
                 fourthRowMainMenu = "";
@@ -598,12 +598,12 @@ namespace MENU_Utils {
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
                     String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
-                    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
+                    #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
 					    sixthRowMainMenu = "Bat: ";
                         sixthRowMainMenu += batteryVoltage;
                         sixthRowMainMenu += "V";
                     #endif
-                    #if defined(TTGO_T_Beam_V1_0) || defined(TTGO_T_Beam_V1_0_SX1268)
+                    #ifdef HAS_AXP192
                         if (batteryCharge.toInt() == 0) {
                             sixthRowMainMenu = "Battery Charged ";
                             sixthRowMainMenu += batteryVoltage;
@@ -620,7 +620,7 @@ namespace MENU_Utils {
                             sixthRowMainMenu += "mA";
                         }
                     #endif
-                    #if defined(TTGO_T_Beam_V1_2) || defined(TTGO_T_Beam_V1_2_SX1262) || defined(TTGO_T_Beam_S3_SUPREME_V3)
+                    #ifdef HAS_AXP2101
                         if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();

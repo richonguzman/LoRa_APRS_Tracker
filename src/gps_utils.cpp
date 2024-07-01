@@ -37,7 +37,7 @@ double      previousHeading         = 0;
 namespace GPS_Utils {
 
     void setup() {
-        #ifdef TTGO_T_LORA32_V2_1_TNC
+        #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915)
             disableGPS = true;
         #else
             disableGPS = Config.disableGPS;
