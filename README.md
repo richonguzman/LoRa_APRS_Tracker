@@ -49,6 +49,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.07.01 All boards with 433MHZ and 915MHz versions now.
 - 2024.06.21 3rd Party Packets decode added following the corrections on iGate Firmware.
 - 2024.06.21 If Tracker Speed > 200km/hr and/or Altitude > 9.000 mts , path ("WIDE1-1") will be omited as its probably a plane.
 - 2024.06.21 Wx Telemetry Tx on Tracker only if standing still > 15min. (On screen Wx Data will be available but won't be sent if moving).
