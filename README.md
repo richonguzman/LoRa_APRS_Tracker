@@ -36,7 +36,7 @@ ____________________________________________________
 
 ### FAQ: GPS, Bluetooth, Winlink, BME280 and more --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/00.-FAQ-(frequently-asked-questions)" target="_blank">here</a>
 
-### Supported Boards and buying links --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/Z.-------Supported-Boards-and-Buying-Links" target="_blank">here</a>
+### Supported Boards and buying links --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/1000.-Supported-Boards-and-Buying-Links" target="_blank">here</a>
 
 ### 1. Installation Guide --> <a href="https://github.com/richonguzman/LoRa_APRS_Tracker/wiki/01.-Installation-Guide-%23-Guia-de-Instalacion" target="_blank">here</a>
 
