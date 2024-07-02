@@ -45,7 +45,7 @@ TinyGPSPlus                         gps;
     OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.01";
+String      versionDate             = "2024.07.02";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -106,6 +106,7 @@ void setup() {
 
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
+    STATION_Utils::nearTrackerInit();
     startupScreen(loraIndex, versionDate);
 
     MSG_Utils::loadNumMessages();

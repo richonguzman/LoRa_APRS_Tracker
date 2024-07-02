@@ -45,317 +45,120 @@ uint32_t    wxRequestTime           = 0;
 uint32_t    lastTelemetryTx         = 0;
 uint32_t    telemetryTx             = millis();
 
-String      firstNearTracker;
-String      secondNearTracker;
-String      thirdNearTracker;
-String      fourthNearTracker;
-
 uint32_t    lastDeleteListenedTracker;
 
+struct nearTracker {
+    String      callsign;
+    float       distance;
+    int         course;
+    uint32_t    lastTime;
+};
+
+nearTracker nearTrackers[4];
 
 
 namespace STATION_Utils {
 
-    const String getFirstNearTracker() {
-        return String(firstNearTracker.substring(0, firstNearTracker.indexOf(",")));
+    void nearTrackerInit() {
+        for (int i = 0; i < 4; i++) {
+            nearTrackers[i].callsign    = "";
+            nearTrackers[i].distance    = 0.0;
+            nearTrackers[i].course      = 0;
+            nearTrackers[i].lastTime    = 0;
+        }
     }
 
-    const String getSecondNearTracker() {
-        return String(secondNearTracker.substring(0, secondNearTracker.indexOf(",")));
-    }
-
-    const String getThirdNearTracker() {
-        return String(thirdNearTracker.substring(0, thirdNearTracker.indexOf(",")));
-    }
-
-    const String getFourthNearTracker() {
-        return String(fourthNearTracker.substring(0, fourthNearTracker.indexOf(",")));
+    const String getNearTracker(uint8_t position) {
+        if (nearTrackers[position].callsign == "") {
+            return "";
+        } else {
+            return nearTrackers[position].callsign + "> " + String(nearTrackers[position].distance,2) + "km " + String(nearTrackers[position].course);
+        }
     }
 
     void deleteListenedTrackersbyTime() {
-        String firstNearTrackermillis, secondNearTrackermillis, thirdNearTrackermillis, fourthNearTrackermillis;
-        uint32_t firstTrackermillis, secondTrackermillis, thirdTrackermillis, fourthTrackermillis;
-        if (firstNearTracker != "") {
-            firstNearTrackermillis = firstNearTracker.substring(firstNearTracker.indexOf(",") + 1);
-            firstTrackermillis = firstNearTrackermillis.toInt();
-            if ((millis() - firstTrackermillis) > Config.rememberStationTime * 60 * 1000) {
-                firstNearTracker = "";
-            }
-        }
-        if (secondNearTracker != "") {
-            secondNearTrackermillis = secondNearTracker.substring(secondNearTracker.indexOf(",") + 1);
-            secondTrackermillis = secondNearTrackermillis.toInt();
-            if ((millis() - secondTrackermillis) > Config.rememberStationTime * 60 * 1000) {
-                secondNearTracker = "";
-            }
-        }
-        if (thirdNearTracker != "") {
-            thirdNearTrackermillis = thirdNearTracker.substring(thirdNearTracker.indexOf(",") + 1);
-            thirdTrackermillis = thirdNearTrackermillis.toInt();
-            if ((millis() - thirdTrackermillis) > Config.rememberStationTime * 60 * 1000) {
-                thirdNearTracker = "";
-            }
-        }
-        if (fourthNearTracker != "") {
-            fourthNearTrackermillis = fourthNearTracker.substring(fourthNearTracker.indexOf(",") + 1);
-            fourthTrackermillis = fourthNearTrackermillis.toInt();
-            if ((millis() - fourthTrackermillis) > Config.rememberStationTime * 60 * 1000) {
-                fourthNearTracker = "";
+        for (int a = 0; a < 4; a++) {                       // clean nearTrackers[] after time
+            if (nearTrackers[a].callsign != "" && (millis() - nearTrackers[a].lastTime > Config.rememberStationTime * 60 * 1000)) {
+                nearTrackers[a].callsign    = "";
+                nearTrackers[a].distance    = 0.0;
+                nearTrackers[a].course      = 0;
+                nearTrackers[a].lastTime    = 0;
             }
         }
 
-        if (thirdNearTracker == "") {
-            thirdNearTracker = fourthNearTracker;
-            fourthNearTracker = "";
-        } 
-        if (secondNearTracker == "") {
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker = fourthNearTracker;
-            fourthNearTracker = "";
-        }
-        if  (firstNearTracker == "") {
-            firstNearTracker = secondNearTracker;
-            secondNearTracker = thirdNearTracker;
-            thirdNearTracker = fourthNearTracker;
-            fourthNearTracker = "";
+        for (int b = 0; b < 4 - 1; b++) {
+            for (int c = 0; c < 4 - b - 1; c++) {
+                if (nearTrackers[c].callsign == "") {       // get "" nearTrackers[] at the end
+                    nearTracker temp = nearTrackers[c];
+                    nearTrackers[c] = nearTrackers[c + 1];
+                    nearTrackers[c + 1] = temp;
+                }
+            }
         }
         lastDeleteListenedTracker = millis();
     }
 
     void checkListenedTrackersByTimeAndDelete() {
-        if (millis() - lastDeleteListenedTracker > Config.rememberStationTime*60*1000) {
+        if (millis() - lastDeleteListenedTracker > Config.rememberStationTime * 60 * 1000) {
             deleteListenedTrackersbyTime();
         }
     }
 
-    void orderListenedTrackersByDistance(const String& callsign, float distance, float course) {
-        String firstNearTrackerDistance, secondNearTrackerDistance, thirdNearTrackerDistance, fourthNearTrackerDistance, firstNearTrackerCallsign, secondNearTrackerCallsign,thirdNearTrackerCallsign, fourthNearTrackerCallsign;
-        float firstDistance   = 0.0;
-        float secondDistance  = 0.0;
-        float thirdDistance   = 0.0;
-        float fourthDistance  = 0.0;
-        if (firstNearTracker != "") {
-            firstNearTrackerCallsign = firstNearTracker.substring(0, firstNearTracker.indexOf(">"));
-            firstNearTrackerDistance = firstNearTracker.substring(firstNearTracker.indexOf(">") + 1, firstNearTracker.indexOf("km"));
-            firstDistance = firstNearTrackerDistance.toFloat();
-        }
-        if (secondNearTracker != "") {
-            secondNearTrackerCallsign = secondNearTracker.substring(0, secondNearTracker.indexOf(">"));
-            secondNearTrackerDistance = secondNearTracker.substring(secondNearTracker.indexOf(">") + 1, secondNearTracker.indexOf("km"));
-            secondDistance = secondNearTrackerDistance.toFloat();
-        }
-        if (thirdNearTracker != "") {
-            thirdNearTrackerCallsign = thirdNearTracker.substring(0, thirdNearTracker.indexOf(">"));
-            thirdNearTrackerDistance = thirdNearTracker.substring(thirdNearTracker.indexOf(">") + 1, thirdNearTracker.indexOf("km"));
-            thirdDistance = thirdNearTrackerDistance.toFloat();
-        }
-        if (fourthNearTracker != "") {
-            fourthNearTrackerCallsign = fourthNearTracker.substring(0, fourthNearTracker.indexOf(">"));
-            fourthNearTrackerDistance = fourthNearTracker.substring(fourthNearTracker.indexOf(">") + 1, fourthNearTracker.indexOf("km"));
-            fourthDistance = fourthNearTrackerDistance.toFloat();
-        } 
+    void orderListenedTrackersByDistance(const String& callsign, float distance, float course) {   
+        bool shouldSortbyDistance = false;
+        bool callsignInNearTrackers = false;
 
-        String newTrackerInfo = callsign;
-        newTrackerInfo += "> ";
-        newTrackerInfo += String(distance,2);
-        newTrackerInfo += "km ";
-        newTrackerInfo += String(int(course));
-        newTrackerInfo += ",";
-        newTrackerInfo += String(millis());
+        for (int a = 0; a < 4; a++) {                       // check if callsign is in nearTrackers[]
+            if (nearTrackers[a].callsign == callsign) {
+                callsignInNearTrackers  = true;
+                nearTrackers[a].lastTime = millis();        // update listened millis()
+                if (nearTrackers[a].distance != distance) { // update distance if needed
+                    nearTrackers[a].distance    = distance;
+                    shouldSortbyDistance        = true;
+                }
+                break;           
+            }
+        }
+    
+        if (!callsignInNearTrackers) {                      // callsign not in nearTrackers[]
+            for (int b = 0; b < 4; b++) {                   // if nearTrackers[] is available
+                if (nearTrackers[b].callsign == "") {
+                    shouldSortbyDistance        = true;
+                    nearTrackers[b].callsign    = callsign;
+                    nearTrackers[b].distance    = distance;
+                    nearTrackers[b].course      = int(course);
+                    nearTrackers[b].lastTime    = millis();
+                    break;
+                }
+            }
 
-        if (firstNearTracker == "" && secondNearTracker == "" && thirdNearTracker == "" && fourthNearTracker == "") {
-            firstNearTracker = newTrackerInfo;
-        } else if (firstNearTracker != "" && secondNearTracker == "" && thirdNearTracker == "" && fourthNearTracker == "") {
-            if (callsign != firstNearTrackerCallsign) {
-                if (distance < firstDistance) {
-                    secondNearTracker = firstNearTracker;
-                    firstNearTracker  = newTrackerInfo;
-                } else {
-                    secondNearTracker = newTrackerInfo;
-                }
-            } else { 
-                if (distance != firstDistance) {
-                    firstNearTracker  = newTrackerInfo;
+            if (!shouldSortbyDistance) {                    // if no more nearTrackers[] available , it compares distances to move and replace
+                for (int c = 0; c < 4; c++) {
+                    if (nearTrackers[c].distance > distance) {
+                        for (int d = 3; d > c; d--) {
+                            nearTrackers[d] = nearTrackers[d - 1];
+                        }
+                        nearTrackers[c].callsign    = callsign;
+                        nearTrackers[c].distance    = distance;
+                        nearTrackers[c].course      = int(course);
+                        nearTrackers[c].lastTime    = millis();
+                        break;
+                    }
                 }
             }
-        } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker == "" && fourthNearTracker == "") {
-            if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign) {
-                if (distance < firstDistance) {
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = firstNearTracker;
-                    firstNearTracker  = newTrackerInfo;
-                } else if (distance < secondDistance && distance >= firstDistance) {
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = newTrackerInfo;
-                } else if (distance >= secondDistance) {
-                    thirdNearTracker  = newTrackerInfo;
+        }
+
+        if (shouldSortbyDistance) {                         // sorts by distance (only nearTrackers[] that are not "")
+            for (int f = 0; f < 4 - 1; f++) {
+                for (int g = 0; g < 4 - f - 1; g++) {
+                    if (nearTrackers[g].callsign != "" && nearTrackers[g + 1].callsign != "") {
+                        if (nearTrackers[g].distance > nearTrackers[g + 1].distance) {
+                            nearTracker temp = nearTrackers[g];
+                            nearTrackers[g] = nearTrackers[g + 1];
+                            nearTrackers[g + 1] = temp;
+                        }
+                    }
                 }
-            } else {  
-                if (callsign == firstNearTrackerCallsign) {
-                    if (distance != firstDistance) {
-                        if (distance > secondDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else {
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == secondNearTrackerCallsign) {
-                    if (distance != secondDistance) {
-                        if (distance < firstDistance) {
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        } else {
-                            secondNearTracker = newTrackerInfo;
-                        }
-                    }
-                }     
-            }
-        } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker != "" && fourthNearTracker == "") {
-            if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign && callsign != thirdNearTrackerCallsign) {
-                if (distance < firstDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = firstNearTracker;
-                    firstNearTracker  = newTrackerInfo;
-                } else if (distance >= firstDistance && distance < secondDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = newTrackerInfo;
-                } else if (distance >= secondDistance && distance < thirdDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = newTrackerInfo;
-                } else if (distance >= thirdDistance) {
-                    fourthNearTracker = newTrackerInfo;
-                }
-            } else {  
-                if (callsign == firstNearTrackerCallsign) {
-                    if (distance != firstDistance) {
-                        if (distance > thirdDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance <= thirdDistance && distance > secondDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= secondDistance) {
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == secondNearTrackerCallsign) {
-                    if (distance != secondDistance) {
-                        if (distance > thirdDistance) {
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance <= thirdDistance && distance > firstDistance) {
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= firstDistance) {
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == thirdNearTrackerCallsign) {
-                    if (distance != thirdDistance) {
-                        if (distance <= firstDistance) {
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        } else if (distance > firstDistance && distance <= secondDistance) {
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance > secondDistance) {
-                            thirdNearTracker  = newTrackerInfo;
-                        }
-                    }
-                }  
-            }
-        } else if (firstNearTracker != "" && secondNearTracker != "" && thirdNearTracker != "" && fourthNearTracker != "") {
-            if (callsign != firstNearTrackerCallsign && callsign != secondNearTrackerCallsign && callsign != thirdNearTrackerCallsign && callsign != fourthNearTrackerCallsign) {
-                if (distance < firstDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = firstNearTracker;
-                    firstNearTracker  = newTrackerInfo;
-                } else if (distance < secondDistance && distance >= firstDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = secondNearTracker;
-                    secondNearTracker = newTrackerInfo;
-                } else if (distance < thirdDistance && distance >= secondDistance) {
-                    fourthNearTracker = thirdNearTracker;
-                    thirdNearTracker  = newTrackerInfo;
-                } else if (distance < fourthDistance && distance >= thirdDistance) {
-                    fourthNearTracker = newTrackerInfo;
-                }
-            } else {
-                if (callsign == firstNearTrackerCallsign) {
-                    if (distance != firstDistance) {
-                        if (distance > fourthDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = fourthNearTracker;
-                            fourthNearTracker = newTrackerInfo;
-                        } else if (distance > thirdDistance && distance <= fourthDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance > secondDistance && distance <= thirdDistance) {
-                            firstNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= secondDistance) {
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == secondNearTrackerCallsign) {
-                    if (distance != secondDistance) {
-                        if (distance > fourthDistance) {
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = fourthNearTracker;
-                            fourthNearTracker = newTrackerInfo;
-                        } else if (distance > thirdDistance && distance <= fourthDistance) {
-                            secondNearTracker = thirdNearTracker;
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance > firstDistance && distance <= thirdDistance) {
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= firstDistance) {
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == thirdNearTrackerCallsign) {
-                    if (distance != thirdDistance) {
-                        if (distance > fourthDistance) {
-                            thirdNearTracker  = fourthNearTracker;
-                            fourthNearTracker = newTrackerInfo;
-                        } else if (distance > secondDistance && distance <= fourthDistance) {
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance > firstDistance && distance <= secondDistance) {
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= firstDistance) {
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                } else if (callsign == fourthNearTrackerCallsign) {
-                    if (distance != fourthDistance) {
-                        if (distance > thirdDistance) {
-                            fourthNearTracker = newTrackerInfo;
-                        } else if (distance > secondDistance && distance <= thirdDistance) {
-                            fourthNearTracker = thirdNearTracker;
-                            thirdNearTracker  = newTrackerInfo;
-                        } else if (distance > firstDistance && distance <= secondDistance) {
-                            fourthNearTracker = thirdNearTracker;
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = newTrackerInfo;
-                        } else if (distance <= firstDistance) {
-                            fourthNearTracker = thirdNearTracker;
-                            thirdNearTracker  = secondNearTracker;
-                            secondNearTracker = firstNearTracker;
-                            firstNearTracker  = newTrackerInfo;
-                        }
-                    }
-                }       
             }
         }
     }
@@ -445,7 +248,7 @@ namespace STATION_Utils {
                 comment += batteryChargeCurrent;
                 comment += "%)";
             #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
                 comment += " Bat=";
                 comment += String(batteryVoltage.toFloat(),2);
                 comment += "V";

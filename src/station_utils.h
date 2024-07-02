@@ -5,10 +5,8 @@
 
 namespace STATION_Utils {
 
-    const String getFirstNearTracker();
-    const String getSecondNearTracker();
-    const String getThirdNearTracker();
-    const String getFourthNearTracker();
+    void    nearTrackerInit();
+    const String getNearTracker(uint8_t position);
 
     void    deleteListenedTrackersbyTime();
     void    checkListenedTrackersByTimeAndDelete();

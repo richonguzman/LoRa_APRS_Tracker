@@ -33,6 +33,8 @@ extern uint32_t         lastTx;
 
 double      currentHeading          = 0;
 double      previousHeading         = 0;
+float       bearing                 = 0;
+
 
 namespace GPS_Utils {
 
@@ -104,7 +106,28 @@ namespace GPS_Utils {
         }
     }
 
-    String getCurrentHeadingHuman(float bearing) {
+    String getHumanBearing(const String& left, const String& center, const String& right) {
+        String bearing = ">.";
+        bearing += left;
+        for (int i = 0; i < 9; i++) {
+            bearing += ".";
+        }
+        bearing += "(";
+        bearing += center;
+        bearing += ").....";
+        if (right.length() == 1 && center.length() != 2) {
+            bearing += ".";
+        }
+        bearing += right;
+        bearing += ".<";
+        return bearing;
+    }
+
+    String getCardinalDirection(float course) {
+        if (gps.speed.kmph() > 0.5) {
+            bearing = course;
+        }
+
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
         if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";
         if (bearing >= 16.875 && bearing < 28.125)    return ">.....N...|...NE....<"; // NEN
@@ -137,7 +160,7 @@ namespace GPS_Utils {
         if (bearing >= 320.625 && bearing < 331.875)  return ">.......NW|.....N...<";
         if (bearing >= 331.875 && bearing < 343.125)  return ">.....NW..|...N.....<"; // NWN
         if (bearing >= 343.125 && bearing < 354.375)  return ">...NW....|.N.......<";
-        return "?";
+        return "";
     }
 
 }

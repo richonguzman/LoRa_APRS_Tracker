@@ -8,6 +8,7 @@
 #include "power_utils.h"
 #include "menu_utils.h"
 #include "msg_utils.h"
+#include "gps_utils.h"
 #include "bme_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -32,6 +33,7 @@ extern bool                 bluetoothActive;
 extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 extern bool                 disableGPS;
+extern bool                 showHumanHeading;
 extern APRSPacket           lastReceivedPacket;
 
 extern uint8_t              winlinkStatus;
@@ -328,7 +330,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 310:    //3.Stations ---> Near By Stations
-                show_display("NEAR BY >", STATION_Utils::getFirstNearTracker(), STATION_Utils::getSecondNearTracker(), STATION_Utils::getThirdNearTracker(), STATION_Utils::getFourthNearTracker(), "<Back");
+                show_display("NEAR BY >", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
                 break;
 
 //////////
@@ -592,8 +594,12 @@ namespace MENU_Utils {
                 }
                 #endif
 
-                fifthRowMainMenu = "LAST Rx = ";
-                fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
+                if (showHumanHeading) {
+                    fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
+                } else {
+                    fifthRowMainMenu = "LAST Rx = ";
+                    fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
+                }                
 
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
