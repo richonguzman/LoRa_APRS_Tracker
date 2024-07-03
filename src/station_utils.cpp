@@ -275,6 +275,9 @@ namespace STATION_Utils {
         }
         lastTxTime = millis();
         sendUpdate = false;
+        #ifdef HAS_TFT
+            cleanTFT();
+        #endif
     }
 
     void checkTelemetryTx() {
