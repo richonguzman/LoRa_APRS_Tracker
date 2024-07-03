@@ -39,7 +39,7 @@ float       bearing                 = 0;
 namespace GPS_Utils {
 
     void setup() {
-        #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915)
+        #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(HAS_NO_GPS)
             disableGPS = true;
         #else
             disableGPS = Config.disableGPS;
