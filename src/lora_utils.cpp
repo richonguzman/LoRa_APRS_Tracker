@@ -90,7 +90,7 @@ namespace LoRa_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX127X ...");
             #endif
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed! State: %d", state);
             while (true);
         }
         #if defined(HAS_SX1262) || defined(HAS_SX1268)
