@@ -33,13 +33,14 @@
 
 extern Configuration    Config;
 extern logging::Logger  logger;
-extern bool             disableGPS;
 extern bool             transmitFlag;
 
 uint32_t    batteryMeasurmentTime   = 0;
 
 bool        pmuInterrupt;
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+bool        disableGPS;
+
 
 namespace POWER_Utils {
 
@@ -340,6 +341,12 @@ namespace POWER_Utils {
     }
 
     void setup() {
+        #ifdef HAS_NO_GPS
+            disableGPS = true;
+        #else
+            disableGPS = Config.disableGPS;
+        #endif
+
         #ifdef HAS_AXP192
             Wire.begin(SDA, SCL);
             if (begin(Wire)) {

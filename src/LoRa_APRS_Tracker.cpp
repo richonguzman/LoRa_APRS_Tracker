@@ -45,7 +45,7 @@ TinyGPSPlus                         gps;
     OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.02";
+String      versionDate             = "2024.07.05";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -80,7 +80,6 @@ uint32_t    menuTime                = millis();
 bool        flashlight              = false;
 bool        digirepeaterActive      = false;
 bool        sosActive               = false;
-bool        disableGPS;
 
 bool        miceActive              = false;
 

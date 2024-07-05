@@ -511,11 +511,6 @@ namespace MENU_Utils {
                     }
                 }
 
-                #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915)
-                secondRowMainMenu = "";
-                thirdRowMainMenu = "    LoRa APRS TNC";
-                fourthRowMainMenu = "";
-                #else
                 if (disableGPS) {
                     secondRowMainMenu = "";
                     thirdRowMainMenu = "    LoRa APRS TNC";
@@ -592,7 +587,6 @@ namespace MENU_Utils {
                         fourthRowMainMenu += " ***";
                     }
                 }
-                #endif
 
                 if (showHumanHeading) {
                     fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());

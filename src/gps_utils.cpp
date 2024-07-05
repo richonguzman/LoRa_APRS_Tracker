@@ -3,6 +3,7 @@
 #include "configuration.h"
 #include "station_utils.h"
 #include "boards_pinout.h"
+#include "power_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -20,7 +21,6 @@ extern HardwareSerial   neo6m_gps;      // cambiar a gpsSerial
 extern TinyGPSPlus      gps;
 extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
-extern bool             disableGPS;
 extern bool             sendUpdate;
 extern bool		        sendStandingUpdate;
 
@@ -30,20 +30,16 @@ extern double           lastTxLat;
 extern double           lastTxLng;
 extern double           lastTxDistance;
 extern uint32_t         lastTx;
+extern bool             disableGPS;
 
-double      currentHeading          = 0;
-double      previousHeading         = 0;
-float       bearing                 = 0;
+double      currentHeading  = 0;
+double      previousHeading = 0;
+float       bearing         = 0;
 
 
 namespace GPS_Utils {
 
     void setup() {
-        #if defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915)
-            disableGPS = true;
-        #else
-            disableGPS = Config.disableGPS;
-        #endif
         if (disableGPS) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "GPS disabled");
             return;
