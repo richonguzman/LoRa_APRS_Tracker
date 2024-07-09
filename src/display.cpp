@@ -102,7 +102,7 @@ void setup_display() {
                 }
             }
         #else
-            if (!display.begin(0x3c, true)) {
+            if (!display.begin(0x3c, false)) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
                 while (true) {
                 }
