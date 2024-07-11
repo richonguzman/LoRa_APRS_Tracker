@@ -594,7 +594,12 @@ namespace MENU_Utils {
                 } else {
                     fifthRowMainMenu = "LAST Rx = ";
                     fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
-                }                
+                }
+                #ifdef HAS_TFT
+                    for (int z = fifthRowMainMenu.length(); z < 22; z++) {
+                        fifthRowMainMenu += " ";
+                    }
+                #endif
 
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
