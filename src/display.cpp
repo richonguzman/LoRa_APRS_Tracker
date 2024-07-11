@@ -74,6 +74,14 @@ void cleanTFT() {
     #endif
 }
 
+String fillStringLength(const String& line, uint8_t length) {
+    String outputLine = line;
+    for (int a = line.length(); a < length; a++) {
+        outputLine += " ";
+    }
+    return outputLine;
+}
+
 void setup_display() {
     delay(500);
     #ifdef HAS_TFT
@@ -154,8 +162,11 @@ void display_toggle(bool toggle) {
 }
 
 void show_display(const String& header, const String& line1, const String& line2, int wait) {
-    const String* const lines[] = {&line1, &line2};
     #ifdef HAS_TFT
+        String filledLine1 = fillStringLength(line1, 22);
+        String filledLine2 = fillStringLength(line2, 22);
+        const String* const lines[] = {&filledLine1, &filledLine2};
+        
         cleanTFT();
         tft.setTextColor(TFT_WHITE,TFT_BLACK);
         tft.setTextSize(bigSizeFont);
@@ -167,6 +178,8 @@ void show_display(const String& header, const String& line1, const String& line2
             tft.print(*lines[i]);
         }
     #else
+        const String* const lines[] = {&line1, &line2};
+
         display.clearDisplay();
         #ifdef ssd1306
             display.setTextColor(WHITE);
@@ -193,8 +206,14 @@ void show_display(const String& header, const String& line1, const String& line2
 }
 
 void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
-    const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};
     #ifdef HAS_TFT
+        String filledLine1 = fillStringLength(line1, 22);
+        String filledLine2 = fillStringLength(line2, 22);
+        String filledLine3 = fillStringLength(line3, 22);
+        String filledLine4 = fillStringLength(line4, 22);
+        String filledLine5 = fillStringLength(line5, 22);
+        const String* const lines[] = {&filledLine1, &filledLine2, &filledLine3, &filledLine4, &filledLine5};
+
         if (menuDisplay != lastMenuDisplay) {
             lastMenuDisplay = menuDisplay;
             cleanTFT();
@@ -246,6 +265,8 @@ void show_display(const String& header, const String& line1, const String& line2
         }
 
     #else
+        const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};
+
         display.clearDisplay();
         #ifdef ssd1306
             display.setTextColor(WHITE);
