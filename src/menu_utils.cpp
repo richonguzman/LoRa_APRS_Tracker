@@ -80,6 +80,14 @@ namespace MENU_Utils {
         }
     }
 
+    String fillStringLength(const String& line, uint8_t length) {
+        String outputLine = line;
+        for (int a = line.length(); a < length; a++) {
+            outputLine += " ";
+        }
+        return outputLine;
+    }
+
     void showOnScreen() {
         String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
         uint32_t lastMenuTime = millis() - menuTime;
@@ -595,11 +603,6 @@ namespace MENU_Utils {
                     fifthRowMainMenu = "LAST Rx = ";
                     fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
                 }
-                #ifdef HAS_TFT
-                    for (int z = fifthRowMainMenu.length(); z < 22; z++) {
-                        fifthRowMainMenu += " ";
-                    }
-                #endif
 
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
@@ -657,12 +660,21 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected" ;
                 }
-                show_display(firstRowMainMenu,
-                            secondRowMainMenu,
-                            thirdRowMainMenu,
-                            fourthRowMainMenu,
-                            fifthRowMainMenu,
-                            sixthRowMainMenu);
+                #ifdef HAS_TFT
+                    show_display(firstRowMainMenu,
+                                fillStringLength(secondRowMainMenu, 22),
+                                fillStringLength(thirdRowMainMenu, 22),
+                                fillStringLength(fourthRowMainMenu, 22),
+                                fillStringLength(fifthRowMainMenu, 22),
+                                fillStringLength(sixthRowMainMenu, 22));
+                #else
+                    show_display(firstRowMainMenu,
+                                secondRowMainMenu,
+                                thirdRowMainMenu,
+                                fourthRowMainMenu,
+                                fifthRowMainMenu,
+                                sixthRowMainMenu);
+                #endif
                 break;
         }
     }
