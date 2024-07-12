@@ -19,7 +19,7 @@
     #ifdef TTGO_T_DECK_GPS
         #define bigSizeFont     4
         #define smallSizeFont   2
-        #define lineSpacing     18
+        #define lineSpacing     22
     #endif
 #else
     #include <Adafruit_GFX.h>
