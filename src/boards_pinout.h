@@ -118,6 +118,7 @@
     #define RADIO_RST_PIN       12
     #define RADIO_DIO1_PIN      14
     #define RADIO_BUSY_PIN      13
+    #define RADIO_WAKEUP_PIN    RADIO_DIO1_PIN
 #endif
 
 
