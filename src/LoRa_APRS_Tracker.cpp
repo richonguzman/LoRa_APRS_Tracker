@@ -26,6 +26,7 @@ ________________________________________________________________________________
 #include "boards_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
+#include "sleep_utils.h"
 #include "menu_utils.h"
 #include "lora_utils.h"
 #include "msg_utils.h"
@@ -45,7 +46,7 @@ TinyGPSPlus                         gps;
     OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.14";
+String      versionDate             = "2024.07.19";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -70,7 +71,7 @@ String      BLEToLoRaPacket         = "";
 
 uint32_t    lastTx                  = 0.0;
 uint32_t    txInterval              = 60000L;
-uint32_t    lastTxTime              = millis();
+uint32_t    lastTxTime              = 0;
 double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
@@ -87,10 +88,17 @@ bool        smartBeaconValue        = true;
 
 int         ackRequestNumber;
 
+extern  bool        wakeUpFlag;
+extern  bool        wakeUpByButton;
+extern  uint32_t    wakeUpByButtonTime;
+
 APRSPacket                          lastReceivedPacket;
 
 logging::Logger                     logger;
 //#define DEBUG
+
+bool SleepModeActive = true;
+
 
 void setup() {
     Serial.begin(115200);
@@ -137,6 +145,8 @@ void setup() {
         KEYBOARD_Utils::setup();
     }
 
+    SLEEP_Utils::setup();
+
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
@@ -152,63 +162,81 @@ void loop() {
         }
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
-    STATION_Utils::checkSmartBeaconValue();
-
     POWER_Utils::batteryManager();
 
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            userButton.tick();
-        #endif
-    }
+    if (SleepModeActive) {
+        if (wakeUpFlag) {
+            MSG_Utils::checkReceivedMessage(LoRa_Utils::receiveFromSleep());
+            wakeUpFlag = false;
+        } 
+        SLEEP_Utils::handle_wakeup();
+        SLEEP_Utils::processBufferAfterSleep();
 
-    Utils::checkDisplayEcoMode();
 
-    KEYBOARD_Utils::read();
-    #ifdef TTGO_T_DECK_GPS
-        KEYBOARD_Utils::mouseRead();
-    #endif
-
-    GPS_Utils::getData();
-    bool gps_time_update = gps.time.isUpdated();
-    bool gps_loc_update  = gps.location.isUpdated();
-    GPS_Utils::setDateFromData();
-
-    MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
-    MSG_Utils::processOutputBuffer();
-    MSG_Utils::clean25SegBuffer();
-    MSG_Utils::ledNotification();
-    Utils::checkFlashlight();
-    STATION_Utils::checkListenedTrackersByTimeAndDelete();
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
-        BLE_Utils::sendToLoRa();
+        if (!wakeUpByButton) SLEEP_Utils::startSleep();
+        if (wakeUpByButton && (millis() - wakeUpByButtonTime > 10 * 1000)) wakeUpByButton = false;
+        
     } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::sendToLoRa();
-        #endif
-    }
+        //////////////////////////////////////////////////////////////////
+        //              HERE STARTS NORMAL TRACKER CODE LOOP            //
+        //////////////////////////////////////////////////////////////////
+        
+        STATION_Utils::checkSmartBeaconValue();
 
-    int currentSpeed = (int) gps.speed.kmph();
-
-    if (gps_loc_update) {
-        Utils::checkStatus();
-        STATION_Utils::checkTelemetryTx();
-    }
-    lastTx = millis() - lastTxTime;
-    if (!sendUpdate && gps_loc_update && smartBeaconValue) {
-        GPS_Utils::calculateDistanceTraveled();
-        if (!sendUpdate) {
-            GPS_Utils::calculateHeadingDelta(currentSpeed);
+        if (!Config.simplifiedTrackerMode) {
+            #ifdef BUTTON_PIN
+                userButton.tick();
+            #endif
         }
-        STATION_Utils::checkStandingUpdateTime();
-    }
-    STATION_Utils::checkSmartBeaconState();
-    if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
-    if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
-  
-    if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
-        GPS_Utils::checkStartUpFrames();
-        MENU_Utils::showOnScreen();
-        refreshDisplayTime = millis();
-    }
+
+        Utils::checkDisplayEcoMode();
+
+        KEYBOARD_Utils::read();
+        #ifdef TTGO_T_DECK_GPS
+            KEYBOARD_Utils::mouseRead();
+        #endif
+
+        GPS_Utils::getData();
+        bool gps_time_update = gps.time.isUpdated();
+        bool gps_loc_update  = gps.location.isUpdated();
+        GPS_Utils::setDateFromData();
+
+        MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+        MSG_Utils::processOutputBuffer();
+        MSG_Utils::clean25SegBuffer();
+        MSG_Utils::ledNotification();
+        Utils::checkFlashlight();
+        STATION_Utils::checkListenedTrackersByTimeAndDelete();
+        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+            BLE_Utils::sendToLoRa();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::sendToLoRa();
+            #endif
+        }
+
+        int currentSpeed = (int) gps.speed.kmph();
+
+        if (gps_loc_update) {
+            Utils::checkStatus();
+            STATION_Utils::checkTelemetryTx();
+        }
+        lastTx = millis() - lastTxTime;
+        if (!sendUpdate && gps_loc_update && smartBeaconValue) {
+            GPS_Utils::calculateDistanceTraveled();
+            if (!sendUpdate) {
+                GPS_Utils::calculateHeadingDelta(currentSpeed);
+            }
+            STATION_Utils::checkStandingUpdateTime();
+        }
+        STATION_Utils::checkSmartBeaconState();
+        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
+        if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+    
+        if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
+            GPS_Utils::checkStartUpFrames();
+            MENU_Utils::showOnScreen();
+            refreshDisplayTime = millis();
+        }
+    }    
 }

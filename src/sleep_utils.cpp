@@ -1,89 +1,122 @@
-#include "sleep_utils.h"
+#include <TinyGPS++.h>
 #include "boards_pinout.h"
-/*#include "configuration.h"
+#include "configuration.h"
 #include "station_utils.h"
-#include "boards_pinout.h"
+#include "sleep_utils.h"
 #include "power_utils.h"
+#include "lora_utils.h"
+#include "msg_utils.h"
 #include "gps_utils.h"
 #include "display.h"
-#include "logger.h"
 
-#include "APRSPacketLib.h"
-
-#ifdef HIGH_GPS_BAUDRATE
-    #define GPS_BAUD  115200
-#else
-    #define GPS_BAUD  9600
-#endif
 
 extern Configuration    Config;
-extern HardwareSerial   neo6m_gps;      // cambiar a gpsSerial
 extern TinyGPSPlus      gps;
-extern Beacon           *currentBeacon;
-extern logging::Logger  logger;
-extern bool             sendUpdate;
-extern bool		        sendStandingUpdate;
-
 extern uint32_t         lastTxTime;
-extern uint32_t         txInterval;
-extern double           lastTxLat;
-extern double           lastTxLng;
-extern double           lastTxDistance;
-extern uint32_t         lastTx;
-extern bool             disableGPS;
+extern bool             sendUpdate;
 
-double      currentHeading  = 0;
-double      previousHeading = 0;
-float       bearing         = 0;*/
-
-bool wakeUpFlag = false;
+bool        wakeUpFlag         = false;
+bool        wakeUpByButton     = false;
+uint32_t    wakeUpByButtonTime = 0;
 
 
 namespace SLEEP_Utils {
 
-    void handle_wakeup() {
-    esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
-        switch (wakeup_cause) {
-            case ESP_SLEEP_WAKEUP_TIMER:
-                Serial.println("Woken up by timer (Sending Beacon) \n");
-                break;
-            case ESP_SLEEP_WAKEUP_EXT1:
-                Serial.println("Woken up by EXT1 (GPIO) (Packet Received)\n");
-                break;
-            default:
-                Serial.println("Woken up by unknown reason\n");
-                break;
+
+    void processBeaconAfterSleep() {
+        if (lastTxTime == 0 || ((millis() - lastTxTime) > 5 * 60 * 1000)) { // 5 min non-smartBeacon
+            POWER_Utils::activateGPS();
+            display_toggle(false);
+            sendUpdate = true;
+            while (sendUpdate) {
+                MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+                GPS_Utils::getData();
+                bool gps_loc_update  = gps.location.isUpdated();
+                if (gps_loc_update){
+                    display_toggle(true);       // opcional
+                    STATION_Utils::sendBeacon(0);
+                    lastTxTime = millis();
+                }
+            }
         }
     }
 
+    void processBufferAfterSleep() {
+        if (!MSG_Utils::checkOutputBufferEmpty()) {
+            //POWER_Utils::activateGPS();
+            //display_toggle(true);
+            MSG_Utils::processOutputBuffer();
+        }
+    }
+
+    void handle_wakeup() {
+        esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
+        switch (wakeup_cause) {
+            case ESP_SLEEP_WAKEUP_TIMER:
+                processBeaconAfterSleep();  //Serial.println("Woken up by timer (Sending Beacon) \n");
+                break;
+            case ESP_SLEEP_WAKEUP_EXT1:
+                //Serial.println("Woken up by EXT1 (GPIO) (Packet Received)\n");
+                break;
+            case ESP_SLEEP_WAKEUP_EXT0: 
+                Serial.println("Wakeup caused by external signal using RTC_IO");
+                wakeUpByButton = true;
+                wakeUpByButtonTime = millis();
+
+                POWER_Utils::activateGPS();
+                display_toggle(true);
+
+            default:
+                processBeaconAfterSleep();  //Serial.println("Woken up by unknown reason\n");
+                break;
+        }
+    }
 
     void wakeUpLoRaPacketReceived() {
         wakeUpFlag = true;
     }
 
-    void setup() {
-        pinMode(RADIO_WAKEUP_PIN, INPUT);
-        attachInterrupt(digitalPinToInterrupt(RADIO_WAKEUP_PIN), wakeUpLoRaPacketReceived, RISING);
-        //LoRa_Utils::wakeRadio();
+    void sleep(int seconds) {
+        esp_sleep_enable_timer_wakeup(seconds * 1000000);   // 1 min = 60sec
+        delay(100);
+        POWER_Utils::deactivateGPS();
+        LoRa_Utils::wakeRadio();
+        esp_light_sleep_start();
     }
 
-    // getWakeUpReason
+    // this could be used for smartBeaconTime delta
+    /*uint32_t getTimeToSleep() { // quizas no?
+        uint32_t currentCycleTime   = millis() - lastTxTime;
+        uint32_t timeToSleep = 20 * 1000;//Config.nonSmartBeaconRate * 60;
+        if (timeToSleep - currentCycleTime <= 0) {
+            return timeToSleep / 1000;
+        } else {
+            return (timeToSleep - currentCycleTime) / 1000;
+        }
+    }*/
 
-    // setSleepTimeUntilBeacon
+    void startSleep() {
+        #if defined(HELTEC_WIRELESS_TRACKER)
+            esp_sleep_enable_ext1_wakeup(GPIO_SEL_14, ESP_EXT1_WAKEUP_ANY_HIGH);
+            //pinMode(BUTTON_PIN, INPUT_PULLUP);   //internal pull down???
+            //esp_sleep_enable_ext0_wakeup(WAKEUP_BUTTON, 0);
+        #endif
+        sleep(20);
+    }
 
-    // startSleeping (sleep)
-
-
-
-    // if MSG .... 
-        // check if its for me -> process -> setSleepTimeUntilBeacon -> sleep
-        // else ignore -> setSleepTimeUntilBeacon -> sleep
-    // if BeaconInterval
-        // turn on GPS -> get gps Fix -> processBeacon (send it) -> setSleepTimeUntilBeacon -> sleep
-    // if userButtonPressed
-        // wake up without any sleep for X min -> if nothing is done -> setSleepTimeUntilBeacon -> sleep
-
-
-    
+    void setup() {
+        //if (SleepModeActive) ?????
+        #ifdef RADIO_WAKEUP_PIN
+            pinMode(RADIO_WAKEUP_PIN, INPUT);
+            #if defined(HELTEC_WIRELESS_TRACKER)
+                attachInterrupt(digitalPinToInterrupt(RADIO_WAKEUP_PIN), wakeUpLoRaPacketReceived, RISING);
+                LoRa_Utils::wakeRadio();
+            #else
+                Serial.println("NO SLEEP MODE AVAILABLE FOR THIS BOARD");
+            #endif
+        #else
+            Serial.println("NO SLEEP MODE AVAILABLE FOR THIS BOARD");
+        #endif
+    }
 
 }

@@ -17,6 +17,8 @@ namespace LoRa_Utils {
     void changeFreq();
     void setup();
     void sendNewPacket(const String& newPacket);
+    void wakeRadio();
+    ReceivedLoRaPacket receiveFromSleep();
     ReceivedLoRaPacket receivePacket();
     void sleepRadio();
 

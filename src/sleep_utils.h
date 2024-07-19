@@ -5,6 +5,9 @@
 
 namespace SLEEP_Utils {
 
+    void processBufferAfterSleep();
+    void handle_wakeup();
+    void startSleep();
     void setup();
 
 }

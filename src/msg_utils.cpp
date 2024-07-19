@@ -35,6 +35,8 @@ extern uint32_t             wxRequestTime;
 
 extern APRSPacket           lastReceivedPacket;
 
+extern bool                 SleepModeActive;
+
 String  lastMessageSaved        = "";
 int     numAPRSMessages         = 0;
 int     numWLNKMessages         = 0;
@@ -300,6 +302,13 @@ namespace MSG_Utils {
         }
     }
 
+    bool checkOutputBufferEmpty() {
+        if(outputMessagesBuffer.empty()) {
+            return true;
+        }
+        return false;
+    }
+
     void processOutputBuffer() {
         if (!outputMessagesBuffer.empty() && (millis() - lastMsgRxTime) >= 6000 && (millis() - lastTxTime) > 3000) {
             String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
@@ -310,7 +319,9 @@ namespace MSG_Utils {
             } else {                            // message without ack Request
                 sendMessage(addressee, message);
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                lastTxTime = millis();
+                if (!SleepModeActive) {
+                    lastTxTime = millis();
+                }
             }
         }
         if (outputAckRequestBuffer.empty()) {

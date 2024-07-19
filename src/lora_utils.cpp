@@ -165,6 +165,25 @@ namespace LoRa_Utils {
         #endif
     }
 
+    void wakeRadio() {
+        radio.startReceive();
+    }
+
+    ReceivedLoRaPacket receiveFromSleep() {
+        ReceivedLoRaPacket receivedLoraPacket;
+        String packet = "";
+        int state = radio.readData(packet);
+        if (state == RADIOLIB_ERR_NONE) {
+            receivedLoraPacket.text       = packet;
+            receivedLoraPacket.rssi       = radio.getRSSI();
+            receivedLoraPacket.snr        = radio.getSNR();
+            receivedLoraPacket.freqError  = radio.getFrequencyError();
+        } else {
+            //
+        }
+        return receivedLoraPacket;
+    }
+
     ReceivedLoRaPacket receivePacket() {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";

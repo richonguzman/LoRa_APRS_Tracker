@@ -202,6 +202,9 @@ namespace POWER_Utils {
                 PMU.enableALDO3();
             #endif
         #endif
+        #ifdef HELTEC_WIRELESS_TRACKER
+            digitalWrite(VEXT_CTRL, HIGH);
+        #endif
     }
 
     void deactivateGPS() {
@@ -215,6 +218,9 @@ namespace POWER_Utils {
             #else
                 PMU.disableALDO3();
             #endif
+        #endif
+        #ifdef HELTEC_WIRELESS_TRACKER
+            digitalWrite(VEXT_CTRL, LOW);
         #endif
     }
 

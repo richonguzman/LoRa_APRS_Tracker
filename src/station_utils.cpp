@@ -36,6 +36,7 @@ extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
+extern bool                 SleepModeActive;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -273,7 +274,9 @@ namespace STATION_Utils {
             previousHeading = currentHeading;
             lastTxDistance  = 0.0;
         }
-        lastTxTime = millis();
+        if (!SleepModeActive) {
+            lastTxTime = millis();
+        }        
         sendUpdate = false;
         #ifdef HAS_TFT
             cleanTFT();
