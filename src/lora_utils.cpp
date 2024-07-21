@@ -28,6 +28,9 @@ bool transmitFlag    = true;
 #if defined(HAS_SX1276)
     SX1276 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
 #endif
+#if defined(HAS_LLCC68)
+    LLCC68 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+#endif
 
 namespace LoRa_Utils {
 
@@ -83,6 +86,8 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX126X ...");
+            #elif defined(HAS_LLCC68)
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing LLCC68 ...");
             #else
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX127X ...");
             #endif
@@ -90,7 +95,7 @@ namespace LoRa_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed!");
             while (true);
         }
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
             radio.setDio1Action(setFlag);
         #endif
         #if defined(HAS_SX1278) || defined(HAS_SX1276)
@@ -121,7 +126,7 @@ namespace LoRa_Utils {
             radio.setCurrentLimit(100); // to be validated (80 , 100)?
         #endif
 
-        #if defined(HAS_SX1262) || defined(HAS_SX1268)
+        #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
         radio.setRxBoostedGainMode(true);
         #endif
 
