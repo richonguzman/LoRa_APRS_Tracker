@@ -120,6 +120,7 @@
     #define RADIO_BUSY_PIN      13
     #define RADIO_WAKEUP_PIN    RADIO_DIO1_PIN
     #define WAKEUP_BUTTON       GPIO_NUM_0
+    #define WAKEUP_RADIO        GPIO_SEL_14
 #endif
 
 

@@ -46,7 +46,7 @@ TinyGPSPlus                         gps;
     OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.19";
+String      versionDate             = "2024.07.24";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -97,7 +97,7 @@ APRSPacket                          lastReceivedPacket;
 logging::Logger                     logger;
 //#define DEBUG
 
-bool SleepModeActive = true;
+bool SleepModeActive = false;
 
 
 void setup() {
@@ -127,25 +127,27 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
-        BLE_Utils::setup();
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::setup();
-        #endif
-    }
+    if (!SleepModeActive) {
+        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+            BLE_Utils::setup();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::setup();
+            #endif
+        }
 
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            userButton.attachClick(BUTTON_Utils::singlePress);
-            userButton.attachLongPressStart(BUTTON_Utils::longPress);
-            userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-            userButton.attachMultiClick(BUTTON_Utils::multiPress);
-        #endif
-        KEYBOARD_Utils::setup();
+        if (!Config.simplifiedTrackerMode) {
+            #ifdef BUTTON_PIN
+                userButton.attachClick(BUTTON_Utils::singlePress);
+                userButton.attachLongPressStart(BUTTON_Utils::longPress);
+                userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+                userButton.attachMultiClick(BUTTON_Utils::multiPress);
+            #endif
+            KEYBOARD_Utils::setup();
+        }
+    } else {    
+        SLEEP_Utils::setup();
     }
-
-    SLEEP_Utils::setup();
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
@@ -168,13 +170,14 @@ void loop() {
         if (wakeUpFlag) {
             MSG_Utils::checkReceivedMessage(LoRa_Utils::receiveFromSleep());
             wakeUpFlag = false;
-        } 
-        SLEEP_Utils::handle_wakeup();
-        SLEEP_Utils::processBufferAfterSleep();
+        }
+        //SLEEP_Utils::handle_wakeup();
+        //SLEEP_Utils::processBufferAfterSleep();
 
 
-        if (!wakeUpByButton) SLEEP_Utils::startSleep();
-        if (wakeUpByButton && (millis() - wakeUpByButtonTime > 10 * 1000)) wakeUpByButton = false;
+        SLEEP_Utils::startSleep();
+        //if (!wakeUpByButton) SLEEP_Utils::startSleep();
+        //if (wakeUpByButton && (millis() - wakeUpByButtonTime > 10 * 1000)) wakeUpByButton = false;
         
     } else {
         //////////////////////////////////////////////////////////////////

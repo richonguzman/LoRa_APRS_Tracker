@@ -77,10 +77,20 @@ namespace SLEEP_Utils {
     }
 
     void sleep(int seconds) {
-        esp_sleep_enable_timer_wakeup(seconds * 1000000);   // 1 min = 60sec
+        esp_sleep_enable_timer_wakeup(300 * 1000000);
+        //esp_sleep_enable_timer_wakeup(seconds * 1000000);   // 1 min = 60sec
         delay(100);
         POWER_Utils::deactivateGPS();
+        delay(100);
+        #ifdef ADC_CTRL
+            #ifdef HELTEC_WIRELESS_TRACKER
+                digitalWrite(ADC_CTRL, LOW);
+            #endif
+        #endif
         LoRa_Utils::wakeRadio();
+        //LoRa_Utils::sleepRadio();
+        delay(100);
+        //esp_deep_sleep_start();
         esp_light_sleep_start();
     }
 
@@ -97,7 +107,7 @@ namespace SLEEP_Utils {
 
     void startSleep() {
         #if defined(HELTEC_WIRELESS_TRACKER)
-            esp_sleep_enable_ext1_wakeup(GPIO_SEL_14, ESP_EXT1_WAKEUP_ANY_HIGH);
+            esp_sleep_enable_ext1_wakeup(WAKEUP_RADIO, ESP_EXT1_WAKEUP_ANY_HIGH);
             //pinMode(BUTTON_PIN, INPUT_PULLUP);   //internal pull down???
             //esp_sleep_enable_ext0_wakeup(WAKEUP_BUTTON, 0);
         #endif
