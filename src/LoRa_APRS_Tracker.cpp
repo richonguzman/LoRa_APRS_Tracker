@@ -88,16 +88,14 @@ bool        smartBeaconValue        = true;
 
 int         ackRequestNumber;
 
-uint32_t    lastGPSCheck            = 0;
 uint32_t    lastGPSTime             = 0;
-
 
 APRSPacket                          lastReceivedPacket;
 
 logging::Logger                     logger;
 //#define DEBUG
 
-bool gpsSleepActive = true;
+bool gpsSleepActive = true; // currentBeacon->gpsEcoMode // true!
 extern bool gpsIsActive;
 
 void setup() {
@@ -190,7 +188,7 @@ void loop() {
             BLUETOOTH_Utils::sendToLoRa();
         #endif
     }
-
+    lastTx = millis() - lastTxTime;
     if (gpsIsActive) {
         GPS_Utils::getData();
         bool gps_time_update = gps.time.isUpdated();
@@ -203,8 +201,6 @@ void loop() {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
         }
-        lastTx          = millis() - lastTxTime;
-        lastGPSCheck    = millis() - lastGPSTime;
         if (!sendUpdate && gps_loc_update && smartBeaconValue) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) {
@@ -222,15 +218,13 @@ void loop() {
             refreshDisplayTime = millis();
         }
     } else {
-        if (millis() > lastGPSTime + txInterval) {
+        if (millis() - lastGPSTime > txInterval) {
             SLEEP_Utils::gpsWakeUp();
-            lastGPSTime = millis();
         }
+        STATION_Utils::checkStandingUpdateTime();
         if (millis() - refreshDisplayTime >= 1000) {
             MENU_Utils::showOnScreen();
             refreshDisplayTime = millis();
         }
     }
-    // si se activa GPS y no se envia en X tiempo , se duerme...
-    // crear contador de tiempo
 }

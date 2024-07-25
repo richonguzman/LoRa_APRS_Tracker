@@ -5,6 +5,7 @@
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "ble_utils.h"
+#include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
 
@@ -34,6 +35,7 @@
 extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             transmitFlag;
+extern bool             gpsIsActive;
 
 uint32_t    batteryMeasurmentTime   = 0;
 
@@ -205,6 +207,7 @@ namespace POWER_Utils {
         #ifdef HELTEC_WIRELESS_TRACKER
             digitalWrite(VEXT_CTRL, HIGH);
         #endif
+        gpsIsActive = true;
     }
 
     void deactivateGPS() {
@@ -222,6 +225,7 @@ namespace POWER_Utils {
         #ifdef HELTEC_WIRELESS_TRACKER
             digitalWrite(VEXT_CTRL, LOW);
         #endif
+        gpsIsActive = false;
     }
 
     void activateLoRa() {

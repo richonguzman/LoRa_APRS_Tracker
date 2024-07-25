@@ -37,8 +37,8 @@ extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
-extern bool                 gpsSleepActive;
-extern bool                 lastGPSTime;
+extern bool                 gpsSleepActive; // currentBeacon->gpsEcoMode // true!
+extern bool                 gpsIsActive;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -182,6 +182,9 @@ namespace STATION_Utils {
         if (!sendUpdate && lastTx >= Config.standingUpdateTime * 60 * 1000) {
             sendUpdate = true;
             sendStandingUpdate = true;
+            if (!gpsIsActive) {
+                SLEEP_Utils::gpsWakeUp();
+            }
         }
     }
 
@@ -277,12 +280,11 @@ namespace STATION_Utils {
             lastTxDistance  = 0.0;
         }
         lastTxTime  = millis();
-        lastGPSTime = millis();
         sendUpdate  = false;
         #ifdef HAS_TFT
-            cleanTFT();
+            cleanTFT(); 
         #endif
-        if (gpsSleepActive) {
+        if (gpsSleepActive) {   // currentBeacon->gpsEcoMode // true!
             SLEEP_Utils::gpsSleep();
         }
     }

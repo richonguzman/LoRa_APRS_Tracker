@@ -2,15 +2,17 @@
 #include "power_utils.h"
 
 
-bool gpsIsActive = true;
-extern bool gpsSleepActive;
+extern bool     gpsSleepActive; // currentBeacon->gpsEcoMode // true!
+extern uint32_t lastGPSTime;
+extern bool     gpsIsActive;
+
 
 namespace SLEEP_Utils {
 
     void gpsSleep() {
         if (gpsSleepActive && gpsIsActive) {
             POWER_Utils::deactivateGPS();
-            gpsIsActive = false;
+            lastGPSTime = millis();
             //
             Serial.println("GPS SLEEPING");
             //
@@ -21,7 +23,6 @@ namespace SLEEP_Utils {
     void gpsWakeUp() {
         if (gpsSleepActive && !gpsIsActive) {
             POWER_Utils::activateGPS();
-            gpsIsActive = true;
             //
             Serial.println("GPS WAKEUP");
             //
