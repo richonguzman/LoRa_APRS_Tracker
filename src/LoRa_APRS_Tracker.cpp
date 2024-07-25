@@ -46,7 +46,7 @@ TinyGPSPlus                         gps;
     OneButton userButton                = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.24";
+String      versionDate             = "2024.07.25";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -88,9 +88,9 @@ bool        smartBeaconValue        = true;
 
 int         ackRequestNumber;
 
-extern  bool        wakeUpFlag;
-extern  bool        wakeUpByButton;
-extern  uint32_t    wakeUpByButtonTime;
+uint32_t    lastGPSCheck            = 0;
+uint32_t    lastGPSTime             = 0;
+
 
 APRSPacket                          lastReceivedPacket;
 
@@ -203,8 +203,8 @@ void loop() {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
         }
-        lastTx = millis() - lastTxTime;
-
+        lastTx          = millis() - lastTxTime;
+        lastGPSCheck    = millis() - lastGPSTime;
         if (!sendUpdate && gps_loc_update && smartBeaconValue) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) {
@@ -222,9 +222,9 @@ void loop() {
             refreshDisplayTime = millis();
         }
     } else {
-        if (millis() > lastTxTime + txInterval) {
+        if (millis() > lastGPSTime + txInterval) {
             SLEEP_Utils::gpsWakeUp();
-            Serial.println(txInterval);
+            lastGPSTime = millis();
         }
         if (millis() - refreshDisplayTime >= 1000) {
             MENU_Utils::showOnScreen();

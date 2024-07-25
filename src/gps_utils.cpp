@@ -26,6 +26,8 @@ extern bool             sendUpdate;
 extern bool		        sendStandingUpdate;
 
 extern uint32_t         lastTxTime;
+extern uint32_t         lastGPSCheck;
+extern uint32_t         lastGPSTime;
 extern uint32_t         txInterval;
 extern double           lastTxLat;
 extern double           lastTxLng;
@@ -69,10 +71,13 @@ namespace GPS_Utils {
     void calculateDistanceTraveled() {
         currentHeading  = gps.course.deg();
         lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
-        if (lastTx >= txInterval) {
+        if (lastGPSCheck >= txInterval) {
             if (lastTxDistance > currentBeacon->minTxDist) {
                 sendUpdate = true;
                 sendStandingUpdate = false;
+            } else {
+                SLEEP_Utils::gpsSleep();
+                lastGPSTime = millis();
             }
         }
     }
