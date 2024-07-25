@@ -319,9 +319,7 @@ namespace MSG_Utils {
             } else {                            // message without ack Request
                 sendMessage(addressee, message);
                 outputMessagesBuffer.erase(outputMessagesBuffer.begin());
-                if (!SleepModeActive) {
-                    lastTxTime = millis();
-                }
+                lastTxTime = millis();
             }
         }
         if (outputAckRequestBuffer.empty()) {

@@ -4,6 +4,7 @@
 #include "station_utils.h"
 #include "boards_pinout.h"
 #include "power_utils.h"
+#include "sleep_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"

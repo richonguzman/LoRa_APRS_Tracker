@@ -45,6 +45,7 @@ extern String               winlinkAlias;
 extern String               winlinkAliasComplete;
 extern bool                 winlinkCommentState;
 extern int                  wxModuleType;
+extern bool                 gpsIsActive;
 
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
@@ -546,8 +547,12 @@ namespace MENU_Utils {
                     }
 
                     if (gps.satellites.value() <= 9) thirdRowMainMenu += " ";
-                    thirdRowMainMenu += String(gps.satellites.value());
-                    thirdRowMainMenu += hdopState;
+                    if (gpsIsActive) {
+                        thirdRowMainMenu += String(gps.satellites.value());
+                        thirdRowMainMenu += hdopState;
+                    } else {
+                        thirdRowMainMenu += "--";
+                    }
 
                     String fourthRowAlt = String(gps.altitude.meters(),0);
                     fourthRowAlt.trim();
@@ -586,6 +591,9 @@ namespace MENU_Utils {
                         fourthRowMainMenu = "*** MESSAGES: ";
                         fourthRowMainMenu += String(MSG_Utils::getNumAPRSMessages());
                         fourthRowMainMenu += " ***";
+                    }
+                    if (!gpsIsActive) {
+                        fourthRowMainMenu = "*** GPS SLEEPING ***";
                     }
                 }
 

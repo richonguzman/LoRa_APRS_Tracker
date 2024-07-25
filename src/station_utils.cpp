@@ -4,6 +4,7 @@
 #include "station_utils.h"
 #include "configuration.h"
 #include "power_utils.h"
+#include "sleep_utils.h"
 #include "lora_utils.h"
 #include "bme_utils.h"
 #include "display.h"
@@ -36,7 +37,7 @@ extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
-extern bool                 SleepModeActive;
+extern bool                 gpsSleepActive;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -274,13 +275,14 @@ namespace STATION_Utils {
             previousHeading = currentHeading;
             lastTxDistance  = 0.0;
         }
-        if (!SleepModeActive) {
-            lastTxTime = millis();
-        }        
+        lastTxTime = millis();
         sendUpdate = false;
         #ifdef HAS_TFT
             cleanTFT();
         #endif
+        if (gpsSleepActive) {
+            SLEEP_Utils::gpsSleep();
+        }
     }
 
     void checkTelemetryTx() {

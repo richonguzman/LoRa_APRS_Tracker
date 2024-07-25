@@ -97,8 +97,8 @@ APRSPacket                          lastReceivedPacket;
 logging::Logger                     logger;
 //#define DEBUG
 
-bool SleepModeActive = false;
-
+bool gpsSleepActive = true;
+extern bool gpsIsActive;
 
 void setup() {
     Serial.begin(115200);
@@ -127,26 +127,22 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (!SleepModeActive) {
-        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
-            BLE_Utils::setup();
-        } else {
-            #ifdef HAS_BT_CLASSIC
-                BLUETOOTH_Utils::setup();
-            #endif
-        }
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+        BLE_Utils::setup();
+    } else {
+        #ifdef HAS_BT_CLASSIC
+            BLUETOOTH_Utils::setup();
+        #endif
+    }
 
-        if (!Config.simplifiedTrackerMode) {
-            #ifdef BUTTON_PIN
-                userButton.attachClick(BUTTON_Utils::singlePress);
-                userButton.attachLongPressStart(BUTTON_Utils::longPress);
-                userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-                userButton.attachMultiClick(BUTTON_Utils::multiPress);
-            #endif
-            KEYBOARD_Utils::setup();
-        }
-    } else {    
-        SLEEP_Utils::setup();
+    if (!Config.simplifiedTrackerMode) {
+        #ifdef BUTTON_PIN
+            userButton.attachClick(BUTTON_Utils::singlePress);
+            userButton.attachLongPressStart(BUTTON_Utils::longPress);
+            userButton.attachDoubleClick(BUTTON_Utils::doublePress);
+            userButton.attachMultiClick(BUTTON_Utils::multiPress);
+        #endif
+        KEYBOARD_Utils::setup();
     }
 
     POWER_Utils::lowerCpuFrequency();
@@ -165,58 +161,41 @@ void loop() {
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
     POWER_Utils::batteryManager();
-
-    if (SleepModeActive) {
-        if (wakeUpFlag) {
-            MSG_Utils::checkReceivedMessage(LoRa_Utils::receiveFromSleep());
-            wakeUpFlag = false;
-        }
-        //SLEEP_Utils::handle_wakeup();
-        //SLEEP_Utils::processBufferAfterSleep();
-
-
-        SLEEP_Utils::startSleep();
-        //if (!wakeUpByButton) SLEEP_Utils::startSleep();
-        //if (wakeUpByButton && (millis() - wakeUpByButtonTime > 10 * 1000)) wakeUpByButton = false;
         
-    } else {
-        //////////////////////////////////////////////////////////////////
-        //              HERE STARTS NORMAL TRACKER CODE LOOP            //
-        //////////////////////////////////////////////////////////////////
-        
-        STATION_Utils::checkSmartBeaconValue();
+    STATION_Utils::checkSmartBeaconValue();
 
-        if (!Config.simplifiedTrackerMode) {
-            #ifdef BUTTON_PIN
-                userButton.tick();
-            #endif
-        }
-
-        Utils::checkDisplayEcoMode();
-
-        KEYBOARD_Utils::read();
-        #ifdef TTGO_T_DECK_GPS
-            KEYBOARD_Utils::mouseRead();
+    if (!Config.simplifiedTrackerMode) {
+        #ifdef BUTTON_PIN
+            userButton.tick();
         #endif
+    }
 
+    Utils::checkDisplayEcoMode();
+
+    KEYBOARD_Utils::read();
+    #ifdef TTGO_T_DECK_GPS
+        KEYBOARD_Utils::mouseRead();
+    #endif
+
+    MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+    MSG_Utils::processOutputBuffer();
+    MSG_Utils::clean25SegBuffer();
+    MSG_Utils::ledNotification();
+    Utils::checkFlashlight();
+    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+        BLE_Utils::sendToLoRa();
+    } else {
+        #ifdef HAS_BT_CLASSIC
+            BLUETOOTH_Utils::sendToLoRa();
+        #endif
+    }
+
+    if (gpsIsActive) {
         GPS_Utils::getData();
         bool gps_time_update = gps.time.isUpdated();
         bool gps_loc_update  = gps.location.isUpdated();
         GPS_Utils::setDateFromData();
-
-        MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
-        MSG_Utils::processOutputBuffer();
-        MSG_Utils::clean25SegBuffer();
-        MSG_Utils::ledNotification();
-        Utils::checkFlashlight();
-        STATION_Utils::checkListenedTrackersByTimeAndDelete();
-        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
-            BLE_Utils::sendToLoRa();
-        } else {
-            #ifdef HAS_BT_CLASSIC
-                BLUETOOTH_Utils::sendToLoRa();
-            #endif
-        }
 
         int currentSpeed = (int) gps.speed.kmph();
 
@@ -225,6 +204,7 @@ void loop() {
             STATION_Utils::checkTelemetryTx();
         }
         lastTx = millis() - lastTxTime;
+
         if (!sendUpdate && gps_loc_update && smartBeaconValue) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) {
@@ -235,11 +215,22 @@ void loop() {
         STATION_Utils::checkSmartBeaconState();
         if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
         if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
-    
+
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
             GPS_Utils::checkStartUpFrames();
             MENU_Utils::showOnScreen();
             refreshDisplayTime = millis();
         }
-    }    
+    } else {
+        if (millis() > lastTxTime + txInterval) {
+            SLEEP_Utils::gpsWakeUp();
+            Serial.println(txInterval);
+        }
+        if (millis() - refreshDisplayTime >= 1000) {
+            MENU_Utils::showOnScreen();
+            refreshDisplayTime = millis();
+        }
+    }
+    // si se activa GPS y no se envia en X tiempo , se duerme...
+    // crear contador de tiempo
 }
