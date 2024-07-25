@@ -59,7 +59,7 @@ namespace POWER_Utils {
                 #ifdef HELTEC_WIRELESS_TRACKER
                     digitalWrite(ADC_CTRL, HIGH);
                 #endif
-                #ifdef HELTEC_V3_GPS
+                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915)
                     digitalWrite(ADC_CTRL, LOW);
                 #endif
             #endif
@@ -68,7 +68,7 @@ namespace POWER_Utils {
                 #ifdef HELTEC_WIRELESS_TRACKER
                     digitalWrite(ADC_CTRL, LOW);
                 #endif
-                #ifdef HELTEC_V3_GPS
+                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915)
                     digitalWrite(ADC_CTRL, HIGH);
                 #endif
                 batteryMeasurmentTime = millis();
@@ -79,6 +79,10 @@ namespace POWER_Utils {
             #endif
             #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
                 double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+            #endif
+            #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915)
+                double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
                 return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
             #endif
         #else
