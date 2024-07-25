@@ -76,13 +76,14 @@ namespace GPS_Utils {
                 sendUpdate = true;
                 sendStandingUpdate = false;
             } else {
-                
-                //
-                Serial.print("minTxDistance not achieved : ");
-                Serial.println(lastTxDistance);
-                //
+                if (currentBeacon->gpsEcoMode) {
+                    //
+                    Serial.print("minTxDistance not achieved : ");
+                    Serial.println(lastTxDistance);
+                    //
 
-                SLEEP_Utils::gpsSleep();
+                    SLEEP_Utils::gpsSleep();
+                }
             }
         }
     }

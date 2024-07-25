@@ -27,21 +27,22 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     for (int i = 0; i < BeaconsArray.size(); i++) {
         Beacon bcn;
 
-        bcn.callsign          = BeaconsArray[i]["callsign"].as<String>();
+        bcn.callsign            = BeaconsArray[i]["callsign"].as<String>();
         bcn.callsign.toUpperCase();
-        bcn.symbol            = BeaconsArray[i]["symbol"].as<String>();
-        bcn.overlay           = BeaconsArray[i]["overlay"].as<String>();
-        bcn.micE              = BeaconsArray[i]["micE"].as<String>();
-        bcn.comment           = BeaconsArray[i]["comment"].as<String>();
-        bcn.smartBeaconState  = BeaconsArray[i]["smartBeacon"]["active"].as<bool>();
-        bcn.slowRate          = BeaconsArray[i]["smartBeacon"]["slowRate"].as<int>();
-        bcn.slowSpeed         = BeaconsArray[i]["smartBeacon"]["slowSpeed"].as<int>();
-        bcn.fastRate          = BeaconsArray[i]["smartBeacon"]["fastRate"].as<int>();
-        bcn.fastSpeed         = BeaconsArray[i]["smartBeacon"]["fastSpeed"].as<int>();
-        bcn.minTxDist         = BeaconsArray[i]["smartBeacon"]["minTxDist"].as<int>();
-        bcn.minDeltaBeacon    = BeaconsArray[i]["smartBeacon"]["minDeltaBeacon"].as<int>();
-        bcn.turnMinDeg        = BeaconsArray[i]["smartBeacon"]["turnMinDeg"].as<int>();
-        bcn.turnSlope         = BeaconsArray[i]["smartBeacon"]["turnSlope"].as<int>();
+        bcn.gpsEcoMode          = BeaconsArray[i]["gpsEcoMode"].as<bool>();
+        bcn.symbol              = BeaconsArray[i]["symbol"].as<String>();
+        bcn.overlay             = BeaconsArray[i]["overlay"].as<String>();
+        bcn.micE                = BeaconsArray[i]["micE"].as<String>();
+        bcn.comment             = BeaconsArray[i]["comment"].as<String>();
+        bcn.smartBeaconState    = BeaconsArray[i]["smartBeacon"]["active"].as<bool>();
+        bcn.slowRate            = BeaconsArray[i]["smartBeacon"]["slowRate"].as<int>();
+        bcn.slowSpeed           = BeaconsArray[i]["smartBeacon"]["slowSpeed"].as<int>();
+        bcn.fastRate            = BeaconsArray[i]["smartBeacon"]["fastRate"].as<int>();
+        bcn.fastSpeed           = BeaconsArray[i]["smartBeacon"]["fastSpeed"].as<int>();
+        bcn.minTxDist           = BeaconsArray[i]["smartBeacon"]["minTxDist"].as<int>();
+        bcn.minDeltaBeacon      = BeaconsArray[i]["smartBeacon"]["minDeltaBeacon"].as<int>();
+        bcn.turnMinDeg          = BeaconsArray[i]["smartBeacon"]["turnMinDeg"].as<int>();
+        bcn.turnSlope           = BeaconsArray[i]["smartBeacon"]["turnSlope"].as<int>();
         
         beacons.push_back(bcn);
     }

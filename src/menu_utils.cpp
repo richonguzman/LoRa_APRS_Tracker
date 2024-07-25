@@ -593,7 +593,7 @@ namespace MENU_Utils {
                         fourthRowMainMenu += " ***";
                     }
                     if (!gpsIsActive) {
-                        fourthRowMainMenu = "*** GPS SLEEPING ***";
+                        fourthRowMainMenu = "*** GPS  SLEEPING ***";
                     }
                 }
 

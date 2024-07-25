@@ -95,7 +95,6 @@ APRSPacket                          lastReceivedPacket;
 logging::Logger                     logger;
 //#define DEBUG
 
-bool gpsSleepActive = true; // currentBeacon->gpsEcoMode // true!
 extern bool gpsIsActive;
 
 void setup() {

@@ -1,33 +1,36 @@
+#include "configuration.h"
 #include "sleep_utils.h"
 #include "power_utils.h"
 
 
-extern bool     gpsSleepActive; // currentBeacon->gpsEcoMode // true!
-extern uint32_t lastGPSTime;
-extern bool     gpsIsActive;
+extern Beacon           *currentBeacon;
+extern uint32_t         lastGPSTime;
+extern bool             gpsIsActive;
 
 
 namespace SLEEP_Utils {
 
     void gpsSleep() {
-        if (gpsSleepActive && gpsIsActive) {
-            POWER_Utils::deactivateGPS();
-            lastGPSTime = millis();
-            //
-            Serial.println("GPS SLEEPING");
-            //
-        }
-
+        #ifdef HAS_GPS_CTRL
+            if (currentBeacon->gpsEcoMode && gpsIsActive) {
+                POWER_Utils::deactivateGPS();
+                lastGPSTime = millis();
+                //
+                Serial.println("GPS SLEEPING");
+                //
+            }
+        #endif
     }
 
     void gpsWakeUp() {
-        if (gpsSleepActive && !gpsIsActive) {
-            POWER_Utils::activateGPS();
-            //
-            Serial.println("GPS WAKEUP");
-            //
-        }
-
+        #ifdef HAS_GPS_CTRL
+            if (currentBeacon->gpsEcoMode && !gpsIsActive) {
+                POWER_Utils::activateGPS();
+                //
+                Serial.println("GPS WAKEUP");
+                //
+            }
+        #endif
     }
 
 }

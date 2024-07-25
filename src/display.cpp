@@ -327,7 +327,7 @@ void startupScreen(uint8_t index, const String& version) {
         case 1: workingFreq += "PL]"; break;
         case 2: workingFreq += "UK]"; break;
     }
-    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU / " + version, 4000);
+    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
     #ifdef HAS_TFT
         cleanTFT();
     #endif

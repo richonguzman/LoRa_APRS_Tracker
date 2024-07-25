@@ -37,7 +37,6 @@ extern uint8_t              winlinkStatus;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
-extern bool                 gpsSleepActive; // currentBeacon->gpsEcoMode // true!
 extern bool                 gpsIsActive;
 
 bool	    sendStandingUpdate      = false;
@@ -284,7 +283,7 @@ namespace STATION_Utils {
         #ifdef HAS_TFT
             cleanTFT(); 
         #endif
-        if (gpsSleepActive) {   // currentBeacon->gpsEcoMode // true!
+        if (currentBeacon->gpsEcoMode) {   // currentBeacon->gpsEcoMode // true!
             SLEEP_Utils::gpsSleep();
         }
     }
