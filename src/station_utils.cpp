@@ -38,6 +38,7 @@ extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
 extern bool                 gpsSleepActive;
+extern bool                 lastGPSTime;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -275,8 +276,9 @@ namespace STATION_Utils {
             previousHeading = currentHeading;
             lastTxDistance  = 0.0;
         }
-        lastTxTime = millis();
-        sendUpdate = false;
+        lastTxTime  = millis();
+        lastGPSTime = millis();
+        sendUpdate  = false;
         #ifdef HAS_TFT
             cleanTFT();
         #endif

@@ -76,8 +76,8 @@ namespace GPS_Utils {
                 sendUpdate = true;
                 sendStandingUpdate = false;
             } else {
-                SLEEP_Utils::gpsSleep();
                 lastGPSTime = millis();
+                SLEEP_Utils::gpsSleep();
             }
         }
     }
