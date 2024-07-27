@@ -28,7 +28,7 @@ bool transmitFlag    = true;
 #if defined(HAS_SX1276)
     SX1276 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
 #endif
-#if defined(HAS_LLCC68)
+#if defined(HAS_LLCC68) //LLCC68 supports spreading factor only in range of 5-11!
     LLCC68 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 #endif
 
@@ -111,7 +111,7 @@ namespace LoRa_Utils {
             radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
 
-        #ifdef HAS_1W_LORA  // Ebyte E22 400M30S (SX1268) / 900M30S (SX1262)
+        #ifdef HAS_1W_LORA  // Ebyte E22 400M30S (SX1268) / 900M30S (SX1262) / Ebyte E220 400M30S (LLCC68)
             state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
             radio.setCurrentLimit(140); // to be validated (100 , 120, 140)?
         #endif
