@@ -165,7 +165,7 @@
 #endif
 
 
-#if defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915)
+#if defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68)
     #define OLED_SDA            21
     #define OLED_SCL            22
     #define OLED_RST            16
