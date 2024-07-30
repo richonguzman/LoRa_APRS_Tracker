@@ -78,7 +78,7 @@
 #endif
 
 
-#ifdef HELTEC_V3_GPS
+#if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC)
     #define OLED_SDA            17
     #define OLED_SCL            18
     #define OLED_RST            21
