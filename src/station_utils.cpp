@@ -236,8 +236,9 @@ namespace STATION_Utils {
             comment = currentBeacon->comment;
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
+        String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
         if (Config.sendBatteryInfo) {
-            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+            //String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #ifdef HAS_AXP192
                 comment += " Bat=";
@@ -286,6 +287,11 @@ namespace STATION_Utils {
         if (currentBeacon->gpsEcoMode) {   // currentBeacon->gpsEcoMode // true!
             SLEEP_Utils::gpsSleep();
         }
+        #if defined(HELTEC_WIRELESS_TRACKER)
+            if (batteryVoltage.toFloat() < 3.0) {
+                POWER_Utils::shutdown();
+            }
+        #endif
     }
 
     void checkTelemetryTx() {
