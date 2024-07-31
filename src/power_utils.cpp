@@ -492,7 +492,7 @@ namespace POWER_Utils {
 
             LoRa_Utils::sleepRadio();
 
-            long DEEP_SLEEP_TIME_SEC = 1296000; // 30 days
+            long DEEP_SLEEP_TIME_SEC = 1296000; // 15 days
             esp_sleep_enable_timer_wakeup(1000000ULL * DEEP_SLEEP_TIME_SEC);
             delay(500);           
             esp_deep_sleep_start();
