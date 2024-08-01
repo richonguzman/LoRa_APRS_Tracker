@@ -43,10 +43,10 @@ TinyGPSPlus                         gps;
     BluetoothSerial                     SerialBT;
 #endif
 #ifdef BUTTON_PIN
-    OneButton userButton                = OneButton(BUTTON_PIN, true, true);
+    OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.07.30";
+String      versionDate             = "2024.08.01";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
