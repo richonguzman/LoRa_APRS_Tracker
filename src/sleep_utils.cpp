@@ -26,6 +26,7 @@ namespace SLEEP_Utils {
         #ifdef HAS_GPS_CTRL
             if (!gpsIsActive) {
                 POWER_Utils::activateGPS();
+                gpsShouldSleep = false;
                 //
                 Serial.println("GPS WAKEUP");
                 //
