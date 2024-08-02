@@ -7,6 +7,7 @@ namespace SLEEP_Utils {
 
     void gpsSleep();
     void gpsWakeUp();
+    void checkIfGPSShouldSleep();
 
 }
 

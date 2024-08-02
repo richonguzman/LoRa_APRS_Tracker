@@ -5,6 +5,8 @@
 extern uint32_t         lastGPSTime;
 extern bool             gpsIsActive;
 
+bool gpsShouldSleep     = false;
+
 
 namespace SLEEP_Utils {
 
@@ -29,6 +31,12 @@ namespace SLEEP_Utils {
                 //
             }
         #endif
+    }
+
+    void checkIfGPSShouldSleep() {
+        if (gpsShouldSleep) {
+            gpsSleep();
+        }
     }
 
 }

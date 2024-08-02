@@ -32,6 +32,7 @@ extern double           lastTxLng;
 extern double           lastTxDistance;
 extern uint32_t         lastTx;
 extern bool             disableGPS;
+extern bool             gpsShouldSleep;
 
 double      currentHeading  = 0;
 double      previousHeading = 0;
@@ -81,8 +82,8 @@ namespace GPS_Utils {
                     Serial.print("minTxDistance not achieved : ");
                     Serial.println(lastTxDistance);
                     //
-
-                    SLEEP_Utils::gpsSleep();
+                    gpsShouldSleep = true;
+                    //SLEEP_Utils::gpsSleep();
                 }
             }
         }

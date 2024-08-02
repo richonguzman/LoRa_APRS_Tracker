@@ -46,7 +46,7 @@ TinyGPSPlus                         gps;
     OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.08.01";
+String      versionDate             = "2024.08.02";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -216,6 +216,7 @@ void loop() {
             MENU_Utils::showOnScreen();
             refreshDisplayTime = millis();
         }
+        SLEEP_Utils::checkIfGPSShouldSleep();
     } else {
         if (millis() - lastGPSTime > txInterval) {
             SLEEP_Utils::gpsWakeUp();

@@ -38,6 +38,7 @@ extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
 extern bool                 gpsIsActive;
+extern bool                 gpsShouldSleep;
 
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
@@ -174,6 +175,9 @@ namespace STATION_Utils {
             } else {
                 txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / speed) * 1000;
             }
+            //
+            Serial.print("intervalo = "); Serial.println(txInterval);
+            //
         }
     }
 
@@ -285,7 +289,8 @@ namespace STATION_Utils {
             cleanTFT(); 
         #endif
         if (currentBeacon->gpsEcoMode) {   // currentBeacon->gpsEcoMode // true!
-            SLEEP_Utils::gpsSleep();
+            gpsShouldSleep = true;
+            //SLEEP_Utils::gpsSleep();
         }
         #if defined(HELTEC_WIRELESS_TRACKER)
             if (batteryVoltage.toFloat() < 3.0) {
