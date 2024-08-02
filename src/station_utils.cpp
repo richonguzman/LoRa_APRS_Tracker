@@ -288,9 +288,8 @@ namespace STATION_Utils {
         #ifdef HAS_TFT
             cleanTFT(); 
         #endif
-        if (currentBeacon->gpsEcoMode) {   // currentBeacon->gpsEcoMode // true!
+        if (currentBeacon->gpsEcoMode) {
             gpsShouldSleep = true;
-            //SLEEP_Utils::gpsSleep();
         }
         #if defined(HELTEC_WIRELESS_TRACKER)
             if (batteryVoltage.toFloat() < 3.0) {

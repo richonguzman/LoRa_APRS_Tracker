@@ -83,7 +83,6 @@ namespace GPS_Utils {
                     Serial.println(lastTxDistance);
                     //
                     gpsShouldSleep = true;
-                    //SLEEP_Utils::gpsSleep();
                 }
             }
         }
