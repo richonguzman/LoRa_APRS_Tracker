@@ -3,6 +3,7 @@
 #include "APRSPacketLib.h"
 #include "station_utils.h"
 #include "configuration.h"
+#include "boards_pinout.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
@@ -291,7 +292,7 @@ namespace STATION_Utils {
         if (currentBeacon->gpsEcoMode) {
             gpsShouldSleep = true;
         }
-        #if defined(HELTEC_WIRELESS_TRACKER)
+        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101) && defined(BATTERY_PIN)
             if (batteryVoltage.toFloat() < 3.0) {
                 POWER_Utils::shutdown();
             }
