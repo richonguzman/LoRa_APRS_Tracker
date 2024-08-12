@@ -49,6 +49,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.08.12 Added support for EByte E220 400M30S 1Watt LoRa module for DIY ESP32 Tracker (LLCC68 supports spreading factor only in range of 5 - 11!)
 - 2024.08.02 New gpsEcoMode added for Testing.
 - 2024.08.02 ESP32S3 DIY LoRa GPS added.
 - 2024.07.30 HELTEC V3 TNC added.
