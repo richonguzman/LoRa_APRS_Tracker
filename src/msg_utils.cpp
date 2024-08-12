@@ -445,10 +445,7 @@ namespace MSG_Utils {
                             }
                         }
                         if (lastReceivedPacket.message.indexOf("{") >= 0) {
-                            String ackMessage = "ack";
-                            ackMessage += lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1);
-                            ackMessage.trim();
-                            MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);
+                            MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1));
                             lastMsgRxTime = millis();
                             lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
                         }
