@@ -32,7 +32,7 @@ namespace WINLINK_Utils {
                 String number = String(winlinkInteger[i]);
                 int digit = number.toInt();
                 if (digit > Config.winlink.password.length()) {
-                    show_display("__WINLINK_", "" , "PASS Length<REQUIRED", "", "" , "", 2000);
+                    displayShow("__WINLINK_", "" , "PASS Length<REQUIRED", "", "" , "", 2000);
                     challengeAnswer += Config.winlink.password[0];
                 } else {
                     challengeAnswer += Config.winlink.password[digit - 1];
@@ -50,7 +50,7 @@ namespace WINLINK_Utils {
 
     void login() {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Start Login");
-        show_display("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
+        displayShow("__WINLINK_", "" , "Login Initiation ...", "", "" , "<Back");
         if (winlinkStatus == 5) {
             menuDisplay = 5000;
         } else {

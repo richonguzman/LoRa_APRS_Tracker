@@ -96,129 +96,129 @@ namespace MENU_Utils {
         }
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1. Messages
-                show_display("__MENU____","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
+                displayShow("__MENU____","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
                 break;
             case 2:     // 2. Configuration
-                show_display("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
+                displayShow("__MENU____", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
                 break;
             case 3:     //3. Stations
-                show_display("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Winlink/Mail", lastLine);
+                displayShow("__MENU____", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Winlink/Mail", lastLine);
                 break;
             case 4:     //4. Weather
-                show_display("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Extras", lastLine);
+                displayShow("__MENU____", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Extras", lastLine);
                 break;
             case 5:     //5. Winlink
-                show_display("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
+                displayShow("__MENU____", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
                 break;
             case 6:     //6. Extras
-                show_display("__MENU____", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
+                displayShow("__MENU____", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
                 break;
 
 //////////
             case 10:    // 1.Messages ---> Messages Read
-                show_display("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
+                displayShow("_MESSAGES_", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
                     String msgSender    = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
                     String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",") + 1);
-                    show_display("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
+                    displayShow("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
+                displayShow("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
                 if (keyDetected) {
-                    show_display("WRITE_MSG>", "", "CALLSIGN = " + String(messageCallsign), "", "", "<Back          Enter>");
+                    displayShow("WRITE_MSG>", "", "CALLSIGN = " + String(messageCallsign), "", "", "<Back          Enter>");
                 } else {
-                    show_display("WRITE_MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
+                    displayShow("WRITE_MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
                 }     
                 break;
             case 111:
                 if (messageText.length() <= 67) {
                     if (messageText.length() < 10) {
-                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
+                displayShow("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
-                show_display("DELETE_MSG", "", "  DELETE APRS MSG?", "", "", " Confirm = LP or '>'");
+                displayShow("DELETE_MSG", "", "  DELETE APRS MSG?", "", "", " Confirm = LP or '>'");
                 break;
             case 13:    // 1.Messages ---> APRSThursday
-                show_display("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
+                displayShow("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "> Join APRSThursday", "  Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "> Join APRSThursday", "  Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1300:
                 if (messageText.length() <= 67) {
                     if (messageText.length() < 10) {
-                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "  Join APRSThursday", "> Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Join APRSThursday", "> Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1310:
                 if (messageText.length() <= 67) {
                     if (messageText.length() < 10) {
-                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        displayShow("WRITE_MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    show_display("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE_MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "  Join APRSThursday", "  Check In", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Join APRSThursday", "  Check In", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 133:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                show_display("APRS Thu._", "  Join APRSThursday", "  Check In", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Join APRSThursday", "  Check In", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
 //////////            
             case 20:    // 2.Configuration ---> Callsign
-                show_display("_CONFIG___", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
+                displayShow("_CONFIG___", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                show_display("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                displayShow("_CONFIG___", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                show_display("_CONFIG___", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                displayShow("_CONFIG___", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
-                show_display("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
+                displayShow("_CONFIG___", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
                 break;
             case 24:    // 2.Configuration ---> Status
-                show_display("_CONFIG___", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
+                displayShow("_CONFIG___", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "> Status","  Notifications", "  Reboot",lastLine);
                 break;
             case 25:    // 2.Configuration ---> Notifications
-                show_display("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
+                displayShow("_CONFIG___", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
                 break;
             case 26:    // 2.Configuration ---> Reboot
-                show_display("_CONFIG___", "  Notifications", "> Reboot", "  Power Off", "  Change Callsign",lastLine);
+                displayShow("_CONFIG___", "  Notifications", "> Reboot", "  Power Off", "  Change Callsign",lastLine);
                 break;
             case 27:    // 2.Configuration ---> Power Off
-                show_display("_CONFIG___", "  Reboot", "> Power Off", "  Change Callsign", "  Change Frequency",lastLine);
+                displayShow("_CONFIG___", "  Reboot", "> Power Off", "  Change Callsign", "  Change Frequency",lastLine);
                 break;
 
 
             case 200:   // 2.Configuration ---> Change Callsign
-                show_display("_CALLSIGN_", "","  Confirm Change?","","","<Back         Select>");
+                displayShow("_CALLSIGN_", "","  Confirm Change?","","","<Back         Select>");
                 break;
 
             case 210:   // 2.Configuration ---> Change Frequency
@@ -227,59 +227,59 @@ namespace MENU_Utils {
                     case 1: freqChangeWarning = "      PL --> UK"; break;
                     case 2: freqChangeWarning = "      UK --> Eu"; break;
                 }
-                show_display("LORA__FREQ", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
+                displayShow("LORA__FREQ", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
-                show_display("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                displayShow("_DISPLAY__", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
             case 221:   // 2.Configuration ---> Display ---> Brightness
-                show_display("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                displayShow("_DISPLAY__", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
 
             case 230:
                 if (bluetoothActive) {
                     bluetoothActive = false;
-                    show_display("BLUETOOTH", "", " Bluetooth --> OFF", 1000);
+                    displayShow("BLUETOOTH", "", " Bluetooth --> OFF", 1000);
                 } else {
                     bluetoothActive = true;
-                    show_display("BLUETOOTH", "", " Bluetooth --> ON", 1000);
+                    displayShow("BLUETOOTH", "", " Bluetooth --> ON", 1000);
                 }
                 menuDisplay = 23;
                 break;
 
             case 240:    // 2.Configuration ---> Status
-                show_display("_STATUS___", "", "> Write","  Select","",lastLine);
+                displayShow("_STATUS___", "", "> Write","  Select","",lastLine);
                 break;
             case 241:    // 2.Configuration ---> Status
-                show_display("_STATUS___", "", "  Write","> Select","",lastLine);
+                displayShow("_STATUS___", "", "  Write","> Select","",lastLine);
                 break;
 
             case 250:    // 2.Configuration ---> Notifications
-                show_display("_NOTIFIC__", "> Turn Off Sound/Led","","","",lastLine);
+                displayShow("_NOTIFIC__", "> Turn Off Sound/Led","","","",lastLine);
                 break;
 
             case 260:   // 2.Configuration ---> Reboot
                 if (keyDetected) {
-                    show_display("_REBOOT?__", "","Confirm Reboot...","","","<Back   Enter=Confirm");
+                    displayShow("_REBOOT?__", "","Confirm Reboot...","","","<Back   Enter=Confirm");
                 } else {
-                    show_display("_REBOOT?__", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
+                    displayShow("_REBOOT?__", "no Keyboard Detected"," Use RST Button to","Reboot Tracker","",lastLine);
                 }
                 break;
             case 270:   // 2.Configuration ---> Power Off
                 if (keyDetected) {
-                    show_display("POWER_OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
+                    displayShow("POWER_OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
                 } else {
-                    show_display("POWER_OFF?", "no Keyboard Detected"," Use PWR Button to","Power Off Tracker","",lastLine);
+                    displayShow("POWER_OFF?", "no Keyboard Detected"," Use PWR Button to","Power Off Tracker","",lastLine);
                 }
                 break;
 
 //////////
             case 30:    //3.Stations ---> Packet Decoder
-                show_display("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
+                displayShow("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
                 break;
             case 31:    //3.Stations ---> Near By Stations
-                show_display("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
+                displayShow("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
             case 300:   //3.Stations ---> Packet Decoder
@@ -319,20 +319,20 @@ namespace MENU_Utils {
                         }
                         pathDec += lastReceivedPacket.path;
 
-                        show_display(firstLineDecoder, "GPS " + String(lastReceivedPacket.latitude,3) + " " + String(lastReceivedPacket.longitude,3), courseSpeedAltitude, "D:" + String(distanceKm) + "km    " + String(courseTo,0), pathDec, "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                        displayShow(firstLineDecoder, "GPS " + String(lastReceivedPacket.latitude,3) + " " + String(lastReceivedPacket.longitude,3), courseSpeedAltitude, "D:" + String(distanceKm) + "km    " + String(courseTo,0), pathDec, "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
                     } else if (lastReceivedPacket.type == 1) {    // message
-                        show_display(firstLineDecoder, "ADDRESSEE: " + lastReceivedPacket.addressee, "MSG:  " + lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                        displayShow(firstLineDecoder, "ADDRESSEE: " + lastReceivedPacket.addressee, "MSG:  " + lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
                     } else if (lastReceivedPacket.type == 2) {    // status
-                        show_display(firstLineDecoder, "-------STATUS-------", lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                        displayShow(firstLineDecoder, "-------STATUS-------", lastReceivedPacket.message, "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
                     } else if (lastReceivedPacket.type == 3) {    // telemetry
-                        show_display(firstLineDecoder, "------TELEMETRY------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                        displayShow(firstLineDecoder, "------TELEMETRY------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
                     } else if (lastReceivedPacket.type == 5) {    // object
-                        show_display(firstLineDecoder, "-------OBJECT-------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
+                        displayShow(firstLineDecoder, "-------OBJECT-------", "", "", "", "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
                     }
                 }
                 break;
             case 310:    //3.Stations ---> Near By Stations
-                show_display("NEAR BY >", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
+                displayShow("NEAR BY >", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
                 break;
 
 //////////
@@ -345,130 +345,130 @@ namespace MENU_Utils {
                 if (winlinkStatus == 5) {
                     menuDisplay = 5000;
                 } else {
-                    show_display("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                    displayShow("_WINLINK_>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
                 }
                 break;
             case 51:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                displayShow("_WINLINK_>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
                 break;
             case 52:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                displayShow("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
                 break;
             case 53:    // 5.Winlink
-                show_display("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                displayShow("_WINLINK_>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
                 break;
 
             case 500:    // 5.Winlink ---> Login
-                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> waiting", "" , "");
+                displayShow("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> waiting", "" , "");
                 break;
             case 501:    // 5.Winlink ---> Login
-                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> sended", "" , "");
+                displayShow("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> sended", "" , "");
                 break;
             case 502:    // 5.Winlink ---> Login
-                show_display("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
+                displayShow("_WINLINK_>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
                 break;
 
             case 5000:   // WINLINK: List Pend. Mail //
-                show_display("WLNK__MENU", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
+                displayShow("WLNK__MENU", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
                 break;
 
             case 5010:    // WINLINK: Downloaded Mails //
-                show_display("WLNK__MENU", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
+                displayShow("WLNK__MENU", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
                 break;
             case 50100:    // WINLINK: Downloaded Mails //
-                show_display("_WINLINK_>", "" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
+                displayShow("_WINLINK_>", "" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
                 break;
             case 50101:    // WINLINK: Downloaded Mails //
                 {
                     String mailText = loadedWLNKMails[messagesIterator];
-                    show_display("WLNK__MAIL", "", mailText, "", "", "           Next=Down");
+                    displayShow("WLNK__MAIL", "", mailText, "", "", "           Next=Down");
                 }
                 break;
             case 50110:    // WINLINK: Downloaded Mails //
-                show_display("_WINLINK_>", "" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
+                displayShow("_WINLINK_>", "" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
                 break;
             case 50111:    // WINLINK: Downloaded Mails //
-                show_display("WLNK__DEL", "", "  DELETE ALL MAILS?", "", "", " Confirm = LP or '>'");
+                displayShow("WLNK__DEL", "", "  DELETE ALL MAILS?", "", "", " Confirm = LP or '>'");
                 break;
 
             case 5020:    // WINLINK: Read Mail //
-                show_display("WLNK__MENU", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
+                displayShow("WLNK__MENU", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
                 break;
             case 5021:
-                show_display("WLNK__READ", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
+                displayShow("WLNK__READ", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
                 break;
 
             case 5030:    // WINLINK: Reply Mail //
-                show_display("WLNK__MENU", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
+                displayShow("WLNK__MENU", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
                 break;
             case 5031:
-                show_display("WLNK_REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                displayShow("WLNK_REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
                 break;
 
             case 5040:    // WINLINK: Foward Mail //
-                show_display("WLNK__MENU", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
+                displayShow("WLNK__MENU", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
                 break;
             case 5041:    // WINLINK: Forward Mail //
-                show_display("WLNK__FORW", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                displayShow("WLNK__FORW", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
                 break;
             case 5042:    // WINLINK: Forward Mail //
-                show_display("WLNK_FORW_", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
+                displayShow("WLNK_FORW_", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
                 break;
 
             case 5050:    // WINLINK: Delete Mail //
-                show_display("WLNK__MENU", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
+                displayShow("WLNK__MENU", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
                 break;
             case 5051:    // WINLINK: Delete Mail //
-                show_display("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "", "<Back          Enter>");
+                displayShow("WLNK___DEL", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "", "<Back          Enter>");
                 break;
             
             case 5060:    // WINLINK: Alias Menu //
-                show_display("WLNK__MENU", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
+                displayShow("WLNK__MENU", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
                 break;
             case 5061:    // WINLINK: Alias Menu : Create Alias //
-                show_display("WLNK_ALIAS", "> Create Alias" , "  Delete Alias ", "  List All Alias", "", lastLine);
+                displayShow("WLNK_ALIAS", "> Create Alias" , "  Delete Alias ", "  List All Alias", "", lastLine);
                 break;
             case 50610:   // WINLINK: Alias Menu : Create Alias //
-                show_display("WLNK_ALIAS", "", "Write Alias to Create", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                displayShow("WLNK_ALIAS", "", "Write Alias to Create", "     -> " + winlinkAlias, "", "<Back          Enter>");
                 break;
             case 50611:   // WINLINK: Alias Menu : Create Alias //
-                show_display("WLNK_ALIAS", "", "      " + winlinkAlias + " =", winlinkAliasComplete, "", "<Back          Enter>");
+                displayShow("WLNK_ALIAS", "", "      " + winlinkAlias + " =", winlinkAliasComplete, "", "<Back          Enter>");
                 break;
             case 5062:    // WINLINK: Alias Menu : Delete Alias //
-                show_display("WLNK_ALIAS", "  Create Alias" , "> Delete Alias ", "  List All Alias", "", lastLine);
+                displayShow("WLNK_ALIAS", "  Create Alias" , "> Delete Alias ", "  List All Alias", "", lastLine);
                 break;
             case 50620:   // WINLINK: Alias Menu : Delete Alias //
-                show_display("WLNK_ALIAS", "Write Alias to Delete", "", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                displayShow("WLNK_ALIAS", "Write Alias to Delete", "", "     -> " + winlinkAlias, "", "<Back          Enter>");
                 break;
             case 5063:    // WINLINK: Alias Menu : List Alias//
-                show_display("WLNK_ALIAS", "  Create Alias" , "  Delete Alias ", "> List All Alias", "", lastLine);
+                displayShow("WLNK_ALIAS", "  Create Alias" , "  Delete Alias ", "> List All Alias", "", lastLine);
                 break;
 
             case 5070:    // WINLINK: Log Out MAIL //
-                show_display("WLNK__MENU", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
+                displayShow("WLNK__MENU", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
                 break;
 
             case 5080:    // WINLINK: WRITE MAIL //
-                show_display("WLNK__MENU", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
+                displayShow("WLNK__MENU", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
                 break;
             case 5081:    // WINLINK: WRITE MAIL: Addressee //
-                show_display("WLNK__MAIL", "--- Send Mail to ---", "", "-> " + winlinkAddressee, "", "<Back          Enter>");
+                displayShow("WLNK__MAIL", "--- Send Mail to ---", "", "-> " + winlinkAddressee, "", "<Back          Enter>");
                 break;
             case 5082:    // WINLINK: WRITE MAIL: Subject //
-                show_display("WLNK__MAIL", "--- Write Subject ---", "", "-> " + winlinkSubject, "", "<Back          Enter>");
+                displayShow("WLNK__MAIL", "--- Write Subject ---", "", "-> " + winlinkSubject, "", "<Back          Enter>");
                 break;
             case 5083:    // WINLINK: WRITE MAIL: Body //
                 if (winlinkBody.length() <= 67) {
-                show_display("WLNK__MAIL", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
+                displayShow("WLNK__MAIL", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
                 } else {
-                show_display("WLNK__MAIL", "-- Body To Long = " + String(winlinkBody.length()) + "!", "-> " + winlinkBody, "", "", "<Clear Body");
+                displayShow("WLNK__MAIL", "-- Body To Long = " + String(winlinkBody.length()) + "!", "-> " + winlinkBody, "", "", "<Clear Body");
                 }
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //
-                show_display("WLNK__MAIL", "", "> End Mail", "  1 More Line", "", "      Up/Down Select>");
+                displayShow("WLNK__MAIL", "", "> End Mail", "  1 More Line", "", "      Up/Down Select>");
                 break;
             case 5085:    // WINLINK: WRITE MAIL: One More Line(Body) //
-                show_display("WLNK__MAIL", "", "  End Mail", "> 1 More Line", "", "      Up/Down Select>");
+                displayShow("WLNK__MAIL", "", "  End Mail", "> 1 More Line", "", "      Up/Down Select>");
                 break;
 
                 // validar winlinkStatus = 0
@@ -476,26 +476,26 @@ namespace MENU_Utils {
 
 //////////
             case 60:    // 6. Extras ---> Flashlight
-                show_display("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 61:    // 6. Extras ---> Digirepeater
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 63:    // 6. Extras ---> Extra Comment.
-                show_display("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
                 break;
             case 630:
                 if (messageText.length() <= 67) {
                     if (messageText.length() < 10) {
-                        show_display("_COMMENT_>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        displayShow("_COMMENT_>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
                     } else {
-                        show_display("_COMMENT_>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        displayShow("_COMMENT_>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    show_display("_COMMENT_>", " Comment is to long! ", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("_COMMENT_>", " Comment is to long! ", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
 
@@ -660,7 +660,7 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected" ;
                 }
-                show_display(firstRowMainMenu,
+                displayShow(firstRowMainMenu,
                                 secondRowMainMenu,
                                 thirdRowMainMenu,
                                 fourthRowMainMenu,

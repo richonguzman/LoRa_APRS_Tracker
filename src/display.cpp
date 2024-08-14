@@ -82,7 +82,7 @@ String fillStringLength(const String& line, uint8_t length) {
     return outputLine;
 }
 
-void setup_display() {
+void displaySetup() {
     delay(500);
     #ifdef HAS_TFT
         tft.init();
@@ -137,7 +137,7 @@ void setup_display() {
     #endif
 }
 
-void display_toggle(bool toggle) {
+void displayToggle(bool toggle) {
     if (toggle) {
         #ifdef HAS_TFT
             digitalWrite(TFT_BL, HIGH);
@@ -161,7 +161,7 @@ void display_toggle(bool toggle) {
     }
 }
 
-void show_display(const String& header, const String& line1, const String& line2, int wait) {
+void displayShow(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         String filledLine1 = fillStringLength(line1, 22);
         String filledLine2 = fillStringLength(line2, 22);
@@ -205,7 +205,7 @@ void show_display(const String& header, const String& line1, const String& line2
     delay(wait);
 }
 
-void show_display(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
+void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
         String filledLine1 = fillStringLength(line1, 22);
         String filledLine2 = fillStringLength(line2, 22);
@@ -327,7 +327,7 @@ void startupScreen(uint8_t index, const String& version) {
         case 1: workingFreq += "PL]"; break;
         case 2: workingFreq += "UK]"; break;
     }
-    show_display(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
+    displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
     #ifdef HAS_TFT
         cleanTFT();
     #endif

@@ -99,7 +99,7 @@ namespace BLE_Utils {
             return;
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
-        show_display("BLE Tx >>", "", BLEToLoRaPacket, 1000);
+        displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
         LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
         BLEToLoRaPacket = "";
         sendBleToLoRa = false;

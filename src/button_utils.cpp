@@ -20,7 +20,7 @@ namespace BUTTON_Utils {
     }
 
     void doublePress() {
-        display_toggle(true);
+        displayToggle(true);
         menuTime = millis();
         if (menuDisplay == 0) {
             menuDisplay = 1;

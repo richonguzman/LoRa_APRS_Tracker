@@ -98,7 +98,7 @@ namespace Utils {
     void checkDisplayEcoMode() {
         uint32_t lastDisplayTime = millis() - displayTime;
         if (displayEcoMode && menuDisplay == 0 && millis() > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
-            display_toggle(false);
+            displayToggle(false);
             displayState = false;
         }
     }

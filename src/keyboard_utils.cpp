@@ -164,7 +164,7 @@ namespace KEYBOARD_Utils {
                 sendUpdate = true;
                 if (!gpsIsActive) SLEEP_Utils::gpsWakeUp();
             } else {
-                display_toggle(true);
+                displayToggle(true);
                 displayTime = millis();   
                 displayState = true;  
             }
@@ -330,12 +330,12 @@ namespace KEYBOARD_Utils {
             } else {
                 myBeaconsIndex++;
             }
-            display_toggle(true);
+            displayToggle(true);
             displayTime = millis();
             statusState  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            show_display("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
+            displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             if (menuDisplay == 200) {
                 menuDisplay = 20;
@@ -351,28 +351,28 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 120) {
             MSG_Utils::deleteFile(0);
-            show_display("___INFO___", "", "ALL MESSAGES DELETED!", 2000);
+            displayShow("___INFO___", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
         } else if (menuDisplay == 130) {
             if (keyDetected) {
                 menuDisplay = 1300;
             } else {
-                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
+                displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
                 MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay = 1310;
             } else {
-                show_display(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
+                displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
                 MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 132) {
-            show_display(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", "", "", 2000);
+            displayShow(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", "U HOTG");
         } else if (menuDisplay == 133) {
-            show_display(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", "", "", 2000);
+            displayShow(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", "K HOTG");
         }
 
@@ -383,25 +383,25 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 220) {
             if (!displayEcoMode) {
                 displayEcoMode = true;
-                show_display("_DISPLAY__", "", "   ECO MODE -> ON", 1000);
+                displayShow("_DISPLAY__", "", "   ECO MODE -> ON", 1000);
             } else {
                 displayEcoMode = false;
-                show_display("_DISPLAY__", "", "   ECO MODE -> OFF", 1000);
+                displayShow("_DISPLAY__", "", "   ECO MODE -> OFF", 1000);
             }
         } else if (menuDisplay == 221) {
             if (screenBrightness ==1) {
-                show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MAX", 1000);
+                displayShow("_SCREEN___", "", "SCREEN BRIGHTNESS MAX", 1000);
                 screenBrightness = 255;   
             } else {
-                show_display("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
+                displayShow("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
                 screenBrightness = 1;
             }
         } else if (menuDisplay == 240) {
-            show_display("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
-            show_display("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
-            show_display("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } 
 
         else if (menuDisplay == 4) {
@@ -426,10 +426,10 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 53) {
             if (winlinkCommentState) {
                 winlinkCommentState = false;
-                show_display("_WINLINK_>", "", "  WLNK COMMENTs OFF!", 2000);
+                displayShow("_WINLINK_>", "", "  WLNK COMMENTs OFF!", 2000);
             } else {
                 winlinkCommentState = true;
-                show_display("_WINLINK_>", "", "  WLNK COMMENTs ON!", 2000);
+                displayShow("_WINLINK_>", "", "  WLNK COMMENTs ON!", 2000);
             }
         } else if (menuDisplay == 5000) {
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "L");
@@ -446,7 +446,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 50111;
         } else if (menuDisplay == 50111) {
             MSG_Utils::deleteFile(1);
-            show_display("___INFO___", "", " ALL MAILS DELETED!", 2000);
+            displayShow("___INFO___", "", " ALL MAILS DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             if (winlinkStatus == 0) {
                 menuDisplay = 52;
@@ -492,32 +492,32 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 60) {
             if (Config.notification.ledFlashlight) {
                 if (flashlight) {
-                    show_display("__EXTRAS__", "","     Flashlight","   Status --> OFF", "", "", 2000);
+                    displayShow("__EXTRAS__", "","     Flashlight","   Status --> OFF", "", "", 2000);
                     flashlight = false;
                 } else {
-                    show_display("__EXTRAS__", "","     Flashlight","   Status --> ON", "", "", 2000);
+                    displayShow("__EXTRAS__", "","     Flashlight","   Status --> ON", "", "", 2000);
                     flashlight = true;
                 }
             } else {
-                show_display("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
+                displayShow("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
         } else if (menuDisplay == 61) {
             if (digirepeaterActive) {
-                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> OFF", "", "", 2000);
+                displayShow("__EXTRAS__", "","   DigiRepeater","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater OFF");
                 digirepeaterActive = false;
             } else {
-                show_display("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", "", 2000);
+                displayShow("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater ON");
                 digirepeaterActive = true;
             }
         } else if (menuDisplay == 62) {
             if (sosActive) {
-                show_display("__EXTRAS__", "","       S.O.S.","   Status --> OFF", "", "", 2000);
+                displayShow("__EXTRAS__", "","       S.O.S.","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode OFF");
                 sosActive = false;
             } else {
-                show_display("__EXTRAS__", "","       S.O.S.","   Status --> ON", "", "", 2000);
+                displayShow("__EXTRAS__", "","       S.O.S.","   Status --> ON", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode ON");
                 sosActive = true;
             }
@@ -531,7 +531,7 @@ namespace KEYBOARD_Utils {
         menuTime = millis();
         /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
         if (!displayState) {
-            display_toggle(true);
+            displayToggle(true);
             displayTime = millis();   
             displayState = true;
         }
@@ -596,14 +596,14 @@ namespace KEYBOARD_Utils {
                 messageText = messageText.substring(0, messageText.length() - 1);
             }
         } else if (menuDisplay == 260 && key == 13) {
-            show_display("", "", "    REBOOTING ...", 2000);
+            displayShow("", "", "    REBOOTING ...", 2000);
             ESP.restart();
         } else if (menuDisplay == 270 && key == 13) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            show_display("", "", "    POWER OFF ...", 2000);
+            displayShow("", "", "    POWER OFF ...", 2000);
             POWER_Utils::shutdown();
             #else
-            show_display("", "", "ESP32 CAN'T POWER OFF", 2000);
+            displayShow("", "", "ESP32 CAN'T POWER OFF", 2000);
             #endif
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) {
             winlinkMailNumber = key;
@@ -750,7 +750,7 @@ namespace KEYBOARD_Utils {
                 }
                 String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
                 packet += messageText;
-                show_display("<<< TX >>>", "", packet,100);
+                displayShow("<<< TX >>>", "", packet,100);
                 LoRa_Utils::sendNewPacket(packet);       
                 messageText = "";
                 menuDisplay = 63;

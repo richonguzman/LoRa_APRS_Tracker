@@ -275,7 +275,7 @@ namespace STATION_Utils {
         #ifdef HAS_TFT
             cleanTFT();
         #endif
-        show_display("<<< TX >>>", "", packet,100);
+        displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
         
         if (smartBeaconValue) {

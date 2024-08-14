@@ -136,7 +136,7 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/aprsMessages.txt");
             }
             if (noAPRSMsgWarning) {
-                show_display("___INFO___", "", " NO APRS MSG SAVED", 1500);
+                displayShow("___INFO___", "", " NO APRS MSG SAVED", 1500);
             } else {
                 if(!fileToRead) {
                     Serial.println("Failed to open file for reading");
@@ -156,7 +156,7 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/winlinkMails.txt");
             }
             if (noWLNKMsgWarning) {
-                show_display("___INFO___", "", " NO WLNK MAILS SAVED", 1500);
+                displayShow("___INFO___", "", " NO WLNK MAILS SAVED", 1500);
             } else {
                 if(!fileToRead) {
                     Serial.println("Failed to open file for reading");
@@ -243,16 +243,16 @@ namespace MSG_Utils {
         cleanTFT();
         #endif
         if (textMessage.indexOf("ack") == 0 && station != "WLNK-1") {  // don't show Winlink ACK
-            show_display("<<ACK Tx>>", "", "", 500);
+            displayShow("<<ACK Tx>>", "", "", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {
-            show_display("<WEATHER>","", "--- Sending Query ---",  1000);
+            displayShow("<WEATHER>","", "--- Sending Query ---",  1000);
             wxRequestTime = millis();
             wxRequestStatus = true;
         } else {
             if (station == "WLNK-1") {
-                show_display("WINLINK Tx", "", newPacket, 100);
+                displayShow("WINLINK Tx", "", newPacket, 100);
             } else {
-                show_display("MSG Tx >>", "", newPacket, 100);
+                displayShow("MSG Tx >>", "", newPacket, 100);
             }
         }
         LoRa_Utils::sendNewPacket(newPacket);
@@ -488,7 +488,7 @@ namespace MSG_Utils {
                             sixthLineWR += windDegrees;
                             sixthLineWR += "deg)";
 
-                            show_display("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
+                            displayShow("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
                             menuDisplay = 40;
                             menuTime = millis();
                         } else if (lastReceivedPacket.sender == "WLNK-1") {
@@ -517,22 +517,22 @@ namespace MSG_Utils {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 5;
-                                show_display("_WINLINK_>", "", " LOGGED !!!!", 2000);
+                                displayShow("_WINLINK_>", "", " LOGGED !!!!", 2000);
                                 menuDisplay = 5000;
                             } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
-                                show_display("_WINLINK_>", "", "    LOG OUT !!!", 2000);
+                                displayShow("_WINLINK_>", "", "    LOG OUT !!!", 2000);
                                 winlinkStatus = 0;
                             } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
                                 lastMsgRxTime = millis();
-                                show_display("<WLNK Rx >", "", lastReceivedPacket.message, 3000);
+                                displayShow("<WLNK Rx >", "", lastReceivedPacket.message, 3000);
                                 saveNewMessage(1, lastReceivedPacket.sender, lastReceivedPacket.message);
                             } 
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
-                                show_display("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
+                                displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
                                 if (lastReceivedPacket.message.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.message);
                                 }                            

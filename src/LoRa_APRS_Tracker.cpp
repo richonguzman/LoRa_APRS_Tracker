@@ -46,7 +46,7 @@ TinyGPSPlus                         gps;
     OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.08.12";
+String      versionDate             = "2024.08.14";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -105,7 +105,7 @@ void setup() {
     #endif
 
     POWER_Utils::setup();
-    setup_display();
+    displaySetup();
     POWER_Utils::externalPinSetup();
 
     STATION_Utils::loadIndex(0);

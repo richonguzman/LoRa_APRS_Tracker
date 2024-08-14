@@ -110,7 +110,7 @@ namespace GPS_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
                         "No GPS frames detected! Try to reset the GPS Chip with this "
                         "firmware: https://github.com/richonguzman/TTGO_T_BEAM_GPS_RESET");
-            show_display("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
+            displayShow("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
         }
     }
 
