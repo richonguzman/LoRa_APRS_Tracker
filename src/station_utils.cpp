@@ -176,9 +176,6 @@ namespace STATION_Utils {
             } else {
                 txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / speed) * 1000;
             }
-            //
-            Serial.print("intervalo = "); Serial.println(txInterval);
-            //
         }
     }
 
