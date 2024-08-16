@@ -7,9 +7,15 @@
 #include "logger.h"
 
 
-#define SERVICE_UUID            "00000001-ba2a-46c9-ae49-01b0961f68bb"
-#define CHARACTERISTIC_UUID_TX  "00000003-ba2a-46c9-ae49-01b0961f68bb"
-#define CHARACTERISTIC_UUID_RX  "00000002-ba2a-46c9-ae49-01b0961f68bb"
+// APPLE - APRS.fi app
+#define SERVICE_UUID_0            "00000001-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_TX_0  "00000003-ba2a-46c9-ae49-01b0961f68bb"
+#define CHARACTERISTIC_UUID_RX_0  "00000002-ba2a-46c9-ae49-01b0961f68bb"
+
+// ANDROID - BLE Terminal app (Serial Bluetooth Terminal from Playstore)
+#define SERVICE_UUID_2            "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_TX_2  "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_RX_2  "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 BLEServer *pServer;
 BLECharacteristic *pCharacteristicTx;
@@ -26,11 +32,13 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
+        delay(100);
     }
 
     void onDisconnect(NimBLEServer* pServer) {
         bluetoothConnected = false;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
+        delay(100);
         pServer->startAdvertising();
     }
 };
@@ -68,30 +76,37 @@ namespace BLE_Utils {
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
-        BLEService *pService = pServer->createService(SERVICE_UUID);
+        BLEService *pService = nullptr;
 
-        pCharacteristicTx = pService->createCharacteristic(
-                              CHARACTERISTIC_UUID_TX,
-                              NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY
-                            );
-        pCharacteristicRx = pService->createCharacteristic(
-                              CHARACTERISTIC_UUID_RX,
-                              NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR
-                            );
+        if (Config.bluetoothType == 0) {
+            pService = pServer->createService(SERVICE_UUID_0);
+            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_0, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_0, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+        } else if (Config.bluetoothType == 2) {
+            pService = pServer->createService(SERVICE_UUID_2);
+            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_2, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_2, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+        }
 
-        pCharacteristicRx->setCallbacks(new MyCallbacks());
+        if (pService != nullptr) {
+            pCharacteristicRx->setCallbacks(new MyCallbacks());
+            pService->start();
 
-        pService->start();
+            BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
 
-        BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-        pAdvertising->addServiceUUID(SERVICE_UUID);
-        pServer->getAdvertising()->setScanResponse(true);
-        pServer->getAdvertising()->setMinPreferred(0x06);
-        pServer->getAdvertising()->setMaxPreferred(0x0C);
-
-        pAdvertising->start();
-
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE", "%s", "Waiting for BLE central to connect...");
+            if (Config.bluetoothType == 0) {
+                pAdvertising->addServiceUUID(SERVICE_UUID_0);
+            } else if (Config.bluetoothType == 2) {
+                pAdvertising->addServiceUUID(SERVICE_UUID_2);
+            }
+            pServer->getAdvertising()->setScanResponse(true);
+            pServer->getAdvertising()->setMinPreferred(0x06);
+            pServer->getAdvertising()->setMaxPreferred(0x0C);
+            pAdvertising->start();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE", "%s", "Waiting for BLE central to connect...");
+        } else {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service. Invalid bluetoothType: %d", Config.bluetoothType);
+        }
     }
 
     void sendToLoRa() {
