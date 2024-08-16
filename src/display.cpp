@@ -297,6 +297,8 @@ void displayShow(const String& header, const String& line1, const String& line2,
                 }
             }
 
+            //tft.fillRect(20, 0, bufferWidth, bufferHeight, TFT_BLACK); // Replace TFT_BLA
+
             symbolAvailable = symbol != 100;
 
             /*
