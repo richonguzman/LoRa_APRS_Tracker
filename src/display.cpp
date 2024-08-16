@@ -6,7 +6,7 @@
 #include "display.h"
 #include "TimeLib.h"
 
-String currentSymbol, lastSymbol;
+String currentSymbol, lastSymbol, lastHeader;
 
 #ifdef HAS_TFT
     #include <TFT_eSPI.h>
@@ -165,7 +165,6 @@ void displayToggle(bool toggle) {
 
 void displayShow(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
-        String filledHeader = fillStringLength(header, 11);
         String filledLine1 = fillStringLength(line1, 22);
         String filledLine2 = fillStringLength(line2, 22);
         const String* const lines[] = {&filledLine1, &filledLine2};
@@ -174,7 +173,14 @@ void displayShow(const String& header, const String& line1, const String& line2,
         tft.setTextColor(TFT_WHITE,TFT_BLACK);
         tft.setTextSize(bigSizeFont);
         tft.setCursor(0, 0);
-        tft.print(filledHeader);
+
+        if (header != lastHeader) {
+            tft.print(fillStringLength(header, 11));
+            lastHeader = header;
+        } else {
+            tft.print(header);
+        }
+
         tft.setTextSize(smallSizeFont);
         for (int i = 0; i < 2; i++) {
             tft.setCursor(0, ((lineSpacing * (2 + i)) - 2));
@@ -210,7 +216,6 @@ void displayShow(const String& header, const String& line1, const String& line2,
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
-        String filledHeader = fillStringLength(header, 11);
         String filledLine1  = fillStringLength(line1, 22);
         String filledLine2  = fillStringLength(line2, 22);
         String filledLine3  = fillStringLength(line3, 22);
@@ -226,7 +231,14 @@ void displayShow(const String& header, const String& line1, const String& line2,
         tft.setTextColor(TFT_WHITE,TFT_BLACK);
         tft.setTextSize(bigSizeFont);
         tft.setCursor(0, 0);
-        tft.print(filledHeader);
+
+        if (header != lastHeader) {
+            tft.print(fillStringLength(header, 11));
+            lastHeader = header;
+        } else {
+            tft.print(header);
+        }
+
         tft.setTextSize(smallSizeFont);
         for (int i = 0; i < 5; i++) {
             tft.setCursor(0, ((lineSpacing * (2 + i)) - 2));
@@ -256,9 +268,9 @@ void displayShow(const String& header, const String& line1, const String& line2,
                     #if HELTEC_WIRELESS_TRACKER
                         if (currentSymbol != lastSymbol) {
                             tft.fillRect((TFT_WIDTH - SYMBOL_WIDTH + (128 - TFT_WIDTH)), 0, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_BLACK);
+                            lastSymbol = currentSymbol;
                         }
                         tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH + (128 - TFT_WIDTH)), 0, symbolsAPRS[symbol], SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);//, TFT_RED);
-                        lastSymbol = currentSymbol;
                     #endif
                     #if TTGO_T_DECK_GPS
                         tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH), 0, symbolsAPRS[symbol], SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);//, TFT_RED);
