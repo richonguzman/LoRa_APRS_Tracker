@@ -336,3 +336,33 @@ void startupScreen(uint8_t index, const String& version) {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
 }
+
+String fillMessageLine(const String& line, const int& length) {
+    String completeLine = line;
+    for (int i = 0; completeLine.length() <= length; i++) {
+        completeLine = completeLine + " ";
+    }
+    return completeLine;
+}
+
+void displayMessage(const String& sender, const String& message, const int& lineLength, bool next, int wait) {
+    String messageLine1, messageLine2, messageLine3;
+    int messageLength = message.length();
+
+    if (message.length() > 0) {
+        messageLine1 = message.substring(0, min(lineLength, messageLength));
+        if (messageLength > lineLength) {
+            messageLine2 = message.substring(lineLength, min(2 * lineLength, messageLength));
+            if (messageLength > 2 * lineLength) {
+                messageLine3 = message.substring(2 * lineLength);
+            }
+        }
+    }
+    if (next) {
+        String nextLine = fillMessageLine("Next=Down", lineLength);
+        displayShow("MSG_APRS>", "From --> " + sender, fillMessageLine(messageLine1, lineLength), fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), nextLine);
+    } else {
+        displayShow("< MSG Rx >", "From --> " + sender, "", fillMessageLine(messageLine1, lineLength) , fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), wait);
+    }
+    
+}

@@ -532,7 +532,13 @@ namespace MSG_Utils {
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
-                                displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
+
+                                #ifdef HAS_TFT
+                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.message, 26, false, 3000);
+                                #else
+                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
+                                #endif
+
                                 if (lastReceivedPacket.message.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.message);
                                 }                            

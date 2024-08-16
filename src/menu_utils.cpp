@@ -122,7 +122,12 @@ namespace MENU_Utils {
                 {
                     String msgSender    = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
                     String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",") + 1);
-                    displayShow("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
+
+                    #ifdef HAS_TFT
+                        displayMessage(msgSender, msgText, 26, true);
+                    #else
+                        displayShow("MSG_APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
+                    #endif                   
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
