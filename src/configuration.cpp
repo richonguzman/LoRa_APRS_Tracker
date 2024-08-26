@@ -29,20 +29,13 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
 
         bcn.callsign            = BeaconsArray[i]["callsign"] | "NOCALL-7";
         bcn.callsign.toUpperCase();
-        bcn.gpsEcoMode          = BeaconsArray[i]["gpsEcoMode"] | false;
         bcn.symbol              = BeaconsArray[i]["symbol"] | ">";
         bcn.overlay             = BeaconsArray[i]["overlay"] | "/";
-        bcn.micE                = BeaconsArray[i]["micE"] | "";
         bcn.comment             = BeaconsArray[i]["comment"] | "";
-        bcn.smartBeaconState    = BeaconsArray[i]["smartBeacon"]["active"] | true;
-        bcn.slowRate            = BeaconsArray[i]["smartBeacon"]["slowRate"] | 120;
-        bcn.slowSpeed           = BeaconsArray[i]["smartBeacon"]["slowSpeed"] | 10;
-        bcn.fastRate            = BeaconsArray[i]["smartBeacon"]["fastRate"] | 60;
-        bcn.fastSpeed           = BeaconsArray[i]["smartBeacon"]["fastSpeed"]| 70;
-        bcn.minTxDist           = BeaconsArray[i]["smartBeacon"]["minTxDist"] | 100;
-        bcn.minDeltaBeacon      = BeaconsArray[i]["smartBeacon"]["minDeltaBeacon"] | 12;
-        bcn.turnMinDeg          = BeaconsArray[i]["smartBeacon"]["turnMinDeg"] | 10;
-        bcn.turnSlope           = BeaconsArray[i]["smartBeacon"]["turnSlope"] | 80;
+        bcn.smartBeaconActive   = BeaconsArray[i]["smartBeaconActive"] | true;
+        bcn.smartBeaconSetting  = BeaconsArray[i]["smartBeaconSetting"] | 0;
+        bcn.micE                = BeaconsArray[i]["micE"] | "";
+        bcn.gpsEcoMode          = BeaconsArray[i]["gpsEcoMode"] | false;
         
         beacons.push_back(bcn);
     }

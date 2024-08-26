@@ -11,10 +11,7 @@ namespace STATION_Utils {
     void    deleteListenedTrackersbyTime();
     void    checkListenedTrackersByTimeAndDelete();
     void    orderListenedTrackersByDistance(const String& callsign, float distance, float course);
-    void    checkSmartBeaconInterval(int speed);
     void    checkStandingUpdateTime();
-    void    checkSmartBeaconValue();
-    void    checkSmartBeaconState();
     void    sendBeacon(uint8_t type);
     void    checkTelemetryTx();
     void    saveIndex(uint8_t type, uint8_t index);

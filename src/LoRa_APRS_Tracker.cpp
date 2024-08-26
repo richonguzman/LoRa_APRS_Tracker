@@ -19,6 +19,7 @@ ________________________________________________________________________________
 #include <logger.h>
 #include <WiFi.h>
 #include "APRSPacketLib.h"
+#include "smartbeacon_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
 #include "configuration.h"
@@ -46,7 +47,7 @@ TinyGPSPlus                         gps;
     OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.08.21";
+String      versionDate             = "2024.08.26";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -84,7 +85,7 @@ bool        sosActive               = false;
 
 bool        miceActive              = false;
 
-bool        smartBeaconValue        = true;
+bool        smartBeaconActive       = true;
 
 int         ackRequestNumber;
 
@@ -158,8 +159,9 @@ void loop() {
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
     POWER_Utils::batteryManager();
-        
-    STATION_Utils::checkSmartBeaconValue();
+
+    SMARTBEACON_Utils::checkValues(myBeaconsIndex);
+    SMARTBEACON_Utils::checkState();
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
@@ -200,16 +202,16 @@ void loop() {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
         }
-        if (!sendUpdate && gps_loc_update && smartBeaconValue) {
+        if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) {
                 GPS_Utils::calculateHeadingDelta(currentSpeed);
             }
             STATION_Utils::checkStandingUpdateTime();
         }
-        STATION_Utils::checkSmartBeaconState();
+        SMARTBEACON_Utils::checkFixedBeaconTime();
         if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
-        if (gps_time_update) STATION_Utils::checkSmartBeaconInterval(currentSpeed);
+        if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
             GPS_Utils::checkStartUpFrames();

@@ -322,10 +322,10 @@ namespace KEYBOARD_Utils {
             menuDisplay = 63;
         }
     }
-
+    
     void rightArrow() {
         if (menuDisplay == 0 || menuDisplay == 200) {
-            if(myBeaconsIndex >= (myBeaconsSize-1)) {
+            if(myBeaconsIndex >= (myBeaconsSize - 1)) {
                 myBeaconsIndex = 0;
             } else {
                 myBeaconsIndex++;

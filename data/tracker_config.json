@@ -1,61 +1,34 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
-			"smartBeacon": {
-				"active": true,
-				"slowRate": 120,
-				"slowSpeed": 3,
-				"fastRate": 60,
-				"fastSpeed": 15,
-				"minTxDist": 50,
-				"minDeltaBeacon": 20,
-				"turnMinDeg": 12,
-				"turnSlope": 60
-			}			
+			"smartBeaconActive": true,
+			"smartBeaconSetting": 0	
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
-			"smartBeacon": {
-				"active": true,
-				"slowRate": 120,
-				"slowSpeed": 10,
-				"fastRate": 60,
-				"fastSpeed": 70,
-				"minTxDist": 100,
-				"minDeltaBeacon": 12,
-				"turnMinDeg": 10,
-				"turnSlope": 80
-			}
+			"smartBeaconActive": true,
+			"smartBeaconSetting": 2
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
-			"smartBeacon": {
-				"active": true,
-				"slowRate": 120,
-				"slowSpeed": 5,
-				"fastRate": 60,
-				"fastSpeed": 40,
-				"minTxDist": 100,
-				"minDeltaBeacon": 12,
-				"turnMinDeg": 12,
-				"turnSlope": 60
-			}
+			"smartBeaconActive": true,
+			"smartBeaconSetting": 1
 		}
 	],
 	"display": {

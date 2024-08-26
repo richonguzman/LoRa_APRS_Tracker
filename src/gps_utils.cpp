@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include "TimeLib.h"
+#include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "boards_pinout.h"
@@ -17,22 +18,23 @@
     #define GPS_BAUD  9600
 #endif
 
-extern Configuration    Config;
-extern HardwareSerial   neo6m_gps;      // cambiar a gpsSerial
-extern TinyGPSPlus      gps;
-extern Beacon           *currentBeacon;
-extern logging::Logger  logger;
-extern bool             sendUpdate;
-extern bool		        sendStandingUpdate;
+extern Configuration        Config;
+extern HardwareSerial       neo6m_gps;      // cambiar a gpsSerial
+extern TinyGPSPlus          gps;
+extern Beacon               *currentBeacon;
+extern logging::Logger      logger;
+extern bool                 sendUpdate;
+extern bool		            sendStandingUpdate;
 
-extern uint32_t         lastTxTime;
-extern uint32_t         txInterval;
-extern double           lastTxLat;
-extern double           lastTxLng;
-extern double           lastTxDistance;
-extern uint32_t         lastTx;
-extern bool             disableGPS;
-extern bool             gpsShouldSleep;
+extern uint32_t             lastTxTime;
+extern uint32_t             txInterval;
+extern double               lastTxLat;
+extern double               lastTxLng;
+extern double               lastTxDistance;
+extern uint32_t             lastTx;
+extern bool                 disableGPS;
+extern bool                 gpsShouldSleep;
+extern SmartBeaconValues    currentSmartBeaconValues;
 
 double      currentHeading  = 0;
 double      previousHeading = 0;
@@ -73,7 +75,7 @@ namespace GPS_Utils {
         currentHeading  = gps.course.deg();
         lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
         if (lastTx >= txInterval) {
-            if (lastTxDistance > currentBeacon->minTxDist) {
+            if (lastTxDistance > currentSmartBeaconValues.minTxDist) {
                 sendUpdate = true;
                 sendStandingUpdate = false;
             } else {
@@ -91,13 +93,13 @@ namespace GPS_Utils {
     void calculateHeadingDelta(int speed) {
         uint8_t TurnMinAngle;
         double headingDelta = abs(previousHeading - currentHeading);
-        if (lastTx > currentBeacon->minDeltaBeacon * 1000) {
+        if (lastTx > currentSmartBeaconValues.minDeltaBeacon * 1000) {
             if (speed == 0) {
-                TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/(speed + 1));
+                TurnMinAngle = currentSmartBeaconValues.turnMinDeg + (currentSmartBeaconValues.turnSlope/(speed + 1));
             } else {
-                TurnMinAngle = currentBeacon->turnMinDeg + (currentBeacon->turnSlope/speed);
+                TurnMinAngle = currentSmartBeaconValues.turnMinDeg + (currentSmartBeaconValues.turnSlope/speed);
             }
-            if (headingDelta > TurnMinAngle && lastTxDistance > currentBeacon->minTxDist) {
+            if (headingDelta > TurnMinAngle && lastTxDistance > currentSmartBeaconValues.minTxDist) {
                 sendUpdate = true;
                 sendStandingUpdate = false;
             }

@@ -23,8 +23,6 @@ extern uint32_t             lastTxTime;
 
 extern bool                 sendUpdate;
 
-extern uint32_t             txInterval;
-
 extern double               currentHeading;
 extern double               previousHeading;
 
@@ -33,18 +31,18 @@ extern double               lastTxLng;
 extern double               lastTxDistance;
 
 extern bool                 miceActive;
-extern bool                 smartBeaconValue;
-extern uint8_t              winlinkStatus;
+extern bool                 smartBeaconActive;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
 extern bool                 gpsIsActive;
 extern bool                 gpsShouldSleep;
 
+
 bool	    sendStandingUpdate      = false;
 uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
-bool        wxRequestStatus         = false;
-uint32_t    wxRequestTime           = 0;
+
+
 
 uint32_t    lastTelemetryTx         = 0;
 uint32_t    telemetryTx             = millis();
@@ -167,44 +165,12 @@ namespace STATION_Utils {
         }
     }
 
-    void checkSmartBeaconInterval(int speed) {
-        if (smartBeaconValue) {
-            if (speed < currentBeacon->slowSpeed) {
-                txInterval = currentBeacon->slowRate * 1000;
-            } else if (speed > currentBeacon->fastSpeed) {
-                txInterval = currentBeacon->fastRate * 1000;
-            } else {
-                txInterval = min(currentBeacon->slowRate, currentBeacon->fastSpeed * currentBeacon->fastRate / speed) * 1000;
-            }
-        }
-    }
-
     void checkStandingUpdateTime() {
         if (!sendUpdate && lastTx >= Config.standingUpdateTime * 60 * 1000) {
             sendUpdate = true;
             sendStandingUpdate = true;
             if (!gpsIsActive) {
                 SLEEP_Utils::gpsWakeUp();
-            }
-        }
-    }
-
-    void checkSmartBeaconValue() {
-        if (wxRequestStatus && (millis() - wxRequestTime) > 20000) {
-            wxRequestStatus = false;
-        }
-        if(winlinkStatus == 0 && !wxRequestStatus) {
-            smartBeaconValue = currentBeacon->smartBeaconState;
-        } else {
-            smartBeaconValue = false;
-        }
-    }
-
-    void checkSmartBeaconState() {
-        if (!smartBeaconValue) {
-            uint32_t lastTxSmartBeacon = millis() - lastTxTime;
-            if (lastTxSmartBeacon >= Config.nonSmartBeaconRate * 60 * 1000) {
-                sendUpdate = true;
             }
         }
     }
@@ -275,7 +241,7 @@ namespace STATION_Utils {
         displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
         
-        if (smartBeaconValue) {
+        if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();
             lastTxLng       = gps.location.lng();
             previousHeading = currentHeading;

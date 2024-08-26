@@ -8,20 +8,13 @@
 class Beacon {
 public:
     String  callsign;
-    bool    gpsEcoMode;
     String  symbol;
     String  overlay;
-    String  micE;
     String  comment;
-    bool    smartBeaconState;
-    int     slowRate;
-    int     slowSpeed;
-    int     fastRate;
-    int     fastSpeed;
-    int     minTxDist;
-    int     minDeltaBeacon;
-    int     turnMinDeg;
-    int     turnSlope;
+    bool    smartBeaconActive;
+    byte    smartBeaconSetting;
+    String  micE;
+    bool    gpsEcoMode;
 };
 
 class Display {

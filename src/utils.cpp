@@ -4,20 +4,20 @@
 #include "display.h"
 #include "utils.h"
 
-extern Beacon           *currentBeacon;
-extern Configuration    Config;
+extern Beacon               *currentBeacon;
+extern Configuration        Config;
 
-extern uint32_t         lastTx;
-extern uint32_t         lastTxTime;
+extern uint32_t             lastTx;
+extern uint32_t             lastTxTime;
 
-extern bool             displayEcoMode;
-extern uint32_t         displayTime;
-extern bool             displayState;
-extern int              menuDisplay;
-extern String           versionDate;
-extern bool             flashlight;
+extern bool                 displayEcoMode;
+extern uint32_t             displayTime;
+extern bool                 displayState;
+extern int                  menuDisplay;
+extern String               versionDate;
+extern bool                 flashlight;
 
-extern bool             statusState;
+extern bool                 statusState;
 
 uint32_t    statusTime              = millis();
 
@@ -104,7 +104,7 @@ namespace Utils {
     }
 
     String getSmartBeaconState() {
-        if (currentBeacon->smartBeaconState) return "On";
+        if (currentBeacon->smartBeaconActive) return "On";
         return "Off";
     }
 
