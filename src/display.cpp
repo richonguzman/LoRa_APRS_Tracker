@@ -31,7 +31,7 @@ String currentSymbol, lastSymbol, lastHeader;
     #if defined(TTGO_T_Beam_S3_SUPREME_V3)
         #undef ssd1306
     #endif
-    #if defined(HELTEC_V3_GPS)
+    #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC)
         #define OLED_DISPLAY_HAS_RST_PIN
     #endif
 
