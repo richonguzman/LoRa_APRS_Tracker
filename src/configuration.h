@@ -25,6 +25,13 @@ public:
     bool    turn180;
 };
 
+class Battery {
+public:
+    bool    sendVoltage;
+    bool    voltageAsTelemetry;
+    bool    sendVoltageAlways;
+};
+
 class Winlink {
 public:
     String  password;
@@ -79,6 +86,7 @@ public:
 
     std::vector<Beacon>     beacons;  
     Display                 display;
+    Battery                 battery;
     Winlink                 winlink;
     BME                     bme;
     Notification            notification;
@@ -93,7 +101,6 @@ public:
     int     maxDistanceToTracker;
     int     standingUpdateTime;
     bool    sendAltitude;
-    bool    sendBatteryInfo;
     int     bluetoothType;
     bool    bluetoothActive;
     bool    disableGPS;

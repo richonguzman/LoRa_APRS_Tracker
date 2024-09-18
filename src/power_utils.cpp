@@ -164,7 +164,7 @@ namespace POWER_Utils {
             BatteryIsConnected = isBatteryConnected();
         if (BatteryIsConnected) {
             #ifdef HAS_AXP2101
-                batteryVoltage       = String(PMU.getBattVoltage());
+                batteryVoltage       = String(PMU.getBattVoltage()/1000);
             #else
                 batteryVoltage       = String(getBatteryVoltage(), 2);
             #endif

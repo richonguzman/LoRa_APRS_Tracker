@@ -37,6 +37,11 @@
 		"timeout": 4,
 		"turn180" : false
     },
+	"battery": {
+		"sendVoltage": true,
+		"voltageAsTelemetry": true,
+		"sendVoltageAlways": true
+	},
 	"other": {
 		"simplifiedTrackerMode": false,
 		"sendCommentAfterXBeacons": 10,
@@ -46,7 +51,6 @@
 		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"sendBatteryInfo": false,
 		"bluetoothType": 0,
 		"bluetoothActive": true,
 		"disableGPS": false
