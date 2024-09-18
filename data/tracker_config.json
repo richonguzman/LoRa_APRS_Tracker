@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
@@ -11,7 +11,7 @@
 			"smartBeaconSetting": 0	
 		},
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
@@ -21,7 +21,7 @@
 			"smartBeaconSetting": 2
 		},
 		{
-			"callsign": "CA2RXU-7",
+			"callsign": "NOCALL-7",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",
@@ -38,9 +38,9 @@
 		"turn180" : false
     },
 	"battery": {
-		"sendVoltage": true,
+		"sendVoltage": false,
 		"voltageAsTelemetry": true,
-		"sendVoltageAlways": true
+		"sendVoltageAlways": false
 	},
 	"other": {
 		"simplifiedTrackerMode": false,
@@ -51,7 +51,7 @@
 		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"bluetoothType": 0,
+		"bluetoothType": 1,
 		"bluetoothActive": true,
 		"disableGPS": false
 	},

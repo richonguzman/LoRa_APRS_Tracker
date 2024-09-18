@@ -177,7 +177,7 @@ namespace STATION_Utils {
     }
 
     void sendBeacon(uint8_t type) {
-        if (sendStartTelemetry && Config.battery.voltageAsTelemetry) {                
+        if (sendStartTelemetry && Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) {                
             String sender = currentBeacon->callsign;
             for (int i = sender.length(); i < 9; i++) {
                 sender += ' ';
