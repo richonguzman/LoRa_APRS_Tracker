@@ -160,15 +160,10 @@ namespace POWER_Utils {
 
     void obtainBatteryInfo() {
         static unsigned int rate_limit_check_battery = 0;
-        if (!(rate_limit_check_battery++ % 60))
-            BatteryIsConnected = isBatteryConnected();
+        if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
         if (BatteryIsConnected) {
-            #ifdef HAS_AXP2101
-                batteryVoltage       = String(PMU.getBattVoltage()/1000);
-            #else
-                batteryVoltage       = String(getBatteryVoltage(), 2);
-            #endif
-            batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
+            batteryVoltage                  = String(getBatteryVoltage(), 2);
+            batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
         }
     }
 
