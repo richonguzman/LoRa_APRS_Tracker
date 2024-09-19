@@ -645,12 +645,11 @@ namespace MENU_Utils {
                         if (POWER_Utils::isCharging()) {
                             lowBatteryPercent = 21;
                         }
-                        batteryVoltage = batteryVoltage.toFloat()/1000;
-                        if (POWER_Utils::isCharging() && batteryCharge!="100") {
+                        if (POWER_Utils::isCharging() && batteryCharge != "100") {
                             sixthRowMainMenu = "Bat: ";
                             sixthRowMainMenu += String(batteryVoltage);
                             sixthRowMainMenu += "V (charging)";
-                        } else if (!POWER_Utils::isCharging() && batteryCharge=="100") {
+                        } else if (!POWER_Utils::isCharging() && batteryCharge == "100") {
                             sixthRowMainMenu = "Battery Charged ";
                             sixthRowMainMenu += String(batteryVoltage);
                             sixthRowMainMenu += "V";
@@ -666,11 +665,11 @@ namespace MENU_Utils {
                     sixthRowMainMenu = "No Battery Connected" ;
                 }
                 displayShow(firstRowMainMenu,
-                                secondRowMainMenu,
-                                thirdRowMainMenu,
-                                fourthRowMainMenu,
-                                fifthRowMainMenu,
-                                sixthRowMainMenu);
+                            secondRowMainMenu,
+                            thirdRowMainMenu,
+                            fourthRowMainMenu,
+                            fifthRowMainMenu,
+                            sixthRowMainMenu);
                 break;
         }
     }
