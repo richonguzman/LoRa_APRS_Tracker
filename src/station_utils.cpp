@@ -41,7 +41,7 @@ extern bool                 gpsShouldSleep;
 
 
 bool	    sendStandingUpdate      = false;
-uint8_t     updateCounter           = Config.sendCommentAfterXBeacons;
+uint8_t     updateCounter           = 100;
 
 
 bool        sendStartTelemetry      = true;
@@ -238,39 +238,36 @@ namespace STATION_Utils {
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-        if (Config.battery.sendVoltage) {
-            if (Config.battery.voltageAsTelemetry) {
-                comment += BATTERY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
-            } else {
-                String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-                #ifdef HAS_AXP192
-                    comment += " Bat=";
-                    comment += batteryVoltage;
-                    comment += "V (";
-                    comment += batteryChargeCurrent;
-                    comment += "mA)";
-                #endif
-                #ifdef HAS_AXP2101
-                    comment += " Bat=";
-                    comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V (";
-                    comment += batteryChargeCurrent;
-                    comment += "%)";
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
-                    comment += " Bat=";
-                    comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V";
-                #endif
-            }
+        if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
+            String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
+            #ifdef HAS_AXP192
+                comment += " Bat=";
+                comment += batteryVoltage;
+                comment += "V (";
+                comment += batteryChargeCurrent;
+                comment += "mA)";
+            #endif
+            #ifdef HAS_AXP2101
+                comment += " Bat=";
+                comment += String(batteryVoltage.toFloat(),2);
+                comment += "V (";
+                comment += batteryChargeCurrent;
+                comment += "%)";
+            #endif
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
+                comment += " Bat=";
+                comment += String(batteryVoltage.toFloat(),2);
+                comment += "V";
+            #endif
         }
-        if (comment != "") {
+        if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry)) {
             updateCounter++;
             if (updateCounter >= sendCommentAfterXBeacons) {
-                packet += comment;
+                if (comment != "") packet += comment;
+                if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += BATTERY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
                 updateCounter = 0;
-            } 
-        }        
+            }
+        }
         #ifdef HAS_TFT
             cleanTFT();
         #endif

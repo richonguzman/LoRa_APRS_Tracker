@@ -49,7 +49,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2024.09.17 Battery Info now as Encoded Telemetry in GPS Beacon.
+- 2024.09.17 Battery Voltage now as Encoded Telemetry in GPS Beacon.
 - 2024.08.26 New reformating of code ahead of WebInstaller: SmartBeacon change.
 - 2024.08.16 BLE support for Android devices (not APRSDroid yet).
 - 2024.08.12 Added support for EByte E220 400M30S 1Watt LoRa module for DIY ESP32 Tracker (LLCC68 supports spreading factor only in range of 5 - 11!)
