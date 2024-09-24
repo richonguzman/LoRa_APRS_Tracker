@@ -552,52 +552,6 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
-                                        class="bi bi-broadcast-pin"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M3.05 3.05a7 7 0 0 0 0 9.9.5.5 0 0 1-.707.707 8 8 0 0 1 0-11.314.5.5 0 0 1 .707.707m2.122 2.122a4 4 0 0 0 0 5.656.5.5 0 1 1-.708.708 5 5 0 0 1 0-7.072.5.5 0 0 1 .708.708m5.656-.708a.5.5 0 0 1 .708 0 5 5 0 0 1 0 7.072.5.5 0 1 1-.708-.708 4 4 0 0 0 0-5.656.5.5 0 0 1 0-.708m2.122-2.12a.5.5 0 0 1 .707 0 8 8 0 0 1 0 11.313.5.5 0 0 1-.707-.707 7 7 0 0 0 0-9.9.5.5 0 0 1 0-.707zM6 8a2 2 0 1 1 2.5 1.937V15.5a.5.5 0 0 1-1 0V9.937A2 2 0 0 1 6 8"
-                                        />
-                                    </svg>
-                                    Digipeating
-                                </h5>
-                                <small>Define the Digipeater mode</small>
-                            </div>
-                            <div class="col-9 mt-2">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <label
-                                            for="digi.mode"
-                                            class="form-label"
-                                            >Repeater Mode</label
-                                        >
-                                        <select
-                                            class="form-select form-select"
-                                            name="digi.mode"
-                                            id="digi.mode"
-                                        >
-                                            <option value="0">off</option>
-                                            <option value="2">
-                                                WIDE1 (fill-in) Digi
-                                            </option>
-                                            <option value="3">
-                                                WIDE2 (+WIDE1) Digi
-                                            </option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <hr />
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
                                         class="bi bi-broadcast"
                                         viewBox="0 0 16 16"
                                     >
@@ -851,14 +805,29 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="display.alwaysOn"
-                                                id="display.alwaysOn"
+                                                name="display.showSymbol"
+                                                id="display.showSymbol"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="display.alwaysOn"
+                                                for="display.showSymbol"
                                                 class="form-label"
-                                                >Always On</label
+                                                >Show Symbol Drawing instead of Character</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="display.ecoMode"
+                                                id="display.ecoMode"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="display.ecoMode"
+                                                class="form-label"
+                                                >EcoMode On</label
                                             >
                                         </div>
                                     </div>
@@ -935,199 +904,6 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
-                                        class="bi bi-heart-pulse-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M1.475 9C2.702 10.84 4.779 12.871 8 15c3.221-2.129 5.298-4.16 6.525-6H12a.5.5 0 0 1-.464-.314l-1.457-3.642-1.598 5.593a.5.5 0 0 1-.945.049L5.889 6.568l-1.473 2.21A.5.5 0 0 1 4 9z"
-                                        />
-                                        <path
-                                            d="M.88 8C-2.427 1.68 4.41-2 7.823 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C11.59-2 18.426 1.68 15.12 8h-2.783l-1.874-4.686a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8z"
-                                        />
-                                    </svg>
-                                    Battery
-                                </h5>
-                                <small>
-                                    Battery Monitor & Health
-                                    <br>
-                                    <br>
-                                    Max Voltage on input pin is 3.3V.
-                                    <br>
-                                    <br>
-                                    Calculate voltage divider accordingly.
-                                </small>
-                            </div>
-                            <div class="col-9 mt-2">
-                                <div class="row mt-2">
-                                    <div class="col-6">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.sendInternalVoltage"
-                                                id="battery.sendInternalVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.sendInternalVoltage"
-                                                class="form-label"
-                                                >Send Internal Voltage</label
-                                            >
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.sendVoltageAsTelemetry"
-                                                id="battery.sendVoltageAsTelemetry"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.sendVoltageAsTelemetry"
-                                                class="form-label"
-                                                style="font-style: italic;"
-                                                >(Send Voltage As Telemetry)</label   
-                                            >
-                                        </div>
-                                        <div class="form-check form-switch mt-3">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.monitorInternalVoltage"
-                                                id="battery.monitorInternalVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.monitorInternalVoltage"
-                                                class="form-label"
-                                                >Monitor Internal Voltage Health</label
-                                            >
-                                        </div>
-                                        <div class="col">
-                                            <label for="battery.internalSleepVoltage" class="form-label"
-                                                >Internal Sleep Voltage</label
-                                            >
-                                            <div class="input-group">
-                                                <input
-                                                    type="number"
-                                                    name="battery.internalSleepVoltage"
-                                                    id="battery.internalSleepVoltage"
-                                                    placeholder="3.0"
-                                                    class="form-control"
-                                                    step="0.1"
-                                                    min="3.0"
-                                                    max="3.7"
-                                                />
-                                                <span class="input-group-text"
-                                                    >volts</span
-                                                >
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.sendExternalVoltage"
-                                                id="battery.sendExternalVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.sendExternalVoltage"
-                                                class="form-label"
-                                                >Send External Voltage</label
-                                            >
-                                        </div>
-                                        <div class="form-check form-switch mt-5">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.monitorExternalVoltage"
-                                                id="battery.monitorExternalVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.monitorExternalVoltage"
-                                                class="form-label"
-                                                >Monitor External Voltage Health</label
-                                            >
-                                        </div>
-                                        <div class="col">
-                                            <label for="battery.externalSleepVoltage" class="form-label"
-                                                >External Sleep Voltage</label
-                                            >
-                                            <div class="input-group">
-                                                <input
-                                                    type="number"
-                                                    name="battery.externalSleepVoltage"
-                                                    id="battery.externalSleepVoltage"
-                                                    placeholder="3.0"
-                                                    class="form-control"
-                                                    step="0.1"
-                                                    min="3.0"
-                                                    max="24.0"
-                                                />
-                                                <span class="input-group-text"
-                                                    >volts</span
-                                                >
-                                            </div>
-                                        </div>
-                                        <div class="form-floating col-7 mt-3">
-                                            <input
-                                                type="text"
-                                                name="battery.externalVoltagePin"
-                                                id="battery.externalVoltagePin"
-                                                value="34"
-                                                class="form-control"
-                                            />
-                                            <label
-                                                for="battery.externalVoltagePin"
-                                                class="form-label"
-                                                >External Voltage Pin</label
-                                            >
-                                        </div>
-                                        <div class="col">
-                                            <label for="battery.voltageDividerR1" class="form-label">External Voltage divider R1</label>
-                                            <div class="input-group">
-                                                <input 
-                                                    type="number"
-                                                    name="battery.voltageDividerR1"
-                                                    id="battery.voltageDividerR1"
-                                                    placeholder="100.0"
-                                                    class="form-control"
-                                                    step="0.1"
-                                                    min="1"
-                                                    max="1000"
-                                                />
-                                                <span class="input-group-text">kOhm</span>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <label for="battery.voltageDividerR2" class="form-label">External Voltage divider R2</label>
-                                            <div class="input-group">
-                                                <input
-                                                    type="number"
-                                                    name="battery.voltageDividerR2"
-                                                    id="battery.voltageDividerR2"
-                                                    placeholder="27.0"
-                                                    class="form-control"
-                                                    step="0.1"
-                                                    min="1"
-                                                    max="1000"
-                                                />
-                                                <span class="input-group-text">kOhm</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <hr />
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
                                         class="bi bi-broadcast-pin"
                                         viewBox="0 0 16 16"
                                     >
@@ -1135,9 +911,9 @@
                                             d="M3.05 3.05a7 7 0 0 0 0 9.9.5.5 0 0 1-.707.707 8 8 0 0 1 0-11.314.5.5 0 0 1 .707.707m2.122 2.122a4 4 0 0 0 0 5.656.5.5 0 1 1-.708.708 5 5 0 0 1 0-7.072.5.5 0 0 1 .708.708m5.656-.708a.5.5 0 0 1 .708 0 5 5 0 0 1 0 7.072.5.5 0 1 1-.708-.708 4 4 0 0 0 0-5.656.5.5 0 0 1 0-.708m2.122-2.12a.5.5 0 0 1 .707 0 8 8 0 0 1 0 11.313.5.5 0 0 1-.707-.707 7 7 0 0 0 0-9.9.5.5 0 0 1 0-.707zM6 8a2 2 0 1 1 2.5 1.937V15.5a.5.5 0 0 1-1 0V9.937A2 2 0 0 1 6 8"
                                         />
                                     </svg>
-                                    Telemetry
+                                    Wx Telemetry
                                 </h5>
-                                <small>Define Wx telemetry</small>
+                                <small>Define Wx Telemetry (Wx Data will only be sended when Station doesn't move for at least 15 min)</small>
                             </div>
                             <div class="col-9 mt-2">
                                 <div class="row">
@@ -1162,25 +938,6 @@
                                 </div>
                                 <div class="row mt-3">
                                     <div class="col-6">
-                                        <label for="bme.heightCorrection" class="form-label"
-                                            >Height Correction (Above Sea-Level)</label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="number"
-                                                name="bme.heightCorrection"
-                                                id="bme.heightCorrection"
-                                                placeholder="0"
-                                                class="form-control"
-                                                step="1"
-                                                min="0"
-                                            />
-                                            <span class="input-group-text"
-                                                >meters</span
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
                                         <label for="bme.temperatureCorrection" class="form-label"
                                             >Temperature Correction</label
                                         >
@@ -1192,12 +949,26 @@
                                                 placeholder="0.0"
                                                 class="form-control"
                                                 step="0.1"
-                                                min="-5"
-                                                max="5"
+                                                min="0"
                                             />
                                             <span class="input-group-text"
-                                                >C°</span
+                                                >Celsius</span
                                             >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bme.sendTelemetry"
+                                                id="bme.sendTelemetry"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bme.sendTelemetry"
+                                                class="form-label"
+                                                >Send Wx Telemetry in GPS Beacon
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -1220,58 +991,33 @@
                                             d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1z"
                                         />
                                     </svg>
-                                    Syslog
+                                    BlueTooth
                                 </h5>
                                 <small
-                                    >Broadcast the system log over the
-                                    network.</small
+                                    >BT Classic or BLE Configuration.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="form-check form-switch">
                                     <input
                                         type="checkbox"
-                                        name="syslog.active"
-                                        id="syslog.active"
+                                        name="bluetooth.active"
+                                        id="bluetooth.active"
                                         class="form-check-input"
                                     />
                                     <label
-                                        for="syslog.active"
+                                        for="bluetooth.active"
                                         class="form-label"
-                                        >Enable syslog</label
+                                        >Enable bluetooth</label
                                     >
                                 </div>
-                                <div class="row mt-3">
-                                    <div class="col-6">
-                                        <label
-                                            for="syslog.server"
-                                            class="form-label"
-                                            >Server</label
-                                        >
-                                        <input
-                                            type="text"
-                                            name="syslog.server"
-                                            id="syslog.server"
-                                            placeholder="192.168.0.100"
-                                            class="form-control"
-                                            disabled
-                                        />
-                                    </div>
-                                    <div class="col-6">
-                                        <label
-                                            for="syslog.port"
-                                            class="form-label"
-                                            >Port</label
-                                        >
-                                        <input
-                                            type="text"
-                                            name="syslog.port"
-                                            id="syslog.port"
-                                            placeholder="514"
-                                            class="form-control"
-                                            disabled
-                                        />
-                                    </div>
+                                <div class="col-6">
+                                    <label for="bluetooth.type" class="form-label">Bluetooth Type</label>
+                                    <select name="bluetooth.type" id="bluetooth.type" class="form-control">
+                                        <option value="0">BT Classic</option>
+                                        <option value="1">BLE for iPhone</option>
+                                        <option value="2">BLE for Android</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1301,29 +1047,26 @@
                                             d="M2 12.161V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16s3.022-.289 4.096-.777C13.125 14.755 14 14.007 14 13v-.839c-.457.432-1.004.751-1.49.972-1.232.56-2.828.867-4.51.867s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
                                         />
                                     </svg>
-                                    TNC
+                                    BATTERY
                                 </h5>
                                 <small
-                                    >TNC and KISS configuration</small
+                                    >BATTERY Information on GPS Beacon Configuration</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
-                                            <div class="form-text">
-                                                Server will be available at port <strong>8001</strong>
-                                            </div>
                                             <input
                                                 type="checkbox"
-                                                name="tnc.enableServer"
-                                                id="tnc.enableServer"
+                                                name="battery.sendVoltage"
+                                                id="battery.sendVoltage"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="tnc.enableServer"
+                                                for="battery.sendVoltage"
                                                 class="form-label"
-                                                >Enable TNC server</label
+                                                >Send Battery Voltage in GPS Beacon</label
                                             >
                                         </div>
                                     </div>
@@ -1331,14 +1074,14 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="tnc.enableSerial"
-                                                id="tnc.enableSerial"
+                                                name="battery.voltageAsTelemetry"
+                                                id="battery.voltageAsTelemetry"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="tnc.enableSerial"
+                                                for="battery.voltageAsTelemetry"
                                                 class="form-label"
-                                                >Enable Serial KISS</label
+                                                >Send as Encoded Telemetry</label
                                             >
                                         </div>
                                     </div>
@@ -1346,14 +1089,14 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="tnc.acceptOwn"
-                                                id="tnc.acceptOwn"
+                                                name="battery.sendVoltageAlways"
+                                                id="battery.sendVoltageAlways"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="tnc.acceptOwn"
+                                                for="battery.sendVoltageAlways"
                                                 class="form-label"
-                                                >Accept own frames via KISS</label
+                                                >Force Sending Voltage Info on every GPS Beacon</label
                                             >
                                         </div>
                                     </div>
@@ -1380,7 +1123,7 @@
                                             d="M.88 8C-2.427 1.68 4.41-2 7.823 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C11.59-2 18.426 1.68 15.12 8h-2.783l-1.874-4.686a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8z"
                                         />
                                     </svg>
-                                    Reboot Time
+                                    PTT Trigger
                                 </h5>
                             </div>
                             <div class="col-9 mt-2">
@@ -1389,14 +1132,14 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="other.rebootMode"
-                                                id="other.rebootMode"
+                                                name="pttTrigger.active"
+                                                id="pttTrigger.active"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="other.rebootMode"
+                                                for="pttTrigger.active"
                                                 class="form-label"
-                                                >Reboot Mode Active</label
+                                                >PTT Active</label
                                             >
                                         </div>
                                     </div>
@@ -1404,23 +1147,84 @@
                                 <div class="row mt-3">
                                     <div class="col-6">
                                         <label
-                                            for="other.rebootModeTime"
+                                            for="pttTrigger.io_pin"
                                             class="form-label"
-                                            >Time before forced Reboot</label
+                                            >Pin used for external Amp trigger</label
                                         >                                    
                                         <div class="input-group">
                                             <input
                                                 type="number"
-                                                name="other.rebootModeTime"
-                                                id="other.rebootModeTime"
-                                                placeholder="6"
+                                                name="pttTrigger.io_pin"
+                                                id="pttTrigger.io_pin"
                                                 class="form-control"
-                                                step="6"
-                                                min="6"
-                                                max="168"
                                             />
                                             <span class="input-group-text"
-                                                >hours</span
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="pttTrigger.preDelay"
+                                            class="form-label"
+                                            >Time to enable trigger before Tx</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="pttTrigger.preDelay"
+                                                id="pttTrigger.preDelay"
+                                                placeholder="0"
+                                                class="form-control"
+                                                step="50"
+                                                min="0"
+                                                max="2000"
+                                            />
+                                            <span class="input-group-text"
+                                                >miliseconds</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="pttTrigger.postDelay"
+                                            class="form-label"
+                                            >Time to disable trigger after Tx</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="pttTrigger.postDelay"
+                                                id="pttTrigger.postDelay"
+                                                placeholder="0"
+                                                class="form-control"
+                                                step="50"
+                                                min="0"
+                                                max="2000"
+                                            />
+                                            <span class="input-group-text"
+                                                >miliseconds</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="pttTrigger.reverse"
+                                                id="pttTrigger.reverse"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="pttTrigger.reverse"
+                                                class="form-label"
+                                                >PTT in Reverse Mode</label
                                             >
                                         </div>
                                     </div>
@@ -1453,262 +1257,32 @@
                                             d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
                                         />
                                     </svg>
-                                    Auto AP
+                                    WiFi AP
                                 </h5>
                                 <small
-                                    >Add your password and power off timeout to
-                                    auto access point. Auto AP will start if
-                                    there is no WiFi connection. Timeout will
-                                    count from startup or last client
-                                    disconnected.</small
+                                    >Add your password to access WiFi AP.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="col-12">
                                     <label
-                                        for="wifi.autoAP.password"
+                                        for="wifiAP.password"
                                         class="form-label"
                                         >Password</label
                                     >
                                     <input
                                         type="password"
-                                        name="wifi.autoAP.password"
-                                        id="wifi.autoAP.password"
+                                        name="wifiAP.password"
+                                        id="wifiAP.password"
                                         class="form-control"
                                         placeholder="1234567890"
                                         required=""
                                     />
                                 </div>
-                                <div class="col-12 mt-3">
-                                    <label
-                                        for="wifi.autoAP.powerOff"
-                                        class="form-label"
-                                        >Power off timeout
-                                        <small>(in minutes)</small></label
-                                    >
-                                    <input
-                                        type="number"
-                                        name="wifi.autoAP.powerOff"
-                                        id="wifi.autoAP.powerOff"
-                                        class="form-control"
-                                        placeholder="15"
-                                        required=""
-                                        step="1"
-                                        min="0"
-                                    />
-                                    <div class="form-text">
-                                        Set to <strong>0</strong> if you don't
-                                        want this option.
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         <hr />
 
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
-                                        class="bi bi-cloud-upload-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            fill-rule="evenodd"
-                                            d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.5 14.5V11h1v3.5a.5.5 0 0 1-1 0"
-                                        />
-                                    </svg>
-                                    OTA
-                                </h5>
-                                <small
-                                    >Set your username and password to allow
-                                    firmware updating over-the-air.</small
-                                >
-                            </div>
-                            <div class="col-lg-9 col-sm-12">
-                                <div class="col-12">
-                                    <label for="ota.username" class="form-label"
-                                        >Username</label
-                                    >
-                                    <input
-                                        type="text"
-                                        name="ota.username"
-                                        id="ota.username"
-                                        class="form-control"
-                                    />
-                                </div>
-                                <div class="col-12 mt-3">
-                                    <label for="ota.password" class="form-label"
-                                        >Password</label
-                                    >
-                                    <input
-                                        type="password"
-                                        name="ota.password"
-                                        id="ota.password"
-                                        class="form-control"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <hr />
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
-                                        class="bi bi-cloud-upload-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            fill-rule="evenodd"
-                                            d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.5 14.5V11h1v3.5a.5.5 0 0 1-1 0"
-                                        />
-                                    </svg>
-                                    Admin
-                                </h5>
-                                <small
-                                    >Set your username and password to allow
-                                    access to the web interface.</small
-                                >
-                            </div>
-                            <div class="col-lg-9 col-sm-12">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="webadmin.active"
-                                                id="webadmin.active"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="webadmin.active"
-                                                class="form-label"
-                                                >Web interface authentication</label
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <label for="webadmin.username" class="form-label"
-                                        >Username</label
-                                    >
-                                    <input
-                                        type="text"
-                                        name="webadmin.username"
-                                        id="webadmin.username"
-                                        class="form-control"
-                                        value="admin"
-                                        required=""
-                                    />
-                                </div>
-                                <div class="col-12 mt-3">
-                                    <label for="webadmin.password" class="form-label"
-                                        >Password</label
-                                    >
-                                    <input
-                                        type="password"
-                                        name="webadmin.password"
-                                        id="webadmin.password"
-                                        class="form-control"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <hr />
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
-                                        class="bi bi-heart-pulse-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M1.475 9C2.702 10.84 4.779 12.871 8 15c3.221-2.129 5.298-4.16 6.525-6H12a.5.5 0 0 1-.464-.314l-1.457-3.642-1.598 5.593a.5.5 0 0 1-.945.049L5.889 6.568l-1.473 2.21A.5.5 0 0 1 4 9z"
-                                        />
-                                        <path
-                                            d="M.88 8C-2.427 1.68 4.41-2 7.823 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C11.59-2 18.426 1.68 15.12 8h-2.783l-1.874-4.686a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8z"
-                                        />
-                                    </svg>
-                                    Experimental
-                                </h5>
-                                <small>You can test new features. <u>Use at your own risk!</u></small>
-                            </div>
-                            <div class="col-lg-9 col-sm-12">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <div class="form-text">
-                                                When "only" iGate Mode loses WiFi, it will change into a Digirepeater Mode and after 15 min check if WiFi available and return to "only" iGate Mode.
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                name="other.backupDigiMode"
-                                                id="other.backupDigiMode"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="other.backupDigiMode"
-                                                class="form-label"
-                                                >Backup Digirepeater Mode</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <div class="form-text">
-                                                WiFi disabled. Sleep mode. Best for solar Digi with SX126X.
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                name="other.lowPowerMode"
-                                                id="other.lowPowerMode"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="other.lowPowerMode"
-                                                class="form-label"
-                                                >Low power mode (only for HT-CT62)</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-12 mt-3">
-                                        <label
-                                            for="other.lowVoltageCutOff"
-                                            class="form-label"
-                                            >Low voltage cut off <small>(Deep sleep below specific voltage)</small></label
-                                        >
-                                        <input
-                                            type="text"
-                                            name="other.lowVoltageCutOff"
-                                            id="other.lowVoltageCutOff"
-                                            placeholder="0"
-                                            min="0"
-                                            step="0.01"
-                                            class="form-control"
-                                        />
-                                        <span class="input-group-text"
-                                                >Volts</span
-                                        >
-                                        <div class="form-text">
-                                            MCU will deep sleep when below provided battery voltage to save power. Set to <strong>0</strong> if you don't want this option. <u>Please calibrate your voltage reading first!</u>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </main>
                 <footer

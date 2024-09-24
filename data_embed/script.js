@@ -58,13 +58,6 @@ alwaysOnCheckbox.addEventListener("change", function () {
     timeoutInput.disabled = this.checked;
 });
 
-// timeoutInput.addEventListener("change", function () {
-//     alwaysOnCheckbox.disabled = this.value !== "";
-// });
-
-const logCheckbox = document.querySelector('input[name="syslog.active"]');
-const serverField = document.querySelector('input[name="syslog.server"]');
-const portField = document.querySelector('input[name="syslog.port"]');
 
 logCheckbox.addEventListener("change", function () {
     serverField.disabled = !this.checked;
@@ -117,6 +110,8 @@ function loadSettings(settings) {
         networkCount++;
     });
 
+
+    /*
     // APRS-IS
     document.getElementById("aprs_is.active").checked                   = settings.aprs_is.active;
     document.getElementById("aprs_is.messagesToRF").checked             = settings.aprs_is.messagesToRF;
@@ -134,8 +129,6 @@ function loadSettings(settings) {
     document.getElementById("beacon.sendViaAPRSIS").checked             = settings.beacon.sendViaAPRSIS;
     document.getElementById("beacon.sendViaRF").checked                 = settings.beacon.sendViaRF;
 
-    // Digi
-    document.getElementById("digi.mode").value                          = settings.digi.mode;
 
     // LoRa
     document.getElementById("lora.txFreq").value                        = settings.lora.txFreq;
@@ -145,58 +138,51 @@ function loadSettings(settings) {
     document.getElementById("lora.spreadingFactor").value               = settings.lora.spreadingFactor;
     document.getElementById("lora.signalBandwidth").value               = settings.lora.signalBandwidth;
     document.getElementById("lora.codingRate4").value                   = settings.lora.codingRate4;
-    document.getElementById("lora.power").value                         = settings.lora.power;
+    document.getElementById("lora.power").value                         = settings.lora.power;*/
+
 
     // Display
-    document.getElementById("display.alwaysOn").checked                 = settings.display.alwaysOn;
-    document.getElementById("display.turn180").checked                  = settings.display.turn180;
+    document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
+    document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
     document.getElementById("display.timeout").value                    = settings.display.timeout;
+    document.getElementById("display.turn180").checked                  = settings.display.turn180;
 
     if (settings.display.alwaysOn) {
         timeoutInput.disabled = true;
     }
 
     // BATTERY
-    document.getElementById("battery.sendInternalVoltage").checked      = settings.battery.sendInternalVoltage;
-    document.getElementById("battery.monitorInternalVoltage").checked   = settings.battery.monitorInternalVoltage;
-    document.getElementById("battery.internalSleepVoltage").value       = settings.battery.internalSleepVoltage.toFixed(1);
-    document.getElementById("battery.sendExternalVoltage").checked      = settings.battery.sendExternalVoltage;
-    document.getElementById("battery.externalVoltagePin").value         = settings.battery.externalVoltagePin;
-    document.getElementById("battery.voltageDividerR1").value           = settings.battery.voltageDividerR1.toFixed(1);
-    document.getElementById("battery.voltageDividerR2").value           = settings.battery.voltageDividerR2.toFixed(1);
-    document.getElementById("battery.monitorExternalVoltage").checked   = settings.battery.monitorExternalVoltage;
-    document.getElementById("battery.externalSleepVoltage").value       = settings.battery.externalSleepVoltage.toFixed(1);
-    document.getElementById("battery.sendVoltageAsTelemetry").checked   = settings.battery.sendVoltageAsTelemetry;
+    document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
+    document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
+    document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;    
     
     // TELEMETRY BME/WX
     document.getElementById("bme.active").checked                       = settings.bme.active;
-    document.getElementById("bme.heightCorrection").value               = settings.bme.heightCorrection;
     document.getElementById("bme.temperatureCorrection").value          = settings.bme.temperatureCorrection.toFixed(1);
+    document.getElementById("bme.sendTelemetry").checked                = settings.bme.sendTelemetry;
     
-    // SYSLOG
-    document.getElementById("syslog.active").checked                    = settings.syslog.active;
-    document.getElementById("syslog.server").value                      = settings.syslog.server;
-    document.getElementById("syslog.port").value                        = settings.syslog.port;
+    // BLUETOOTH
+    document.getElementById("bluettooth.active").checked                = settings.bluetooth.active;
+    document.getElementById("bluettooth.type").value                    = settings.bluetooth.type;
 
-    if (settings.syslog.active) {
-        serverField.disabled = false;
-        portField.disabled = false;
-    }
+    //  PTT Trigger
+    document.getElementById("pttTrigger.active").checked                = settings.pttTrigger.active;
+    document.getElementById("pttTrigger.io_pin").value                  = settings.pttTrigger.io_pin;
+    document.getElementById("pttTrigger.preDelay").value                = settings.pttTrigger.preDelay;
+    document.getElementById("pttTrigger.postDelay").value               = settings.pttTrigger.postDelay;
+    document.getElementById("pttTrigger.reverse").checked               = settings.pttTrigger.reverse;
 
-    // TNC
-    if (settings.tnc) {
-        document.getElementById("tnc.enableServer").checked             = settings.tnc.enableServer;
-        document.getElementById("tnc.enableSerial").checked             = settings.tnc.enableSerial;
-        document.getElementById("tnc.acceptOwn").checked                = settings.tnc.acceptOwn;
-    }
+    // WiFi AP
+    document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
+
+
+
+
+
 
     // Reboot
     document.getElementById("other.rebootMode").checked                 = settings.other.rebootMode;
     document.getElementById("other.rebootModeTime").value               = settings.other.rebootModeTime;
-
-    // WiFi Auto AP
-    document.getElementById("wifi.autoAP.password").value               = settings.wifi.autoAP.password;
-    document.getElementById("wifi.autoAP.powerOff").value               = settings.wifi.autoAP.powerOff;
 
     // OTA
     document.getElementById("ota.username").value                       = settings.ota.username;
@@ -207,11 +193,6 @@ function loadSettings(settings) {
     document.getElementById("webadmin.username").value                  = settings.webadmin.username;
     document.getElementById("webadmin.password").value                  = settings.webadmin.password;
 
-    // Experimental
-    document.getElementById("other.backupDigiMode").checked             = settings.other.backupDigiMode;
-
-    document.getElementById("other.lowPowerMode").checked               = settings.other.lowPowerMode;
-    document.getElementById("other.lowVoltageCutOff").value             = settings.other.lowVoltageCutOff || 0
 
     updateImage();
     refreshSpeedStandard();

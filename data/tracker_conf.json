@@ -51,8 +51,6 @@
 		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"bluetoothType": 1,
-		"bluetoothActive": true,
 		"disableGPS": false
 	},
 	"winlink": {
