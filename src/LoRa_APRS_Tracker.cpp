@@ -48,7 +48,7 @@ TinyGPSPlus                         gps;
     OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.09.19";
+String      versionDate             = "2024.09.24";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -116,7 +116,7 @@ void setup() {
     startupScreen(loraIndex, versionDate);
 
     if (Config.wifiAP.active){
-        displayShow(" WEB-CONF","", "WiFi AP: LoRa Tracker", "IP:       192.168.4.1","", "");
+        displayShow(" WEB-CONF","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","", "");
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
         WIFI_Utils::startAutoAP();
         //WEB_Utils::setup();

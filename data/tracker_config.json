@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
@@ -11,7 +11,7 @@
 			"smartBeaconSetting": 0	
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
@@ -21,7 +21,7 @@
 			"smartBeaconSetting": 2
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "CA2RXU-6",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",
