@@ -118,13 +118,14 @@ public:
     bool    sendAltitude;
     bool    disableGPS;
 
+    void init();
+    void writeFile();
     Configuration();
     bool validateConfigFile(const String& currentBeaconCallsign);
     bool validateMicE(const String& currentBeaconMicE);
 
 private:
-    void readFile(fs::FS &fs, const char *fileName) ;
-    String _filePath;
+    bool readFile();
 };
 
 #endif

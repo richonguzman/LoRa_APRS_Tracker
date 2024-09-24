@@ -6,106 +6,191 @@
 
 extern logging::Logger logger;
 
-Configuration::Configuration() {
-    _filePath = "/tracker_config.json";
-    if (!SPIFFS.begin(false)) {
-        Serial.println("SPIFFS Mount Failed");
-        return;
+
+void Configuration::writeFile() {
+
+    Serial.println("Saving config..");
+
+    StaticJsonDocument<2800> data;
+    File configFile = SPIFFS.open("/tracker_conf.json", "w");
+
+    data["wifiAP"]["active"]                    = wifiAP.active;
+    data["wifiAP"]["password"]                  = wifiAP.password;
+
+    for (int i = 0; i < beacons.size(); i++) {
+        data["beacons"][i]["callsign"]              = beacons[i].callsign;
+        data["beacons"][i]["symbol"]                = beacons[i].symbol;
+        data["beacons"][i]["overlay"]               = beacons[i].overlay;
+        data["beacons"][i]["comment"]               = beacons[i].comment;
+        data["beacons"][i]["smartBeaconActive"]     = beacons[i].smartBeaconActive;
+        data["beacons"][i]["smartBeaconSetting"]    = beacons[i].smartBeaconSetting;
+        data["beacons"][i]["micE"]                  = beacons[i].micE;
+        data["beacons"][i]["gpsEcoMode"]            = beacons[i].gpsEcoMode;
     }
-    readFile(SPIFFS, _filePath.c_str());
+
+    data["display"]["showSymbol"]               = display.showSymbol;
+    data["display"]["ecoMode"]                  = display.ecoMode;
+    data["display"]["timeout"]                  = display.timeout;
+    data["display"]["turn180"]                  = display.turn180;
+
+    data["battery"]["sendVoltage"]              = battery.sendVoltage;
+    data["battery"]["voltageAsTelemetry"]       = battery.voltageAsTelemetry;
+    data["battery"]["sendVoltageAlways"]        = battery.sendVoltageAlways;
+
+    data["winlink"]["password"]                 = winlink.password;
+
+    data["bme"]["active"]                       = bme.active;
+    data["bme"]["temperatureCorrection"]        = bme.temperatureCorrection;
+    data["bme"]["sendTelemetry"]                = bme.sendTelemetry;
+
+    data["notification"]["ledTx"]               = notification.ledTx;
+    data["notification"]["ledTxPin"]            = notification.ledTxPin;
+    data["notification"]["ledMessage"]          = notification.ledMessage;
+    data["notification"]["ledMessagePin"]       = notification.ledMessagePin;
+    data["notification"]["ledFlashlight"]       = notification.ledFlashlight;
+    data["notification"]["ledFlashlightPin"]    = notification.ledFlashlightPin;
+    data["notification"]["buzzerActive"]        = notification.buzzerActive;
+    data["notification"]["buzzerPinTone"]       = notification.buzzerPinTone;
+    data["notification"]["buzzerPinVcc"]        = notification.buzzerPinVcc;
+    data["notification"]["bootUpBeep"]          = notification.bootUpBeep;
+    data["notification"]["txBeep"]              = notification.txBeep;
+    data["notification"]["messageRxBeep"]       = notification.messageRxBeep;
+    data["notification"]["stationBeep"]         = notification.stationBeep;
+    data["notification"]["lowBatteryBeep"]      = notification.lowBatteryBeep;
+    data["notification"]["shutDownBeep"]        = notification.shutDownBeep;
+    
+    for (int i = 0; i < loraTypes.size(); i++) {
+        data["lora"][i]["frequency"]                = loraTypes[i].frequency;
+        data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
+        data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
+        data["lora"][i]["codingRate4"]              = loraTypes[i].codingRate4;
+        data["lora"][i]["power"]                    = loraTypes[i].power;
+    }
+
+    data["pttTrigger"]["active"]                = ptt.active;
+    data["pttTrigger"]["io_pin"]                = ptt.io_pin;
+    data["pttTrigger"]["preDelay"]              = ptt.preDelay;
+    data["pttTrigger"]["postDelay"]             = ptt.postDelay;
+    data["pttTrigger"]["reverse"]               = ptt.reverse;
+
+    data["bluetooth"]["type"]                   = bluetooth.type;
+    data["bluetooth"]["active"]                 = bluetooth.active;
+
+    data["other"]["simplifiedTrackerMode"]      = simplifiedTrackerMode;
+    data["other"]["sendCommentAfterXBeacons"]   = sendCommentAfterXBeacons;
+    data["other"]["path"]                       = path;
+    data["other"]["nonSmartBeaconRate"]         = nonSmartBeaconRate;
+    data["other"]["rememberStationTime"]        = rememberStationTime;
+    data["other"]["maxDistanceToTracker"]       = maxDistanceToTracker;
+    data["other"]["standingUpdateTime"]         = standingUpdateTime;
+    data["other"]["sendAltitude"]               = sendAltitude;
+    data["other"]["disableGPS"]                 = disableGPS;
+
+    serializeJson(data, configFile);
+    configFile.close();
+    Serial.println("Config saved");
 }
 
-void Configuration::readFile(fs::FS &fs, const char *fileName) {
-    StaticJsonDocument<2800> data;
-    File configFile = fs.open(fileName, "r");
-    DeserializationError error = deserializeJson(data, configFile);
-    if (error) {
-        Serial.println("Failed to read file, using default configuration");
+bool Configuration::readFile() {
+    Serial.println("Reading config..");
+    File configFile = SPIFFS.open("/tracker_conf.json", "r");
+
+    if (configFile) {
+        StaticJsonDocument<2800> data;
+        DeserializationError error = deserializeJson(data, configFile);
+        if (error) {
+            Serial.println("Failed to read file, using default configuration");
+        }
+
+        wifiAP.active               = data["wifiAP"]["active"] | true;
+        wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
+
+        JsonArray BeaconsArray = data["beacons"];
+        for (int i = 0; i < BeaconsArray.size(); i++) {
+            Beacon bcn;
+
+            bcn.callsign                = BeaconsArray[i]["callsign"] | "NOCALL-7";
+            bcn.callsign.toUpperCase();
+            bcn.symbol                  = BeaconsArray[i]["symbol"] | "[";
+            bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
+            bcn.comment                 = BeaconsArray[i]["comment"] | "";
+            bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
+            bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
+            bcn.micE                    = BeaconsArray[i]["micE"] | "";
+            bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
+            
+            beacons.push_back(bcn);
+        }
+
+        display.showSymbol              = data["display"]["showSymbol"] | true;
+        display.ecoMode                 = data["display"]["ecoMode"] | false;
+        display.timeout                 = data["display"]["timeout"] | 4;
+        display.turn180                 = data["display"]["turn180"] | false;
+
+        battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
+        battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
+        battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
+
+        winlink.password                = data["winlink"]["password"] | "NOPASS";
+
+        bme.active                      = data["bme"]["active"] | false;
+        bme.temperatureCorrection       = data["bme"]["temperatureCorrection"] | 0.0;
+        bme.sendTelemetry               = data["bme"]["sendTelemetry"] | false;
+
+        notification.ledTx              = data["notification"]["ledTx"] | false;
+        notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
+        notification.ledMessage         = data["notification"]["ledMessage"] | false;
+        notification.ledMessagePin      = data["notification"]["ledMessagePin"] | 2;
+        notification.ledFlashlight      = data["notification"]["ledFlashlight"] | false;
+        notification.ledFlashlightPin   = data["notification"]["ledFlashlightPin"] | 14;
+        notification.buzzerActive       = data["notification"]["buzzerActive"] | false;
+        notification.buzzerPinTone      = data["notification"]["buzzerPinTone"] | 33;
+        notification.buzzerPinVcc       = data["notification"]["buzzerPinVcc"] | 25;
+        notification.bootUpBeep         = data["notification"]["bootUpBeep"] | false;
+        notification.txBeep             = data["notification"]["txBeep"] | false;
+        notification.messageRxBeep      = data["notification"]["messageRxBeep"] | false;
+        notification.stationBeep        = data["notification"]["stationBeep"] | false;
+        notification.lowBatteryBeep     = data["notification"]["lowBatteryBeep"] | false;
+        notification.shutDownBeep       = data["notification"]["shutDownBeep"] | false;
+
+        JsonArray LoraTypesArray = data["lora"];
+        for (int j = 0; j < LoraTypesArray.size(); j++) {
+            LoraType loraType;
+
+            loraType.frequency          = LoraTypesArray[j]["frequency"] | 433775000;
+            loraType.spreadingFactor    = LoraTypesArray[j]["spreadingFactor"] | 12;
+            loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
+            loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
+            loraType.power              = LoraTypesArray[j]["power"] | 20;
+            loraTypes.push_back(loraType);
+        }
+
+        ptt.active                      = data["pttTrigger"]["active"] | false;
+        ptt.io_pin                      = data["pttTrigger"]["io_pin"] | 4;
+        ptt.preDelay                    = data["pttTrigger"]["preDelay"] | 0;
+        ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
+        ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
+
+        bluetooth.type                  = data["bluetooth"]["type"] | 1;
+        bluetooth.active                = data["bluetooth"]["active"] | false;
+
+        simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
+        sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
+        path                            = data["other"]["path"] | "WIDE1-1";
+        nonSmartBeaconRate              = data["other"]["nonSmartBeaconRate"] | 15;
+        rememberStationTime             = data["other"]["rememberStationTime"] | 30;
+        maxDistanceToTracker            = data["other"]["maxDistanceToTracker"] | 30;
+        standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
+        sendAltitude                    = data["other"]["sendAltitude"] | true;
+        disableGPS                      = data["other"]["disableGPS"] | false;
+
+        configFile.close();
+        Serial.println("Config read successfuly");
+        return true;
+    } else {
+        Serial.println("Config file not found");
+        return false;
     }
-
-    wifiAP.active               = data["wifiAP"]["active"] | true;
-    wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
-
-    JsonArray BeaconsArray = data["beacons"];
-    for (int i = 0; i < BeaconsArray.size(); i++) {
-        Beacon bcn;
-
-        bcn.callsign                = BeaconsArray[i]["callsign"] | "NOCALL-7";
-        bcn.callsign.toUpperCase();
-        bcn.symbol                  = BeaconsArray[i]["symbol"] | "[";
-        bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
-        bcn.comment                 = BeaconsArray[i]["comment"] | "";
-        bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
-        bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
-        bcn.micE                    = BeaconsArray[i]["micE"] | "";
-        bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
-        
-        beacons.push_back(bcn);
-    }
-
-    display.showSymbol              = data["display"]["showSymbol"] | true;
-    display.ecoMode                 = data["display"]["ecoMode"] | false;
-    display.timeout                 = data["display"]["timeout"] | 4;
-    display.turn180                 = data["display"]["turn180"] | false;
-
-    battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
-    battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
-    battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
-
-    winlink.password                = data["winlink"]["password"] | "NOPASS";
-
-    bme.active                      = data["bme"]["active"] | false;
-    bme.temperatureCorrection       = data["bme"]["temperatureCorrection"] | 0.0;
-    bme.sendTelemetry               = data["bme"]["sendTelemetry"] | false;
-
-    notification.ledTx              = data["notification"]["ledTx"] | false;
-    notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
-    notification.ledMessage         = data["notification"]["ledMessage"] | false;
-    notification.ledMessagePin      = data["notification"]["ledMessagePin"] | 2;
-    notification.ledFlashlight      = data["notification"]["ledFlashlight"] | false;
-    notification.ledFlashlightPin   = data["notification"]["ledFlashlightPin"] | 14;
-    notification.buzzerActive       = data["notification"]["buzzerActive"] | false;
-    notification.buzzerPinTone      = data["notification"]["buzzerPinTone"] | 33;
-    notification.buzzerPinVcc       = data["notification"]["buzzerPinVcc"] | 25;
-    notification.bootUpBeep         = data["notification"]["bootUpBeep"] | false;
-    notification.txBeep             = data["notification"]["txBeep"] | false;
-    notification.messageRxBeep      = data["notification"]["messageRxBeep"] | false;
-    notification.stationBeep        = data["notification"]["stationBeep"] | false;
-    notification.lowBatteryBeep     = data["notification"]["lowBatteryBeep"] | false;
-    notification.shutDownBeep       = data["notification"]["shutDownBeep"] | false;
-
-    JsonArray LoraTypesArray = data["lora"];
-    for (int j = 0; j < LoraTypesArray.size(); j++) {
-        LoraType loraType;
-
-        loraType.frequency          = LoraTypesArray[j]["frequency"] | 433775000;
-        loraType.spreadingFactor    = LoraTypesArray[j]["spreadingFactor"] | 12;
-        loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
-        loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
-        loraType.power              = LoraTypesArray[j]["power"] | 20;
-        loraTypes.push_back(loraType);
-    }
-
-    ptt.active                      = data["pttTrigger"]["active"] | false;
-    ptt.io_pin                      = data["pttTrigger"]["io_pin"] | 4;
-    ptt.preDelay                    = data["pttTrigger"]["preDelay"] | 0;
-    ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
-    ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
-
-    bluetooth.type                  = data["bluetooth"]["type"] | 1;
-    bluetooth.active                = data["bluetooth"]["active"] | false;
-
-    simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
-    sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
-    path                            = data["other"]["path"] | "WIDE1-1";
-    nonSmartBeaconRate              = data["other"]["nonSmartBeaconRate"] | 15;
-    rememberStationTime             = data["other"]["rememberStationTime"] | 30;
-    maxDistanceToTracker            = data["other"]["maxDistanceToTracker"] | 30;
-    standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
-    sendAltitude                    = data["other"]["sendAltitude"] | true;
-    disableGPS                      = data["other"]["disableGPS"] | false;
-
-    configFile.close();
 }
 
 bool Configuration::validateConfigFile(const String& currentBeaconCallsign) {
@@ -128,4 +213,114 @@ bool Configuration::validateMicE(const String& currentBeaconMicE) {
         }
     }
     return validType;
+}
+
+void Configuration::init() {
+    wifiAP.active                   = true;
+    wifiAP.password                 = "1234567890";
+
+    for (int i = 0; i < 3; i++) {
+        Beacon beacon;
+        beacon.callsign             = "NOCALL-7";
+        beacon.symbol               = "[";
+        beacon.overlay              = "/";
+        beacon.comment              = "";
+        beacon.smartBeaconActive    = true;
+        beacon.smartBeaconSetting   = 0;
+        beacon.micE                 = "";
+        beacon.gpsEcoMode           = false;
+        beacons.push_back(beacon);
+    }
+
+    display.showSymbol              = true;
+    display.ecoMode                 = false;
+    display.timeout                 = 4;
+    display.turn180                 = false;
+
+    battery.sendVoltage             = false;
+    battery.voltageAsTelemetry      = false;
+    battery.sendVoltageAlways       = false;
+
+    winlink.password                = "NOPASS";
+
+    bme.active                      = false;
+    bme.temperatureCorrection       = 0.0;
+    bme.sendTelemetry               = false;
+
+    notification.ledTx              = false;
+    notification.ledTxPin           = 13;
+    notification.ledMessage         = false;
+    notification.ledMessagePin      = 2;
+    notification.ledFlashlight      = false;
+    notification.ledFlashlightPin   = 14;
+    notification.buzzerActive       = false;
+    notification.buzzerPinTone      = 33;
+    notification.buzzerPinVcc       = 25;
+    notification.bootUpBeep         = false;
+    notification.txBeep             = false;
+    notification.messageRxBeep      = false;
+    notification.stationBeep        = false;
+    notification.lowBatteryBeep     = false;
+    notification.shutDownBeep       = false;
+
+    for (int j = 0; j < 3; j++) {
+        LoraType loraType;
+        switch (j) {
+            case 0:
+                loraType.frequency           = 433775000;
+                loraType.spreadingFactor     = 12;
+                loraType.codingRate4         = 5;
+                break;
+            case 1:
+                loraType.frequency           = 434855000;
+                loraType.spreadingFactor     = 9;
+                loraType.codingRate4         = 7;
+                break;
+            case 2:
+                loraType.frequency           = 439912500;
+                loraType.spreadingFactor     = 12;
+                loraType.codingRate4         = 5;
+                break;
+        }
+        loraType.signalBandwidth    = 125000;
+        loraType.power              = 20;
+        loraTypes.push_back(loraType);
+    }
+
+    ptt.active                      = false;
+    ptt.io_pin                      = 4;
+    ptt.preDelay                    = 0;
+    ptt.postDelay                   = 0;
+    ptt.reverse                     = false;
+
+    bluetooth.type                  = 1;
+    bluetooth.active                = false;
+
+    simplifiedTrackerMode           = false;
+    sendCommentAfterXBeacons        = 10;
+    path                            = "WIDE1-1";
+    nonSmartBeaconRate              = 15;
+    rememberStationTime             = 30;
+    maxDistanceToTracker            = 30;
+    standingUpdateTime              = 15;
+    sendAltitude                    = true;
+    disableGPS                      = false;
+
+    Serial.println("New Data Created...");
+}
+
+
+Configuration::Configuration() {
+    if (!SPIFFS.begin(false)) {
+        Serial.println("SPIFFS Mount Failed");
+        return;
+    }
+
+    bool exists = SPIFFS.exists("/tracker_conf.json");
+    if (!exists) {        
+        init();
+        writeFile();
+        ESP.restart();
+    }
+    readFile();
 }

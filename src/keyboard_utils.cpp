@@ -474,15 +474,10 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay == 9000) {
-            if (Config.wifiAP.active) {
-                displayShow("_WiFI AP_", "WiFi AP is ON", " check 192.168.4.1...", 2000);
-            } else {
-                displayShow("", "", " STARTING WiFi AP...", 2000);
-                Config.wifiAP.active = true;
-                // save all config file!
-                // restart
-
-            }
+            displayShow("", "", " STARTING WiFi AP...", 2000);
+            Config.wifiAP.active = true;
+            Config.writeFile();
+            ESP.restart();
         } else if (menuDisplay == 9001) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                 displayShow("", "", "    POWER OFF ...", 2000);
