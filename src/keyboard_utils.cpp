@@ -84,77 +84,52 @@ namespace KEYBOARD_Utils {
     void upArrow() {
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay--;
-            if (menuDisplay < 1) {
-                menuDisplay = 6;
-            }
+            if (menuDisplay < 1) menuDisplay = 6;
         } else if (menuDisplay >= 10 && menuDisplay <= 13) {
             menuDisplay--;
-            if (menuDisplay < 10) {
-                menuDisplay = 13;
-            }
+            if (menuDisplay < 10) menuDisplay = 13;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay--;
-            if (menuDisplay < 130) {
-                menuDisplay = 133;
-            }
+            if (menuDisplay < 130) menuDisplay = 133;
         } 
 
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
             menuDisplay--;
-            if (menuDisplay < 20) {
-                menuDisplay = 27;
-            }
+            if (menuDisplay < 20) menuDisplay = 27;
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
-            if (menuDisplay < 220) {
-                menuDisplay = 221;
-            }
+            if (menuDisplay < 220) menuDisplay = 221;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
-            if (menuDisplay < 240) {
-                menuDisplay = 241;
-            }
+            if (menuDisplay < 240) menuDisplay = 241;
         } 
         
         else if (menuDisplay >= 30 && menuDisplay <= 31) {
             menuDisplay--;
-            if (menuDisplay < 30) {
-                menuDisplay = 31;
-            }
+            if (menuDisplay < 30) menuDisplay = 31;
         } 
         
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
             menuDisplay--;
-            if (menuDisplay < 50) {
-                menuDisplay = 53;
-            }
+            if (menuDisplay < 50) menuDisplay = 53;
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = menuDisplay - 10;
-            if (menuDisplay < 5000) {
-                menuDisplay = 5080;
-            }
+            if (menuDisplay < 5000) menuDisplay = 5080;
         } else if (menuDisplay == 50100 || menuDisplay == 50110) {
             menuDisplay = menuDisplay - 10;
-            if (menuDisplay < 50100) {
-                menuDisplay = 50110;
-            }
+            if (menuDisplay < 50100) menuDisplay = 50110;
         } else if (menuDisplay >= 5061 && menuDisplay <= 5063) {
             menuDisplay--;
-            if (menuDisplay < 5061) {
-                menuDisplay = 5063;
-            }
+            if (menuDisplay < 5061) menuDisplay = 5063;
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay--;
-            if (menuDisplay < 5084) {
-                menuDisplay = 5085;
-            }
-        } 
-        
-        else if (menuDisplay >= 60 && menuDisplay <= 63) {
+            if (menuDisplay < 5084) menuDisplay = 5085;
+        } else if (menuDisplay >= 60 && menuDisplay <= 63) {
             menuDisplay--;
-            if (menuDisplay < 60) {
-                menuDisplay = 63;
-            }
+            if (menuDisplay < 60) menuDisplay = 63;
+        } else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
+            menuDisplay--;
+            if (menuDisplay < 9000) menuDisplay = 9001;
         }
     }
 
@@ -171,28 +146,20 @@ namespace KEYBOARD_Utils {
         }    
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay++;
-            if (menuDisplay > 6) {
-                menuDisplay = 1;
-            }
+            if (menuDisplay > 6) menuDisplay = 1;
         } 
         else if (menuDisplay >= 10 && menuDisplay <= 13) {
             menuDisplay++;
-            if (menuDisplay > 13) {
-                menuDisplay = 10;
-            }
+            if (menuDisplay > 13) menuDisplay = 10;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay++;
-            if (menuDisplay > 133) {
-                menuDisplay = 130;
-            }
+            if (menuDisplay > 133) menuDisplay = 130;
         } else if (menuDisplay == 100) {
             messagesIterator++;
             if (messagesIterator == MSG_Utils::getNumAPRSMessages()) {
                 menuDisplay = 10;
                 messagesIterator = 0;
-                if (Config.notification.ledMessage) {
-                    messageLed = false;
-                }
+                if (Config.notification.ledMessage) messageLed = false;
             } else {
                 menuDisplay = 100;
             }
@@ -202,26 +169,18 @@ namespace KEYBOARD_Utils {
         
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
         menuDisplay++;
-        if (menuDisplay > 27) {
-            menuDisplay = 20;
-        }
+        if (menuDisplay > 27) menuDisplay = 20;
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
-            if (menuDisplay > 221) {
-                menuDisplay = 220;
-            } 
+            if (menuDisplay > 221) menuDisplay = 220;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
-            if (menuDisplay > 241) {
-                menuDisplay = 240;
-            } 
+            if (menuDisplay > 241) menuDisplay = 240;
         }
 
         else if (menuDisplay >= 30 && menuDisplay <= 31) {
             menuDisplay++;  
-            if (menuDisplay > 31) {
-                menuDisplay = 30;
-            }
+            if (menuDisplay > 31) menuDisplay = 30;
         }
         
         else if (menuDisplay == 40) {
@@ -230,19 +189,13 @@ namespace KEYBOARD_Utils {
 
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
         menuDisplay++;  
-        if (menuDisplay > 53) {
-            menuDisplay = 50;
-        }
+        if (menuDisplay > 53) menuDisplay = 50;
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = menuDisplay + 10;
-            if (menuDisplay > 5080) {
-                menuDisplay = 5000;
-            }
+            if (menuDisplay > 5080) menuDisplay = 5000;
         } else if (menuDisplay == 50100 || menuDisplay == 50110) {
             menuDisplay = menuDisplay + 10;
-            if (menuDisplay > 50110) {
-                menuDisplay = 50100;
-            }
+            if (menuDisplay > 50110) menuDisplay = 50100;
         } else if (menuDisplay == 50101) {
             messagesIterator++;
             if (messagesIterator == MSG_Utils::getNumWLNKMails()) {
@@ -252,29 +205,26 @@ namespace KEYBOARD_Utils {
                     menuDisplay = 50100;
                 }
                 messagesIterator = 0;
-                if (Config.notification.ledMessage) {
-                    messageLed = false;
-                }
+                if (Config.notification.ledMessage) messageLed = false;
             } else {
                 menuDisplay = 50101;
             }
         } else if (menuDisplay >= 5061 && menuDisplay <= 5063) {
             menuDisplay++;
-            if (menuDisplay > 5063) {
-                menuDisplay = 5061;
-            }
+            if (menuDisplay > 5063) menuDisplay = 5061;
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay++;
-            if (menuDisplay > 5085) {
-                menuDisplay = 5084;
-            }
+            if (menuDisplay > 5085) menuDisplay = 5084;
         } 
 
         else if (menuDisplay >= 60 && menuDisplay <= 63) {
             menuDisplay++;
-            if (menuDisplay > 63) {
-                menuDisplay = 60;
-            } 
+            if (menuDisplay > 63) menuDisplay = 60;
+        }
+
+        else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
+            menuDisplay++;
+            if (menuDisplay > 9001) menuDisplay = 9000;
         }
     }
 
@@ -337,9 +287,7 @@ namespace KEYBOARD_Utils {
             winlinkCommentState = false;
             displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
-            if (menuDisplay == 200) {
-                menuDisplay = 20;
-            }
+            if (menuDisplay == 200) menuDisplay = 20;
         } else if ((menuDisplay >= 1 && menuDisplay <= 3) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 30 && menuDisplay <= 31)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
@@ -524,6 +472,25 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 63) {
             menuDisplay = 630;
         }
+
+        else if (menuDisplay == 9000) {
+            if (Config.wifiAP.active) {
+                displayShow("_WiFI AP_", "WiFi AP is ON", " check 192.168.4.1...", 2000);
+            } else {
+                displayShow("", "", " STARTING WiFi AP...", 2000);
+                Config.wifiAP.active = true;
+                // save all config file!
+                // restart
+
+            }
+        } else if (menuDisplay == 9001) {
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                displayShow("", "", "    POWER OFF ...", 2000);
+            #else
+                displayShow("", "", " starting DEEP SLEEP", 2000);
+            #endif
+            POWER_Utils::shutdown();
+        }
     }
 
     void processPressedKey(char key) {
@@ -553,31 +520,23 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 1 && menuDisplay <= 6 && key >=49 && key <= 55) { // Menu number select
             menuDisplay = key - 48;
         } else if (menuDisplay == 110 && key != 180) {    // Writing Callsign of Message
-            if (messageCallsign.length() == 1) {
-                messageCallsign.trim();
-            }
+            if (messageCallsign.length() == 1) messageCallsign.trim();
             if ((key >= 48 && key <= 57) || (key >= 65 && key <= 90) || (key >= 97 && key <= 122) || key == 45) { //only letters + numbers + "-"
                 messageCallsign += key;
             } else if (key == 13) {                         // Return Pressed
                 messageCallsign.trim();
-                if (menuDisplay == 110) {
-                    menuDisplay = 111;
-                }
+                if (menuDisplay == 110) menuDisplay = 111;
             } else if (key == 8) {                          // Delete Last Key
                 messageCallsign = messageCallsign.substring(0, messageCallsign.length() - 1);
             }
             messageCallsign.toUpperCase();
         } else if ((menuDisplay == 111 || menuDisplay == 1300 || menuDisplay == 1310) && key!= 180) {     // Writting Text of Message
-            if (messageText.length() == 1) {
-                messageText.trim();
-            }
+            if (messageText.length() == 1) messageText.trim();
             if (key >= 32 && key <= 126) {
                 messageText += key;
             } else if (key == 13 && messageText.length() > 0) {                         // Return Pressed: SENDING MESSAGE
                 messageText.trim();
-                if (messageText.length() > 67) {
-                    messageText = messageText.substring(0, 67);
-                }
+                if (messageText.length() > 67) messageText = messageText.substring(0, 67);
                 if (menuDisplay == 111) {
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
                     menuDisplay = 11;
@@ -600,11 +559,11 @@ namespace KEYBOARD_Utils {
             ESP.restart();
         } else if (menuDisplay == 270 && key == 13) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            displayShow("", "", "    POWER OFF ...", 2000);
-            POWER_Utils::shutdown();
+                displayShow("", "", "    POWER OFF ...", 2000);
             #else
-            displayShow("", "", "ESP32 CAN'T POWER OFF", 2000);
+                displayShow("", "", " starting DEEP SLEEP", 2000);
             #endif
+            POWER_Utils::shutdown();
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key >= 48 && key <= 57) {
             winlinkMailNumber = key;
         } else if ((menuDisplay == 5021 || menuDisplay == 5031 || menuDisplay == 5041 || menuDisplay == 5051) && key == 8) {
@@ -620,9 +579,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 5041 && key == 13 && winlinkMailNumber != "_?") {
             menuDisplay = 5042;
         } else if (menuDisplay == 5042) {
-            if (winlinkAddressee.length() == 1) {
-                winlinkAddressee.trim();
-            }
+            if (winlinkAddressee.length() == 1) winlinkAddressee.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
                 winlinkAddressee += key;
             } else if (key == 13 && winlinkAddressee.length() > 0) {
@@ -642,9 +599,7 @@ namespace KEYBOARD_Utils {
             winlinkMailNumber = "_?";
             menuDisplay = 5050;
         } else if (menuDisplay == 50610) {
-            if (winlinkAlias.length() == 1) {
-                winlinkAlias.trim();
-            }
+            if (winlinkAlias.length() == 1) winlinkAlias.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57)) {
                 winlinkAlias += key;
             } else if (key == 13 && winlinkAlias.length()>= 1) {
@@ -657,9 +612,7 @@ namespace KEYBOARD_Utils {
                 winlinkAlias = "";
             }
         } else if (menuDisplay == 50611) {
-            if (winlinkAliasComplete.length() == 1) {
-                winlinkAliasComplete.trim();
-            }
+            if (winlinkAliasComplete.length() == 1) winlinkAliasComplete.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
                 winlinkAliasComplete += key;
             } else if (key == 13 && winlinkAliasComplete.length()>= 1) {
@@ -675,9 +628,7 @@ namespace KEYBOARD_Utils {
                 winlinkAliasComplete = "";
             }
         } else if (menuDisplay == 50620) {
-            if (winlinkAlias.length() == 1) {
-                winlinkAlias.trim();
-            }
+            if (winlinkAlias.length() == 1) winlinkAlias.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57)) {
                 winlinkAlias += key;
             } else if (key == 13 && winlinkAlias.length()>= 1) {
@@ -692,9 +643,7 @@ namespace KEYBOARD_Utils {
                 winlinkAlias = "";
             }
         } else if (menuDisplay == 5081) {
-            if (winlinkAddressee.length() == 1) {
-                winlinkAddressee.trim();
-            }
+            if (winlinkAddressee.length() == 1) winlinkAddressee.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key >= 48 && key <= 57) || (key == 45) || (key == 46) || (key == 64) || (key == 95)) {
                 winlinkAddressee += key;
             } else if (key == 13 && winlinkAddressee.length() > 0) {
@@ -707,9 +656,7 @@ namespace KEYBOARD_Utils {
                 winlinkAddressee = "";
             }
         } else if (menuDisplay == 5082) {
-            if (winlinkSubject.length() == 1) {
-                winlinkSubject.trim();
-            }
+            if (winlinkSubject.length() == 1) winlinkSubject.trim();
             if ((key >= 65 && key <=90) || (key >= 97 && key <= 122) || (key == 32) || (key >= 48 && key <= 57)) {
                 winlinkSubject += key;
             } else if (key == 13 && winlinkSubject.length() > 0) {
@@ -723,9 +670,7 @@ namespace KEYBOARD_Utils {
                 winlinkSubject = "";
             }
         } else if (menuDisplay == 5083) {
-            if (winlinkBody.length() == 1) {
-                winlinkBody.trim();
-            }
+            if (winlinkBody.length() == 1) winlinkBody.trim();
             if ((key >= 32 && key <=122)) {
                 winlinkBody += key;
             } else if (key == 13 && winlinkBody.length() <= 67) {
@@ -738,16 +683,12 @@ namespace KEYBOARD_Utils {
                 winlinkBody = "";
             }
         } else if (menuDisplay == 630 && key != 180) {
-            if (messageText.length() == 1) {
-                messageText.trim();
-            }
+            if (messageText.length() == 1) messageText.trim();
             if (key >= 32 && key <= 126) {
                 messageText += key;
             } else if (key == 13 && messageText.length() > 0) {
                 messageText.trim();
-                if (messageText.length() > 67) {
-                    messageText = messageText.substring(0, 67);
-                }
+                if (messageText.length() > 67) messageText = messageText.substring(0, 67);
                 String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
                 packet += messageText;
                 displayShow("<<< TX >>>", "", packet,100);
@@ -833,16 +774,12 @@ namespace KEYBOARD_Utils {
     void read() {
         if (keyboardConnected) {
             uint32_t lastKey = millis() - keyboardTime;
-            if (lastKey > 30*1000) {
-                keyDetected = false;
-            }
+            if (lastKey > 30 * 1000) keyDetected = false;
             Wire.requestFrom(KB_ADDR, 1);
             while(Wire.available()) {
                 char c = Wire.read();
                 if (c != 0) {
-                    // just for debugging
-                    //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));
-
+                    //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
                     keyboardTime = millis();
                     processPressedKey(c);      
                 }

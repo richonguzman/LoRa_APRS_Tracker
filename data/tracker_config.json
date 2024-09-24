@@ -115,7 +115,7 @@
 		"reverse": false
 	},
 	"wifiAP": {
-		"active": true,
+		"active": false,
 		"password": "1234567890"
 	}
 

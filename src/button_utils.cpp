@@ -31,7 +31,9 @@ namespace BUTTON_Utils {
     }
 
     void multiPress() {
-        POWER_Utils::shutdown();
+        displayToggle(true);
+        menuTime = millis();
+        menuDisplay = 9000;
     }
 
 }
