@@ -34,6 +34,7 @@ ________________________________________________________________________________
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "bme_utils.h"
+#include "web_utils.h"
 #include "ble_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -119,7 +120,7 @@ void setup() {
         displayShow(" WEB-CONF","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","", "");
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
         WIFI_Utils::startAutoAP();
-        //WEB_Utils::setup();
+        WEB_Utils::setup();
 
         while (true) {      // comienza web config
             // algo
