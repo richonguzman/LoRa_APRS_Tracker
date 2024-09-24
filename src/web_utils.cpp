@@ -96,12 +96,14 @@ namespace WEB_Utils {
         }
         Config.display.turn180 = request->hasParam("display.turn180", true);
 
-        Config.battery.sendVoltage          = request->hasParam("battery.sendVoltage", true);
-        Config.battery.voltageAsTelemetry   = request->hasParam("battery.voltageAsTelemetry", true);
-        Config.battery.sendVoltageAlways    = request->hasParam("battery.sendVoltageAlways", true);
+        Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
+        Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
+        Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
+
+        Config.rememberStationTime              = request->getParam("other.rememberStationTime", true)->value().toInt();
 
         // other
-        Config.simplifiedTrackerMode            = request->hasParam("other.simplifiedTrackerMode", true);
+        /*Config.simplifiedTrackerMode            = request->hasParam("other.simplifiedTrackerMode", true);
         Config.sendCommentAfterXBeacons         = request->getParam("other.sendCommentAfterXBeacons", true)->value().toInt();
         Config.path                             = request->getParam("other.path", true)->value();
         Config.nonSmartBeaconRate               = request->getParam("other.nonSmartBeaconRate", true)->value().toInt();
@@ -109,18 +111,16 @@ namespace WEB_Utils {
         Config.maxDistanceToTracker             = request->getParam("other.maxDistanceToTracker", true)->value().toInt();
         Config.standingUpdateTime               = request->getParam("other.standingUpdateTime", true)->value().toInt();
         Config.sendAltitude                     = request->hasParam("other.sendAltitude", true);
-        Config.disableGPS                       = request->hasParam("other.disableGPS", true);
+        Config.disableGPS                       = request->hasParam("other.disableGPS", true);*/
         //
 
-        if (request->hasParam("winlink.password", true)) {
-            Config.winlink.password = request->getParam("winlink.password", true)->value();
-        }
+        Config.winlink.password                 = request->getParam("winlink.password", true)->value();
+        
+        Config.bme.active                       = request->hasParam("bme.active", true);
+        Config.bme.temperatureCorrection        = request->getParam("bme.temperatureCorrection", true)->value().toFloat();
+        Config.bme.sendTelemetry                = request->hasParam("bme.sendTelemetry", true);
 
-        Config.bme.active                   = request->hasParam("bme.active", true);
-        Config.bme.temperatureCorrection    = request->getParam("bme.temperatureCorrection", true)->value().toFloat();
-        Config.bme.sendTelemetry            = request->hasParam("bme.sendTelemetry", true);
-
-        Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
+        /*Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
         Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
         Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
         Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
@@ -134,12 +134,12 @@ namespace WEB_Utils {
         Config.notification.messageRxBeep       = request->hasParam("notification.messageRxBeep", true);
         Config.notification.stationBeep         = request->hasParam("notification.stationBeep", true);
         Config.notification.lowBatteryBeep      = request->hasParam("notification.lowBatteryBeep", true);
-        Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
+        Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);*/
 
         // lora
 
-        Config.bluetooth.active                  = request->hasParam("bluetooth.active", true);
-        Config.bluetooth.type                    = request->getParam("bluetooth.type", true)->value().toInt();
+        Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
+        Config.bluetooth.type                   = request->getParam("bluetooth.type", true)->value().toInt();
 
         Config.ptt.active                       = request->hasParam("ptt.active", true);
         Config.ptt.io_pin                       = request->getParam("ptt.io_pin", true)->value().toInt();
@@ -147,12 +147,12 @@ namespace WEB_Utils {
         Config.ptt.postDelay                    = request->getParam("ptt.postDelay", true)->value().toInt();
         Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
 
-        
-        // wifi
+        Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
+        //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
 
         Config.writeFile();
 
-        AsyncWebServerResponse *response    = request->beginResponse(302, "text/html", "");
+        AsyncWebServerResponse *response        = request->beginResponse(302, "text/html", "");
         response->addHeader("Location", "/");
         request->send(response);
         displayToggle(false);

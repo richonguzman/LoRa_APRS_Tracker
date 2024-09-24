@@ -195,7 +195,7 @@ bool Configuration::readFile() {
 
 bool Configuration::validateConfigFile(const String& currentBeaconCallsign) {
     if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in 'data/tracker_config.json' and upload it via 'Upload File System image'");
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in WebConfig");
         displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
         return true;
     } else {

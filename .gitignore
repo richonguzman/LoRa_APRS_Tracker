@@ -3,5 +3,8 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-.idea
 .DS_Store
+/data_embed/*.gz
+installer/firmware
+installer/*.bin
+**/__pycache__/
