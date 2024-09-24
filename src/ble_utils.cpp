@@ -52,9 +52,9 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             //Serial.print(" ");
             receivedString += receivedData[i];
         }
-        if (Config.bluetoothType == 0) {
+        if (Config.bluetooth.type == 0) {
             BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
-        } else if (Config.bluetoothType == 2) {
+        } else if (Config.bluetooth.type == 2) {
             BLEToLoRaPacket = receivedString;
         }
         sendBleToLoRa = true;
@@ -78,11 +78,11 @@ namespace BLE_Utils {
 
         BLEService *pService = nullptr;
 
-        if (Config.bluetoothType == 0) {
+        if (Config.bluetooth.type == 0) {
             pService = pServer->createService(SERVICE_UUID_0);
             pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_0, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
             pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_0, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-        } else if (Config.bluetoothType == 2) {
+        } else if (Config.bluetooth.type == 2) {
             pService = pServer->createService(SERVICE_UUID_2);
             pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_2, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
             pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_2, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
@@ -94,9 +94,9 @@ namespace BLE_Utils {
 
             BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
 
-            if (Config.bluetoothType == 0) {
+            if (Config.bluetooth.type == 0) {
                 pAdvertising->addServiceUUID(SERVICE_UUID_0);
-            } else if (Config.bluetoothType == 2) {
+            } else if (Config.bluetooth.type == 2) {
                 pAdvertising->addServiceUUID(SERVICE_UUID_2);
             }
             pServer->getAdvertising()->setScanResponse(true);
@@ -105,7 +105,7 @@ namespace BLE_Utils {
             pAdvertising->start();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE", "%s", "Waiting for BLE central to connect...");
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service. Invalid bluetoothType: %d", Config.bluetoothType);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service. Invalid bluetoothType: %d", Config.bluetooth.type);
         }
     }
 
@@ -127,13 +127,13 @@ namespace BLE_Utils {
     }
 
     void txToPhoneOverBLE(const String& frame) {
-        if (Config.bluetoothType == 0) {
+        if (Config.bluetooth.type == 0) {
             txBLE((byte)KissChar::Fend);
             txBLE((byte)KissCmd::Data);
         }        
         for(int n = 0; n < frame.length(); n++) {
             uint8_t byteCharacter = frame[n];
-            if (Config.bluetoothType == 2) {
+            if (Config.bluetooth.type == 2) {
                 txBLE(byteCharacter);
             } else {
                 if (byteCharacter == KissChar::Fend) {
@@ -147,9 +147,9 @@ namespace BLE_Utils {
                 }
             }    
         }
-        if (Config.bluetoothType == 0) {
+        if (Config.bluetooth.type == 0) {
             txBLE((byte)KissChar::Fend);
-        } else if (Config.bluetoothType == 2) {
+        } else if (Config.bluetooth.type == 2) {
             txBLE('\n');
         }   
     }
@@ -161,9 +161,9 @@ namespace BLE_Utils {
             for (int i = 0; i < packet.length(); i++) {
                 receivedPacketString += packet[i];
             }
-            if (Config.bluetoothType == 0) {
+            if (Config.bluetooth.type == 0) {
                 txToPhoneOverBLE(AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString));
-            } else if (Config.bluetoothType == 2) {
+            } else if (Config.bluetooth.type == 2) {
                 txToPhoneOverBLE(receivedPacketString);                
             }
         }

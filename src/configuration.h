@@ -5,6 +5,12 @@
 #include <vector>
 #include <FS.h>
 
+class WiFiAP {
+public:
+    bool    active;
+    String  password;
+};
+
 class Beacon {
 public:
     String  callsign;
@@ -65,25 +71,33 @@ public:
 
 class LoraType {
 public:
-    long  frequency;
-    int   spreadingFactor;
-    long  signalBandwidth;
-    int   codingRate4;
-    int   power;
+    long    frequency;
+    int     spreadingFactor;
+    long    signalBandwidth;
+    int     codingRate4;
+    int     power;
 };
 
 class Ptt {
 public:
-    bool  active;
-    int   io_pin;
-    int   preDelay;
-    int   postDelay;
-    bool  reverse;
+    bool    active;
+    int     io_pin;
+    int     preDelay;
+    int     postDelay;
+    bool    reverse;
 };
+
+class BLUETOOTH {
+public:
+    byte    type;
+    bool    active;
+};
+
 
 class Configuration {
 public:
 
+    WiFiAP                  wifiAP;
     std::vector<Beacon>     beacons;  
     Display                 display;
     Battery                 battery;
@@ -92,6 +106,7 @@ public:
     Notification            notification;
     std::vector<LoraType>   loraTypes;
     Ptt                     ptt;
+    BLUETOOTH               bluetooth;
     
     bool    simplifiedTrackerMode;
     int     sendCommentAfterXBeacons;
@@ -101,8 +116,6 @@ public:
     int     maxDistanceToTracker;
     int     standingUpdateTime;
     bool    sendAltitude;
-    int     bluetoothType;
-    bool    bluetoothActive;
     bool    disableGPS;
 
     Configuration();

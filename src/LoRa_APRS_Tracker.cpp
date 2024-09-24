@@ -30,6 +30,7 @@ ________________________________________________________________________________
 #include "sleep_utils.h"
 #include "menu_utils.h"
 #include "lora_utils.h"
+#include "wifi_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "bme_utils.h"
@@ -114,6 +115,22 @@ void setup() {
     STATION_Utils::nearTrackerInit();
     startupScreen(loraIndex, versionDate);
 
+    if (Config.wifiAP.active){
+        displayShow(" WEB-CONF","", "WiFi AP: LoRa Tracker", "IP:       192.168.4.1","", "");
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
+        WIFI_Utils::startAutoAP();
+        //WEB_Utils::setup();
+
+        while (true) {      // comienza web config
+            // algo
+        } 
+
+    } else {
+        WiFi.mode(WIFI_OFF);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
+    }
+
+
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
@@ -125,7 +142,7 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
         BLE_Utils::setup();
     } else {
         #ifdef HAS_BT_CLASSIC
@@ -182,7 +199,7 @@ void loop() {
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedTrackersByTimeAndDelete();
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
         BLE_Utils::sendToLoRa();
     } else {
         #ifdef HAS_BT_CLASSIC

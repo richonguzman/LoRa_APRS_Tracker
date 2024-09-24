@@ -103,11 +103,20 @@
 			"power": 20
 		}
 	],
+	"bluetooth": {
+		"type": 1,
+		"active": false
+	},
 	"pttTrigger": {
 		"active": false,
 		"io_pin": 4,
 		"preDelay": 0,
 		"postDelay": 0,
 		"reverse": false
+	},
+	"wifiAP": {
+		"active": true,
+		"password": "1234567890"
 	}
+
 }

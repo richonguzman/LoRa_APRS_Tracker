@@ -22,7 +22,7 @@ namespace BLUETOOTH_Utils {
     bool useKiss = false;
 
     void setup() {
-        bluetoothActive = Config.bluetoothActive;
+        bluetoothActive = Config.bluetooth.active;
         if (!bluetoothActive) {
             btStop();
             esp_bt_controller_disable();

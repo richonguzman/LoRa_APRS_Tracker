@@ -23,13 +23,16 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         Serial.println("Failed to read file, using default configuration");
     }
 
+    wifiAP.active               = data["wifiAP"]["active"] | true;
+    wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
+
     JsonArray BeaconsArray = data["beacons"];
     for (int i = 0; i < BeaconsArray.size(); i++) {
         Beacon bcn;
 
         bcn.callsign                = BeaconsArray[i]["callsign"] | "NOCALL-7";
         bcn.callsign.toUpperCase();
-        bcn.symbol                  = BeaconsArray[i]["symbol"] | ">";
+        bcn.symbol                  = BeaconsArray[i]["symbol"] | "[";
         bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
         bcn.comment                 = BeaconsArray[i]["comment"] | "";
         bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
@@ -89,6 +92,9 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
     ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
 
+    bluetooth.type                  = data["bluetooth"]["type"] | 1;
+    bluetooth.active                = data["bluetooth"]["active"] | false;
+
     simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
     sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
     path                            = data["other"]["path"] | "WIDE1-1";
@@ -97,8 +103,6 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
     maxDistanceToTracker            = data["other"]["maxDistanceToTracker"] | 30;
     standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
     sendAltitude                    = data["other"]["sendAltitude"] | true;
-    bluetoothType                   = data["other"]["bluetoothType"] | 1;
-    bluetoothActive                 = data["other"]["bluetoothActive"] | true;
     disableGPS                      = data["other"]["disableGPS"] | false;
 
     configFile.close();

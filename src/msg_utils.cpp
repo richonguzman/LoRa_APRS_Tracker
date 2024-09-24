@@ -417,7 +417,7 @@ namespace MSG_Utils {
                 }
 
                 if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {
-                    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) { // agregar validador si cliente BLE esta conectado?
+                    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) { // agregar validador si cliente BLE esta conectado?
                         BLE_Utils::sendToPhone(packet.text.substring(3));
                     } else {
                         #ifdef HAS_BT_CLASSIC
