@@ -353,7 +353,11 @@ namespace POWER_Utils {
         #ifdef HAS_NO_GPS
             disableGPS = true;
         #else
-            disableGPS = Config.disableGPS;
+            if (Config.wifiAP.active) {
+                disableGPS = true;
+            } else {
+                disableGPS = Config.disableGPS;
+            }            
         #endif
 
         #ifdef HAS_AXP192
