@@ -75,24 +75,24 @@ function loadSettings(settings) {
     document.getElementById("personalNote").value                       = settings.personalNote;
     document.getElementById("action.symbol").value                      = settings.beacon.overlay + settings.beacon.symbol;
 
-    document.querySelector(".list-networks").innerHTML                  = "";
+    document.querySelector(".list-tracker").innerHTML                  = "";
 
     // Networks
-    const wifiNetworks = settings.wifi.AP || [];
-    const networksContainer = document.querySelector(".list-networks");
+    const trackers = settings.beacons || [];
+    const trackersContainer = document.querySelector(".list-tracker");
 
-    let networkCount = 0;
+    let trackerCount = 0;
 
-    wifiNetworks.forEach((network) => {
-        const networkElement = document.createElement("div");
-        networkElement.classList.add("row", "network", "border-bottom", "py-2");
+    trackers.forEach((tracker) => {
+        const trackerElement = document.createElement("div");
+        trackerElement.classList.add("row", "network", "border-bottom", "py-2");
 
         // Increment the name, id, and for attributes
-        const attributeName = `wifi.AP.${networkCount}`;
-        networkElement.innerHTML = `
+        const attributeName = `beacons.${trackerCount}`;
+        trackerElement.innerHTML = `
                   <div class="form-floating col-5 px-1 mb-2">
-                    <input type="text" class="form-control form-control-sm" name="${attributeName}.ssid" id="${attributeName}.ssid" value="${network.ssid}">
-                    <label for="${attributeName}.ssid">SSID</label>
+                    <input type="text" class="form-control form-control-sm" name="${attributeName}.callsign" id="${attributeName}.callsign" value="${tracker.callsign}">
+                    <label for="${attributeName}.callsign">callsign</label>
                   </div>
                   <div class="form-floating col-5 px-1 mb-2">
                     <input type="password" class="form-control form-control-sm" name="${attributeName}.password" id="${attributeName}.password" value="${network.password}">
@@ -106,8 +106,8 @@ function loadSettings(settings) {
                     </div>
                   </div>
                 `;
-        networksContainer.appendChild(networkElement);
-        networkCount++;
+        trackersContainer.appendChild(trackerElement);
+        trackerCount++;
     });
 
 
@@ -317,20 +317,20 @@ WebadminCheckbox.addEventListener("change", function () {
 });
 
 document.querySelector(".new button").addEventListener("click", function () {
-    const networksContainer = document.querySelector(".list-networks");
+    const trackersContainer = document.querySelector(".list-tracker");
 
-    let networkCount = document.querySelectorAll(".network").length;
+    let trackerCount = document.querySelectorAll(".network").length;
 
-    const networkElement = document.createElement("div");
+    const trackerElement = document.createElement("div");
 
-    networkElement.classList.add("row", "network", "border-bottom", "py-2");
+    trackerElement.classList.add("row", "network", "border-bottom", "py-2");
 
     // Increment the name, id, and for attributes
-    const attributeName = `wifi.AP.${networkCount}`;
-    networkElement.innerHTML = `
+    const attributeName = `beacons.${trackerCount}`;
+    trackerElement.innerHTML = `
                 <div class="form-floating col-6 col-md-5 px-1 mb-2">
-                <input type="text" class="form-control form-control-sm" name="${attributeName}.ssid" id="${attributeName}.ssid" placeholder="" >
-                <label for="${attributeName}.ssid">SSID</label>
+                <input type="text" class="form-control form-control-sm" name="${attributeName}.callsign" id="${attributeName}.callsign" placeholder="" >
+                <label for="${attributeName}.callsign">callsign</label>
                 </div>
                 <div class="form-floating col-6 col-md-5 px-1 mb-2">
                 <input type="password" class="form-control form-control-sm" name="${attributeName}.password" id="${attributeName}.password" placeholder="">
@@ -344,12 +344,12 @@ document.querySelector(".new button").addEventListener("click", function () {
                 </div>
                 </div>
             `;
-    networksContainer.appendChild(networkElement);
+    trackersContainer.appendChild(trackerElement);
 
-    networkCount++;
+    trackerCount++;
 
     // Add the new network element to the end of the document
-    document.querySelector(".new").before(networkElement);
+    document.querySelector(".new").before(trackerElement);
 });
 
 document
@@ -460,7 +460,7 @@ function checkConnection() {
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    document.getElementById("wifi.APs").value =
+    document.getElementById("beacons").value =
         document.querySelectorAll(".network").length;
 
     fetch(form.action, {
