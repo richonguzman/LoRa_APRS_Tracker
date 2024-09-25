@@ -104,7 +104,7 @@ function loadSettings(settings) {
     // WiFi AP
     document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
 
-    refreshSpeedStandard();
+    //refreshSpeedStandard();
     toggleFields();
 }
 

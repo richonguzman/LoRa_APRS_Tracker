@@ -118,7 +118,7 @@
                                             <label
                                                 for="display.showSymbol"
                                                 class="form-label"
-                                                >Show Symbol Drawing instead of Character</label
+                                                >Show Symbol Drawing</label
                                             >
                                         </div>
                                     </div>
@@ -137,25 +137,31 @@
                                             >
                                         </div>
                                     </div>
+                                    
+                                </div>
+                                <div class="row mt-2">
                                     <div class="col-6">
-                                        <div
-                                            class="form-check form-switch mt-1"
+                                        <label
+                                            for="other.rememberStationTime"
+                                            class="form-label"
+                                            >Remember Station Time</label
                                         >
+                                        <div class="input-group">
                                             <input
-                                                type="checkbox"
-                                                name="display.turn180"
-                                                id="display.turn180"
-                                                class="form-check-input"
+                                                type="number"
+                                                name="other.rememberStationTime"
+                                                id="other.rememberStationTime"
+                                                placeholder="30"
+                                                class="form-control"
+                                                required=""
+                                                step="1"
+                                                min="1"
                                             />
-                                            <label
-                                                for="display.turn180"
-                                                class="form-label"
-                                                >Turn 180º</label
+                                            <span class="input-group-text"
+                                                >minutes</span
                                             >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row mt-2">
                                     <div class="col-6">
                                         <label
                                             for="display.timeout"
@@ -176,24 +182,17 @@
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <label
-                                            for="other.rememberStationTime"
-                                            class="form-label"
-                                            >Remember Station Time</label
-                                        >
-                                        <div class="input-group">
+                                        <div class="form-check form-switch mt-3">
                                             <input
-                                                type="number"
-                                                name="other.rememberStationTime"
-                                                id="other.rememberStationTime"
-                                                placeholder="30"
-                                                class="form-control"
-                                                required=""
-                                                step="1"
-                                                min="1"
+                                                type="checkbox"
+                                                name="display.turn180"
+                                                id="display.turn180"
+                                                class="form-check-input"
                                             />
-                                            <span class="input-group-text"
-                                                >minutes</span
+                                            <label
+                                                for="display.turn180"
+                                                class="form-label"
+                                                >Turn 180º</label
                                             >
                                         </div>
                                     </div>
@@ -236,14 +235,29 @@
                                                 class="form-label"
                                                 ><b>Activate Wx Telemetry</b>
                                                 <small
-                                                    >Requires a BME/BMP280, BME680 or Si7021 sensor installed</small
+                                                    >Requires a BME/BMP280, BME680 or Si7021 sensor</small
                                                 ></label
                                             >
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mt-3">
-                                    <div class="col-6">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bme.sendTelemetry"
+                                                id="bme.sendTelemetry"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bme.sendTelemetry"
+                                                class="form-label"
+                                                >Send Wx Telemetry in GPS Beacon
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mt-3">
                                         <label for="bme.temperatureCorrection" class="form-label"
                                             >Temperature Correction</label
                                         >
@@ -261,22 +275,7 @@
                                                 >Celsius</span
                                             >
                                         </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="bme.sendTelemetry"
-                                                id="bme.sendTelemetry"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="bme.sendTelemetry"
-                                                class="form-label"
-                                                >Send Wx Telemetry in GPS Beacon
-                                            </label>
-                                        </div>
-                                    </div>
+                                    </div>                                    
                                 </div>
                             </div>
                         </div>
@@ -317,7 +316,7 @@
                                         >Enable bluetooth</label
                                     >
                                 </div>
-                                <div class="col-6">
+                                <div class="col-6 mt-1">
                                     <label for="bluetooth.type" class="form-label">Bluetooth Type</label>
                                     <select name="bluetooth.type" id="bluetooth.type" class="form-control">
                                         <option value="0">BT Classic</option>
@@ -450,7 +449,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mt-3">
+                                <div class="row">
                                     <div class="col-6">
                                         <label
                                             for="ptt.io_pin"
@@ -519,7 +518,7 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-12 mt-3">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
