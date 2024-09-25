@@ -101,6 +101,162 @@
                                             d="M2.5 13.5A.5.5 0 0 1 3 13h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5M2 2h12s2 0 2 2v6s0 2-2 2H2s-2 0-2-2V4s0-2 2-2"
                                         />
                                     </svg>
+                                    Station Config
+                                </h5>
+                                <small>Aditional Configuration.</small>
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="simplifiedTrackerMode"
+                                                id="simplifiedTrackerMode"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="simplifiedTrackerMode"
+                                                class="form-label"
+                                                >Simplified Tracker Mode<small> (Only Gps Beacon Tx)</small></label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="sendCommentAfterXBeacons"
+                                            class="form-label"
+                                            >Send Comment After X Beacons</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="sendCommentAfterXBeacons"
+                                                id="sendCommentAfterXBeacons"
+                                                class="form-control"
+                                                placeholder="10"
+                                                value="10"
+                                                step="1"
+                                                min="0"
+                                            />
+                                            <span class="input-group-text"
+                                                >GPS Beacons</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="path"
+                                            class="form-label"
+                                            >Path</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="text"
+                                                name="path"
+                                                id="path"
+                                                class="form-control"
+                                                value="WIDE1-1"                                                
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="nonSmartBeaconRate"
+                                            class="form-label"
+                                            >Fixed Beacon Rate</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="nonSmartBeaconRate"
+                                                id="nonSmartBeaconRate"
+                                                class="form-control"
+                                                placeholder="15"
+                                                value="15"
+                                                step="1"
+                                                min="5"
+                                            />
+                                            <span class="input-group-text"
+                                                >minutes</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="standingUpdateTime"
+                                            class="form-label"
+                                            >Standing Update Time</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="standingUpdateTime"
+                                                id="standingUpdateTime"
+                                                class="form-control"
+                                                placeholder="15"
+                                                value="15"
+                                                step="1"
+                                                min="15"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="sendAltitude"
+                                                id="sendAltitude"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="sendAltitude"
+                                                class="form-label"
+                                                >Send Altitude<small> (Instead of Velocity+Course)</small></label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="disableGPS"
+                                                id="disableGPS"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="disableGPS"
+                                                class="form-label"
+                                                >Disable GPS<small> (For non moving Stations/TNC)</small></label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
+                                        class="bi bi-tv-fill"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            d="M2.5 13.5A.5.5 0 0 1 3 13h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5M2 2h12s2 0 2 2v6s0 2-2 2H2s-2 0-2-2V4s0-2 2-2"
+                                        />
+                                    </svg>
                                     Display
                                 </h5>
                                 <small>OLED screen configuration.</small>

@@ -84,7 +84,17 @@ namespace WEB_Utils {
         Serial.println("Got new config from www");
 
         // beacons
-        
+
+        Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
+        //Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
+        //Config.path                             = request->getParam("path", true)->value();
+        /*Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();
+        Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
+        Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
+        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();*/
+        Config.sendAltitude                     = request->hasParam("sendAltitude", true);
+        Config.disableGPS                       = request->hasParam("disableGPS", true);
+
         Config.display.showSymbol           = request->hasParam("display.showSymbol", true);
         if (request->hasParam("display.ecoMode", true)) {
             Config.display.ecoMode = true;
@@ -99,16 +109,6 @@ namespace WEB_Utils {
         Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
         Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
         Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
-
-        /*Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
-        Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
-        Config.path                             = request->getParam("path", true)->value();
-        Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();*/
-        Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
-        /*Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
-        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
-        Config.sendAltitude                     = request->hasParam("sendAltitude", true);
-        Config.disableGPS                       = request->hasParam("disableGPS", true);*/
 
         Config.winlink.password                 = request->getParam("winlink.password", true)->value();
         

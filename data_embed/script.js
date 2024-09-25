@@ -69,6 +69,17 @@ function loadSettings(settings) {
     
     // BEACONS
 
+    // ADITIONAL STATION CONFIG
+    document.getElementById("simplifiedTrackerMode").checked            = settings.simplifiedTrackerMode;
+    document.getElementById("sendCommentAfterXBeacons").value           = settings.sendCommentAfterXBeacons;
+    document.getElementById("path").value                               = settings.path;
+    document.getElementById("nonSmartBeaconRate").value                 = settings.nonSmartBeaconRate;
+    document.getElementById("rememberStationTime").value                = settings.rememberStationTime;
+    document.getElementById("maxDistanceToTracker").value               = settings.maxDistanceToTracker;
+    document.getElementById("standingUpdateTime").value                 = settings.standingUpdateTime;
+    document.getElementById("sendAltitude").checked                     = settings.sendAltitude ;
+    document.getElementById("disableGPS").checked                       = settings.disableGPS;
+
     // DISPLAY
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
     document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
@@ -83,17 +94,6 @@ function loadSettings(settings) {
     document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
     document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
     document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;    
-    
-    // OTHER
-    /*document.getElementById("simplifiedTrackerMode").checked            = settings.simplifiedTrackerMode;
-    document.getElementById("sendCommentAfterXBeacons").value           = settings.sendCommentAfterXBeacons;
-    document.getElementById("path").value                               = settings.path;
-    document.getElementById("nonSmartBeaconRate").value                 = settings.nonSmartBeaconRate;*/
-    document.getElementById("rememberStationTime").value                = settings.rememberStationTime;
-    /*document.getElementById("maxDistanceToTracker").value               = settings.maxDistanceToTracker;
-    document.getElementById("standingUpdateTime").value                 = settings.standingUpdateTime;
-    document.getElementById("sendAltitude").checked                     = settings.sendAltitude ;
-    document.getElementById("disableGPS").checked                       = settings.disableGPS;*/
 
     // WINLINK
     document.getElementById("winlink.password").value                   = settings.winlink.password;
