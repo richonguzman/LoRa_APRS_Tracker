@@ -117,7 +117,7 @@ namespace WEB_Utils {
         Config.bme.sendTelemetry                = request->hasParam("bme.sendTelemetry", true);
 
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
-        //Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
+        Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
         Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
         //Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
         Config.notification.ledFlashlight       = request->hasParam("notification.ledFlashlight", true);
@@ -132,7 +132,7 @@ namespace WEB_Utils {
         Config.notification.lowBatteryBeep      = request->hasParam("notification.lowBatteryBeep", true);
         Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
 
-        // lora
+        // LORA
 
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
         Config.bluetooth.type                   = request->getParam("bluetooth.type", true)->value().toInt();
