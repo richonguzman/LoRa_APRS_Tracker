@@ -151,11 +151,11 @@
                                                 type="number"
                                                 name="rememberStationTime"
                                                 id="rememberStationTime"
-                                                placeholder="30"
                                                 class="form-control"
-                                                required=""
-                                                step="1"
-                                                min="1"
+                                                placeholder="30"
+                                                value="30"
+                                                step="5"
+                                                min="15"
                                             />
                                             <span class="input-group-text"
                                                 >minutes</span
@@ -477,6 +477,7 @@
                                                 name="notification.ledTxPin"
                                                 id="notification.ledTxPin"
                                                 class="form-control"
+                                                value="13"
                                             />
                                             <span class="input-group-text"
                                                 >Pin</span
@@ -495,6 +496,7 @@
                                                 name="notification.ledMessagePin"
                                                 id="notification.ledMessagePin"
                                                 class="form-control"
+                                                value="2"
                                             />
                                             <span class="input-group-text"
                                                 >Pin</span
@@ -547,6 +549,7 @@
                                                 name="notification.buzzerPinTone"
                                                 id="notification.buzzerPinTone"
                                                 class="form-control"
+                                                value="33"
                                             />
                                             <span class="input-group-text"
                                                 >Pin</span
@@ -565,6 +568,7 @@
                                                 name="notification.ledFlashlightPin"
                                                 id="notification.ledFlashlightPin"
                                                 class="form-control"
+                                                value="14"
                                             />
                                             <span class="input-group-text"
                                                 >Pin</span
@@ -572,23 +576,22 @@
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <label
-                                            for="notification.buzzerPinVcc"
+                                        <label 
+                                            for="notification.buzzerPinVcc" 
                                             class="form-label"
-                                            >Buzzer Vcc Pin</label
-                                        >                                    
+                                            >Buzzer Vcc Pin</label>
                                         <div class="input-group">
                                             <input
                                                 type="number"
                                                 name="notification.buzzerPinVcc"
                                                 id="notification.buzzerPinVcc"
                                                 class="form-control"
+                                                value="25"
                                             />
-                                            <span class="input-group-text"
-                                                >Pin</span
-                                            >
+                                            <span class="input-group-text">Pin</span>
                                         </div>
                                     </div>
+                                    
                                 </div>
                                 <div class="row mt-3">
                                     <div class="col-12">
@@ -846,21 +849,20 @@
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="col-12">
-                                    <label
-                                        for="winlink.password"
+                                    <label 
+                                        for="winlink.password" 
                                         class="form-label"
-                                        >Password</label
-                                    >
+                                        >Password</label>
                                     <input
                                         type="password"
                                         name="winlink.password"
                                         id="winlink.password"
                                         class="form-control"
                                         placeholder="ABCDEF"
-                                        required=""
+                                        value="ABCDEF"
                                     />
                                 </div>
-                            </div>
+                            </div>                            
                         </div>
                         <hr />
 
@@ -896,18 +898,17 @@
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="col-12">
-                                    <label
-                                        for="wifiAP.password"
+                                    <label 
+                                        for="wifiAP.password" 
                                         class="form-label"
-                                        >Password</label
-                                    >
+                                        >Password</label>
                                     <input
                                         type="password"
                                         name="wifiAP.password"
                                         id="wifiAP.password"
                                         class="form-control"
                                         placeholder="1234567890"
-                                        required=""
+                                        value="1234567890"
                                     />
                                 </div>
                             </div>

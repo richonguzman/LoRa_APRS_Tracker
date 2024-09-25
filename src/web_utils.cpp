@@ -119,12 +119,12 @@ namespace WEB_Utils {
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
         Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
         Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
-        //Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
+        Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
         Config.notification.ledFlashlight       = request->hasParam("notification.ledFlashlight", true);
-        //Config.notification.ledFlashlightPin    = request->getParam("notification.ledFlashlightPin", true)->value().toInt();
+        Config.notification.ledFlashlightPin    = request->getParam("notification.ledFlashlightPin", true)->value().toInt();
         Config.notification.buzzerActive        = request->hasParam("notification.buzzerActive", true);
-        //Config.notification.buzzerPinTone       = request->getParam("notification.buzzerPinTone", true)->value().toInt();
-        //Config.notification.buzzerPinVcc        = request->getParam("notification.buzzerPinVcc", true)->value().toInt();
+        Config.notification.buzzerPinTone       = request->getParam("notification.buzzerPinTone", true)->value().toInt();
+        Config.notification.buzzerPinVcc        = request->getParam("notification.buzzerPinVcc", true)->value().toInt();
         Config.notification.bootUpBeep          = request->hasParam("notification.bootUpBeep", true);
         Config.notification.txBeep              = request->hasParam("notification.txBeep", true);
         Config.notification.messageRxBeep       = request->hasParam("notification.messageRxBeep", true);
