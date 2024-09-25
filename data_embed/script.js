@@ -67,7 +67,9 @@ logCheckbox.addEventListener("change", function () {
 function loadSettings(settings) {
     currentSettings = settings;
     
-    // Display
+    // BEACONS
+
+    // DISPLAY
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
     document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
     document.getElementById("display.timeout").value                    = settings.display.timeout;
@@ -82,18 +84,48 @@ function loadSettings(settings) {
     document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
     document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;    
     
+    // OTHER
+    /*document.getElementById("simplifiedTrackerMode").checked            = settings.simplifiedTrackerMode;
+    document.getElementById("sendCommentAfterXBeacons").value           = settings.sendCommentAfterXBeacons;
+    document.getElementById("path").value                               = settings.path;
+    document.getElementById("nonSmartBeaconRate").value                 = settings.nonSmartBeaconRate;*/
+    document.getElementById("rememberStationTime").value                = settings.rememberStationTime;
+    /*document.getElementById("maxDistanceToTracker").value               = settings.maxDistanceToTracker;
+    document.getElementById("standingUpdateTime").value                 = settings.standingUpdateTime;
+    document.getElementById("sendAltitude").checked                     = settings.sendAltitude ;
+    document.getElementById("disableGPS").checked                       = settings.disableGPS;*/
+
+    // WINLINK
+    document.getElementById("winlink.password").value                   = settings.winlink.password;
+
     // TELEMETRY BME/WX
     document.getElementById("bme.active").checked                       = settings.bme.active;
     document.getElementById("bme.temperatureCorrection").value          = settings.bme.temperatureCorrection.toFixed(1);
     document.getElementById("bme.sendTelemetry").checked                = settings.bme.sendTelemetry;
     
+    // NOTIFICATION
+    document.getElementById("notification.ledTx").checked               = settings.notification.ledTx;
+    document.getElementById("notification.ledTxPin").value              = settings.notification.ledTxPin;
+    document.getElementById("notification.ledMessage").checked          = settings.notification.ledMessage;
+    document.getElementById("notification.ledMessagePin").value         = settings.notification.ledMessagePin;
+    document.getElementById("notification.ledFlashlight").checked       = settings.notification.ledFlashlight;
+    document.getElementById("notification.ledFlashlightPin").value      = settings.notification.ledFlashlightPin;
+    document.getElementById("notification.buzzerActive").checked        = settings.notification.buzzerActive;
+    document.getElementById("notification.buzzerPinTone").value         = settings.notification.buzzerPinTone;
+    document.getElementById("notification.buzzerPinVcc").value          = settings.notification.buzzerPinVcc;
+    document.getElementById("notification.bootUpBeep").checked          = settings.notification.bootUpBeep;
+    document.getElementById("notification.txBeep").checked              = settings.notification.txBeep;
+    document.getElementById("notification.messageRxBeep").checked       = settings.notification.messageRxBeep;
+    document.getElementById("notification.stationBeep").checked         = settings.notification.stationBeep;
+    document.getElementById("notification.lowBatteryBeep").checked      = settings.notification.lowBatteryBeep;
+    document.getElementById("notification.shutDownBeep").checked        = settings.notification.shutDownBeep;
+
+    // LORA
+
     // BLUETOOTH
     document.getElementById("bluettooth.active").checked                = settings.bluetooth.active;
     document.getElementById("bluettooth.type").value                    = settings.bluetooth.type;
-
-    // WINLINK
-    document.getElementById("winlink.password").value                   = settings.winlink.password;
-
+    
     //  PTT Trigger
     document.getElementById("ptt.active").checked                       = settings.ptt.active;
     document.getElementById("ptt.io_pin").value                         = settings.ptt.io_pin;

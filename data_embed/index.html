@@ -142,15 +142,15 @@
                                 <div class="row mt-2">
                                     <div class="col-6">
                                         <label
-                                            for="other.rememberStationTime"
+                                            for="rememberStationTime"
                                             class="form-label"
                                             >Remember Station Time</label
                                         >
                                         <div class="input-group">
                                             <input
                                                 type="number"
-                                                name="other.rememberStationTime"
-                                                id="other.rememberStationTime"
+                                                name="rememberStationTime"
+                                                id="rememberStationTime"
                                                 placeholder="30"
                                                 class="form-control"
                                                 required=""
@@ -402,6 +402,282 @@
                                                 for="battery.sendVoltageAlways"
                                                 class="form-label"
                                                 >Force Sending Voltage Info on every GPS Beacon</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr />
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
+                                        class="bi bi-heart-pulse-fill"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            d="M1.475 9C2.702 10.84 4.779 12.871 8 15c3.221-2.129 5.298-4.16 6.525-6H12a.5.5 0 0 1-.464-.314l-1.457-3.642-1.598 5.593a.5.5 0 0 1-.945.049L5.889 6.568l-1.473 2.21A.5.5 0 0 1 4 9z"
+                                        />
+                                        <path
+                                            d="M.88 8C-2.427 1.68 4.41-2 7.823 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C11.59-2 18.426 1.68 15.12 8h-2.783l-1.874-4.686a.5.5 0 0 0-.945.049L7.921 8.956 6.464 5.314a.5.5 0 0 0-.88-.091L3.732 8z"
+                                        />
+                                    </svg>
+                                    NOTIFICATIONS
+                                </h5>
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.ledTx"
+                                                id="notification.ledTx"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.ledTx"
+                                                class="form-label"
+                                                >Tx Led Active</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.ledMessage"
+                                                id="notification.ledMessage"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.ledMessage"
+                                                class="form-label"
+                                                >Messsage Rx Led Active</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="notification.ledTxPin"
+                                            class="form-label"
+                                            >Pin used for Tx Led</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="notification.ledTxPin"
+                                                id="notification.ledTxPin"
+                                                class="form-control"
+                                            />
+                                            <span class="input-group-text"
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>                                    
+                                    <div class="col-6">
+                                        <label
+                                            for="notification.ledMessagePin"
+                                            class="form-label"
+                                            >Pin used for Message Rx Led</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="notification.ledMessagePin"
+                                                id="notification.ledMessagePin"
+                                                class="form-control"
+                                            />
+                                            <span class="input-group-text"
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>                                    
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.buzzerActive"
+                                                id="notification.buzzerActive"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.buzzerActive"
+                                                class="form-label"
+                                                >Buzzer Active</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.ledFlashlight"
+                                                id="notification.ledFlashlight"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.ledFlashlight"
+                                                class="form-label"
+                                                >Flashlight Pin Active</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">                                    
+                                    <div class="col-6">
+                                        <label
+                                            for="notification.buzzerPinTone"
+                                            class="form-label"
+                                            >Buzzer Tone Pin</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="notification.buzzerPinTone"
+                                                id="notification.buzzerPinTone"
+                                                class="form-control"
+                                            />
+                                            <span class="input-group-text"
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="notification.ledFlashlightPin"
+                                            class="form-label"
+                                            >Pin used for Flashlight Pin</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="notification.ledFlashlightPin"
+                                                id="notification.ledFlashlightPin"
+                                                class="form-control"
+                                            />
+                                            <span class="input-group-text"
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="notification.buzzerPinVcc"
+                                            class="form-label"
+                                            >Buzzer Vcc Pin</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="notification.buzzerPinVcc"
+                                                id="notification.buzzerPinVcc"
+                                                class="form-control"
+                                            />
+                                            <span class="input-group-text"
+                                                >Pin</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.bootUpBeep"
+                                                id="notification.bootUpBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.bootUpBeep"
+                                                class="form-label"
+                                                >Boot Up Beep</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.txBeep"
+                                                id="notification.txBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.txBeep"
+                                                class="form-label"
+                                                >Tx Beep</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.messageRxBeep"
+                                                id="notification.messageRxBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.messageRxBeep"
+                                                class="form-label"
+                                                >Message Rx Beep</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.stationBeep"
+                                                id="notification.stationBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.stationBeep"
+                                                class="form-label"
+                                                >Station Rx Beep</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.lowBatteryBeep"
+                                                id="notification.lowBatteryBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.lowBatteryBeep"
+                                                class="form-label"
+                                                >Low Battery Beep</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="notification.shutDownBeep"
+                                                id="notification.shutDownBeep"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="notification.shutDownBeep"
+                                                class="form-label"
+                                                >Shutdown Beep</label
                                             >
                                         </div>
                                     </div>

@@ -100,19 +100,15 @@ namespace WEB_Utils {
         Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
         Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
 
-        Config.rememberStationTime              = request->getParam("other.rememberStationTime", true)->value().toInt();
-
-        // other
-        /*Config.simplifiedTrackerMode            = request->hasParam("other.simplifiedTrackerMode", true);
-        Config.sendCommentAfterXBeacons         = request->getParam("other.sendCommentAfterXBeacons", true)->value().toInt();
-        Config.path                             = request->getParam("other.path", true)->value();
-        Config.nonSmartBeaconRate               = request->getParam("other.nonSmartBeaconRate", true)->value().toInt();
-        Config.rememberStationTime              = request->getParam("other.rememberStationTime", true)->value().toInt();
-        Config.maxDistanceToTracker             = request->getParam("other.maxDistanceToTracker", true)->value().toInt();
-        Config.standingUpdateTime               = request->getParam("other.standingUpdateTime", true)->value().toInt();
-        Config.sendAltitude                     = request->hasParam("other.sendAltitude", true);
-        Config.disableGPS                       = request->hasParam("other.disableGPS", true);*/
-        //
+        /*Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
+        Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
+        Config.path                             = request->getParam("path", true)->value();
+        Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();*/
+        Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
+        /*Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
+        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
+        Config.sendAltitude                     = request->hasParam("sendAltitude", true);
+        Config.disableGPS                       = request->hasParam("disableGPS", true);*/
 
         Config.winlink.password                 = request->getParam("winlink.password", true)->value();
         
@@ -120,21 +116,21 @@ namespace WEB_Utils {
         Config.bme.temperatureCorrection        = request->getParam("bme.temperatureCorrection", true)->value().toFloat();
         Config.bme.sendTelemetry                = request->hasParam("bme.sendTelemetry", true);
 
-        /*Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
-        Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
+        Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
+        //Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
         Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
-        Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
+        //Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
         Config.notification.ledFlashlight       = request->hasParam("notification.ledFlashlight", true);
-        Config.notification.ledFlashlightPin    = request->getParam("notification.ledFlashlightPin", true)->value().toInt();
+        //Config.notification.ledFlashlightPin    = request->getParam("notification.ledFlashlightPin", true)->value().toInt();
         Config.notification.buzzerActive        = request->hasParam("notification.buzzerActive", true);
-        Config.notification.buzzerPinTone       = request->getParam("notification.buzzerPinTone", true)->value().toInt();
-        Config.notification.buzzerPinVcc        = request->getParam("notification.buzzerPinVcc", true)->value().toInt();
+        //Config.notification.buzzerPinTone       = request->getParam("notification.buzzerPinTone", true)->value().toInt();
+        //Config.notification.buzzerPinVcc        = request->getParam("notification.buzzerPinVcc", true)->value().toInt();
         Config.notification.bootUpBeep          = request->hasParam("notification.bootUpBeep", true);
         Config.notification.txBeep              = request->hasParam("notification.txBeep", true);
         Config.notification.messageRxBeep       = request->hasParam("notification.messageRxBeep", true);
         Config.notification.stationBeep         = request->hasParam("notification.stationBeep", true);
         Config.notification.lowBatteryBeep      = request->hasParam("notification.lowBatteryBeep", true);
-        Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);*/
+        Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
 
         // lora
 
