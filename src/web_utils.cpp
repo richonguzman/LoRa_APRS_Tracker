@@ -90,8 +90,8 @@ namespace WEB_Utils {
         Config.path                             = request->getParam("path", true)->value();
         Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();
         Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
-        /*Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
-        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();*/
+        //Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
+        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
         Config.disableGPS                       = request->hasParam("disableGPS", true);
 
