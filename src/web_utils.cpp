@@ -87,7 +87,7 @@ namespace WEB_Utils {
 
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
         //Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
-        //Config.path                             = request->getParam("path", true)->value();
+        Config.path                             = request->getParam("path", true)->value();
         /*Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();
         Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
         Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
