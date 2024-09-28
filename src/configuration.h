@@ -78,7 +78,7 @@ public:
     int     power;
 };
 
-class Ptt {
+class PTT {
 public:
     bool    active;
     int     io_pin;
@@ -105,7 +105,7 @@ public:
     BME                     bme;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
-    Ptt                     ptt;
+    PTT                     ptt;
     BLUETOOTH               bluetooth;
     
     bool    simplifiedTrackerMode;
@@ -113,7 +113,6 @@ public:
     String  path;
     int     nonSmartBeaconRate;
     int     rememberStationTime;
-    int     maxDistanceToTracker;
     int     standingUpdateTime;
     bool    sendAltitude;
     bool    disableGPS;

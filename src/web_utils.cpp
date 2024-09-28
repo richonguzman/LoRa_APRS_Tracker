@@ -90,12 +90,11 @@ namespace WEB_Utils {
         Config.path                             = request->getParam("path", true)->value();
         Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();
         Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
-        //Config.maxDistanceToTracker             = request->getParam("maxDistanceToTracker", true)->value().toInt();
         Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
         Config.disableGPS                       = request->hasParam("disableGPS", true);
 
-        Config.display.showSymbol           = request->hasParam("display.showSymbol", true);
+        Config.display.showSymbol               = request->hasParam("display.showSymbol", true);
         if (request->hasParam("display.ecoMode", true)) {
             Config.display.ecoMode = true;
             if (request->hasParam("display.timeout", true)) {
@@ -104,7 +103,7 @@ namespace WEB_Utils {
         } else {
             Config.display.ecoMode = false;
         }
-        Config.display.turn180 = request->hasParam("display.turn180", true);
+        Config.display.turn180                  = request->hasParam("display.turn180", true);
 
         Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
         Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);

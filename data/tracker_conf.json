@@ -48,7 +48,6 @@
 		"path": "WIDE1-1",
 		"nonSmartBeaconRate": 15,
 		"rememberStationTime": 30,
-		"maxDistanceToTracker": 30, 
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false

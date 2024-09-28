@@ -40,6 +40,7 @@ function fetchSettings() {
     fetch("/configuration.json")
         .then((response) => response.json())
         .then((settings) => {
+            console.log(settings);
             loadSettings(settings);
         })
         .catch((err) => {
@@ -49,46 +50,29 @@ function fetchSettings() {
         });
 }
 
-const alwaysOnCheckbox = document.querySelector(
-    'input[name="display.alwaysOn"]'
-);
-const timeoutInput = document.querySelector('input[name="display.timeout"]');
-
-alwaysOnCheckbox.addEventListener("change", function () {
-    timeoutInput.disabled = this.checked;
-});
-
-
-logCheckbox.addEventListener("change", function () {
-    serverField.disabled = !this.checked;
-    portField.disabled = !this.checked;
-});
-
 function loadSettings(settings) {
     currentSettings = settings;
     
     // BEACONS
 
     // ADITIONAL STATION CONFIG
-    document.getElementById("simplifiedTrackerMode").checked            = settings.simplifiedTrackerMode;
-    document.getElementById("sendCommentAfterXBeacons").value           = settings.sendCommentAfterXBeacons;
-    document.getElementById("path").value                               = settings.path;
-    document.getElementById("nonSmartBeaconRate").value                 = settings.nonSmartBeaconRate;
-    document.getElementById("rememberStationTime").value                = settings.rememberStationTime;
-    document.getElementById("maxDistanceToTracker").value               = settings.maxDistanceToTracker;
-    document.getElementById("standingUpdateTime").value                 = settings.standingUpdateTime;
-    document.getElementById("sendAltitude").checked                     = settings.sendAltitude ;
-    document.getElementById("disableGPS").checked                       = settings.disableGPS;
+    document.getElementById("simplifiedTrackerMode").checked            = settings.other.simplifiedTrackerMode;
+    document.getElementById("sendCommentAfterXBeacons").value           = settings.other.sendCommentAfterXBeacons;
+    document.getElementById("path").value                               = settings.other.path;
+    document.getElementById("nonSmartBeaconRate").value                 = settings.other.nonSmartBeaconRate;
+    document.getElementById("rememberStationTime").value                = settings.other.rememberStationTime;
+    document.getElementById("standingUpdateTime").value                 = settings.other.standingUpdateTime;
+    document.getElementById("sendAltitude").checked                     = settings.other.sendAltitude ;
+    document.getElementById("disableGPS").checked                       = settings.other.disableGPS;
 
     // DISPLAY
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
     document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
     document.getElementById("display.timeout").value                    = settings.display.timeout;
     document.getElementById("display.turn180").checked                  = settings.display.turn180;
-
-    if (settings.display.alwaysOn) {
+    /*if (settings.display.alwaysOn) {
         timeoutInput.disabled = true;
-    }
+    }*/
 
     // BATTERY
     document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
@@ -123,19 +107,20 @@ function loadSettings(settings) {
     // LORA
 
     // BLUETOOTH
-    document.getElementById("bluettooth.active").checked                = settings.bluetooth.active;
-    document.getElementById("bluettooth.type").value                    = settings.bluetooth.type;
+    document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
+    document.getElementById("bluetooth.type").value                     = settings.bluetooth.type;
     
     //  PTT Trigger
-    document.getElementById("ptt.active").checked                       = settings.ptt.active;
-    document.getElementById("ptt.io_pin").value                         = settings.ptt.io_pin;
-    document.getElementById("ptt.preDelay").value                       = settings.ptt.preDelay;
-    document.getElementById("ptt.postDelay").value                      = settings.ptt.postDelay;
-    document.getElementById("ptt.reverse").checked                      = settings.ptt.reverse;
+    document.getElementById("ptt.active").checked                       = settings.pttTrigger.active;
+    document.getElementById("ptt.io_pin").value                         = settings.pttTrigger.io_pin;
+    document.getElementById("ptt.preDelay").value                       = settings.pttTrigger.preDelay;
+    document.getElementById("ptt.postDelay").value                      = settings.pttTrigger.postDelay;
+    document.getElementById("ptt.reverse").checked                      = settings.pttTrigger.reverse;
 
     // WiFi AP
     document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
 
+    
     //refreshSpeedStandard();
     toggleFields();
 }
@@ -147,14 +132,6 @@ function showToast(message) {
 
     (new bootstrap.Toast(el)).show();
 }
-
-document.getElementById('send-beacon').addEventListener('click', function (e) {
-    e.preventDefault();
-
-    fetch("/action?type=send-beacon", { method: "POST" });
-
-    showToast("Your beacon will be sent in a moment. <br> <u>This action will be ignored if you have APRSIS and LoRa TX disabled!</u>");
-});
 
 document.getElementById('reboot').addEventListener('click', function (e) {
     e.preventDefault();
@@ -169,7 +146,7 @@ const bmeCheckbox = document.querySelector("input[name='bme.active']");
 const stationModeSelect = document.querySelector("select[name='stationMode']");
 
 function toggleFields() {
-    const sendExternalVoltageCheckbox = document.querySelector(
+    /*const sendExternalVoltageCheckbox = document.querySelector(
         'input[name="battery.sendExternalVoltage"]'
     );
     const externalVoltagePinInput = document.querySelector(
@@ -186,10 +163,10 @@ function toggleFields() {
 
     const WebadminUsername = document.querySelector(
         'input[name="webadmin.username"]'
-    );
+    );*/
 }
 
-const sendExternalVoltageCheckbox = document.querySelector(
+/*const sendExternalVoltageCheckbox = document.querySelector(
     'input[name="battery.sendExternalVoltage"]'
 );
 const externalVoltagePinInput = document.querySelector(
@@ -224,9 +201,9 @@ const WebadminPassword = document.querySelector(
 WebadminCheckbox.addEventListener("change", function () {
     WebadminUsername.disabled = !this.checked;
     WebadminPassword.disabled = !this.checked;
-});
+});*/
 
-document.querySelector(".new button").addEventListener("click", function () {
+/*document.querySelector(".new button").addEventListener("click", function () {
     const trackersContainer = document.querySelector(".list-tracker");
 
     let trackerCount = document.querySelectorAll(".network").length;
@@ -260,18 +237,18 @@ document.querySelector(".new button").addEventListener("click", function () {
 
     // Add the new network element to the end of the document
     document.querySelector(".new").before(trackerElement);
-});
+});*/
 
-document
+/*document
     .getElementById("action.symbol")
     .addEventListener("change", function () {
         const value = document.getElementById("action.symbol").value;
 
         document.getElementById("beacon.overlay").value = value[0];
         document.getElementById("beacon.symbol").value = value[1];
-    });
+    });*/
 
-const speedStandards = {
+/*const speedStandards = {
     300: [125, 5, 12],
     244: [125, 6, 12],
     209: [125, 7, 12],
@@ -303,17 +280,11 @@ function refreshSpeedStandard() {
     if (!found) {
         document.getElementById("action.speed").value = "";
     }
-}
+}*/
 
-document
-    .getElementById("lora.signalBandwidth")
-    .addEventListener("focusout", refreshSpeedStandard);
-document
-    .getElementById("lora.codingRate4")
-    .addEventListener("focusout", refreshSpeedStandard);
-document
-    .getElementById("lora.spreadingFactor")
-    .addEventListener("focusout", refreshSpeedStandard);
+/*document.getElementById("lora.signalBandwidth").addEventListener("focusout", refreshSpeedStandard);
+document.getElementById("lora.codingRate4").addEventListener("focusout", refreshSpeedStandard);
+document.getElementById("lora.spreadingFactor").addEventListener("focusout", refreshSpeedStandard);
 
 document.getElementById("action.speed").addEventListener("change", function () {
     const speed = document.getElementById("action.speed").value;
@@ -329,7 +300,7 @@ document.getElementById("action.speed").addEventListener("change", function () {
         document.getElementById("lora.codingRate4").value = cr4;
         document.getElementById("lora.spreadingFactor").value = sf;
     }
-});
+});*/
 
 const form = document.querySelector("form");
 
@@ -368,8 +339,7 @@ function checkConnection() {
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    document.getElementById("beacons").value =
-        document.querySelectorAll(".network").length;
+    //document.getElementById("beacons").value =         document.querySelectorAll(".beacons").length;
 
     fetch(form.action, {
         method: form.method,

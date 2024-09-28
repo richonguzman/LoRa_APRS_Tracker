@@ -81,7 +81,6 @@ void Configuration::writeFile() {
     data["other"]["path"]                       = path;
     data["other"]["nonSmartBeaconRate"]         = nonSmartBeaconRate;
     data["other"]["rememberStationTime"]        = rememberStationTime;
-    data["other"]["maxDistanceToTracker"]       = maxDistanceToTracker;
     data["other"]["standingUpdateTime"]         = standingUpdateTime;
     data["other"]["sendAltitude"]               = sendAltitude;
     data["other"]["disableGPS"]                 = disableGPS;
@@ -179,7 +178,6 @@ bool Configuration::readFile() {
         path                            = data["other"]["path"] | "WIDE1-1";
         nonSmartBeaconRate              = data["other"]["nonSmartBeaconRate"] | 15;
         rememberStationTime             = data["other"]["rememberStationTime"] | 30;
-        maxDistanceToTracker            = data["other"]["maxDistanceToTracker"] | 30;
         standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
@@ -301,7 +299,6 @@ void Configuration::init() {
     path                            = "WIDE1-1";
     nonSmartBeaconRate              = 15;
     rememberStationTime             = 30;
-    maxDistanceToTracker            = 30;
     standingUpdateTime              = 15;
     sendAltitude                    = true;
     disableGPS                      = false;

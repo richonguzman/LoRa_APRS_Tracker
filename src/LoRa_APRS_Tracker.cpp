@@ -117,7 +117,7 @@ void setup() {
     startupScreen(loraIndex, versionDate);
 
     if (Config.wifiAP.active){
-        displayShow(" WEB-CONF","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","", "");
+        displayShow(" LoRa APRS", "    ** WEB-CONF **","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","");
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
         WIFI_Utils::startAutoAP();
         WEB_Utils::setup();
