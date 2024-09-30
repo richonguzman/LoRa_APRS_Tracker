@@ -146,62 +146,99 @@ const bmeCheckbox = document.querySelector("input[name='bme.active']");
 const stationModeSelect = document.querySelector("select[name='stationMode']");
 
 function toggleFields() {
-    /*const sendExternalVoltageCheckbox = document.querySelector(
-        'input[name="battery.sendExternalVoltage"]'
-    );
-    const externalVoltagePinInput = document.querySelector(
-        'input[name="battery.externalVoltagePin"]'
-    );
+    /*
+    // Display - timeout box enable
+    const ecoModeCheckbox       = document.querySelector('input[name="display.ecoMode"]');
+    const timeoutInput          = document.querySelector('input[name="display.timeout"]');
+    ecoModeCheckbox.addEventListener("change", function () {
+        timeoutInput.disabled           = !this.checked;
+    });
 
-    externalVoltagePinInput.disabled = !sendExternalVoltageCheckbox.checked;
-    voltageDividerR1.disabled = !sendExternalVoltageCheckbox.checked;
-    voltageDividerR2.disabled = !sendExternalVoltageCheckbox.checked;
+    // pttTrigger boxes enable
+    const pttTriggerCheckbox    = document.querySelector('input[name="ptt.active"]');
+    const pttPinInput           = document.querySelector('input[name="ptt.io_pin"]');
+    const pttPreDelayInput      = document.querySelector('input[name="ptt.preDelay"]');
+    const pttPostDelayInput     = document.querySelector('input[name="ptt.postDelay"]');
+    pttTriggerCheckbox.addEventListener("change", function () {
+        pttPinInput.disabled            = !this.checked;
+        pttPreDelayInput.disabled       = !this.checked;
+        pttPostDelayInput.disabled      = !this.checked;
+    });
 
-    const WebadminCheckbox = document.querySelector(
-        'input[name="webadmin.active"]'
-    );
+    // notifications boxes enable
+    const ledTxCheckbox         = document.querySelector('input[name="notification.ledTx"]');
+    const letTxPinInput         = document.querySelector('input[name="notification.ledTxPin"]');
+    ledTxCheckbox.addEventListener("change", function () {
+        letTxPinInput.disabled          = !this.checked;
+    });
 
-    const WebadminUsername = document.querySelector(
-        'input[name="webadmin.username"]'
-    );*/
+    const ledMessageCheckbox    = document.querySelector('input[name="notification.ledMessage"]');
+    const ledMessagePinInput    = document.querySelector('input[name="notification.ledMessagePin"]');
+    ledMessageCheckbox.addEventListener("change", function () {
+        ledMessagePinInput.disabled     = !this.checked;
+    });
+
+    const ledFlashlightCheckbox = document.querySelector('input[name="notification.ledFlashlight"]');
+    const ledFlashlightPinInput = document.querySelector('input[name="notification.ledFlashlightPin"]');
+    ledFlashlightCheckbox.addEventListener("change", function () {
+        ledFlashlightPinInput.disabled  = !this.checked;
+    });
+
+    const buzzerActiveCheckbox  = document.querySelector('input[name="notification.buzzerActive"]');
+    const buzzerPinToneInput    = document.querySelector('input[name="notification.buzzerPinTone"]');
+    const buzzerPinVccInput     = document.querySelector('input[name="notification.buzzerPinVcc"]');
+    buzzerActiveCheckbox.addEventListener("change", function () {
+        buzzerPinToneInput.disabled     = !this.checked;
+        buzzerPinVccInput.disabled      = !this.checked;
+    });*/
 }
 
-/*const sendExternalVoltageCheckbox = document.querySelector(
-    'input[name="battery.sendExternalVoltage"]'
-);
-const externalVoltagePinInput = document.querySelector(
-    'input[name="battery.externalVoltagePin"]'
-);
-
-const voltageDividerR1 = document.querySelector(
-    'input[name="battery.voltageDividerR1"]'
-);
-
-const voltageDividerR2 = document.querySelector(
-    'input[name="battery.voltageDividerR2"]'
-);
-
-sendExternalVoltageCheckbox.addEventListener("change", function () {
-    externalVoltagePinInput.disabled = !this.checked;
-    voltageDividerR1.disabled = !this.checked;
-    voltageDividerR2.disabled = !this.checked;
+/*
+// Display - timeout box enable
+const ecoModeCheckbox               = document.querySelector('input[name="display.ecoMode"]');
+const timeoutInput                  = document.querySelector('input[name="display.timeout"]');
+ecoModeCheckbox.addEventListener("change", function () {
+    timeoutInput.disabled           = !this.checked;
 });
 
-const WebadminCheckbox = document.querySelector(
-    'input[name="webadmin.active"]'
-);
+// pttTrigger boxes enable
+const pttTriggerCheckbox            = document.querySelector('input[name="ptt.active"]');
+const pttPinInput                   = document.querySelector('input[name="ptt.io_pin"]');
+const pttPreDelayInput              = document.querySelector('input[name="ptt.preDelay"]');
+const pttPostDelayInput             = document.querySelector('input[name="ptt.postDelay"]');
+pttTriggerCheckbox.addEventListener("change", function () {
+    pttPinInput.disabled            = !this.checked;
+    pttPreDelayInput.disabled       = !this.checked;
+    pttPostDelayInput.disabled      = !this.checked;
+});
 
-const WebadminUsername = document.querySelector(
-    'input[name="webadmin.username"]'
-);
+// notifications boxes enable
+const ledTxCheckbox                 = document.querySelector('input[name="notification.ledTx"]');
+const letTxPinInput                 = document.querySelector('input[name="notification.ledTxPin"]');
+ledTxCheckbox.addEventListener("change", function () {
+    letTxPinInput.disabled          = !this.checked;
+});
 
-const WebadminPassword = document.querySelector(
-    'input[name="webadmin.password"]'
-);
-WebadminCheckbox.addEventListener("change", function () {
-    WebadminUsername.disabled = !this.checked;
-    WebadminPassword.disabled = !this.checked;
-});*/
+const ledMessageCheckbox            = document.querySelector('input[name="notification.ledMessage"]');
+const ledMessagePinInput            = document.querySelector('input[name="notification.ledMessagePin"]');
+ledMessageCheckbox.addEventListener("change", function () {
+    ledMessagePinInput.disabled     = !this.checked;
+});
+
+const ledFlashlightCheckbox         = document.querySelector('input[name="notification.ledFlashlight"]');
+const ledFlashlightPinInput         = document.querySelector('input[name="notification.ledFlashlightPin"]');
+ledFlashlightCheckbox.addEventListener("change", function () {
+    ledFlashlightPinInput.disabled  = !this.checked;
+});
+
+const buzzerActiveCheckbox          = document.querySelector('input[name="notification.buzzerActive"]');
+const buzzerPinToneInput            = document.querySelector('input[name="notification.buzzerPinTone"]');
+const buzzerPinVccInput             = document.querySelector('input[name="notification.buzzerPinVcc"]');
+buzzerActiveCheckbox.addEventListener("change", function () {
+    buzzerPinToneInput.disabled     = !this.checked;
+    buzzerPinVccInput.disabled      = !this.checked;
+});
+*/
 
 /*document.querySelector(".new button").addEventListener("click", function () {
     const trackersContainer = document.querySelector(".list-tracker");
@@ -336,7 +373,7 @@ function checkConnection() {
         });
 }
 
-form.addEventListener("submit", async (event) => {
+/*form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     //document.getElementById("beacons").value =         document.querySelectorAll(".beacons").length;
@@ -345,11 +382,34 @@ form.addEventListener("submit", async (event) => {
         method: form.method,
         body: new FormData(form),
     });
-
     saveModal.show();
-
     setTimeout(checkConnection, 2000);
+});*/
+
+form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    // Optional: update the beacons count
+    // document.getElementById("beacons").value = document.querySelectorAll(".beacons").length;
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method,
+            body: new FormData(form),
+        });
+
+        if (!response.ok) {
+            throw new Error('Form submission failed');
+        }
+        saveModal.show();
+        setTimeout(checkConnection, 2000);
+
+    } catch (error) {
+        console.error(error);
+        // Optionally handle errors (e.g., show error modal/message)
+    }
 });
+
 
 fetchSettings();
 
