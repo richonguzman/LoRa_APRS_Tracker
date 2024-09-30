@@ -77,6 +77,7 @@ int         downCounter             = 0;
 int         leftCounter             = 0;
 int         rightCounter            = 0;
 int         trackBallSensitivity    = 5;
+String      profilelabel            = "";
 
 
 namespace KEYBOARD_Utils {
@@ -335,7 +336,13 @@ namespace KEYBOARD_Utils {
             statusState  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
+            if(strlen(Config.beacons[myBeaconsIndex].profilelabel.c_str()) >0 ){ //if length of the profilelabel is > 0 then print the comment when changing callsign. Else don't.
+                profilelabel = " (" + Config.beacons[myBeaconsIndex].profilelabel + ")";
+            }
+            else{
+                profilelabel = "";
+            }
+            displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "--> " + Config.beacons[myBeaconsIndex].callsign + profilelabel, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             if (menuDisplay == 200) {
                 menuDisplay = 20;
