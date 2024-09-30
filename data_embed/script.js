@@ -65,6 +65,53 @@ function loadSettings(settings) {
     document.getElementById("sendAltitude").checked                     = settings.other.sendAltitude ;
     document.getElementById("disableGPS").checked                       = settings.other.disableGPS;
 
+    // LORA
+    const loraContainer = document.getElementById("lora-settings");
+    loraContainer.innerHTML = ""; // Clear previous content
+
+    settings.lora.forEach((lora, index) => {
+        const loraElement = document.createElement("div");
+        loraElement.classList.add("row", "lora", "border-bottom", "py-2");
+
+        loraElement.innerHTML = `
+            <div class="col-1 px-1 mb-2 d-flex align-items-center">
+                <strong>${index + 1})</strong> <!-- Adding numbering here -->
+            </div>
+            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+                <input 
+                    type="number" 
+                    class="form-control form-control-sm" 
+                    name="lora.${index}.frequency" 
+                    id="lora.${index}.frequency" 
+                    value="${lora.frequency}">
+                <label for="lora.${index}.frequency">Frequency</label>
+            </div>
+            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+                <input 
+                    type="number" 
+                    class="form-control form-control-sm" 
+                    name="lora.${index}.spreadingFactor" 
+                    id="lora.${index}.spreadingFactor" 
+                    value="${lora.spreadingFactor}"
+                    min="9"
+                    max="12">
+                <label for="lora.${index}.spreadingFactor">Spreading Factor</label>
+            </div>
+            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+                <input 
+                    type="number" 
+                    class="form-control form-control-sm" 
+                    name="lora.${index}.codingRate4" 
+                    id="lora.${index}.codingRate4" 
+                    value="${lora.codingRate4}"
+                    min="5"
+                    max="7">
+                <label for="lora.${index}.codingRate4">Coding Rate</label>
+            </div>            
+        `;
+        loraContainer.appendChild(loraElement);
+    });
+
     // DISPLAY
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
     document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
@@ -103,8 +150,6 @@ function loadSettings(settings) {
     document.getElementById("notification.stationBeep").checked         = settings.notification.stationBeep;
     document.getElementById("notification.lowBatteryBeep").checked      = settings.notification.lowBatteryBeep;
     document.getElementById("notification.shutDownBeep").checked        = settings.notification.shutDownBeep;
-
-    // LORA
 
     // BLUETOOTH
     document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
@@ -338,6 +383,16 @@ document.getElementById("action.speed").addEventListener("change", function () {
         document.getElementById("lora.spreadingFactor").value = sf;
     }
 });*/
+
+
+
+
+
+
+
+
+
+
 
 const form = document.querySelector("form");
 

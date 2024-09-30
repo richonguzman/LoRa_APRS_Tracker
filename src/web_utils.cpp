@@ -145,6 +145,18 @@ namespace WEB_Utils {
         Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
         //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
 
+        Config.loraTypes[0].frequency           = request->getParam("lora.0.frequency", true)->value().toDouble();
+        Config.loraTypes[0].spreadingFactor     = request->getParam("lora.0.spreadingFactor", true)->value().toInt();
+        Config.loraTypes[0].codingRate4         = request->getParam("lora.0.codingRate4", true)->value().toInt();
+
+        Config.loraTypes[1].frequency           = request->getParam("lora.1.frequency", true)->value().toDouble();
+        Config.loraTypes[1].spreadingFactor     = request->getParam("lora.1.spreadingFactor", true)->value().toInt();
+        Config.loraTypes[1].codingRate4         = request->getParam("lora.1.codingRate4", true)->value().toInt();
+
+        Config.loraTypes[2].frequency           = request->getParam("lora.2.frequency", true)->value().toDouble();
+        Config.loraTypes[2].spreadingFactor     = request->getParam("lora.2.spreadingFactor", true)->value().toInt();
+        Config.loraTypes[2].codingRate4         = request->getParam("lora.2.codingRate4", true)->value().toInt();
+
         Config.writeFile();
 
         AsyncWebServerResponse *response        = request->beginResponse(302, "text/html", "");
