@@ -83,8 +83,66 @@ namespace WEB_Utils {
     void handleWriteConfiguration(AsyncWebServerRequest *request) {
         Serial.println("Got new config from www");
 
-        // beacons
+        //  Beacons
+        for (int i = 0; i < 3; i++) {
+            Config.beacons[i].callsign              = request->getParam("beacons." + String(i) + ".callsign", true)->value();
+            Config.beacons[i].symbol                = request->getParam("beacons." + String(i) + ".symbol", true)->value();
+            Config.beacons[i].overlay               = request->getParam("beacons." + String(i) + ".overlay", true)->value();
+            Config.beacons[i].micE                  = request->getParam("beacons." + String(i) + ".micE", true)->value();
+            Config.beacons[i].comment               = request->getParam("beacons." + String(i) + ".comment", true)->value();
 
+            if (request->hasParam("beacons." + String(i) + ".gpsEcoMode", true)) {
+                Config.beacons[i].gpsEcoMode = true; // Checkbox is checked
+            } else {
+                Config.beacons[i].gpsEcoMode = false; // Checkbox is unchecked
+            }
+
+            // Handle smartBeaconActive
+            if (request->hasParam("beacons." + String(i) + ".smartBeaconActive", true)) {
+                Config.beacons[i].smartBeaconActive = true; // Checkbox is checked
+            } else {
+                Config.beacons[i].smartBeaconActive = false; // Checkbox is unchecked
+            }
+
+            /*if (request->hasParam("beacons." + String(i) + ".gpsEcoMode", true)) {
+                Serial.println("Beacon " + String(i) + ": GPS Eco Mode is checked.");
+            } else {
+                Serial.println("Beacon " + String(i) + ": GPS Eco Mode is unchecked.");
+            }*/
+            //Config.beacons[i].gpsEcoMode            = request->hasParam("beacons." + String(i) + ".gpsEcoMode", true);
+            //Config.beacons[i].smartBeaconActive     = request->hasParam("beacons." + String(i) + ".smartBeaconActive", true);
+            Config.beacons[i].smartBeaconSetting    = request->getParam("beacons." + String(i) + ".smartBeaconSetting", true)->value().toInt();
+        }
+        
+
+        /*Config.beacons[0].callsign              = request->getParam("beacons.0.callsign", true)->value();
+        Config.beacons[0].symbol                = request->getParam("beacons.0.symbol", true)->value();
+        Config.beacons[0].overlay               = request->getParam("beacons.0.overlay", true)->value();
+        Config.beacons[0].micE                  = request->getParam("beacons.0.micE", true)->value();
+        Config.beacons[0].comment               = request->getParam("beacons.0.comment", true)->value();
+        Config.beacons[0].gpsEcoMode            = request->hasParam("beacons.0.gpsEcoMode", true);
+        Config.beacons[0].smartBeaconActive     = request->hasParam("beacons.0.smartBeaconActive", true);
+        Config.beacons[0].smartBeaconSetting    = request->getParam("beacons.0.smartBeaconSetting", true)->value().toInt();
+
+        Config.beacons[1].callsign              = request->getParam("beacons.1.callsign", true)->value();
+        Config.beacons[1].symbol                = request->getParam("beacons.1.symbol", true)->value();
+        Config.beacons[1].overlay               = request->getParam("beacons.1.overlay", true)->value();
+        Config.beacons[1].micE                  = request->getParam("beacons.1.micE", true)->value();
+        Config.beacons[1].comment               = request->getParam("beacons.1.comment", true)->value();
+        Config.beacons[1].gpsEcoMode            = request->hasParam("beacons.1.gpsEcoMode", true);
+        Config.beacons[1].smartBeaconActive     = request->hasParam("beacons.1.smartBeaconActive", true);
+        Config.beacons[1].smartBeaconSetting    = request->getParam("beacons.1.smartBeaconSetting", true)->value().toInt();
+
+        Config.beacons[2].callsign              = request->getParam("beacons.2.callsign", true)->value();
+        Config.beacons[2].symbol                = request->getParam("beacons.2.symbol", true)->value();
+        Config.beacons[2].overlay               = request->getParam("beacons.2.overlay", true)->value();
+        Config.beacons[2].micE                  = request->getParam("beacons.2.micE", true)->value();
+        Config.beacons[2].comment               = request->getParam("beacons.2.comment", true)->value();
+        Config.beacons[2].gpsEcoMode            = request->hasParam("beacons.2.gpsEcoMode", true);
+        Config.beacons[2].smartBeaconActive     = request->hasParam("beacons.2.smartBeaconActive", true);
+        Config.beacons[2].smartBeaconSetting    = request->getParam("beacons.2.smartBeaconSetting", true)->value().toInt();*/
+        
+        //  Station Config
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
         Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
         Config.path                             = request->getParam("path", true)->value();
@@ -94,6 +152,7 @@ namespace WEB_Utils {
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
         Config.disableGPS                       = request->hasParam("disableGPS", true);
 
+        //  Display
         Config.display.showSymbol               = request->hasParam("display.showSymbol", true);
         if (request->hasParam("display.ecoMode", true)) {
             Config.display.ecoMode = true;
@@ -105,16 +164,20 @@ namespace WEB_Utils {
         }
         Config.display.turn180                  = request->hasParam("display.turn180", true);
 
+        //  Battery
         Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
         Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
         Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
 
+        //  Winlink
         Config.winlink.password                 = request->getParam("winlink.password", true)->value();
         
+        //  Wx Telemtry
         Config.bme.active                       = request->hasParam("bme.active", true);
         Config.bme.temperatureCorrection        = request->getParam("bme.temperatureCorrection", true)->value().toFloat();
         Config.bme.sendTelemetry                = request->hasParam("bme.sendTelemetry", true);
 
+        //  Notification
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
         Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
         Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
@@ -132,19 +195,6 @@ namespace WEB_Utils {
         Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
 
         // LORA
-
-        Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
-        Config.bluetooth.type                   = request->getParam("bluetooth.type", true)->value().toInt();
-
-        Config.ptt.active                       = request->hasParam("ptt.active", true);
-        Config.ptt.io_pin                       = request->getParam("ptt.io_pin", true)->value().toInt();
-        Config.ptt.preDelay                     = request->getParam("ptt.preDelay", true)->value().toInt();
-        Config.ptt.postDelay                    = request->getParam("ptt.postDelay", true)->value().toInt();
-        Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
-
-        Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
-        //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
-
         Config.loraTypes[0].frequency           = request->getParam("lora.0.frequency", true)->value().toDouble();
         Config.loraTypes[0].spreadingFactor     = request->getParam("lora.0.spreadingFactor", true)->value().toInt();
         Config.loraTypes[0].codingRate4         = request->getParam("lora.0.codingRate4", true)->value().toInt();
@@ -156,6 +206,21 @@ namespace WEB_Utils {
         Config.loraTypes[2].frequency           = request->getParam("lora.2.frequency", true)->value().toDouble();
         Config.loraTypes[2].spreadingFactor     = request->getParam("lora.2.spreadingFactor", true)->value().toInt();
         Config.loraTypes[2].codingRate4         = request->getParam("lora.2.codingRate4", true)->value().toInt();
+
+        //  Bluetooth
+        Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
+        Config.bluetooth.type                   = request->getParam("bluetooth.type", true)->value().toInt();
+
+        //  PTT Trigger
+        Config.ptt.active                       = request->hasParam("ptt.active", true);
+        Config.ptt.io_pin                       = request->getParam("ptt.io_pin", true)->value().toInt();
+        Config.ptt.preDelay                     = request->getParam("ptt.preDelay", true)->value().toInt();
+        Config.ptt.postDelay                    = request->getParam("ptt.postDelay", true)->value().toInt();
+        Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
+
+        //  WiFi AP
+        Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
+        //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
 
         Config.writeFile();
 

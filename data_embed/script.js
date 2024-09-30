@@ -101,7 +101,7 @@ function loadSettings(settings) {
                     value="${beacons.micE}">
                 <label for="beacons.${index}.micE">Mic-E</label>
             </div>
-            <div class="form-floating col-6 col-md-6 px-1 mb-2" style="margin-left: 50px;">
+            <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
                 <input 
                     type="text" 
                     class="form-control form-control-sm" 
@@ -110,48 +110,43 @@ function loadSettings(settings) {
                     value="${beacons.comment}">
                 <label for="beacons.${index}.comment">Comment</label>
             </div>
-            
-            <div class="form-floating col-6 col-md-3 px-1 mb-2">
-                <label for="beacons.${index}.gpsEcoMode">GPS Eco Mode</label>
-                <div class="form-check form-switch">
-                    <input 
-                        class="form-check-input" 
-                        type="checkbox" 
-                        name="beacons.${index}.gpsEcoMode" 
-                        id="beacons.${index}.gpsEcoMode" 
-                        ${beacons.gpsEcoMode ? 'checked' : ''}>
-                    <label class="form-check-label" for="beacons.${index}.gpsEcoMode"></label>
-                </div>
+            <div class="form-check form-switch col-6 col-md-5 px-1 mb-2" style="margin-left: 90px;">
+                <input type="hidden" name="beacons.${index}.smartBeaconActive" value="0">
+                <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    name="beacons.${index}.smartBeaconActive" 
+                    id="beacons.${index}.smartBeaconActive" 
+                    value="1" 
+                    ${beacons.smartBeaconActive ? 'checked' : ''}>
+                <label class="form-check-label" for="beacons.${index}.smartBeaconActive">
+                    Smart Beacon Active
+                </label>
             </div>
-            <!-- Switch for Smart Beacon Active -->
-            <div class="form-floating col-6 col-md-3 px-1 mb-2">
-                <label for="beacons.${index}.smartBeaconActive">Smart Beacon Active</label>
-                <div class="form-check form-switch">
-                    <input 
-                        class="form-check-input" 
-                        type="checkbox" 
-                        name="beacons.${index}.smartBeaconActive" 
-                        id="beacons.${index}.smartBeaconActive" 
-                        ${beacons.smartBeaconActive ? 'checked' : ''}>
-                    <label class="form-check-label" for="beacons.${index}.smartBeaconActive"></label>
-                </div>
+            <div class="form-check form-switch col-6 col-md-3 px-1 mb-2">
+                <input type="hidden" name="beacons.${index}.gpsEcoMode" value="0">
+                <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    name="beacons.${index}.gpsEcoMode" 
+                    id="beacons.${index}.gpsEcoMode"
+                    value="1"
+                    ${beacons.gpsEcoMode ? 'checked' : ''}>
+                <label class="form-check-label" for="beacons.${index}.gpsEcoMode">
+                    GPS Eco Mode
+                </label>
             </div>
-
-            <!-- Switch for Smart Beacon Setting -->
-            <div class="form-floating col-6 col-md-3 px-1 mb-2">
-                <label for=beacons.${index}.smartBeaconSetting class="form-label">Smart Beacon Setting</label>
+            <div class="form-check form-switch col-6 col-md-5 px-1 mb-2" style="margin-left: 50px;">
+                <label for="beacons.${index}.smartBeaconSetting" class="form-label"><small>Smart Beacon Setting</small></label>
                 <select name="beacons.${index}.smartBeaconSetting" id="beacons.${index}.smartBeaconSetting" class="form-control">
-                    <option value="0">Human/Runner (Slow Speed)</option>
-                    <option value="1">Bicicle (Mid Speed)</option>
-                    <option value="2">Car/Motorcycle (Fast Speed)</option>
+                    <option value="0" ${beacons.smartBeaconSetting == 0 ? 'selected' : ''}>Human/Runner (Slow Speed)</option>
+                    <option value="1" ${beacons.smartBeaconSetting == 1 ? 'selected' : ''}>Bicycle (Mid Speed)</option>
+                    <option value="2" ${beacons.smartBeaconSetting == 2 ? 'selected' : ''}>Car/Motorcycle (Fast Speed)</option>
                 </select>
             </div>
         `;
         beaconContainer.appendChild(beaconElement);
     });
-    //  gpsEcoMode
-    //  smartBeaconActive
-	//  smartBeaconSetting
 
     // ADITIONAL STATION CONFIG
     document.getElementById("simplifiedTrackerMode").checked            = settings.other.simplifiedTrackerMode;
