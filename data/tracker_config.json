@@ -9,7 +9,7 @@
 			"comment": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
-			"callchangecomment": ""
+			"profilelabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -20,7 +20,7 @@
 			"comment": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
-			"callchangecomment": ""
+			"profilelabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -31,7 +31,7 @@
 			"comment": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
-			"callchangecomment": ""
+			"profilelabel": ""
 		}
 	],
 	"display": {

@@ -36,7 +36,7 @@ void Configuration::readFile(fs::FS &fs, const char *fileName) {
         bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
         bcn.micE                    = BeaconsArray[i]["micE"] | "";
         bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
-        bcn.callchangecomment       = BeaconsArray[i]["callchangecomment"] | "";
+        bcn.profilelabel            = BeaconsArray[i]["profilelabel"] | "";
         
         beacons.push_back(bcn);
     }
