@@ -54,6 +54,68 @@ function loadSettings(settings) {
     currentSettings = settings;
     
     // BEACONS
+    const beaconContainer = document.getElementById("beacon-settings");
+    beaconContainer.innerHTML = ""; // Clear previous content
+
+    settings.beacons.forEach((beacons, index) => {
+        const beaconElement = document.createElement("div");
+        beaconElement.classList.add("row", "beacons", "border-bottom", "py-2");
+
+        beaconElement.innerHTML = `
+            <div class="col-1 px-1 mb-2 d-flex align-items-center">
+                <strong>${index + 1})</strong> <!-- Adding numbering here -->
+            </div>
+            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.callsign" 
+                    id="beacons.${index}.callsign" 
+                    value="${beacons.callsign}">
+                <label for="beacons.${index}.callsign">Callsign</label>
+            </div>
+            <div class="form-floating col-6 col-md-2 px-1 mb-2">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.symbol" 
+                    id="beacons.${index}.symbol" 
+                    value="${beacons.symbol}">
+                <label for="beacons.${index}.symbol">Symbol</label>
+            </div>
+            <div class="form-floating col-6 col-md-2 px-1 mb-2">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.overlay" 
+                    id="beacons.${index}.overlay" 
+                    value="${beacons.overlay}">
+                <label for="beacons.${index}.overlay">Overlay</label>
+            </div>
+            <div class="form-floating col-6 col-md-2 px-1 mb-2">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.micE" 
+                    id="beacons.${index}.micE" 
+                    value="${beacons.micE}">
+                <label for="beacons.${index}.micE">Mic-E</label>
+            </div>
+            <div class="form-floating col-6 col-md-6 px-1 mb-2" style="margin-left: 50px;">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.comment" 
+                    id="beacons.${index}.comment" 
+                    value="${beacons.comment}">
+                <label for="beacons.${index}.comment">Comment</label>
+            </div>
+        `;
+        beaconContainer.appendChild(beaconElement);
+    });
+    //  gpsEcoMode
+    //  smartBeaconActive
+	//  smartBeaconSetting
 
     // ADITIONAL STATION CONFIG
     document.getElementById("simplifiedTrackerMode").checked            = settings.other.simplifiedTrackerMode;
