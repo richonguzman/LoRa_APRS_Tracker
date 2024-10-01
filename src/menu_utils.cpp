@@ -507,10 +507,10 @@ namespace MENU_Utils {
 
 //////////
             case 9000:  //  9. multiPress Menu ---> Turn ON WiFi AP
-                displayShow("__CONFIG__", "> Turn ON WiFi AP", "  Turn Tracker Off", "","",lastLine);
+                displayShow("__CONFIG__", "> Turn Tracker Off","  Config. WiFi AP",  "","",lastLine);
                 break;
             case 9001:  //  9. multiPress Menu
-                displayShow("__CONFIG__", "  Turn ON WiFi AP", "> Turn Tracker Off", "","",lastLine);
+                displayShow("__CONFIG__", "  Turn Tracker Off","> Config. WiFi AP",  "","",lastLine);
                 break;
 
 
