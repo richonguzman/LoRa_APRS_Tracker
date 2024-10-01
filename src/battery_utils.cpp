@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "battery_utils.h"
+#include "power_utils.h"
 
 
 int telemetryCounter    = random(1,999);
@@ -56,6 +57,10 @@ namespace BATTERY_Utils {
         } else {
             return "100";
         }
+    }
+
+    void checkLowVoltageAndSleep(float voltage) {
+        if (voltage <= 3.0) POWER_Utils::shutdown();
     }
 
 }

@@ -239,23 +239,24 @@ namespace STATION_Utils {
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+        #if defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
+            BATTERY_Utils::checkLowVoltageAndSleep(batteryVoltage.toFloat());
+        #endif
         if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-            #ifdef HAS_AXP192
+            #if defined(HAS_AXP192)
                 comment += " Bat=";
                 comment += batteryVoltage;
                 comment += "V (";
                 comment += batteryChargeCurrent;
                 comment += "mA)";
-            #endif
-            #ifdef HAS_AXP2101
+            #elif defined(HAS_AXP2101)
                 comment += " Bat=";
                 comment += String(batteryVoltage.toFloat(),2);
                 comment += "V (";
                 comment += batteryChargeCurrent;
                 comment += "%)";
-            #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
+            #elif defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
                 comment += " Bat=";
                 comment += String(batteryVoltage.toFloat(),2);
                 comment += "V";

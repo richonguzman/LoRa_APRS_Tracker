@@ -8,6 +8,7 @@ namespace BATTERY_Utils {
 
     String  generateEncodedTelemetry(float voltage);
     String  getPercentVoltageBattery(float voltage);
+    void    checkLowVoltageAndSleep(float voltage);
 
 }
 

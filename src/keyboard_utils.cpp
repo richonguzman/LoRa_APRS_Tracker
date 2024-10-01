@@ -52,6 +52,7 @@ extern String           winlinkAlias;
 extern String           winlinkAliasComplete;
 extern bool             winlinkCommentState;
 extern bool             gpsIsActive;
+extern bool             sendStartTelemetry;
 
 extern std::vector<String>  outputMessagesBuffer;
 
@@ -287,6 +288,7 @@ namespace KEYBOARD_Utils {
             winlinkCommentState = false;
             displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
+            sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
         } else if ((menuDisplay >= 1 && menuDisplay <= 3) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 30 && menuDisplay <= 31)) {
             menuDisplay = menuDisplay * 10;
