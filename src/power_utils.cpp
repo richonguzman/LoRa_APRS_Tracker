@@ -470,7 +470,7 @@ namespace POWER_Utils {
             PMU.shutdown();
         #else
 
-            if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+            if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
                 BLE_Utils::stop();
             } else {
                 // turn off BT classic ???
