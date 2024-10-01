@@ -259,6 +259,8 @@ namespace STATION_Utils {
                 comment += " Bat=";
                 comment += String(batteryVoltage.toFloat(),2);
                 comment += "V";
+                comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
+                comment += "%";
             #endif
         }
         if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry)) {

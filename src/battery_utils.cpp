@@ -47,4 +47,15 @@ namespace BATTERY_Utils {
         return telemetry;
     }
 
+    String getPercentVoltageBattery(float voltage) {
+        int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
+        if (percent < 10) {
+            return "  " + String(percent);
+        } else if (percent >= 10 && percent < 100) {
+            return " " + String(percent);
+        } else {
+            return "100";
+        }
+    }
+
 }

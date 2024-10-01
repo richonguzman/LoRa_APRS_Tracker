@@ -5,6 +5,7 @@
 #include "station_utils.h"
 #include "configuration.h"
 #include "APRSPacketLib.h"
+#include "battery_utils.h"
 #include "power_utils.h"
 #include "menu_utils.h"
 #include "msg_utils.h"
@@ -622,9 +623,11 @@ namespace MENU_Utils {
                     String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
                     String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(TTGO_T_DECK_GPS)
-					    sixthRowMainMenu = "Bat: ";
+					    sixthRowMainMenu = "Battery: ";
                         sixthRowMainMenu += batteryVoltage;
-                        sixthRowMainMenu += "V";
+                        sixthRowMainMenu += "V   ";
+                        sixthRowMainMenu += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
+                        sixthRowMainMenu += "%";
                     #endif
                     #ifdef HAS_AXP192
                         if (batteryCharge.toInt() == 0) {
