@@ -1,0 +1,108 @@
+name: Build Release
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                target:
+                    - name: ttgo-t-beam-v1
+                      chip: esp32
+                    - name: heltec_wireless_tracker
+                      chip: esp32s3
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.9"
+
+            - name: Install PlatformIO Core
+              run: pip install --upgrade platformio
+
+            - name: Build target
+              run: |
+                  pio run -e ${{ matrix.target.name }} 
+
+            - name: Build FS
+              run: |
+                  pio run --target buildfs -e ${{ matrix.target.name }}
+
+            - name: Move Files
+              run: |
+                  mkdir -p installer/firmware
+                  cp .pio/build/${{ matrix.target.name }}/firmware.bin installer/ota_update.bin
+                  cp .pio/build/${{ matrix.target.name }}/firmware.bin installer/firmware/
+                  cp .pio/build/${{ matrix.target.name }}/bootloader.bin installer/firmware/
+                  cp .pio/build/${{ matrix.target.name }}/partitions.bin installer/firmware/
+                  cp .pio/build/${{ matrix.target.name }}/spiffs.bin installer/firmware/
+                  cp ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin installer/firmware/
+              
+            - name: Merge for web flashing
+              run: |
+                  if [ "${{ matrix.target.chip }}" == "esp32" ]; then
+                    python installer/bin/esptool/esptool.py --chip esp32 merge_bin \
+                      -o installer/web_factory.bin \
+                      --flash_mode dio \
+                      --flash_freq 40m \
+                      --flash_size 4MB \
+                      0x1000 installer/firmware/bootloader.bin \
+                      0x8000 installer/firmware/partitions.bin \
+                      0xe000 installer/firmware/boot_app0.bin \
+                      0x10000 installer/firmware/firmware.bin \
+                      0x3D0000 installer/firmware/spiffs.bin
+                  elif [ "${{ matrix.target.chip }}" == "esp32s2" ]; then
+                    python installer/bin/esptool/esptool.py --chip esp32s2 merge_bin \
+                      -o installer/web_factory.bin \
+                      --flash_mode dio \
+                      --flash_freq 40m \
+                      --flash_size 4MB \
+                      0x1000 installer/firmware/bootloader.bin \
+                      0x8000 installer/firmware/partitions.bin \
+                      0xe000 installer/firmware/boot_app0.bin \
+                      0x10000 installer/firmware/firmware.bin \
+                      0x3D0000 installer/firmware/spiffs.bin
+                  elif [ "${{ matrix.target.chip }}" == "esp32s3" ]; then
+                    python installer/bin/esptool/esptool.py --chip esp32s3 merge_bin \
+                      -o installer/web_factory.bin \
+                      --flash_mode dio \
+                      --flash_freq 40m \
+                      --flash_size 8MB \
+                      0x0000 installer/firmware/bootloader.bin \
+                      0x8000 installer/firmware/partitions.bin \
+                      0xe000 installer/firmware/boot_app0.bin \
+                      0x10000 installer/firmware/firmware.bin \
+                      0x3D0000 installer/firmware/spiffs.bin
+                  elif [ "${{ matrix.target.chip }}" == "esp32c3" ]; then
+                    python installer/bin/esptool/esptool.py --chip esp32c3 merge_bin \
+                      -o installer/web_factory.bin \
+                      --flash_mode dio \
+                      --flash_freq 40m \
+                      --flash_size 4MB \
+                      0x1000 installer/firmware/bootloader.bin \
+                      0x8000 installer/firmware/partitions.bin \
+                      0xe000 installer/firmware/boot_app0.bin \
+                      0x10000 installer/firmware/firmware.bin \
+                      0x3D0000 installer/firmware/spiffs.bin
+                  fi
+
+            - name: Install Zip
+              run: sudo apt-get install zip
+
+            - name: Archive Files
+              run: zip -r installer.zip installer/
+
+            - name: Upload Release Asset
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: ./installer.zip
+                  asset_name: ${{ matrix.target.name }}.zip
+                  asset_content_type: application/zip
