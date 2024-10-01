@@ -60,7 +60,7 @@ jobs:
                       0x8000 installer/firmware/partitions.bin \
                       0xe000 installer/firmware/boot_app0.bin \
                       0x10000 installer/firmware/firmware.bin \
-                      0x3F0000 installer/firmware/spiffs.bin
+                      0x310000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32s2" ]; then
                     esptool.py --chip esp32s2 merge_bin \
                       -o installer/web_factory.bin \
@@ -71,7 +71,7 @@ jobs:
                       0x8000 installer/firmware/partitions.bin \
                       0xe000 installer/firmware/boot_app0.bin \
                       0x10000 installer/firmware/firmware.bin \
-                      0x3F0000 installer/firmware/spiffs.bin
+                      0x310000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32s3" ]; then
                     esptool.py --chip esp32s3 merge_bin \
                       -o installer/web_factory.bin \
@@ -82,7 +82,7 @@ jobs:
                       0x8000 installer/firmware/partitions.bin \
                       0xe000 installer/firmware/boot_app0.bin \
                       0x10000 installer/firmware/firmware.bin \
-                      0x3F0000 installer/firmware/spiffs.bin
+                      0x310000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32c3" ]; then
                     esptool.py --chip esp32c3 merge_bin \
                       -o installer/web_factory.bin \
@@ -93,7 +93,7 @@ jobs:
                       0x8000 installer/firmware/partitions.bin \
                       0xe000 installer/firmware/boot_app0.bin \
                       0x10000 installer/firmware/firmware.bin \
-                      0x3F0000 installer/firmware/spiffs.bin
+                      0x310000 installer/firmware/spiffs.bin
                   fi
 
             - name: Install Zip
