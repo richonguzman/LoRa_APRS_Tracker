@@ -482,7 +482,7 @@ namespace KEYBOARD_Utils {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                 displayShow("", "", "    POWER OFF ...", 2000);
             #else
-                displayShow("", "", " starting DEEP SLEEP", 2000);
+                displayShow("", "", "  starting DEEP SLEEP", 2000);
             #endif
             POWER_Utils::shutdown();
         }
