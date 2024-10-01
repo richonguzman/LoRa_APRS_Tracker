@@ -22,6 +22,7 @@ BLECharacteristic *pCharacteristicTx;
 BLECharacteristic *pCharacteristicRx;
 
 extern Configuration    Config;
+extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 extern bool             sendBleToLoRa;
 extern bool             bluetoothConnected;
@@ -69,10 +70,9 @@ namespace BLE_Utils {
     }
   
     void setup() {
-        uint8_t dmac[6];
-        esp_efuse_mac_get_default(dmac);
-        std::string BLEid = "LoRa Tracker " + std::to_string(dmac[4]) + std::to_string(dmac[5]);
-        BLEDevice::init(BLEid);
+        String id = currentBeacon->callsign;
+        String BLEid = id.substring(0, id.indexOf("-")) + "-BLE";
+        BLEDevice::init(BLEid.c_str());
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 

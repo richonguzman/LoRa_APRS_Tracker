@@ -16,6 +16,7 @@ float newHum, newTemp, newPress, newGas;
 uint32_t    bmeLastReading      = -60000;
 int         wxModuleType        = 0;
 uint8_t     wxModuleAddress     = 0x00;
+bool        wxModuleFound       = false;
 
 
 Adafruit_BME280     bme280;
@@ -54,7 +55,6 @@ namespace BME_Utils {
         if (Config.bme.active) {
             getWxModuleAddres();
             if (wxModuleAddress != 0x00) {
-                bool wxModuleFound = false;
                 #ifdef HELTEC_V3_GPS
                     if (bme280.begin(wxModuleAddress, &Wire1)) {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
@@ -245,7 +245,7 @@ namespace BME_Utils {
             if (type == 1) {
                 wx = " - C    - %    - hPa";
             } else {
-                wx = ".../...g...t...r...p...P...h..b.....";
+                wx = ".../...g...t...";
             }
             return wx;
         } else {
@@ -275,7 +275,7 @@ namespace BME_Utils {
             } else {
                 wx = ".../...g...t";
                 wx += tempStr;
-                wx += "r...p...P...h";
+                wx += "h";
                 wx += humStr;
                 wx += "b";
                 wx += presStr;

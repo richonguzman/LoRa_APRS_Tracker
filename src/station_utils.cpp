@@ -36,6 +36,7 @@ extern bool                 smartBeaconActive;
 extern bool                 winlinkCommentState;
 
 extern int                  wxModuleType;
+extern bool                 wxModuleFound;
 extern bool                 gpsIsActive;
 extern bool                 gpsShouldSleep;
 
@@ -210,12 +211,12 @@ namespace STATION_Utils {
         }
 
         String packet;
-        if (Config.bme.sendTelemetry && type == 1) { // WX
+        if (Config.bme.sendTelemetry && wxModuleFound && type == 1) { // WX
             packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             if (wxModuleType != 0) {
                 packet += BME_Utils::readDataSensor(0);
             } else {
-                packet += ".../...g...t...r...p...P...h..b.....";
+                packet += ".../...g...t...";
             }            
         } else {
             String path = Config.path;

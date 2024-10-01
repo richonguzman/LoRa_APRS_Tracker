@@ -9,6 +9,7 @@
 
 
 extern Configuration    Config;
+extern Beacon           *currentBeacon;
 extern BluetoothSerial  SerialBT;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
@@ -35,12 +36,10 @@ namespace BLUETOOTH_Utils {
         SerialBT.register_callback(BLUETOOTH_Utils::bluetoothCallback);
         SerialBT.onData(BLUETOOTH_Utils::getData); // callback instead of while to avoid RX buffer limit when NMEA data received
 
-        uint8_t dmac[6];
-        esp_efuse_mac_get_default(dmac);
-        char ourId[5];
-        snprintf(ourId, sizeof(ourId), "%02x%02x", dmac[4], dmac[5]);
+        String id = currentBeacon->callsign;
+        String BTid = id.substring(0, id.indexOf("-")) + "-BT";
 
-        if (!SerialBT.begin(String("LoRa Tracker " + String(ourId)))) {
+        if (!SerialBT.begin(String(BTid))) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Bluetooth", "Starting Bluetooth failed!");
             displayShow("ERROR", "Starting Bluetooth failed!", "");
             while(true) {
