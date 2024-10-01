@@ -1,7 +1,12 @@
+#include <logger.h>
 #include <WiFi.h>
 #include "configuration.h"
+#include "web_utils.h"
+#include "display.h"
+
 
 extern Configuration    Config;
+extern logging::Logger  logger;
 
 //uint32_t    WiFiAutoAPTime      = millis();
 
@@ -15,28 +20,16 @@ namespace WIFI_Utils {
         //WiFiAutoAPTime = millis();
     }
 
-    /*void killAutoAP() {
-        WiFi.disconnect();
-        WiFi.mode(WIFI_OFF);
-    }*/
-
-    /*void checkIfAutoAPShouldPowerOff() {
-        if (WiFiAutoAPStarted && Config.wifiAutoAP.powerOff > 0) {
-            if (WiFi.softAPgetStationNum() > 0) {
-                WiFiAutoAPTime = 0;
-            } else {
-                if (WiFiAutoAPTime == 0) {
-                    WiFiAutoAPTime = millis();
-                } else if ((millis() - WiFiAutoAPTime) > Config.wifiAutoAP.powerOff * 60 * 1000) {
-                    Serial.println("Stopping auto AP");
-
-                    WiFiAutoAPStarted = false;
-                    WiFi.softAPdisconnect(true);
-
-                    Serial.println("Auto AP stopped (timeout)");
-                }
-            }
+    void checkIfWiFiAP() {
+        if (Config.wifiAP.active || Config.beacons[0].callsign == "NOCALL-7"){
+            displayShow(" LoRa APRS", "    ** WEB-CONF **","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
+            startAutoAP();
+            WEB_Utils::setup();
+            while (true) {}
+        } else {
+            WiFi.mode(WIFI_OFF);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
         }
-    }*/
-
+    }
 }

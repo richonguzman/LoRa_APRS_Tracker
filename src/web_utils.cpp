@@ -188,7 +188,7 @@ namespace WEB_Utils {
 
         //  WiFi AP
         Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
-        //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
+        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
 
         Config.writeFile();
 

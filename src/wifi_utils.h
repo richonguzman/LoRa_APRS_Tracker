@@ -7,6 +7,7 @@
 namespace WIFI_Utils {
 
     void startAutoAP();
+    void checkIfWiFiAP();
 
 }
 
