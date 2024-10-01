@@ -51,7 +51,7 @@ jobs:
             - name: Merge for web flashing
               run: |
                   if [ "${{ matrix.target.chip }}" == "esp32" ]; then
-                    python installer/bin/esptool/esptool.py --chip esp32 merge_bin \
+                    esptool.py --chip esp32 merge_bin \
                       -o installer/web_factory.bin \
                       --flash_mode dio \
                       --flash_freq 40m \
@@ -62,7 +62,7 @@ jobs:
                       0x10000 installer/firmware/firmware.bin \
                       0x3F0000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32s2" ]; then
-                    python installer/bin/esptool/esptool.py --chip esp32s2 merge_bin \
+                    esptool.py --chip esp32s2 merge_bin \
                       -o installer/web_factory.bin \
                       --flash_mode dio \
                       --flash_freq 40m \
@@ -73,7 +73,7 @@ jobs:
                       0x10000 installer/firmware/firmware.bin \
                       0x3F0000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32s3" ]; then
-                    python installer/bin/esptool/esptool.py --chip esp32s3 merge_bin \
+                    esptool.py --chip esp32s3 merge_bin \
                       -o installer/web_factory.bin \
                       --flash_mode dio \
                       --flash_freq 40m \
@@ -84,7 +84,7 @@ jobs:
                       0x10000 installer/firmware/firmware.bin \
                       0x3F0000 installer/firmware/spiffs.bin
                   elif [ "${{ matrix.target.chip }}" == "esp32c3" ]; then
-                    python installer/bin/esptool/esptool.py --chip esp32c3 merge_bin \
+                    esptool.py --chip esp32c3 merge_bin \
                       -o installer/web_factory.bin \
                       --flash_mode dio \
                       --flash_freq 40m \
