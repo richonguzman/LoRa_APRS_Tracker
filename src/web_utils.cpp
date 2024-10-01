@@ -91,56 +91,30 @@ namespace WEB_Utils {
             Config.beacons[i].micE                  = request->getParam("beacons." + String(i) + ".micE", true)->value();
             Config.beacons[i].comment               = request->getParam("beacons." + String(i) + ".comment", true)->value();
 
-            if (request->hasParam("beacons." + String(i) + ".gpsEcoMode", true)) {
-                Config.beacons[i].gpsEcoMode = true; // Checkbox is checked
+            String paramGpsEcoMode = "beacons." + String(i) + ".gpsEcoMode";
+            if (request->hasParam(paramGpsEcoMode, true)) {
+                String paramGpsEcoModeValue = request->getParam(paramGpsEcoMode, true)->value();
+                if (paramGpsEcoModeValue == "1") {
+                    Config.beacons[i].gpsEcoMode = true;
+                } else {
+                    Config.beacons[i].gpsEcoMode = false;
+                }
             } else {
-                Config.beacons[i].gpsEcoMode = false; // Checkbox is unchecked
+                Config.beacons[i].gpsEcoMode = false;
             }
-
-            // Handle smartBeaconActive
-            if (request->hasParam("beacons." + String(i) + ".smartBeaconActive", true)) {
-                Config.beacons[i].smartBeaconActive = true; // Checkbox is checked
+            String paramSmartBeaconActive = "beacons." + String(i) + ".smartBeaconActive";
+            if (request->hasParam(paramSmartBeaconActive, true)) {
+                String paramSmartBeaconActiveValue = request->getParam(paramSmartBeaconActive, true)->value();
+                if (paramSmartBeaconActiveValue == "1") {
+                    Config.beacons[i].smartBeaconActive = true;
+                } else {
+                    Config.beacons[i].smartBeaconActive = false;
+                }
             } else {
-                Config.beacons[i].smartBeaconActive = false; // Checkbox is unchecked
+                Config.beacons[i].smartBeaconActive = false;
             }
-
-            /*if (request->hasParam("beacons." + String(i) + ".gpsEcoMode", true)) {
-                Serial.println("Beacon " + String(i) + ": GPS Eco Mode is checked.");
-            } else {
-                Serial.println("Beacon " + String(i) + ": GPS Eco Mode is unchecked.");
-            }*/
-            //Config.beacons[i].gpsEcoMode            = request->hasParam("beacons." + String(i) + ".gpsEcoMode", true);
-            //Config.beacons[i].smartBeaconActive     = request->hasParam("beacons." + String(i) + ".smartBeaconActive", true);
             Config.beacons[i].smartBeaconSetting    = request->getParam("beacons." + String(i) + ".smartBeaconSetting", true)->value().toInt();
         }
-        
-
-        /*Config.beacons[0].callsign              = request->getParam("beacons.0.callsign", true)->value();
-        Config.beacons[0].symbol                = request->getParam("beacons.0.symbol", true)->value();
-        Config.beacons[0].overlay               = request->getParam("beacons.0.overlay", true)->value();
-        Config.beacons[0].micE                  = request->getParam("beacons.0.micE", true)->value();
-        Config.beacons[0].comment               = request->getParam("beacons.0.comment", true)->value();
-        Config.beacons[0].gpsEcoMode            = request->hasParam("beacons.0.gpsEcoMode", true);
-        Config.beacons[0].smartBeaconActive     = request->hasParam("beacons.0.smartBeaconActive", true);
-        Config.beacons[0].smartBeaconSetting    = request->getParam("beacons.0.smartBeaconSetting", true)->value().toInt();
-
-        Config.beacons[1].callsign              = request->getParam("beacons.1.callsign", true)->value();
-        Config.beacons[1].symbol                = request->getParam("beacons.1.symbol", true)->value();
-        Config.beacons[1].overlay               = request->getParam("beacons.1.overlay", true)->value();
-        Config.beacons[1].micE                  = request->getParam("beacons.1.micE", true)->value();
-        Config.beacons[1].comment               = request->getParam("beacons.1.comment", true)->value();
-        Config.beacons[1].gpsEcoMode            = request->hasParam("beacons.1.gpsEcoMode", true);
-        Config.beacons[1].smartBeaconActive     = request->hasParam("beacons.1.smartBeaconActive", true);
-        Config.beacons[1].smartBeaconSetting    = request->getParam("beacons.1.smartBeaconSetting", true)->value().toInt();
-
-        Config.beacons[2].callsign              = request->getParam("beacons.2.callsign", true)->value();
-        Config.beacons[2].symbol                = request->getParam("beacons.2.symbol", true)->value();
-        Config.beacons[2].overlay               = request->getParam("beacons.2.overlay", true)->value();
-        Config.beacons[2].micE                  = request->getParam("beacons.2.micE", true)->value();
-        Config.beacons[2].comment               = request->getParam("beacons.2.comment", true)->value();
-        Config.beacons[2].gpsEcoMode            = request->hasParam("beacons.2.gpsEcoMode", true);
-        Config.beacons[2].smartBeaconActive     = request->hasParam("beacons.2.smartBeaconActive", true);
-        Config.beacons[2].smartBeaconSetting    = request->getParam("beacons.2.smartBeaconSetting", true)->value().toInt();*/
         
         //  Station Config
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
@@ -195,17 +169,11 @@ namespace WEB_Utils {
         Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
 
         // LORA
-        Config.loraTypes[0].frequency           = request->getParam("lora.0.frequency", true)->value().toDouble();
-        Config.loraTypes[0].spreadingFactor     = request->getParam("lora.0.spreadingFactor", true)->value().toInt();
-        Config.loraTypes[0].codingRate4         = request->getParam("lora.0.codingRate4", true)->value().toInt();
-
-        Config.loraTypes[1].frequency           = request->getParam("lora.1.frequency", true)->value().toDouble();
-        Config.loraTypes[1].spreadingFactor     = request->getParam("lora.1.spreadingFactor", true)->value().toInt();
-        Config.loraTypes[1].codingRate4         = request->getParam("lora.1.codingRate4", true)->value().toInt();
-
-        Config.loraTypes[2].frequency           = request->getParam("lora.2.frequency", true)->value().toDouble();
-        Config.loraTypes[2].spreadingFactor     = request->getParam("lora.2.spreadingFactor", true)->value().toInt();
-        Config.loraTypes[2].codingRate4         = request->getParam("lora.2.codingRate4", true)->value().toInt();
+        for (int i = 0; i < 3; i++) {
+            Config.loraTypes[i].frequency       = request->getParam("lora." + String(i) + ".frequency", true)->value().toDouble();
+            Config.loraTypes[i].spreadingFactor = request->getParam("lora." + String(i) + ".spreadingFactor", true)->value().toInt();
+            Config.loraTypes[i].codingRate4     = request->getParam("lora." + String(i) + ".codingRate4", true)->value().toInt();
+        }
 
         //  Bluetooth
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);

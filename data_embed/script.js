@@ -111,7 +111,6 @@ function loadSettings(settings) {
                 <label for="beacons.${index}.comment">Comment</label>
             </div>
             <div class="form-check form-switch col-6 col-md-5 px-1 mb-2" style="margin-left: 90px;">
-                <input type="hidden" name="beacons.${index}.smartBeaconActive" value="0">
                 <input 
                     class="form-check-input" 
                     type="checkbox" 
@@ -124,7 +123,6 @@ function loadSettings(settings) {
                 </label>
             </div>
             <div class="form-check form-switch col-6 col-md-3 px-1 mb-2">
-                <input type="hidden" name="beacons.${index}.gpsEcoMode" value="0">
                 <input 
                     class="form-check-input" 
                     type="checkbox" 
@@ -521,7 +519,7 @@ function checkConnection() {
         });
 }
 
-/*form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     //document.getElementById("beacons").value =         document.querySelectorAll(".beacons").length;
@@ -532,9 +530,9 @@ function checkConnection() {
     });
     saveModal.show();
     setTimeout(checkConnection, 2000);
-});*/
+});
 
-form.addEventListener("submit", async (event) => {
+/*form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     // Optional: update the beacons count
@@ -556,7 +554,7 @@ form.addEventListener("submit", async (event) => {
         console.error(error);
         // Optionally handle errors (e.g., show error modal/message)
     }
-});
+});*/
 
 
 fetchSettings();
