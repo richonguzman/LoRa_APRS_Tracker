@@ -13,10 +13,65 @@ jobs:
                 target:
                     - name: ttgo-t-beam-v1
                       chip: esp32
+                    - name: ttgo-t-beam-v1_915
+                      chip: esp32
+                    - name: ttgo-t-beam-v1_SX1268
+                      chip: esp32
                     - name: ttgo-t-beam-v1_2
+                      chip: esp32
+                    - name: ttgo-t-beam-v1_2_915
+                      chip: esp32
+                    - name: ttgo-t-beam-v1_2_SX1262
+                      chip: esp32
+                    - name: ttgo_t_beam_s3_SUPREME_v3
+                      chip: esp32s3
+                    - name: ttgo_t_deck_GPS
+                      chip: esp32s3
+                    - name: ttgo-t-beam-v0_7
                       chip: esp32
                     - name: heltec_wireless_tracker
                       chip: esp32s3
+                    - name: heltec_wifi_lora_32_v3_GPS
+                      chip: esp32s3
+                    - name: heltec_wifi_lora_32_v3_TNC
+                      chip: esp32s3
+                    - name: heltec-lora32-v2_GPS
+                      chip: esp32
+                    - name: heltec-lora32-v2_GPS_915
+                      chip: esp32
+                    - name: ttgo-t-lora32-v2_1_GPS
+                      chip: esp32
+                    - name: ttgo-t-lora32-v2_1_GPS_915
+                      chip: esp32
+                    - name: ttgo-t-lora32-v2_1_TNC
+                      chip: esp32
+                    - name: ttgo-t-lora32-v2_1_TNC_915
+                      chip: esp32
+                    - name: ESP32_DIY_LoRa_GPS
+                      chip: esp32
+                    - name: ESP32_DIY_LoRa_GPS_915
+                      chip: esp32
+                    - name: ESP32S3_DIY_LoRa_GPS
+                      chip: esp32s3
+                    - name: ESP32S3_DIY_LoRa_GPS_915
+                      chip: esp32s3
+                    - name: ESP32_DIY_1W_LoRa_GPS
+                      chip: esp32
+                    - name: ESP32_DIY_1W_LoRa_GPS_915
+                      chip: esp32
+                    - name: ESP32_DIY_1W_LoRa_GPS_LLCC68
+                      chip: esp32
+                    - name: OE5HWN_MeshCom
+                      chip: esp32
+                    - name: Wemos_ESP32_Bat_LoRa_GPS
+                      chip: esp32
+                    - name: esp32_c3_DIY_LoRa_GPS
+                      chip: esp32c3
+                    - name: esp32_c3_DIY_LoRa_GPS_915
+                      chip: esp32c3
+                    - name: heltec_ht-ct62_GPS
+                      chip: esp32c3
+
         steps:
             - uses: actions/checkout@v3
 
