@@ -376,115 +376,6 @@ buzzerActiveCheckbox.addEventListener("change", function () {
 });
 */
 
-/*document.querySelector(".new button").addEventListener("click", function () {
-    const trackersContainer = document.querySelector(".list-tracker");
-
-    let trackerCount = document.querySelectorAll(".network").length;
-
-    const trackerElement = document.createElement("div");
-
-    trackerElement.classList.add("row", "network", "border-bottom", "py-2");
-
-    // Increment the name, id, and for attributes
-    const attributeName = `beacons.${trackerCount}`;
-    trackerElement.innerHTML = `
-                <div class="form-floating col-6 col-md-5 px-1 mb-2">
-                <input type="text" class="form-control form-control-sm" name="${attributeName}.callsign" id="${attributeName}.callsign" placeholder="" >
-                <label for="${attributeName}.callsign">callsign</label>
-                </div>
-                <div class="form-floating col-6 col-md-5 px-1 mb-2">
-                <input type="password" class="form-control form-control-sm" name="${attributeName}.password" id="${attributeName}.password" placeholder="">
-                <label for="${attributeName}.password">Passphrase</label>
-                </div>
-                <div class="col-4 col-md-2 d-flex align-items-center justify-content-end">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-danger" title="Delete" onclick="return this.parentNode.parentNode.parentNode.remove();"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-            <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
-        </svg><span class="visually-hidden">Delete</span></button>
-                </div>
-                </div>
-            `;
-    trackersContainer.appendChild(trackerElement);
-
-    trackerCount++;
-
-    // Add the new network element to the end of the document
-    document.querySelector(".new").before(trackerElement);
-});*/
-
-/*document
-    .getElementById("action.symbol")
-    .addEventListener("change", function () {
-        const value = document.getElementById("action.symbol").value;
-
-        document.getElementById("beacon.overlay").value = value[0];
-        document.getElementById("beacon.symbol").value = value[1];
-    });*/
-
-/*const speedStandards = {
-    300: [125, 5, 12],
-    244: [125, 6, 12],
-    209: [125, 7, 12],
-    183: [125, 8, 12],
-    610: [125, 8, 10],
-    1200: [125, 7, 9],
-};
-
-function refreshSpeedStandard() {
-    const bw = Number(document.getElementById("lora.signalBandwidth").value);
-    const cr4 = Number(document.getElementById("lora.codingRate4").value);
-    const sf = Number(document.getElementById("lora.spreadingFactor").value);
-
-    let found = false;
-
-    for (const speed in speedStandards) {
-        const standard = speedStandards[speed];
-
-        if (standard[0] !== bw / 1000) continue;
-        if (standard[1] !== cr4) continue;
-        if (standard[2] !== sf) continue;
-
-        document.getElementById("action.speed").value = speed;
-        found = true;
-
-        break;
-    }
-
-    if (!found) {
-        document.getElementById("action.speed").value = "";
-    }
-}*/
-
-/*document.getElementById("lora.signalBandwidth").addEventListener("focusout", refreshSpeedStandard);
-document.getElementById("lora.codingRate4").addEventListener("focusout", refreshSpeedStandard);
-document.getElementById("lora.spreadingFactor").addEventListener("focusout", refreshSpeedStandard);
-
-document.getElementById("action.speed").addEventListener("change", function () {
-    const speed = document.getElementById("action.speed").value;
-
-    if (speed !== "") {
-        const value = speedStandards[Number(speed)];
-
-        const bw = value[0];
-        const cr4 = value[1];
-        const sf = value[2];
-
-        document.getElementById("lora.signalBandwidth").value = bw * 1000;
-        document.getElementById("lora.codingRate4").value = cr4;
-        document.getElementById("lora.spreadingFactor").value = sf;
-    }
-});*/
-
-
-
-
-
-
-
-
-
-
-
 const form = document.querySelector("form");
 
 const saveModal = new bootstrap.Modal(document.getElementById("saveModal"), {
@@ -522,8 +413,6 @@ function checkConnection() {
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    //document.getElementById("beacons").value =         document.querySelectorAll(".beacons").length;
-
     fetch(form.action, {
         method: form.method,
         body: new FormData(form),
@@ -531,30 +420,6 @@ form.addEventListener("submit", async (event) => {
     saveModal.show();
     setTimeout(checkConnection, 2000);
 });
-
-/*form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    // Optional: update the beacons count
-    // document.getElementById("beacons").value = document.querySelectorAll(".beacons").length;
-
-    try {
-        const response = await fetch(form.action, {
-            method: form.method,
-            body: new FormData(form),
-        });
-
-        if (!response.ok) {
-            throw new Error('Form submission failed');
-        }
-        saveModal.show();
-        setTimeout(checkConnection, 2000);
-
-    } catch (error) {
-        console.error(error);
-        // Optionally handle errors (e.g., show error modal/message)
-    }
-});*/
 
 
 fetchSettings();
