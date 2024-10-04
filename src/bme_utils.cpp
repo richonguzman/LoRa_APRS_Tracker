@@ -61,10 +61,10 @@ namespace BME_Utils {
         if (Config.bme.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
                 if (! shtc3.begin()) {
-                    Serial.println("Couldn't find SHTC3");
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
                     while (1) delay(1);
                 }
-                Serial.println("Found SHTC3 sensor");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
             #else
                 getWxModuleAddres();
                 if (wxModuleAddress != 0x00) {

@@ -53,6 +53,7 @@ namespace GPS_Utils {
         #ifdef LIGHTTRACKER_PLUS_1_0
             pinMode(GPS_VCC, OUTPUT);
             digitalWrite(GPS_VCC, LOW);
+            delay(200);
         #endif
         neo6m_gps.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
     }
