@@ -162,7 +162,7 @@ namespace MENU_Utils {
                 displayShow("_MESSAGES_", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu._", "> Join APRSThursday", "  Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1300:
                 if (messageText.length() <= 67) {
@@ -176,7 +176,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu._", "  Join APRSThursday", "> Check In", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Check In", "> Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1310:
                 if (messageText.length() <= 67) {
@@ -190,10 +190,10 @@ namespace MENU_Utils {
                 }
                 break;
             case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu._", "  Join APRSThursday", "  Check In", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Check In", "  Join", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 133:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu._", "  Join APRSThursday", "  Check In", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
+                displayShow("APRS Thu._", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
 //////////            

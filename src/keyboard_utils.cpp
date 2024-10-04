@@ -309,14 +309,14 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 1300;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");                
             }
         } else if (menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay = 1310;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
             }
         } else if (menuDisplay == 132) {
             displayShow(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", "", "", 2000);
@@ -538,12 +538,12 @@ namespace KEYBOARD_Utils {
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
                     menuDisplay = 11;
                 } else if (menuDisplay == 1300) {
-                    messageCallsign = "ANSRVR";
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "CQ HOTG " + messageText);
+                    messageCallsign = "APRSPH";
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "HOTG " + messageText);                    
                     menuDisplay = 130;
                 } else if (menuDisplay == 1310) {
-                    messageCallsign = "APRSPH";
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "HOTG " + messageText);
+                    messageCallsign = "ANSRVR";
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "CQ HOTG " + messageText);                    
                     menuDisplay = 131;
                 }
                 messageCallsign = "";
