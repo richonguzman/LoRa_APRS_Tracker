@@ -274,4 +274,24 @@
     #define RADIO_BUSY_PIN      4
 #endif
 
+#ifdef LIGHTTRACKER_PLUS_1_0
+    #define OLED_SDA            3
+    #define OLED_SCL            4
+    #define OLED_RST            -1
+    #define GPS_RX              17
+    #define GPS_TX              18
+    #define GPS_VCC             33    //#define LED_PIN             16
+    #define BUTTON_PIN          0
+    #define RADIO_VCC_PIN       21
+    #define RADIO_SCLK_PIN      12
+    #define RADIO_MISO_PIN      13
+    #define RADIO_MOSI_PIN      11
+    #define RADIO_CS_PIN        10
+    #define RADIO_RST_PIN       9
+    #define RADIO_DIO1_PIN      5
+    #define RADIO_BUSY_PIN      6
+    #define RADIO_RXEN          42
+    #define RADIO_TXEN          14
+#endif
+
 #endif

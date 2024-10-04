@@ -1,5 +1,8 @@
 #include <TinyGPS++.h>
 #include <logger.h>
+#ifdef LIGHTTRACKER_PLUS_1_0
+#include "Adafruit_SHTC3.h"
+#endif
 #include "bme_utils.h"
 #include "configuration.h"
 #include "display.h"
@@ -25,6 +28,9 @@ Adafruit_BMP280     bmp280(&Wire1);
 #else
 Adafruit_BMP280     bmp280;
 Adafruit_BME680     bme680;
+#endif
+#ifdef LIGHTTRACKER_PLUS_1_0
+Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 #endif
 
    
@@ -53,69 +59,77 @@ namespace BME_Utils {
 
     void setup() {
         if (Config.bme.active) {
-            getWxModuleAddres();
-            if (wxModuleAddress != 0x00) {
-                #ifdef HELTEC_V3_GPS
-                    if (bme280.begin(wxModuleAddress, &Wire1)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
-                        wxModuleType = 1;
-                        wxModuleFound = true;
-                    } 
-                #else
-                    if (bme280.begin(wxModuleAddress)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
-                        wxModuleType = 1;
-                        wxModuleFound = true;
-                    }
+            #ifdef LIGHTTRACKER_PLUS_1_0
+                if (! shtc3.begin()) {
+                    Serial.println("Couldn't find SHTC3");
+                    while (1) delay(1);
+                }
+                Serial.println("Found SHTC3 sensor");
+            #else
+                getWxModuleAddres();
+                if (wxModuleAddress != 0x00) {
+                    #ifdef HELTEC_V3_GPS
+                        if (bme280.begin(wxModuleAddress, &Wire1)) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
+                            wxModuleType = 1;
+                            wxModuleFound = true;
+                        } 
+                    #else
+                        if (bme280.begin(wxModuleAddress)) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
+                            wxModuleType = 1;
+                            wxModuleFound = true;
+                        }
+                        if (!wxModuleFound) {
+                            if (bme680.begin(wxModuleAddress)) {
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
+                                wxModuleType = 3;
+                                wxModuleFound = true;
+                            }
+                        }
+                    #endif
                     if (!wxModuleFound) {
-                        if (bme680.begin(wxModuleAddress)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
-                            wxModuleType = 3;
+                        if (bmp280.begin(wxModuleAddress)) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP280 sensor found");
+                            wxModuleType = 2;
                             wxModuleFound = true;
                         }
                     }
-                #endif
-                if (!wxModuleFound) {
-                    if (bmp280.begin(wxModuleAddress)) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP280 sensor found");
-                        wxModuleType = 2;
-                        wxModuleFound = true;
+                    if (!wxModuleFound) {
+                        displayShow("ERROR", "BME/BMP sensor active", "but no sensor found...", 2000);
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
+                    } else {
+                        switch (wxModuleType) {
+                            case 1:
+                                bme280.setSampling(Adafruit_BME280::MODE_FORCED,
+                                            Adafruit_BME280::SAMPLING_X1,
+                                            Adafruit_BME280::SAMPLING_X1,
+                                            Adafruit_BME280::SAMPLING_X1,
+                                            Adafruit_BME280::FILTER_OFF
+                                            );
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
+                                break;
+                            case 2:
+                                bmp280.setSampling(Adafruit_BMP280::MODE_FORCED,
+                                            Adafruit_BMP280::SAMPLING_X1,
+                                            Adafruit_BMP280::SAMPLING_X1,
+                                            Adafruit_BMP280::FILTER_OFF
+                                            ); 
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
+                                break;
+                            case 3:
+                                #ifndef HELTEC_V3_GPS
+                                    bme680.setTemperatureOversampling(BME680_OS_1X);
+                                    bme680.setHumidityOversampling(BME680_OS_1X);
+                                    bme680.setPressureOversampling(BME680_OS_1X);
+                                    bme680.setIIRFilterSize(BME680_FILTER_SIZE_0);
+                                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
+                                #endif
+                                break;
+                        }
                     }
                 }
-                if (!wxModuleFound) {
-                    displayShow("ERROR", "BME/BMP sensor active", "but no sensor found...", 2000);
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
-                } else {
-                    switch (wxModuleType) {
-                        case 1:
-                            bme280.setSampling(Adafruit_BME280::MODE_FORCED,
-                                        Adafruit_BME280::SAMPLING_X1,
-                                        Adafruit_BME280::SAMPLING_X1,
-                                        Adafruit_BME280::SAMPLING_X1,
-                                        Adafruit_BME280::FILTER_OFF
-                                        );
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
-                            break;
-                        case 2:
-                            bmp280.setSampling(Adafruit_BMP280::MODE_FORCED,
-                                        Adafruit_BMP280::SAMPLING_X1,
-                                        Adafruit_BMP280::SAMPLING_X1,
-                                        Adafruit_BMP280::FILTER_OFF
-                                        ); 
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
-                            break;
-                        case 3:
-                            #ifndef HELTEC_V3_GPS
-                                bme680.setTemperatureOversampling(BME680_OS_1X);
-                                bme680.setHumidityOversampling(BME680_OS_1X);
-                                bme680.setPressureOversampling(BME680_OS_1X);
-                                bme680.setIIRFilterSize(BME680_FILTER_SIZE_0);
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
-                            #endif
-                            break;
-                    }
-                }
-            }            
+            #endif
         }
     }
 
@@ -210,32 +224,40 @@ namespace BME_Utils {
     const String readDataSensor(const uint8_t type) {
         uint32_t lastReading = millis() - bmeLastReading;
         if (lastReading > 60 * 1000) {
-            switch (wxModuleType) {
-                case 1: // BME280
-                    bme280.takeForcedMeasurement();
-                    newTemp     = bme280.readTemperature();
-                    newPress    = (bme280.readPressure() / 100.0F);
-                    newHum      = bme280.readHumidity();
-                    break;
-                case 2: // BMP280
-                    bmp280.takeForcedMeasurement();
-                    newTemp     = bmp280.readTemperature();
-                    newPress    = (bmp280.readPressure() / 100.0F);
-                    newHum      = 0;
-                    break;
-                case 3: // BME680
-                    #ifndef HELTEC_V3_GPS
-                        bme680.performReading();
-                        delay(50);
-                        if (bme680.endReading()) {
-                            newTemp     = bme680.temperature;
-                            newPress    = (bme680.pressure / 100.0F);
-                            newHum      = bme680.humidity;
-                            newGas      = bme680.gas_resistance / 1000.0; // in Kilo ohms
-                        }
-                    #endif
-                    break;
-            }
+            #ifdef LIGHTTRACKER_PLUS_1_0
+                sensors_event_t humidity, temp;
+                shtc3.getEvent(&humidity, &temp);
+                newTemp     = temp.temperature;
+                newHum      = humidity.relative_humidity;
+                newPress    = 0;
+            #else
+                switch (wxModuleType) {
+                    case 1: // BME280
+                        bme280.takeForcedMeasurement();
+                        newTemp     = bme280.readTemperature();
+                        newPress    = (bme280.readPressure() / 100.0F);
+                        newHum      = bme280.readHumidity();
+                        break;
+                    case 2: // BMP280
+                        bmp280.takeForcedMeasurement();
+                        newTemp     = bmp280.readTemperature();
+                        newPress    = (bmp280.readPressure() / 100.0F);
+                        newHum      = 0;
+                        break;
+                    case 3: // BME680
+                        #ifndef HELTEC_V3_GPS
+                            bme680.performReading();
+                            delay(50);
+                            if (bme680.endReading()) {
+                                newTemp     = bme680.temperature;
+                                newPress    = (bme680.pressure / 100.0F);
+                                newHum      = bme680.humidity;
+                                newGas      = bme680.gas_resistance / 1000.0; // in Kilo ohms
+                            }
+                        #endif
+                        break;
+                }
+            #endif
             bmeLastReading = millis();
         }
         
@@ -251,40 +273,58 @@ namespace BME_Utils {
         } else {
             String tempStr = generateTempString(newTemp + Config.bme.temperatureCorrection, type);
             String humStr;
-            if (wxModuleType == 1 || wxModuleType == 3) {
+            #ifdef LIGHTTRACKER_PLUS_1_0
                 humStr  = generateHumString(newHum,type);
-            } else if (wxModuleType == 2) {
-                humStr  = "..";
-            }
-            String presStr = generatePresString(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), type);
-            if (type == 1) {
+            #else
                 if (wxModuleType == 1 || wxModuleType == 3) {
+                    humStr  = generateHumString(newHum,type);
+                } else if (wxModuleType == 2) {
+                    humStr  = "..";
+                }
+            #endif
+            String presStr = generatePresString(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), type);
+            #ifdef LIGHTTRACKER_PLUS_1_0
+                if (type == 1) {
                     wx = tempStr;
-                    wx += "C   ";
+                    wx += "C      ";
                     wx += humStr;
                     wx += "%   ";
-                    wx += presStr;
-                    wx += "hPa";
-                } else if (wxModuleType == 2) {
-                    wx = "T: ";
+                } else {
+                    wx = ".../...g...t";
                     wx += tempStr;
-                    wx += "C P: ";
+                    wx += "h";
+                    wx += humStr;
+                }
+            #else
+                if (type == 1) {
+                    if (wxModuleType == 1 || wxModuleType == 3) {
+                        wx = tempStr;
+                        wx += "C   ";
+                        wx += humStr;
+                        wx += "%   ";
+                        wx += presStr;
+                        wx += "hPa";
+                    } else if (wxModuleType == 2) {
+                        wx = "T: ";
+                        wx += tempStr;
+                        wx += "C P: ";
+                        wx += presStr;
+                        wx += "hPa";
+                    }
+                } else {
+                    wx = ".../...g...t";
+                    wx += tempStr;
+                    wx += "h";
+                    wx += humStr;
+                    wx += "b";
                     wx += presStr;
-                    wx += "hPa";
+                    if (wxModuleType == 3) {
+                        wx += "Gas: ";
+                        wx += String(newGas);
+                        wx += "Kohms";
+                    }
                 }
-            } else {
-                wx = ".../...g...t";
-                wx += tempStr;
-                wx += "h";
-                wx += humStr;
-                wx += "b";
-                wx += presStr;
-                if (wxModuleType == 3) {
-                    wx += "Gas: ";
-                    wx += String(newGas);
-                    wx += "Kohms";
-                }
-            }
+            #endif
             return wx;
         }
     }

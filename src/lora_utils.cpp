@@ -20,7 +20,12 @@ bool transmitFlag    = true;
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 #endif
 #if defined(HAS_SX1268)
-    SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+    #if defined(LIGHTTRACKER_PLUS_1_0)
+        SPIClass loraSPI(FSPI);
+        SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN,loraSPI); 
+    #else
+        SX1268 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+    #endif
 #endif
 #if defined(HAS_SX1278)
     SX1278 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
@@ -79,8 +84,16 @@ namespace LoRa_Utils {
     }
 
     void setup() {
+        #ifdef LIGHTTRACKER_PLUS_1_0
+            pinMode(RADIO_VCC_PIN,OUTPUT);
+            digitalWrite(RADIO_VCC_PIN,HIGH);
+        #endif
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
-        SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+        #if defined(LIGHTTRACKER_PLUS_1_0)
+            loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN);
+        #else
+            SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+        #endif
         float freq = (float)currentLoRaType->frequency/1000000;
         #if defined(RADIO_HAS_XTAL)
             radio.XTAL = true;
