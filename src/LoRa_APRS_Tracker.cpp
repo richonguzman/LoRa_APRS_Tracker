@@ -180,7 +180,17 @@ void loop() {
         KEYBOARD_Utils::mouseRead();
     #endif
 
-    MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+    ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
+
+    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+        BLE_Utils::sendToPhone(packet.text.substring(3));
+    } else {
+        #ifdef HAS_BT_CLASSIC
+        BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+        #endif
+    }
+
+    MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean25SegBuffer();
     MSG_Utils::ledNotification();

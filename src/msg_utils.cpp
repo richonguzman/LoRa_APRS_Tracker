@@ -6,7 +6,6 @@
 #include "winlink_utils.h"
 #include "configuration.h"
 #include "lora_utils.h"
-#include "ble_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "display.h"
@@ -417,14 +416,6 @@ namespace MSG_Utils {
                 }
 
                 if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {
-                    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) { // agregar validador si cliente BLE esta conectado?
-                        BLE_Utils::sendToPhone(packet.text.substring(3));
-                    } else {
-                        #ifdef HAS_BT_CLASSIC
-                        BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
-                        #endif
-                    }                    
-
                     if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(packet.text, currentBeacon->callsign, Config.path);
                         if (digiRepeatedPacket == "X") {
