@@ -11,6 +11,7 @@
 #include "bme_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "ble_utils.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -278,6 +279,10 @@ namespace STATION_Utils {
         displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
         
+        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+            BLE_Utils::sendToPhone(packet);
+        }
+
         if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();
             lastTxLng       = gps.location.lng();
