@@ -279,7 +279,7 @@ namespace STATION_Utils {
         displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
         
-        if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+        if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
             BLE_Utils::sendToPhone(packet);
         }
 

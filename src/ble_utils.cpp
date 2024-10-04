@@ -50,7 +50,7 @@ String kissSerialBuffer = "";
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
-        if (Config.bluetoothType == 2) { // TNC2
+        if (Config.bluetooth.type == 2) { // TNC2
             std::string receivedData = pCharacteristic->getValue();
             String receivedString = "";
             for (int i = 0; i < receivedData.length(); i++) {
@@ -59,7 +59,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             
             BLEToLoRaPacket = receivedString;
             sendBleToLoRa = true;
-        } else if (Config.bluetoothType == 0) { // AX25 KISS
+        } else if (Config.bluetooth.type == 0) { // AX25 KISS
             std::string receivedData = pCharacteristic->getValue();
 
             delay(100);
@@ -164,7 +164,7 @@ namespace BLE_Utils {
     }
 
     void txToPhoneOverBLE(const String& frame) {
-        if (Config.bluetoothType == 0) { // AX25 KISS
+        if (Config.bluetooth.type == 0) { // AX25 KISS
             const String kissEncoded = AX25_Utils::encodeKISS(frame);
 
             const char* t = kissEncoded.c_str();

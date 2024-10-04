@@ -182,7 +182,7 @@ void loop() {
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
-    if (Config.bluetoothType == 0 || Config.bluetoothType == 2) {
+    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
         BLE_Utils::sendToPhone(packet.text.substring(3));
     } else {
         #ifdef HAS_BT_CLASSIC
