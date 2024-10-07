@@ -239,8 +239,14 @@ namespace STATION_Utils {
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-        #if defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
-            BATTERY_Utils::checkLowVoltageAndSleep(batteryVoltage.toFloat());
+        bool shouldSleepLowVoltage = false;
+        #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
+            if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) {
+                shouldSleepLowVoltage   = true;
+            }
+            //
+            //BATTERY_Utils::checkLowVoltageAndSleep(batteryVoltage.toFloat());
+            //
         #endif
         if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
@@ -264,12 +270,16 @@ namespace STATION_Utils {
                 comment += "%";
             #endif
         }
-        if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry)) {
-            updateCounter++;
-            if (updateCounter >= sendCommentAfterXBeacons) {
-                if (comment != "") packet += comment;
-                if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += BATTERY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
-                updateCounter = 0;
+        if (shouldSleepLowVoltage) {
+            packet += " **LowVoltagePowerOff**";
+        } else {
+            if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry)) {
+                updateCounter++;
+                if (updateCounter >= sendCommentAfterXBeacons) {
+                    if (comment != "") packet += comment;
+                    if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += BATTERY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
+                    updateCounter = 0;
+                }
             }
         }
         #ifdef HAS_TFT
@@ -277,6 +287,11 @@ namespace STATION_Utils {
         #endif
         displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
+
+        if (shouldSleepLowVoltage) {
+            delay(3000);
+            POWER_Utils::shutdown();
+        }
         
         if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();
@@ -292,11 +307,6 @@ namespace STATION_Utils {
         if (currentBeacon->gpsEcoMode) {
             gpsShouldSleep = true;
         }
-        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101) && defined(BATTERY_PIN)
-            if (batteryVoltage.toFloat() < 3.0) {
-                POWER_Utils::shutdown();
-            }
-        #endif
     }
 
     void checkTelemetryTx() {

@@ -59,8 +59,4 @@ namespace BATTERY_Utils {
         }
     }
 
-    void checkLowVoltageAndSleep(float voltage) {
-        if (voltage <= 3.0) POWER_Utils::shutdown();
-    }
-
 }
