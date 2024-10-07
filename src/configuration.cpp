@@ -36,6 +36,8 @@ void Configuration::writeFile() {
     data["battery"]["sendVoltage"]              = battery.sendVoltage;
     data["battery"]["voltageAsTelemetry"]       = battery.voltageAsTelemetry;
     data["battery"]["sendVoltageAlways"]        = battery.sendVoltageAlways;
+    data["battery"]["monitorVoltage"]           = battery.monitorVoltage;
+    data["battery"]["sleepVoltage"]             = battery.sleepVoltage;
 
     data["winlink"]["password"]                 = winlink.password;
 
@@ -129,6 +131,8 @@ bool Configuration::readFile() {
         battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
         battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
         battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
+        battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
+        battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
 
         winlink.password                = data["winlink"]["password"] | "NOPASS";
 
@@ -238,6 +242,8 @@ void Configuration::init() {
     battery.sendVoltage             = false;
     battery.voltageAsTelemetry      = false;
     battery.sendVoltageAlways       = false;
+    battery.monitorVoltage          = false;
+    battery.sleepVoltage            = 2.9;
 
     winlink.password                = "NOPASS";
 

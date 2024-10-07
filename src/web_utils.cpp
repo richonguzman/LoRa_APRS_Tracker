@@ -142,6 +142,8 @@ namespace WEB_Utils {
         Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
         Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
         Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
+        Config.battery.monitorVoltage           = request->hasParam("battery.monitorVoltage", true);
+        Config.battery.sleepVoltage             = request->getParam("battery.sleepVoltage", true)->value().toFloat();
 
         //  Winlink
         Config.winlink.password                 = request->getParam("winlink.password", true)->value();
@@ -188,7 +190,7 @@ namespace WEB_Utils {
 
         //  WiFi AP
         Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
-        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
+        Config.wifiAP.active                    = true;//false; // when Configuration is finished Tracker returns to normal mode.        
 
         Config.writeFile();
 

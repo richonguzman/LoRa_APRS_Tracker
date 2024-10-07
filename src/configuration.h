@@ -36,6 +36,8 @@ public:
     bool    sendVoltage;
     bool    voltageAsTelemetry;
     bool    sendVoltageAlways;
+    bool    monitorVoltage;
+    float   sleepVoltage;
 };
 
 class Winlink {

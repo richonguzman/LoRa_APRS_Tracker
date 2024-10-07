@@ -215,7 +215,9 @@ function loadSettings(settings) {
     // BATTERY
     document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
     document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
-    document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;    
+    document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;
+    document.getElementById("battery.monitorVoltage").checked           = settings.battery.monitorVoltage;
+    document.getElementById("battery.sleepVoltage").value               = settings.battery.sleepVoltage.toFixed(1);
 
     // WINLINK
     document.getElementById("winlink.password").value                   = settings.winlink.password;
