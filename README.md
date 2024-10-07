@@ -49,6 +49,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.10.07 Battery Monitor process added (Voltage Sleep to protect Battery).
 - 2024.10.02 WEB INSTALLER (Alpha).
 - 2024.09.17 Battery Voltage now as Encoded Telemetry in GPS Beacon.
 - 2024.08.26 New reformating of code ahead of WebInstaller: SmartBeacon change.
