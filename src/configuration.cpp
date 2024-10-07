@@ -41,9 +41,9 @@ void Configuration::writeFile() {
 
     data["winlink"]["password"]                 = winlink.password;
 
-    data["bme"]["active"]                       = bme.active;
-    data["bme"]["temperatureCorrection"]        = bme.temperatureCorrection;
-    data["bme"]["sendTelemetry"]                = bme.sendTelemetry;
+    data["wxsensor"]["active"]                  = wxsensor.active;
+    data["wxsensor"]["temperatureCorrection"]   = wxsensor.temperatureCorrection;
+    data["wxsensor"]["sendTelemetry"]           = wxsensor.sendTelemetry;
 
     data["notification"]["ledTx"]               = notification.ledTx;
     data["notification"]["ledTxPin"]            = notification.ledTxPin;
@@ -136,9 +136,9 @@ bool Configuration::readFile() {
 
         winlink.password                = data["winlink"]["password"] | "NOPASS";
 
-        bme.active                      = data["bme"]["active"] | false;
-        bme.temperatureCorrection       = data["bme"]["temperatureCorrection"] | 0.0;
-        bme.sendTelemetry               = data["bme"]["sendTelemetry"] | false;
+        wxsensor.active                 = data["wxsensor"]["active"] | false;
+        wxsensor.temperatureCorrection  = data["wxsensor"]["temperatureCorrection"] | 0.0;
+        wxsensor.sendTelemetry          = data["wxsensor"]["sendTelemetry"] | false;
 
         notification.ledTx              = data["notification"]["ledTx"] | false;
         notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
@@ -247,9 +247,9 @@ void Configuration::init() {
 
     winlink.password                = "NOPASS";
 
-    bme.active                      = false;
-    bme.temperatureCorrection       = 0.0;
-    bme.sendTelemetry               = false;
+    wxsensor.active                 = false;
+    wxsensor.temperatureCorrection  = 0.0;
+    wxsensor.sendTelemetry          = false;
 
     notification.ledTx              = false;
     notification.ledTxPin           = 13;

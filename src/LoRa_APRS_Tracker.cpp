@@ -33,9 +33,9 @@ ________________________________________________________________________________
 #include "wifi_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
-#include "bme_utils.h"
 #include "web_utils.h"
 #include "ble_utils.h"
+#include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
 
@@ -122,7 +122,7 @@ void setup() {
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
-    BME_Utils::setup();
+    WX_Utils::setup();
     
     ackRequestNumber = random(1,999);
 

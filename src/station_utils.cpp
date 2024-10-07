@@ -8,7 +8,7 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
-#include "bme_utils.h"
+#include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
 
@@ -211,10 +211,10 @@ namespace STATION_Utils {
         }
 
         String packet;
-        if (Config.bme.sendTelemetry && wxModuleFound && type == 1) { // WX
+        if (Config.wxsensor.sendTelemetry && wxModuleFound && type == 1) { // WX
             packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
             if (wxModuleType != 0) {
-                packet += BME_Utils::readDataSensor(0);
+                packet += WX_Utils::readDataSensor(0);
             } else {
                 packet += ".../...g...t...";
             }            
@@ -310,7 +310,7 @@ namespace STATION_Utils {
     }
 
     void checkTelemetryTx() {
-        if (Config.bme.active && Config.bme.sendTelemetry && sendStandingUpdate) {
+        if (Config.wxsensor.active && Config.wxsensor.sendTelemetry && sendStandingUpdate) {
             lastTx = millis() - lastTxTime;
             telemetryTx = millis() - lastTelemetryTx;
             if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {

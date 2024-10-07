@@ -149,9 +149,9 @@ namespace WEB_Utils {
         Config.winlink.password                 = request->getParam("winlink.password", true)->value();
         
         //  Wx Telemtry
-        Config.bme.active                       = request->hasParam("bme.active", true);
-        Config.bme.temperatureCorrection        = request->getParam("bme.temperatureCorrection", true)->value().toFloat();
-        Config.bme.sendTelemetry                = request->hasParam("bme.sendTelemetry", true);
+        Config.wxsensor.active                  = request->hasParam("wxsensor.active", true);
+        Config.wxsensor.temperatureCorrection   = request->getParam("wxsensor.temperatureCorrection", true)->value().toFloat();
+        Config.wxsensor.sendTelemetry           = request->hasParam("wxsensor.sendTelemetry", true);
 
         //  Notification
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);

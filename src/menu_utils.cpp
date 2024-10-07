@@ -10,7 +10,7 @@
 #include "menu_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
-#include "bme_utils.h"
+#include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
 
@@ -594,8 +594,8 @@ namespace MENU_Utils {
                     fourthRowMainMenu += fourthRowSpeed;
                     fourthRowMainMenu += "km/h  ";
                     fourthRowMainMenu += fourthRowCourse;
-                    if (Config.bme.active && (time_now % 10 < 5) && wxModuleType != 0) {
-                        fourthRowMainMenu = BME_Utils::readDataSensor(1);
+                    if (Config.wxsensor.active && (time_now % 10 < 5) && wxModuleType != 0) {
+                        fourthRowMainMenu = WX_Utils::readDataSensor(1);
                     }
                     if (MSG_Utils::getNumWLNKMails() > 0) {
                         fourthRowMainMenu = "** WLNK MAIL: ";

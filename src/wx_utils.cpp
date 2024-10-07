@@ -3,7 +3,7 @@
 #ifdef LIGHTTRACKER_PLUS_1_0
 #include "Adafruit_SHTC3.h"
 #endif
-#include "bme_utils.h"
+#include "wx_utils.h"
 #include "configuration.h"
 #include "display.h"
 
@@ -16,7 +16,7 @@ extern TinyGPSPlus      gps;
 
 float newHum, newTemp, newPress, newGas;
 
-uint32_t    bmeLastReading      = -60000;
+uint32_t    sensorLastReading   = -60000;
 int         wxModuleType        = 0;
 uint8_t     wxModuleAddress     = 0x00;
 bool        wxModuleFound       = false;
@@ -35,7 +35,7 @@ Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 
    
 
-namespace BME_Utils {    
+namespace WX_Utils {    
 
     void getWxModuleAddres() {
         uint8_t err, addr;
@@ -58,7 +58,7 @@ namespace BME_Utils {
     }
 
     void setup() {
-        if (Config.bme.active) {
+        if (Config.wxsensor.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
                 if (! shtc3.begin()) {
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
@@ -133,12 +133,12 @@ namespace BME_Utils {
         }
     }
 
-    const String generateTempString(const float bmeTemp, const uint8_t type) {
+    const String generateTempString(const float sensorTemp, const uint8_t type) {
         String strTemp;
         if (type == 1) {    // OLED
-            strTemp = String((int)bmeTemp);
+            strTemp = String((int)sensorTemp);
         } else {
-            strTemp = String((int)((bmeTemp * 1.8) + 32));
+            strTemp = String((int)((sensorTemp * 1.8) + 32));
         }
         switch (strTemp.length()) {
             case 1:
@@ -160,8 +160,8 @@ namespace BME_Utils {
         }
     }
 
-    const String generateHumString(const float bmeHum, const uint8_t type) {
-        String strHum = String((int)bmeHum);
+    const String generateHumString(const float sensorHum, const uint8_t type) {
+        String strHum = String((int)sensorHum);
         switch (strHum.length()) {
             case 1:
                 if (type == 1) {
@@ -172,7 +172,7 @@ namespace BME_Utils {
             case 2:
                 return strHum;
             case 3:
-                if ((int)bmeHum == 100) {
+                if ((int)sensorHum == 100) {
                     if (type == 1) {
                         return "  ";
                     } else {
@@ -186,9 +186,9 @@ namespace BME_Utils {
         }
     }
 
-    const String generatePresString(const float bmePress, const uint8_t type) {
-        String strPress = String((int)bmePress);
-        String decPress = String(int((bmePress - int(bmePress)) * 10));
+    const String generatePresString(const float sensorPress, const uint8_t type) {
+        String strPress = String((int)sensorPress);
+        String decPress = String(int((sensorPress - int(sensorPress)) * 10));
         switch (strPress.length()) {
             case 1:
                 if (type == 1) {
@@ -222,7 +222,7 @@ namespace BME_Utils {
     }
 
     const String readDataSensor(const uint8_t type) {
-        uint32_t lastReading = millis() - bmeLastReading;
+        uint32_t lastReading = millis() - sensorLastReading;
         if (lastReading > 60 * 1000) {
             #ifdef LIGHTTRACKER_PLUS_1_0
                 sensors_event_t humidity, temp;
@@ -258,12 +258,12 @@ namespace BME_Utils {
                         break;
                 }
             #endif
-            bmeLastReading = millis();
+            sensorLastReading = millis();
         }
         
         String wx;
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
-            Serial.println("BME/BMP Module data failed");
+            Serial.println("WX Sensor data failed");
             if (type == 1) {
                 wx = " - C    - %    - hPa";
             } else {
@@ -271,7 +271,7 @@ namespace BME_Utils {
             }
             return wx;
         } else {
-            String tempStr = generateTempString(newTemp + Config.bme.temperatureCorrection, type);
+            String tempStr = generateTempString(newTemp + Config.wxsensor.temperatureCorrection, type);
             String humStr;
             #ifdef LIGHTTRACKER_PLUS_1_0
                 humStr  = generateHumString(newHum,type);

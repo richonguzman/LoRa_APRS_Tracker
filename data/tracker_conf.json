@@ -57,7 +57,7 @@
 	"winlink": {
 		"password": "ABCDEF"
 	},
-	"bme": {
+	"wxsensor": {
 		"active": false,
 		"temperatureCorrection": 0.0,
 		"sendTelemetry": false
