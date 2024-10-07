@@ -40,7 +40,7 @@ ________________________________________________________________________________
 #include "utils.h"
 
 Configuration                       Config;
-HardwareSerial                      neo6m_gps(1);
+HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
