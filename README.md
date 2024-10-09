@@ -5,6 +5,7 @@ This firmware is for using ESP32 based boards with LoRa Modules and GPS to live 
 ![Screenshot](https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/OledScreen2.jpeg)
 
 __(NOTE: To use Tx/Rx capabilities of this tracker you should have also an Tx/Rx <a href="https://github.com/richonguzman/LoRa_APRS_iGate" target="_blank">LoRa iGate</a> near you)__
+<br />
 
 ____________________________________________________
 
@@ -29,6 +30,10 @@ ____________________________________________________
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 - Winlink Mails through APRSLink.
 - Posibility to change between 3 mayor Frequencies used by LoRa APRS Worldwide.
+____________________________________________________
+
+# WEB FLASHER/INSTALLER is <a href="https://richonguzman.github.io/lora-tracker-web-flasher/installer.html" target="_blank">here</a>
+<br />
 
 ____________________________________________________
 
@@ -49,8 +54,8 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.10.09 WEB INSTALLER/FLASHER.
 - 2024.10.07 Battery Monitor process added (Voltage Sleep to protect Battery).
-- 2024.10.02 WEB INSTALLER (Alpha).
 - 2024.09.17 Battery Voltage now as Encoded Telemetry in GPS Beacon.
 - 2024.08.26 New reformating of code ahead of WebInstaller: SmartBeacon change.
 - 2024.08.16 BLE support for Android devices (not APRSDroid yet).
