@@ -13,6 +13,10 @@ ____________________________________________________
 
 [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/github-sponsors.png">](https://github.com/sponsors/richonguzman)     [<img src="https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/paypalme.png">](http://paypal.me/richonguzman)
 
+<br />
+
+# WEB FLASHER/INSTALLER is <a href="https://richonguzman.github.io/lora-tracker-web-flasher/installer.html" target="_blank">here</a>
+
 ____________________________________________________
 
 - Tracker with complete MENU !!! (see Wiki to know how to access it)
@@ -30,11 +34,6 @@ ____________________________________________________
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 - Winlink Mails through APRSLink.
 - Posibility to change between 3 mayor Frequencies used by LoRa APRS Worldwide.
-____________________________________________________
-
-# WEB FLASHER/INSTALLER is <a href="https://richonguzman.github.io/lora-tracker-web-flasher/installer.html" target="_blank">here</a>
-<br />
-
 ____________________________________________________
 
 # WIKI (English / Español)
