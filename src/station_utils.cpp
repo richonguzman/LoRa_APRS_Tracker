@@ -195,16 +195,19 @@ namespace STATION_Utils {
 
             String tempPacket = basePacket;
             tempPacket += "EQNS.0,0.01,0";
+            displayShow("<<< TX >>>", "Telemetry Packet:", "Equation Coefficients",100);
             LoRa_Utils::sendNewPacket(tempPacket);
             delay(3000);
 
             tempPacket = basePacket;
             tempPacket += "UNIT.VDC";
+            displayShow("<<< TX >>>", "Telemetry Packet:", "Unit/Label",100);
             LoRa_Utils::sendNewPacket(tempPacket);
             delay(3000);
 
             tempPacket = basePacket;
             tempPacket += "PARM.V_Batt";
+            displayShow("<<< TX >>>", "Telemetry Packet:", "Parameter Name",100);
             LoRa_Utils::sendNewPacket(tempPacket);
             delay(3000);
             sendStartTelemetry = false;

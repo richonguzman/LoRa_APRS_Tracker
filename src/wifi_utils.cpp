@@ -5,10 +5,10 @@
 #include "display.h"
 
 
-extern Configuration    Config;
-extern logging::Logger  logger;
+extern      Configuration       Config;
+extern      logging::Logger     logger;
 
-//uint32_t    WiFiAutoAPTime      = millis();
+uint32_t    noClientsTime        = 0;
 
 
 namespace WIFI_Utils {
@@ -17,7 +17,6 @@ namespace WIFI_Utils {
         WiFi.mode(WIFI_MODE_NULL);
         WiFi.mode(WIFI_AP);
         WiFi.softAP("LoRaTracker-AP", Config.wifiAP.password);
-        //WiFiAutoAPTime = millis();
     }
 
     void checkIfWiFiAP() {
@@ -26,7 +25,22 @@ namespace WIFI_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
             startAutoAP();
             WEB_Utils::setup();
-            while (true) {}
+            while (true) {
+                if (WiFi.softAPgetStationNum() > 0) {
+                    noClientsTime = 0;
+                } else {
+                    if (noClientsTime == 0) {
+                        noClientsTime = millis();
+                    } else if ((millis() - noClientsTime) > 60 * 1000) {
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
+                        displayShow("", "", "  STOPPING WiFi AP", 2000);
+                        Config.wifiAP.active = false;
+                        Config.writeFile();
+                        WiFi.softAPdisconnect(true);
+                        ESP.restart();
+                    }
+                }
+            }
         } else {
             WiFi.mode(WIFI_OFF);
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");

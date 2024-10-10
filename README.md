@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.10.10 Configuration WiFiAP stops after 1 minute of no-client connected.
 - 2024.10.09 WEB INSTALLER/FLASHER.
 - 2024.10.07 Battery Monitor process added (Voltage Sleep to protect Battery).
 - 2024.09.17 Battery Voltage now as Encoded Telemetry in GPS Beacon.

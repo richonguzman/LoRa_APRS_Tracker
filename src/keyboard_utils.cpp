@@ -486,7 +486,7 @@ namespace KEYBOARD_Utils {
             displayShow("", "", "  STARTING WiFi AP", 2000);
             Config.wifiAP.active = true;
             Config.writeFile();
-            ESP.restart();            
+            ESP.restart();
         }
     }
 
