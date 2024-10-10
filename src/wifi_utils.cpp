@@ -31,7 +31,7 @@ namespace WIFI_Utils {
                 } else {
                     if (noClientsTime == 0) {
                         noClientsTime = millis();
-                    } else if ((millis() - noClientsTime) > 60 * 1000) {
+                    } else if ((millis() - noClientsTime) > 2 * 60 * 1000) {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
                         displayShow("", "", "  STOPPING WiFi AP", 2000);
                         Config.wifiAP.active = false;
