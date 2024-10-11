@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include "TimeLib.h"
+#include "APRSPacketLib.h"
 #include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
@@ -10,18 +11,13 @@
 #include "display.h"
 #include "logger.h"
 
-#include "APRSPacketLib.h"
 
-/*#ifdef HIGH_GPS_BAUDRATE
-    #define GPS_BAUD  115200
-#else
-    #define GPS_BAUD  38400//9600
-#endif*/
 #ifdef GPS_BAUDRATE
-    #define GPS_BAUD GPS_BAUDRATE
+    #define GPS_BAUD    GPS_BAUDRATE
 #else
-    #define GPS_BAUD  9600
+    #define GPS_BAUD    9600
 #endif
+
 
 extern Configuration        Config;
 extern HardwareSerial       gpsSerial;
