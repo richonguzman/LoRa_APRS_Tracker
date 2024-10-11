@@ -33,7 +33,7 @@ ____________________________________________________
 - Sound Notifications with YL44 Buzzer Module.
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 - Winlink Mails through APRSLink.
-- Posibility to change between 3 mayor Frequencies used by LoRa APRS Worldwide.
+- Posibility to change between 3 major Frequencies used by LoRa APRS Worldwide.
 ____________________________________________________
 
 # WIKI (English / Español)
