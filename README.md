@@ -33,7 +33,7 @@ ____________________________________________________
 - Sound Notifications with YL44 Buzzer Module.
 - Wx data with BME280 Module showed on Screen and transmited as Wx Telemetry.
 - Winlink Mails through APRSLink.
-- Posibility to change between 3 mayor Frequencies used by LoRa APRS Worldwide.
+- Posibility to change between 3 major Frequencies used by LoRa APRS Worldwide.
 ____________________________________________________
 
 # WIKI (English / Español)
@@ -141,4 +141,4 @@ ____________________________________________________
 - https://github.com/dl9sau/TTGO-T-Beam-LoRa-APRS : Thomas - DL9SAU for the Kiss <> TNC2 lib
 ____________________________________________________
 
-# Hope You Enjoy this, 73 !!  CA2RXU , Valparaiso, Chile
+# Hope You Enjoy this, 73! CA2RXU, Valparaiso, Chile
