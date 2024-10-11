@@ -185,6 +185,7 @@ bool Configuration::readFile() {
         standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
+        acceptOwnFrameFromTNC           = data["other"]["acceptOwnFrameFromTNC"] | false;
 
         configFile.close();
         Serial.println("Config read successfuly");
@@ -308,6 +309,7 @@ void Configuration::init() {
     standingUpdateTime              = 15;
     sendAltitude                    = true;
     disableGPS                      = false;
+    acceptOwnFrameFromTNC           = false;
 
     Serial.println("New Data Created...");
 }

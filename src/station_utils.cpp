@@ -11,6 +11,7 @@
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "ble_utils.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -296,6 +297,10 @@ namespace STATION_Utils {
             POWER_Utils::shutdown();
         }
         
+        if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
+            BLE_Utils::sendToPhone(packet);
+        }
+
         if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();
             lastTxLng       = gps.location.lng();
