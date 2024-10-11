@@ -12,7 +12,7 @@
 #include "msg_utils.h"
 #include "display.h"
 
-#ifdef TTGO_T_DECK_GPS
+#if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
     #define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
 #else
     #define KB_ADDR     0x5F    // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
@@ -719,7 +719,7 @@ namespace KEYBOARD_Utils {
     }
 
     void mouseRead() {
-        #ifdef TTGO_T_DECK_GPS
+        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             int ballUp      = digitalRead(TrackBallUp);
             int ballDown    = digitalRead(TrackBallDown);
             int ballLeft    = digitalRead(TrackBallLeft);

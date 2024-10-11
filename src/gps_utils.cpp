@@ -12,8 +12,13 @@
 
 #include "APRSPacketLib.h"
 
-#ifdef HIGH_GPS_BAUDRATE
+/*#ifdef HIGH_GPS_BAUDRATE
     #define GPS_BAUD  115200
+#else
+    #define GPS_BAUD  38400//9600
+#endif*/
+#ifdef GPS_BAUDRATE
+    #define GPS_BAUD GPS_BAUDRATE
 #else
     #define GPS_BAUD  9600
 #endif

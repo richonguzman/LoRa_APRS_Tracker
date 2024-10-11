@@ -18,7 +18,7 @@ String currentSymbol, lastSymbol, lastHeader;
         #define smallSizeFont   1
         #define lineSpacing     12
     #endif
-    #ifdef TTGO_T_DECK_GPS
+    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         #define bigSizeFont     4
         #define smallSizeFont   2
         #define lineSpacing     22
@@ -265,22 +265,22 @@ void displayShow(const String& header, const String& line1, const String& line2,
             if (!bluetoothConnected || time_now % 10 < 5) {
                 if (symbolAvailable) {
                     currentSymbol = symbolArray[symbol];
-                    #if HELTEC_WIRELESS_TRACKER
+                    #if defined(HELTEC_WIRELESS_TRACKER)
                         if (currentSymbol != lastSymbol) {
                             tft.fillRect((TFT_WIDTH - SYMBOL_WIDTH + (128 - TFT_WIDTH)), 0, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_BLACK);
                             lastSymbol = currentSymbol;
                         }
                         tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH + (128 - TFT_WIDTH)), 0, symbolsAPRS[symbol], SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);//, TFT_RED);
                     #endif
-                    #if TTGO_T_DECK_GPS
+                    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
                         tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH), 0, symbolsAPRS[symbol], SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);//, TFT_RED);
                     #endif
                 }
             } else if (bluetoothConnected) {    // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
-                #if HELTEC_WIRELESS_TRACKER
+                #if defined(HELTEC_WIRELESS_TRACKER)
                     tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH + (128 - TFT_WIDTH)), 0, bluetoothSymbol, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
                 #endif
-                #if TTGO_T_DECK_GPS
+                #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
                     tft.drawBitmap((TFT_WIDTH - SYMBOL_WIDTH), 0, bluetoothSymbol, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
                 #endif
             }

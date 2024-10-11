@@ -49,7 +49,7 @@ TinyGPSPlus                         gps;
     OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
-String      versionDate             = "2024.10.10";
+String      versionDate             = "2024.10.11";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -176,7 +176,7 @@ void loop() {
     Utils::checkDisplayEcoMode();
 
     KEYBOARD_Utils::read();
-    #ifdef TTGO_T_DECK_GPS
+    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         KEYBOARD_Utils::mouseRead();
     #endif
 

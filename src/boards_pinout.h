@@ -142,7 +142,7 @@
 #endif
 
 
-#ifdef TTGO_T_DECK_GPS
+#if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
     #define GPS_RX              43
     #define GPS_TX              44
     #define BOARD_POWERON       10
