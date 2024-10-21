@@ -3,13 +3,10 @@
 
 #include <Arduino.h>
 
-namespace BUTTON_Utils {
-
-    void singlePress();
-    void longPress();
-    void doublePress();
-    void multiPress();
-
+namespace BUTTON_Utils
+{
+    void buttonInit();
+    void buttonLoop();
 }
 
 #endif
