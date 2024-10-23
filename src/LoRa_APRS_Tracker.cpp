@@ -13,7 +13,6 @@
 __________________________________________________________________________________________________________________________________*/
 
 #include <BluetoothSerial.h>
-#include <OneButton.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
 #include <logger.h>
@@ -44,9 +43,6 @@ HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
-#endif
-#ifdef BUTTON_PIN
-    OneButton userButton            = OneButton(BUTTON_PIN, true, true);
 #endif
 
 String      versionDate             = "2024.10.11";
@@ -139,10 +135,7 @@ void setup() {
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-            userButton.attachClick(BUTTON_Utils::singlePress);
-            userButton.attachLongPressStart(BUTTON_Utils::longPress);
-            userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-            userButton.attachMultiClick(BUTTON_Utils::multiPress);
+            BUTTON_Utils::buttonInit();
         #endif
         KEYBOARD_Utils::setup();
     }
@@ -169,7 +162,7 @@ void loop() {
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-            userButton.tick();
+            BUTTON_Utils::buttonLoop();
         #endif
     }
 
