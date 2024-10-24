@@ -282,6 +282,7 @@
     #define GPS_TX              18
     #define GPS_VCC             33    //#define LED_PIN             16
     #define BUTTON_PIN          0
+    #define BATTERY_PIN         1
     #define RADIO_VCC_PIN       21
     #define RADIO_SCLK_PIN      12
     #define RADIO_MISO_PIN      13
