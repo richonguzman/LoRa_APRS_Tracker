@@ -52,7 +52,8 @@
 		"rememberStationTime": 30,
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
-		"disableGPS": false
+		"disableGPS": false,
+		"acceptOwnFrameFromTNC": false
 	},
 	"winlink": {
 		"password": "ABCDEF"
