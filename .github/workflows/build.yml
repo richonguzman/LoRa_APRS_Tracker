@@ -73,7 +73,8 @@ jobs:
                       chip: esp32c3
                     - name: heltec_ht-ct62_GPS
                       chip: esp32c3
-
+                    - name: QRPLabs_LightTracker_Plus_1_0
+                      chip: esp32s3
         steps:
             - uses: actions/checkout@v3
 
