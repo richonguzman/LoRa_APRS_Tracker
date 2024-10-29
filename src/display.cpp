@@ -118,9 +118,7 @@ void displaySetup() {
                 }
             }
         #endif
-        if (Config.display.turn180) {
-            display.setRotation(2);
-        }
+        if (Config.display.turn180) display.setRotation(2);
         display.clearDisplay();
         #ifdef ssd1306
             display.setTextColor(WHITE);
