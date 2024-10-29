@@ -142,6 +142,15 @@ function loadSettings(settings) {
                     <option value="2" ${beacons.smartBeaconSetting == 2 ? 'selected' : ''}>Car/Motorcycle (Fast Speed)</option>
                 </select>
             </div>
+            <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
+                <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    name="beacons.${index}.profilelabel" 
+                    id="beacons.${index}.profilelabel" 
+                    value="${beacons.profilelabel}">
+                <label for="beacons.${index}.profilelabel">Profile Label</label>
+            </div>
         `;
         beaconContainer.appendChild(beaconElement);
     });
