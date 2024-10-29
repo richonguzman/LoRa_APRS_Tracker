@@ -12,7 +12,7 @@ extern uint8_t          winlinkStatus;
 
 
 SmartBeaconValues   currentSmartBeaconValues;
-byte                lastSmartBeaconIndex        = 10;
+byte                smartBeaconSettingsIndex    = 10;
 bool                wxRequestStatus             = false;
 uint32_t            wxRequestTime               = 0;
 
@@ -26,10 +26,10 @@ SmartBeaconValues   smartBeaconSettings[3] = {
 
 namespace SMARTBEACON_Utils {
 
-    void checkValues(byte index) {
-        if (lastSmartBeaconIndex != index) {
+    void checkSettings(byte index) {
+        if (smartBeaconSettingsIndex != index) {
             currentSmartBeaconValues = smartBeaconSettings[index];
-            lastSmartBeaconIndex = index;
+            smartBeaconSettingsIndex = index;
         }
     }
 

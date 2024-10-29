@@ -164,7 +164,7 @@ void loop() {
     }
     POWER_Utils::batteryManager();
 
-    SMARTBEACON_Utils::checkValues(myBeaconsIndex);
+    SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();
 
     if (!Config.simplifiedTrackerMode) {

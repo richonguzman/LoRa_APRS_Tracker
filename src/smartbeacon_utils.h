@@ -17,7 +17,7 @@ struct SmartBeaconValues {
 
 namespace SMARTBEACON_Utils {
 
-    void checkValues(byte index);
+    void checkSettings(byte index);
     void checkInterval(int speed);
     void checkFixedBeaconTime();
     void checkState();
