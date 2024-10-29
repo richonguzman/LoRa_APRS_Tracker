@@ -158,6 +158,7 @@
     #define RADIO_DIO1_PIN      45
     #define RADIO_BUSY_PIN      13
     #define TrackBallCenter     0
+    #define BUTTON_PIN          TrackBallCenter
     #define TrackBallUp         3   // G S1
     #define TrackBallDown       15  // G S3
     #define TrackBallLeft       1   // G S4

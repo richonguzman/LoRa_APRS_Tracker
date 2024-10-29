@@ -725,9 +725,7 @@ namespace KEYBOARD_Utils {
             int ballLeft    = digitalRead(TrackBallLeft);
             int ballRight   = digitalRead(TrackBallRight);
 
-            if (!digitalRead(TrackBallCenter)) {
-                processPressedKey(13);
-            } else if (ballUp != mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
+            if (ballUp != mouseUpState && ballDown == mouseDownState && ballLeft == mouseLeftState && ballRight == mouseRightState) {
                 if (millis() - lastDebounceTime > debounceInterval) {
                     lastDebounceTime = millis();
                     mouseUpState = ballUp;
