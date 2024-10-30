@@ -1,6 +1,5 @@
 #include <NimBLEDevice.h>
 #include "configuration.h"
-#include "ax25_utils.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "ble_utils.h"
@@ -64,7 +63,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
                     bool isDataFrame = false;
 
-                    BLEToLoRaPacket = AX25_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
+                    BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
 
                     if (isDataFrame) {
                         sendBleToLoRa = true;
@@ -146,7 +145,7 @@ namespace BLE_Utils {
 
     void txToPhoneOverBLE(const String& frame) {
         if (Config.bluetooth.type == 0) {                                   // AX25 KISS
-            const String kissEncodedFrame = AX25_Utils::encodeKISS(frame);
+            const String kissEncodedFrame = KISS_Utils::encodeKISS(frame);
 
             const char* t   = kissEncodedFrame.c_str();
             int length      = kissEncodedFrame.length();

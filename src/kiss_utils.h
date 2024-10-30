@@ -28,6 +28,9 @@ namespace KISS_Utils {
 
     bool validateTNC2Frame(const String& tnc2FormattedFrame);
     bool validateKISSFrame(const String& kissFormattedFrame);
+
+    String encodeKISS(const String& frame);
+    String decodeKISS(const String& inputFrame, bool& dataFrame);
   
 }
 
