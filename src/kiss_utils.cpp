@@ -9,4 +9,8 @@ namespace KISS_Utils {
         return (colonPos != -1) && (greaterThanPos != -1) && (colonPos > greaterThanPos);
     }
 
+    bool validateKISSFrame(const String& kissFormattedFrame) {
+        return kissFormattedFrame.charAt(0) == (char)KissChar::FEND && kissFormattedFrame.charAt(kissFormattedFrame.length() - 1) == (char)KissChar::FEND;
+    }
+
 }

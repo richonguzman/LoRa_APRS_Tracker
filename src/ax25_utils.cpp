@@ -4,74 +4,45 @@
 
 namespace AX25_Utils {
 
-    AX25Frame decodedFrame;
+    String decodeAddressAX25(const String& ax25Address, bool& isLastAddress, bool isRelay) {
+        String address = "";
+        for (int i = 0; i < 6; ++i) {
+            uint8_t currentCharacter = ax25Address.charAt(i);
+            currentCharacter >>= 1;
+            if (currentCharacter != ' ') address += (char)currentCharacter;
+        }
+        auto ssidChar           = (uint8_t)ax25Address.charAt(6);
+        bool hasBeenDigipited   = ssidChar & HAS_BEEN_DIGIPITED_MASK;
+        isLastAddress           = ssidChar & IS_LAST_ADDRESS_POSITION_MASK;
+        ssidChar >>= 1;
 
-    String decodeFrame(const String& frame) {
-        String packet = "";
-        for (int a = 0; a < 6; a ++) {
-            uint16_t shiftedValue = frame[a] >> 1;
-            if (shiftedValue == 32) {
-                a = 10;
+        int ssid = 0b1111 & ssidChar;
+        if (ssid) {
+            address += '-';
+            address += ssid;
+        }
+        if (isRelay && hasBeenDigipited) address += '*';
+        return address;
+    }
+
+    String decapsulateKISS(const String& frame) {
+        String ax25Frame = "";
+        for (int i = 2; i < frame.length() - 1; ++i) {
+            char currentChar = frame.charAt(i);
+            if (currentChar == (char)KissChar::FESC) {
+                char nextChar = frame.charAt(i + 1);
+                if (nextChar == (char)KissChar::TFEND) {
+                    ax25Frame += (char)KissChar::FEND;
+                } else if (nextChar == (char)KissChar::TFESC) {
+                    ax25Frame += (char)KissChar::FESC;
+                }
+                i++;
             } else {
-                //Serial.print(char(shiftedValue));
-                packet += char(shiftedValue);
+                ax25Frame += currentChar;
             }
         }
-        byte ssid = (frame[6]>>1) & 0x0f;
-        if (String(ssid) != "0") {
-            packet += "-";
-            packet += String(ssid);
-        }
-        return packet;
+        return ax25Frame;
     }
-
-    bool decodeAX25(const String& frame, int frameSize, AX25Frame* decodedFrame) {
-        if ((frameSize < 14) || (frame[0] != KissChar::FEND && frame[1] != KissCmd::Data && frame[frameSize - 1] != KissChar::FEND)) {
-            return false;
-        }
-        int payloadFrameStart = 0;
-        for (int i = 0; i < frameSize; i++) {                   // where is CONTROL y PID ?
-            if (frame[i] == 0x03 && frame[i+1] == 0xf0) {
-                payloadFrameStart = i+1;
-            }
-        }
-        decodedFrame->tocall    = frame.substring(2, 9);      // Extract destination address
-        decodedFrame->sender    = frame.substring(9, 16);     // Extract source address
-        if (payloadFrameStart >= 21) {                    // is there path1?
-            decodedFrame->path1 = frame.substring(16, 23);
-        }
-        if (payloadFrameStart >= 28) {                    // is there path2?
-            decodedFrame->path2 = frame.substring(23, 30);
-        }
-        decodedFrame->control   = frame.substring(payloadFrameStart-1, payloadFrameStart);   // Extract control information  // 0x03
-        decodedFrame->pid       = frame.substring(payloadFrameStart, payloadFrameStart + 1);       // Extract pid information      // 0xF0
-        decodedFrame->payload   = frame.substring(payloadFrameStart + 1, frameSize - 1);         // Extract payload
-        return true;
-    }
-
-    String AX25FrameToLoRaPacket(const String& frame) {
-        //Serial.println(frame);
-        if (decodeAX25(frame, frame.length(), &decodedFrame)) {
-            //String packetToLoRa = "";
-            String packetToLoRa = decodeFrame(decodedFrame.sender) + ">" + decodeFrame(decodedFrame.tocall);
-
-            if (decodedFrame.path1[0] != 0) {
-                packetToLoRa += ",";
-                packetToLoRa += decodeFrame(decodedFrame.path1);
-            }
-            if (decodedFrame.path2[0] != 0) {
-                packetToLoRa += ",";
-                packetToLoRa += decodeFrame(decodedFrame.path2);
-            }
-            packetToLoRa += ":";
-            packetToLoRa += decodedFrame.payload;
-            return packetToLoRa;
-        } else {
-            return "";
-        }
-    }
-
-    //**************************************
 
     String encapsulateKISS(const String& ax25Frame, uint8_t command) {
         String kissFrame = "";
@@ -117,6 +88,33 @@ namespace AX25_Utils {
         }
         kissAddress += (char)((ssid << 1) | 0b01100000 | (hasBeenDigipited ? HAS_BEEN_DIGIPITED_MASK : 0));
         return kissAddress;
+    }
+
+    String decodeKISS(const String& inputFrame, bool& dataFrame) {
+        String frame = "";
+        if (KISS_Utils::validateKISSFrame(inputFrame)) {
+            dataFrame = inputFrame.charAt(1) == KissCmd::Data;
+            if (dataFrame) {
+                String ax25Frame    = decapsulateKISS(inputFrame);
+                bool isLastAddress         = false;
+                String dstAddr      = decodeAddressAX25(ax25Frame.substring(0, 7), isLastAddress, false);
+                String srcAddr      = decodeAddressAX25(ax25Frame.substring(7, 14), isLastAddress, false);
+
+                frame = srcAddr + ">" + dstAddr;
+
+                int digiInfoIndex = 14;
+                while (!isLastAddress && digiInfoIndex + 7 < ax25Frame.length()) {
+                    String digiAddr = decodeAddressAX25(ax25Frame.substring(digiInfoIndex, digiInfoIndex + 7), isLastAddress, true);
+                    frame += ',' + digiAddr;
+                    digiInfoIndex += 7;
+                }
+                frame += ':';
+                frame += ax25Frame.substring(digiInfoIndex + 2);
+            } else {
+                frame += inputFrame;
+            }
+        }
+        return frame;
     }
 
     String encodeKISS(const String& frame) {

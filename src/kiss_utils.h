@@ -26,7 +26,8 @@ enum AX25Char {
 
 namespace KISS_Utils {
 
-    bool validateTNC2Frame(const String& tnc2FormattedFrame);    
+    bool validateTNC2Frame(const String& tnc2FormattedFrame);
+    bool validateKISSFrame(const String& kissFormattedFrame);
   
 }
 

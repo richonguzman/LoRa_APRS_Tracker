@@ -186,21 +186,16 @@ void loop() {
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean25SegBuffer();
 
-    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {     // always is sended to Phone
-        BLE_Utils::sendToPhone(packet.text.substring(3));               // does not check for 25seg buffer
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
-        #endif
-    }    
-
     if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
+        BLE_Utils::sendToPhone(packet.text.substring(3));
         BLE_Utils::sendToLoRa();
     } else {
         #ifdef HAS_BT_CLASSIC
+            BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
             BLUETOOTH_Utils::sendToLoRa();
         #endif
     }
+    
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedTrackersByTimeAndDelete();

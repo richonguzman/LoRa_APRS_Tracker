@@ -2,6 +2,7 @@
 #include "configuration.h"
 #include "ax25_utils.h"
 #include "lora_utils.h"
+#include "kiss_utils.h"
 #include "ble_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -30,6 +31,8 @@ extern bool             sendBleToLoRa;
 extern bool             bluetoothConnected;
 extern String           BLEToLoRaPacket;
 
+String kissSerialBuffer = "";
+
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
@@ -46,21 +49,36 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     }
 };
 
+
 class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
-        std::string receivedData = pCharacteristic->getValue();
-        String receivedString = "";
-        for (int i = 0; i < receivedData.length(); i++) {
-            //Serial.print(receivedData[i],HEX); // delete
-            //Serial.print(" ");
-            receivedString += receivedData[i];
-        }
-        if (Config.bluetooth.type == 0) {
-            BLEToLoRaPacket = AX25_Utils::AX25FrameToLoRaPacket(receivedString);
-        } else if (Config.bluetooth.type == 2) {
+        if (Config.bluetooth.type == 0) {                               // AX25 KISS
+            std::string receivedData = pCharacteristic->getValue();
+            delay(100);
+            for (int i = 0; i < receivedData.length(); i++) {
+                char character = receivedData[i];
+
+                if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;
+                kissSerialBuffer += receivedData[i];
+                
+                if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
+                    bool isDataFrame = false;
+
+                    BLEToLoRaPacket = AX25_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
+
+                    if (isDataFrame) {
+                        sendBleToLoRa = true;
+                        kissSerialBuffer = "";
+                    }
+                }
+            }
+        } else if (Config.bluetooth.type == 2) {                        // TNC2
+            std::string receivedData = pCharacteristic->getValue();
+            String receivedString = "";
+            for (int i = 0; i < receivedData.length(); i++) receivedString += receivedData[i];
             BLEToLoRaPacket = receivedString;
+            sendBleToLoRa = true;
         }
-        sendBleToLoRa = true;
     }
 };
 
@@ -112,9 +130,7 @@ namespace BLE_Utils {
     }
 
     void sendToLoRa() {
-        if (!sendBleToLoRa) {
-            return;
-        }
+        if (!sendBleToLoRa) return;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
         displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
         LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
