@@ -416,14 +416,7 @@ namespace MSG_Utils {
                     lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("\x3c\xff\x01"));
                 }
 
-                if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {
-                    /*if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) { // agregar validador si cliente BLE esta conectado?
-                        BLE_Utils::sendToPhone(packet.text.substring(3));
-                    } else {
-                        #ifdef HAS_BT_CLASSIC
-                        BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
-                        #endif
-                    }*/             
+                if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {            
 
                     if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(packet.text, currentBeacon->callsign, Config.path);
