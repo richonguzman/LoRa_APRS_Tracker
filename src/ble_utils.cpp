@@ -126,7 +126,7 @@ namespace BLE_Utils {
         delay(3);
     }
 
-    void txToPhoneOverBLE(const String& frame) {
+    /*void txToPhoneOverBLE(const String& frame) {
         if (Config.bluetooth.type == 0) {
             txBLE((byte)KissChar::Fend);
             txBLE((byte)KissCmd::Data);
@@ -152,6 +152,37 @@ namespace BLE_Utils {
         } else if (Config.bluetooth.type == 2) {
             txBLE('\n');
         }   
+    }*/
+
+    void txToPhoneOverBLE(const String& frame) {
+        if (Config.bluetooth.type == 0) {                   // AX25 KISS
+            const String kissEncodedFrame = AX25_Utils::encodeKISS(frame);
+            //const String kissEncodedFrame = AX25_Utils::LoRaPacketToAX25Frame(frame);   // aqui faltaria el paso de transformalo en KISS
+
+            const char* t = kissEncodedFrame.c_str();
+            int length = kissEncodedFrame.length();
+
+            const int CHUNK_SIZE = 64;
+
+            for (int i = 0; i < length; i += CHUNK_SIZE) {
+                int chunkSize = (length - i < CHUNK_SIZE) ? (length - i) : CHUNK_SIZE;
+                
+                uint8_t* chunk = new uint8_t[chunkSize];
+                memcpy(chunk, t + i, chunkSize);
+
+                pCharacteristicTx->setValue(chunk, chunkSize);
+                pCharacteristicTx->notify();
+
+                delete[] chunk;
+
+                delay(200);
+            }
+        } else {                                            // TNC2
+            for(int n = 0; n < frame.length(); n++) {
+                txBLE(frame[n]);
+            }
+            txBLE('\n');
+        }   
     }
 
     void sendToPhone(const String& packet) {
@@ -161,11 +192,12 @@ namespace BLE_Utils {
             for (int i = 0; i < packet.length(); i++) {
                 receivedPacketString += packet[i];
             }
-            if (Config.bluetooth.type == 0) {
+            /*if (Config.bluetooth.type == 0) {                 // mod de Damian ? pero perder encodeador?
                 txToPhoneOverBLE(AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString));
             } else if (Config.bluetooth.type == 2) {
                 txToPhoneOverBLE(receivedPacketString);                
-            }
+            }*/
+            txToPhoneOverBLE(receivedPacketString);
         }
     }
 

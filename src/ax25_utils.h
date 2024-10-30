@@ -43,6 +43,7 @@ namespace AX25_Utils {
     String          encodeAX25Address(const String& frame, uint8_t type, const bool lastAddress);
     String          LoRaPacketToAX25Frame(const String& packet);
 
+    String          encodeKISS(const String& frame);
 }
 
 #endif

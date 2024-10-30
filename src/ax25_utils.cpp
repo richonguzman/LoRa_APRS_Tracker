@@ -1,4 +1,6 @@
 #include "ax25_utils.h"
+#include "kiss_utils.h"
+
 
 namespace AX25_Utils {
 
@@ -160,6 +162,91 @@ namespace AX25_Utils {
         encodedPacket += char(0xF0);
         encodedPacket += packet.substring(packet.indexOf(":") + 1);
         return encodedPacket;
+    }
+
+    //**************************************
+
+    String encapsulateKISS(const String& ax25Frame, uint8_t cmd) {
+        String kissFrame = "";
+        kissFrame += (char)FEND;
+        kissFrame += (char)(0x0f & cmd);
+
+        for (int i = 0; i < ax25Frame.length(); ++i) {
+            char currentChar = ax25Frame.charAt(i);
+            if (currentChar == (char)FEND) {
+                kissFrame += (char)FESC;
+                kissFrame += (char)TFEND;
+            } else if (currentChar == (char)FESC) {
+                kissFrame += (char)FESC;
+                kissFrame += (char)TFESC;
+            } else {
+                kissFrame += currentChar;
+            }
+        }
+        kissFrame += (char)FEND; // end of frame
+        return kissFrame;
+    }
+
+    String encodeAddressAX25(String address) {
+        bool hasBeenDigipited = address.indexOf('*') != -1;
+
+        if (address.indexOf('-') == -1) {
+            if (hasBeenDigipited) {
+                address = address.substring(0, address.length() - 1);
+            }
+            address += "-0";
+        }
+
+        int separatorIndex = address.indexOf('-');
+        int ssid = address.substring(separatorIndex + 1).toInt();
+
+        String kissAddress = "";
+        for (int i = 0; i < 6; ++i) {
+            char addressChar;
+            if (address.length() > i && i < separatorIndex) {
+                addressChar = address.charAt(i);
+            } else {
+                addressChar = ' ';
+            }
+            kissAddress += (char)(addressChar << 1);
+        }
+
+        kissAddress += (char)((ssid << 1) | 0b01100000 | (hasBeenDigipited ? HAS_BEEN_DIGIPITED_MASK : 0));
+        return kissAddress;
+    }
+
+    String encodeKISS(const String& frame) {
+        String ax25Frame = "";
+
+        if (KISS_Utils::validateTNC2Frame(frame)) {
+            int colonIndex = frame.indexOf(':');
+
+            String address = "";
+            bool dstAddresWritten = false;
+            for (int i = 0; i <= colonIndex; i++) {
+                char currentChar = frame.charAt(i);
+                if (currentChar == ':' || currentChar == '>' || currentChar == ',') {
+                    if (!dstAddresWritten && (currentChar == ',' || currentChar == ':')) {
+                        ax25Frame = encodeAddressAX25(address) + ax25Frame;
+                        dstAddresWritten = true;
+                    } else {
+                        ax25Frame += encodeAddressAX25(address);
+                    }
+                    address = "";
+                } else {
+                    address += currentChar;
+                }
+            }
+
+            auto lastAddressChar = (uint8_t)ax25Frame.charAt(ax25Frame.length() - 1);
+            ax25Frame.setCharAt(ax25Frame.length() - 1, (char)(lastAddressChar | IS_LAST_ADDRESS_POSITION_MASK));
+            ax25Frame += (char)APRS_CONTROL_FIELD;
+            ax25Frame += (char)APRS_INFORMATION_FIELD;
+            ax25Frame += frame.substring(colonIndex + 1);
+        }
+
+        String kissFrame = encapsulateKISS(ax25Frame, CMD_DATA);
+        return kissFrame;
     }
 
 }

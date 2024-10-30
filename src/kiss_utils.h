@@ -1,3 +1,9 @@
+#ifndef KISS_UTILS_H
+#define KISS_UTILS_H
+
+#include <Arduino.h>
+
+
 #define DCD_ON                          0x03
 
 #define FEND                            0xC0
@@ -21,3 +27,12 @@
 
 #define HAS_BEEN_DIGIPITED_MASK         0b10000000
 #define IS_LAST_ADDRESS_POSITION_MASK   0b1
+
+
+namespace KISS_Utils {
+
+    bool validateTNC2Frame(const String& tnc2FormattedFrame);    
+  
+}
+
+#endif
