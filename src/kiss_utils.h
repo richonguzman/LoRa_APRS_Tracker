@@ -32,6 +32,9 @@ namespace KISS_Utils {
     String encodeKISS(const String& frame);
     String decodeKISS(const String& inputFrame, bool& dataFrame);
   
+    //String encapsulateKISS(const String& ax25Frame, uint8_t command);
+    //String decapsulateKISS(const String& frame);
+    
 }
 
 #endif

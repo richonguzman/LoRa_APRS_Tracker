@@ -2,7 +2,6 @@
 #include <esp_bt.h>
 #include "bluetooth_utils.h"
 #include "configuration.h"
-#include "KISS_TO_TNC2.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "display.h"
@@ -89,7 +88,7 @@ namespace BLUETOOTH_Utils {
         if (isNmea || serialReceived.isEmpty()) return;
         if (KISS_Utils::validateKISSFrame(serialReceived)) {
             bool dataFrame;
-            String decodeKiss = decode_kiss(serialReceived, dataFrame);
+            String decodeKiss = KISS_Utils::decodeKISS(serialReceived, dataFrame);
             serialReceived.clear();
             serialReceived += decodeKiss;
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "It's a kiss frame. dataFrame: %d", dataFrame);
@@ -118,7 +117,7 @@ namespace BLUETOOTH_Utils {
         if (bluetoothActive && !packet.isEmpty()) {
             if (useKiss) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX Kiss", "%s", serialReceived.c_str());
-                SerialBT.println(encode_kiss(packet));
+                SerialBT.println(KISS_Utils::encodeKISS(packet));
             } else {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX TNC2", "%s", serialReceived.c_str());
                 SerialBT.println(packet);

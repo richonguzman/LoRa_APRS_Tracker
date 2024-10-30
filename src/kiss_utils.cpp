@@ -77,9 +77,7 @@ namespace KISS_Utils {
     String encodeAddressAX25(String address) {
         bool hasBeenDigipited = address.indexOf('*') != -1;
         if (address.indexOf('-') == -1) {
-            if (hasBeenDigipited) {
-                address = address.substring(0, address.length() - 1);
-            }
+            if (hasBeenDigipited) address = address.substring(0, address.length() - 1);
             address += "-0";
         }
 
