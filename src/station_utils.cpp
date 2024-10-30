@@ -8,6 +8,7 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
+#include "ble_utils.h"
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -290,6 +291,10 @@ namespace STATION_Utils {
         #endif
         displayShow("<<< TX >>>", "", packet,100);
         LoRa_Utils::sendNewPacket(packet);
+
+        if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {     // send Tx packets to Phone too
+            BLE_Utils::sendToPhone(packet);
+        }
 
         if (shouldSleepLowVoltage) {
             delay(3000);

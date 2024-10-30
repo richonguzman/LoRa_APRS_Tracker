@@ -180,12 +180,20 @@ void loop() {
         KEYBOARD_Utils::mouseRead();
     #endif
 
-    MSG_Utils::checkReceivedMessage(LoRa_Utils::receivePacket());
+    ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
+
+    MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean25SegBuffer();
-    MSG_Utils::ledNotification();
-    Utils::checkFlashlight();
-    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+
+    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {     // always is sended to Phone
+        BLE_Utils::sendToPhone(packet.text.substring(3));               // does not check for 25seg buffer
+    } else {
+        #ifdef HAS_BT_CLASSIC
+            BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+        #endif
+    }    
+
     if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
         BLE_Utils::sendToLoRa();
     } else {
@@ -193,6 +201,10 @@ void loop() {
             BLUETOOTH_Utils::sendToLoRa();
         #endif
     }
+    MSG_Utils::ledNotification();
+    Utils::checkFlashlight();
+    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {
         GPS_Utils::getData();
