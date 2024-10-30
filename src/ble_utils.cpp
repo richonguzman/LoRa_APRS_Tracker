@@ -26,9 +26,10 @@ BLECharacteristic *pCharacteristicRx;
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
-extern bool             sendBleToLoRa;
 extern bool             bluetoothConnected;
-extern String           BLEToLoRaPacket;
+
+bool    shouldSendBLEtoLoRa     = false;
+String  BLEToLoRaPacket         = "";
 
 String kissSerialBuffer = "";
 
@@ -66,7 +67,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                     BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
 
                     if (isDataFrame) {
-                        sendBleToLoRa = true;
+                        shouldSendBLEtoLoRa = true;
                         kissSerialBuffer = "";
                     }
                 }
@@ -76,7 +77,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             String receivedString = "";
             for (int i = 0; i < receivedData.length(); i++) receivedString += receivedData[i];
             BLEToLoRaPacket = receivedString;
-            sendBleToLoRa = true;
+            shouldSendBLEtoLoRa = true;
         }
     }
 };
@@ -129,12 +130,12 @@ namespace BLE_Utils {
     }
 
     void sendToLoRa() {
-        if (!sendBleToLoRa) return;
+        if (!shouldSendBLEtoLoRa) return;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
         displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
         LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
         BLEToLoRaPacket = "";
-        sendBleToLoRa = false;
+        shouldSendBLEtoLoRa = false;
     }
 
     void txBLE(uint8_t p) {

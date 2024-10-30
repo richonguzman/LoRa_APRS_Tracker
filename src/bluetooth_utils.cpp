@@ -103,18 +103,15 @@ namespace BLUETOOTH_Utils {
     }
 
     void sendToLoRa() {
-        if (!shouldSendToLoRa) {
-            return;
-        }
-
+        if (!shouldSendToLoRa) return;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT TX", "%s", serialReceived.c_str());
         displayShow("BT Tx >>", "", serialReceived, 1000);
         LoRa_Utils::sendNewPacket(serialReceived);
         shouldSendToLoRa = false;
     }
 
-    void sendPacket(const String& packet) {
-        if (bluetoothActive && !packet.isEmpty()) {
+    void sendToPhone(const String& packet) {
+        if (!packet.isEmpty() && bluetoothActive) {
             if (useKiss) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX Kiss", "%s", serialReceived.c_str());
                 SerialBT.println(KISS_Utils::encodeKISS(packet));

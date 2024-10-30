@@ -76,8 +76,7 @@ uint32_t    refreshDisplayTime      = millis();
 bool        sendUpdate              = true;
 
 bool        bluetoothConnected      = false;
-bool        sendBleToLoRa           = false;
-String      BLEToLoRaPacket         = "";
+//String      BLEToLoRaPacket         = "";
 
 uint32_t    lastTx                  = 0.0;
 uint32_t    txInterval              = 60000L;
@@ -198,7 +197,7 @@ void loop() {
         BLE_Utils::sendToLoRa();
     } else {
         #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::sendPacket(packet.text.substring(3));
+            BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
             BLUETOOTH_Utils::sendToLoRa();
         #endif
     }

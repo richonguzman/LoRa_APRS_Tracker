@@ -9,7 +9,7 @@ namespace BLUETOOTH_Utils {
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
     void getData(const uint8_t *buffer, size_t size);
     void sendToLoRa();
-    void sendPacket(const String& packet);
+    void sendToPhone(const String& packet);
   
 }
 
