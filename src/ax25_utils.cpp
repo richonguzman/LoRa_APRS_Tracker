@@ -26,7 +26,7 @@ namespace AX25_Utils {
     }
 
     bool decodeAX25(const String& frame, int frameSize, AX25Frame* decodedFrame) {
-        if ((frameSize < 14) || (frame[0] != KissChar::Fend && frame[1] != KissCmd::Data && frame[frameSize - 1] != KissChar::Fend)) {
+        if ((frameSize < 14) || (frame[0] != KissChar::FEND && frame[1] != KissCmd::Data && frame[frameSize - 1] != KissChar::FEND)) {
             return false;
         }
         int payloadFrameStart = 0;
@@ -71,125 +71,31 @@ namespace AX25_Utils {
         }
     }
 
-    String frameCleaning(const String& frameToClean) {
-        String frame = frameToClean;
-        if (frame.length() > 6) {
-            frame = frame.substring(0, 6);
-        } else if (frame.length() < 6) {
-            for (int i = 0; frame.length() < 6; i++) { 
-                frame += " ";
-            }
-        }
-        return frame;
-    }
-
-    std::string intToBinaryString(uint8_t value, const uint8_t bitLength) {
-        std::string result = "";
-        //result.reserve(bitLength);
-        for (int i = bitLength - 1; i >= 0; i--) {
-            result += ((value >> i) & 1) ? '1' : '0';
-        }
-        return result;
-    }
-
-    String encodeAX25Address(const String& frame, uint8_t type, const bool lastAddress) {
-        String address;
-        int ssid;
-        if (frame.indexOf("-") > 0) {
-            address = frameCleaning(frame.substring(0, frame.indexOf("-")));
-            ssid = frame.substring(frame.indexOf("-") + 1).toInt();
-            if (ssid > 15) {
-                ssid = 0;
-            }
-        } else {
-            address = frameCleaning(frame);
-            ssid = 0;
-        }
-        String packet = "";
-        for (int j = 0; j < 6; j++) {
-            char c = address[j];
-            packet += char(c<<1);
-        }
-        std::string firstSSIDBit = std::to_string(type); //type=0 (sender or path not repeated) type=1 (tocall or path being repeated)
-        std::string lastSSIDBit = "0";
-        if (lastAddress) {
-            lastSSIDBit = "1";          // address is the last from AX.25 Frame
-        }
-        std::string concatenatedBinary = firstSSIDBit + "11" + intToBinaryString(ssid,4) + lastSSIDBit; // ( CRRSSSSX / HRRSSSSX )
-        long decimalValue = strtol(concatenatedBinary.c_str(), NULL, 2);
-        packet += (char)decimalValue;   //SSID 
-        return packet;
-    }
-
-    String LoRaPacketToAX25Frame(const String& packet) {
-        //String encodedPacket    = "";
-        //String tocall           = "";
-        String  sender      = packet.substring(0, packet.indexOf(">"));
-        bool    lastAddress = false;
-        //String  payload     = packet.substring(packet.indexOf(":") + 1);
-        String  temp        = packet.substring(packet.indexOf(">") + 1, packet.indexOf(":"));
-
-        String tocall;
-        if (temp.indexOf(",") != -1) {    
-            tocall      = temp.substring(0, temp.indexOf(","));
-            temp        = temp.substring(temp.indexOf(",") + 1);
-        } else {
-            tocall      = temp;
-            temp        = "";
-            lastAddress = true;
-        }
-        String encodedPacket = encodeAX25Address(tocall, 1, false);
-        encodedPacket += encodeAX25Address(sender, 0, lastAddress);
-
-        while (temp.length() > 0) {
-            String address;
-            if (temp.indexOf(",") > 0) {
-                address     = temp.substring(0, temp.indexOf(","));
-                temp        = temp.substring(temp.indexOf(",") + 1);
-            } else {
-                address     = temp;
-                temp        = "";
-                lastAddress = true;        
-            }
-            int repeatedPath = 0;
-            if (address.indexOf("*") > 0) {
-                repeatedPath = 1;
-            }
-            encodedPacket += encodeAX25Address(address, repeatedPath, lastAddress);
-        }
-
-        encodedPacket += char(0x03);
-        encodedPacket += char(0xF0);
-        encodedPacket += packet.substring(packet.indexOf(":") + 1);
-        return encodedPacket;
-    }
-
     //**************************************
 
-    String encapsulateKISS(const String& ax25Frame, uint8_t cmd) {
+    String encapsulateKISS(const String& ax25Frame, uint8_t command) {
         String kissFrame = "";
-        kissFrame += (char)FEND;
-        kissFrame += (char)(0x0f & cmd);
+        kissFrame += (char)KissChar::FEND;
+        kissFrame += (char)(0x0f & command);
 
         for (int i = 0; i < ax25Frame.length(); ++i) {
             char currentChar = ax25Frame.charAt(i);
-            if (currentChar == (char)FEND) {
-                kissFrame += (char)FESC;
-                kissFrame += (char)TFEND;
-            } else if (currentChar == (char)FESC) {
-                kissFrame += (char)FESC;
-                kissFrame += (char)TFESC;
+            if (currentChar == (char)KissChar::FEND) {
+                kissFrame += (char)KissChar::FESC;
+                kissFrame += (char)KissChar::TFEND;
+            } else if (currentChar == (char)KissChar::FESC) {
+                kissFrame += (char)KissChar::FESC;
+                kissFrame += (char)KissChar::TFESC;
             } else {
                 kissFrame += currentChar;
             }
         }
-        kissFrame += (char)FEND; // end of frame
+        kissFrame += (char)KissChar::FEND; // end of frame
         return kissFrame;
     }
 
     String encodeAddressAX25(String address) {
         bool hasBeenDigipited = address.indexOf('*') != -1;
-
         if (address.indexOf('-') == -1) {
             if (hasBeenDigipited) {
                 address = address.substring(0, address.length() - 1);
@@ -197,10 +103,9 @@ namespace AX25_Utils {
             address += "-0";
         }
 
-        int separatorIndex = address.indexOf('-');
-        int ssid = address.substring(separatorIndex + 1).toInt();
-
-        String kissAddress = "";
+        int separatorIndex  = address.indexOf('-');
+        int ssid            = address.substring(separatorIndex + 1).toInt();
+        String kissAddress  = "";
         for (int i = 0; i < 6; ++i) {
             char addressChar;
             if (address.length() > i && i < separatorIndex) {
@@ -210,7 +115,6 @@ namespace AX25_Utils {
             }
             kissAddress += (char)(addressChar << 1);
         }
-
         kissAddress += (char)((ssid << 1) | 0b01100000 | (hasBeenDigipited ? HAS_BEEN_DIGIPITED_MASK : 0));
         return kissAddress;
     }
@@ -222,13 +126,13 @@ namespace AX25_Utils {
             int colonIndex = frame.indexOf(':');
 
             String address = "";
-            bool dstAddresWritten = false;
+            bool destinationAddressWritten = false;
             for (int i = 0; i <= colonIndex; i++) {
                 char currentChar = frame.charAt(i);
                 if (currentChar == ':' || currentChar == '>' || currentChar == ',') {
-                    if (!dstAddresWritten && (currentChar == ',' || currentChar == ':')) {
+                    if (!destinationAddressWritten && (currentChar == ',' || currentChar == ':')) {
                         ax25Frame = encodeAddressAX25(address) + ax25Frame;
-                        dstAddresWritten = true;
+                        destinationAddressWritten = true;
                     } else {
                         ax25Frame += encodeAddressAX25(address);
                     }
@@ -237,15 +141,13 @@ namespace AX25_Utils {
                     address += currentChar;
                 }
             }
-
             auto lastAddressChar = (uint8_t)ax25Frame.charAt(ax25Frame.length() - 1);
             ax25Frame.setCharAt(ax25Frame.length() - 1, (char)(lastAddressChar | IS_LAST_ADDRESS_POSITION_MASK));
-            ax25Frame += (char)APRS_CONTROL_FIELD;
-            ax25Frame += (char)APRS_INFORMATION_FIELD;
+            ax25Frame += (char)AX25Char::ControlField;
+            ax25Frame += (char)AX25Char::InformationField;
             ax25Frame += frame.substring(colonIndex + 1);
         }
-
-        String kissFrame = encapsulateKISS(ax25Frame, CMD_DATA);
+        String kissFrame = encapsulateKISS(ax25Frame, KissCmd::Data);
         return kissFrame;
     }
 

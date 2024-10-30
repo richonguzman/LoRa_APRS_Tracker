@@ -6,6 +6,8 @@
 #include "display.h"
 #include "logger.h"
 
+#define BLE_CHUNK_SIZE  64
+
 
 // APPLE - APRS.fi app
 #define SERVICE_UUID_0            "00000001-ba2a-46c9-ae49-01b0961f68bb"
@@ -126,61 +128,25 @@ namespace BLE_Utils {
         delay(3);
     }
 
-    /*void txToPhoneOverBLE(const String& frame) {
-        if (Config.bluetooth.type == 0) {
-            txBLE((byte)KissChar::Fend);
-            txBLE((byte)KissCmd::Data);
-        }        
-        for(int n = 0; n < frame.length(); n++) {
-            uint8_t byteCharacter = frame[n];
-            if (Config.bluetooth.type == 2) {
-                txBLE(byteCharacter);
-            } else {
-                if (byteCharacter == KissChar::Fend) {
-                    txBLE((byte)KissChar::Fesc);
-                    txBLE((byte)KissChar::Tfend);
-                } else if (byteCharacter == KissChar::Fesc) {
-                    txBLE((byte)KissChar::Fesc);
-                    txBLE((byte)KissChar::Tfesc);
-                } else {
-                    txBLE(byteCharacter);
-                }
-            }    
-        }
-        if (Config.bluetooth.type == 0) {
-            txBLE((byte)KissChar::Fend);
-        } else if (Config.bluetooth.type == 2) {
-            txBLE('\n');
-        }   
-    }*/
-
     void txToPhoneOverBLE(const String& frame) {
-        if (Config.bluetooth.type == 0) {                   // AX25 KISS
+        if (Config.bluetooth.type == 0) {                                   // AX25 KISS
             const String kissEncodedFrame = AX25_Utils::encodeKISS(frame);
-            //const String kissEncodedFrame = AX25_Utils::LoRaPacketToAX25Frame(frame);   // aqui faltaria el paso de transformalo en KISS
 
-            const char* t = kissEncodedFrame.c_str();
-            int length = kissEncodedFrame.length();
-
-            const int CHUNK_SIZE = 64;
-
-            for (int i = 0; i < length; i += CHUNK_SIZE) {
-                int chunkSize = (length - i < CHUNK_SIZE) ? (length - i) : CHUNK_SIZE;
+            const char* t   = kissEncodedFrame.c_str();
+            int length      = kissEncodedFrame.length();
+            for (int i = 0; i < length; i += BLE_CHUNK_SIZE) {
+                int chunkSize = (length - i < BLE_CHUNK_SIZE) ? (length - i) : BLE_CHUNK_SIZE;
                 
                 uint8_t* chunk = new uint8_t[chunkSize];
                 memcpy(chunk, t + i, chunkSize);
 
                 pCharacteristicTx->setValue(chunk, chunkSize);
                 pCharacteristicTx->notify();
-
                 delete[] chunk;
-
                 delay(200);
             }
-        } else {                                            // TNC2
-            for(int n = 0; n < frame.length(); n++) {
-                txBLE(frame[n]);
-            }
+        } else {                                                            // TNC2
+            for(int n = 0; n < frame.length(); n++) txBLE(frame[n]);
             txBLE('\n');
         }   
     }
@@ -189,14 +155,7 @@ namespace BLE_Utils {
         if (!packet.isEmpty() && bluetoothConnected) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Rx", "%s", packet.c_str());
             String receivedPacketString = "";
-            for (int i = 0; i < packet.length(); i++) {
-                receivedPacketString += packet[i];
-            }
-            /*if (Config.bluetooth.type == 0) {                 // mod de Damian ? pero perder encodeador?
-                txToPhoneOverBLE(AX25_Utils::LoRaPacketToAX25Frame(receivedPacketString));
-            } else if (Config.bluetooth.type == 2) {
-                txToPhoneOverBLE(receivedPacketString);                
-            }*/
+            for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
             txToPhoneOverBLE(receivedPacketString);
         }
     }
