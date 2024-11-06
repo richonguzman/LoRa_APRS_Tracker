@@ -76,7 +76,6 @@ uint32_t    refreshDisplayTime      = millis();
 bool        sendUpdate              = true;
 
 bool        bluetoothConnected      = false;
-//String      BLEToLoRaPacket         = "";
 
 uint32_t    lastTx                  = 0.0;
 uint32_t    txInterval              = 60000L;
