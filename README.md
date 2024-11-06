@@ -101,7 +101,7 @@ ____________________________________________________
 - 2023.12.06 T-Beam V1.2 as default board.
 - 2023.12.05 Updated packets recognition (+Objects + Mic-E).
 - 2023.11.28 Adding BLE connection to use it as TNC with APRS.fi app for iOS.
-- 2023.11.07 DigiRepeater Mode added in Emergency Menu.
+- 2023.11.07 Digipeater Mode added in Emergency Menu.
 - 2023.10.23 COMPLETE New Menu for Keyboard add-on.
 - 2023.10.22 Added Keyboard Support over I2C ( CARDKB from https://m5stack.com )
 - 2023.10.07 Screen Brightness control added.

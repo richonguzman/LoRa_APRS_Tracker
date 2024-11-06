@@ -41,7 +41,7 @@ extern String           messageCallsign;
 extern String           messageText;
 extern bool             sendStandingUpdate;
 extern bool             flashlight;
-extern bool             digirepeaterActive;
+extern bool             digipeaterActive;
 extern bool             sosActive;
 extern uint8_t          winlinkStatus;
 extern String           winlinkMailNumber;
@@ -452,14 +452,14 @@ namespace KEYBOARD_Utils {
                 displayShow("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
         } else if (menuDisplay == 61) {
-            if (digirepeaterActive) {
-                displayShow("__EXTRAS__", "","   DigiRepeater","   Status --> OFF", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater OFF");
-                digirepeaterActive = false;
+            if (digipeaterActive) {
+                displayShow("__EXTRAS__", "","     Digipeater","   Status --> OFF", "", "", 2000);
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater OFF");
+                digipeaterActive = false;
             } else {
-                displayShow("__EXTRAS__", "","   DigiRepeater","   Status --> ON","", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "DigiRepeater ON");
-                digirepeaterActive = true;
+                displayShow("__EXTRAS__", "","     Digipeater","   Status --> ON","", "", 2000);
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater ON");
+                digipeaterActive = true;
             }
         } else if (menuDisplay == 62) {
             if (sosActive) {

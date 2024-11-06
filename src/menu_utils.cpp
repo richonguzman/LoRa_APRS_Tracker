@@ -28,7 +28,7 @@ extern bool                 keyDetected;
 extern String               messageCallsign;
 extern String               messageText;
 extern bool                 flashlight;
-extern bool                 digirepeaterActive;
+extern bool                 digipeaterActive;
 extern bool                 sosActive;
 extern bool                 bluetoothActive;
 extern bool                 displayEcoMode;
@@ -482,16 +482,16 @@ namespace MENU_Utils {
 
 //////////
             case 60:    // 6. Extras ---> Flashlight
-                displayShow("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
-            case 61:    // 6. Extras ---> Digirepeater
-                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+            case 61:    // 6. Extras ---> Digipeater
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
-                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
                 break;
             case 63:    // 6. Extras ---> Extra Comment.
-                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  DigiRepeater  (" + checkProcessActive(digirepeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
+                displayShow("__EXTRAS__", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
                 break;
             case 630:
                 if (messageText.length() <= 67) {

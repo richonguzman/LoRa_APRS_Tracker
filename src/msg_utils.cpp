@@ -22,7 +22,7 @@ extern uint32_t             menuTime;
 extern bool                 messageLed;
 extern uint32_t             messageLedTime;
 
-extern bool                 digirepeaterActive;
+extern bool                 digipeaterActive;
 
 extern int                  ackRequestNumber;
 
@@ -418,13 +418,13 @@ namespace MSG_Utils {
 
                 if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {            
 
-                    if (digirepeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
-                        String digiRepeatedPacket = APRSPacketLib::generateDigiRepeatedPacket(packet.text, currentBeacon->callsign, Config.path);
-                        if (digiRepeatedPacket == "X") {
+                    if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
+                        String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
+                        if (digipeatedPacket == "X") {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDEn-N)");
                         } else {
                             delay(500);
-                            LoRa_Utils::sendNewPacket(digiRepeatedPacket);
+                            LoRa_Utils::sendNewPacket(digipeatedPacket);
                         }
                     }
                     lastHeardTracker = lastReceivedPacket.sender;
@@ -541,7 +541,7 @@ namespace MSG_Utils {
                         if ((lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4) && !Config.simplifiedTrackerMode) {
                             GPS_Utils::calculateDistanceCourse(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude);
                         }
-                        if (Config.notification.buzzerActive && Config.notification.stationBeep && !digirepeaterActive) {
+                        if (Config.notification.buzzerActive && Config.notification.stationBeep && !digipeaterActive) {
                             NOTIFICATION_Utils::stationHeardBeep();
                         }
                     }

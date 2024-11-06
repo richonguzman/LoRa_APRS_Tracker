@@ -58,7 +58,7 @@ namespace APRSPacketLib {
     String  generateMessagePacket(const String& callsign, const String& tocall, const String& path, const String& addressee, const String& message);
 
     String  buildDigiPacket(const String& packet, const String& callsign, const String& path, bool thirdParty);
-    String  generateDigiRepeatedPacket(const String& packet, const String &callsign, const String& path);
+    String  generateDigipeatedPacket(const String& packet, const String &callsign, const String& path);
 
     char    *ax25_base91enc(char *s, uint8_t n, uint32_t v);
     String  encodeGPS(float latitude, float longitude, float course, float speed, const String& symbol, bool sendAltitude, int altitude, bool sendStandingUpdate, const String& packetType);

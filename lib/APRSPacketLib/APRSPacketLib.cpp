@@ -267,7 +267,7 @@ namespace APRSPacketLib {
         return packetToRepeat;
     }
 
-    String generateDigiRepeatedPacket(const String& packet, const String &callsign, const String& path) {
+    String generateDigipeatedPacket(const String& packet, const String &callsign, const String& path) {
         bool thirdParty = false;
 
         int firstColonIndex = packet.indexOf(":");

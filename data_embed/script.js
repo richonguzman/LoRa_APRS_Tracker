@@ -281,8 +281,6 @@ document.getElementById('reboot').addEventListener('click', function (e) {
 
 //const bmeCheckbox = document.querySelector("input[name='bme.active']");
 
-const stationModeSelect = document.querySelector("select[name='stationMode']");
-
 function toggleFields() {
     /*
     // Display - timeout box enable
