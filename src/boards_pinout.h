@@ -163,9 +163,11 @@
     #define TrackBallDown       15  // G S3
     #define TrackBallLeft       1   // G S4
     #define TrackBallRight      2   // G S2
-    /*#define BOARD_I2S_WS    5     // esto es para el audio!
-    #define BOARD_I2S_BCK   7
-    #define BOARD_I2S_DOUT  6*/
+
+    #define HAS_I2S
+    #define DAC_I2S_WS          5
+    #define DAC_I2S_DOUT        6
+    #define DAC_I2S_BCK         7
 #endif
 
 
