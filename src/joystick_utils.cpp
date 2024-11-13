@@ -4,7 +4,6 @@
 
 #ifdef HAS_JOYSTICK
 
-
     namespace JOYSTICK_Utils {
 
         int         debounceDelay       = 200; // 50 ms debounce time

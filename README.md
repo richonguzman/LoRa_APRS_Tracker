@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.11.13 T-Deck Joystick and Button Pressing Fix for smother operation.
 - 2024.10.24 Added QRP Labs LightTracker Plus1.0 support.
 - 2024.10.11 Added Lilygo TTGO T-Deck Plus support.
 - 2024.10.10 Configuration WiFiAP stops after 1 minute of no-client connected.
