@@ -10,6 +10,9 @@ namespace BUTTON_Utils {
     void doublePress();
     void multiPress();
 
+    void loop();
+    void setup();
+
 }
 
 #endif

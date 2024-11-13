@@ -20,7 +20,6 @@
 ____________________________________________________________________*/
 
 #include <BluetoothSerial.h>
-#include <OneButton.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
 #include <logger.h>
@@ -52,11 +51,8 @@ TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
 #endif
-#ifdef BUTTON_PIN
-    OneButton userButton            = OneButton(BUTTON_PIN, true, true);
-#endif
 
-String      versionDate             = "2024.11.06";
+String      versionDate             = "2024.11.13";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -144,10 +140,7 @@ void setup() {
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-            userButton.attachClick(BUTTON_Utils::singlePress);
-            userButton.attachLongPressStart(BUTTON_Utils::longPress);
-            userButton.attachDoubleClick(BUTTON_Utils::doublePress);
-            userButton.attachMultiClick(BUTTON_Utils::multiPress);
+            BUTTON_Utils::setup();
         #endif
         KEYBOARD_Utils::setup();
     }
@@ -174,7 +167,7 @@ void loop() {
 
     if (!Config.simplifiedTrackerMode) {
         #ifdef BUTTON_PIN
-            userButton.tick();
+            BUTTON_Utils::loop();
         #endif
     }
 
@@ -182,7 +175,7 @@ void loop() {
 
     KEYBOARD_Utils::read();
     #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-        KEYBOARD_Utils::mouseRead();
+        KEYBOARD_Utils::joystickRead();
     #endif
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
