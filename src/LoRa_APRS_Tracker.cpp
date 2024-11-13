@@ -174,7 +174,7 @@ void loop() {
     Utils::checkDisplayEcoMode();
 
     KEYBOARD_Utils::read();
-    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+    #ifdef HAS_JOYSTICK
         KEYBOARD_Utils::joystickRead();
     #endif
 

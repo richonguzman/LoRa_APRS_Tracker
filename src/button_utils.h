@@ -5,11 +5,6 @@
 
 namespace BUTTON_Utils {
 
-    void singlePress();
-    void longPress();
-    void doublePress();
-    void multiPress();
-
     void loop();
     void setup();
 

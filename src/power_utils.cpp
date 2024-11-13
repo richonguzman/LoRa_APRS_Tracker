@@ -433,6 +433,14 @@ namespace POWER_Utils {
             Wire1.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
+        #ifdef HAS_JOYSTICK
+            pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
+            pinMode(JOYSTICK_UP, INPUT_PULLUP);
+            pinMode(JOYSTICK_DOWN, INPUT_PULLUP);
+            pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
+            pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
+        #endif
+
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             pinMode(BOARD_POWERON, OUTPUT);
             digitalWrite(BOARD_POWERON, HIGH);
@@ -444,13 +452,6 @@ namespace POWER_Utils {
             digitalWrite(BOARD_SDCARD_CS, HIGH);
             digitalWrite(RADIO_CS_PIN, HIGH);
             digitalWrite(TFT_CS, HIGH);
-            
-
-            pinMode(TrackBallCenter, INPUT_PULLUP);
-            pinMode(TrackBallUp, INPUT_PULLUP);
-            pinMode(TrackBallDown, INPUT_PULLUP);
-            pinMode(TrackBallLeft, INPUT_PULLUP);
-            pinMode(TrackBallRight, INPUT_PULLUP);
 
             delay(500);
             Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);

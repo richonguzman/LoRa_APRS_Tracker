@@ -157,12 +157,14 @@
     #define RADIO_RST_PIN       17
     #define RADIO_DIO1_PIN      45
     #define RADIO_BUSY_PIN      13
-    #define TrackBallCenter     0
-    #define BUTTON_PIN          TrackBallCenter
-    #define TrackBallUp         3   // G S1
-    #define TrackBallDown       15  // G S3
-    #define TrackBallLeft       1   // G S4
-    #define TrackBallRight      2   // G S2
+
+    #define HAS_JOYSTICK
+    #define JOYSTICK_CENTER     0
+    #define BUTTON_PIN          JOYSTICK_CENTER
+    #define JOYSTICK_UP         3   // G S1
+    #define JOYSTICK_DOWN       15  // G S3
+    #define JOYSTICK_LEFT       1   // G S4
+    #define JOYSTICK_RIGHT      2   // G S2
 
     #define HAS_I2S
     #define DAC_I2S_WS          5

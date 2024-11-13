@@ -720,33 +720,33 @@ namespace KEYBOARD_Utils {
 
     void joystickRead() {
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-            int ballUp      = digitalRead(TrackBallUp);
-            int ballDown    = digitalRead(TrackBallDown);
-            int ballLeft    = digitalRead(TrackBallLeft);
-            int ballRight   = digitalRead(TrackBallRight);
+            int joystickUp      = digitalRead(JOYSTICK_UP);
+            int joystickDown    = digitalRead(JOYSTICK_DOWN);
+            int joystickLeft    = digitalRead(JOYSTICK_LEFT);
+            int joystickRight   = digitalRead(JOYSTICK_RIGHT);
 
-            if (ballUp != joystickUpState && ballDown == joystickDownState && ballLeft == joystickLeftState && ballRight == joystickRightState) {
+            if (joystickUp != joystickUpState && joystickDown == joystickDownState && joystickLeft == joystickLeftState && joystickRight == joystickRightState) {
                 if (millis() - lastDebounceTime > debounceInterval) {
                     lastDebounceTime = millis();
-                    joystickUpState = ballUp;
+                    joystickUpState = joystickUp;
                     upCounter++;
                 }
-            } else if (ballDown != joystickDownState && ballUp == joystickUpState && ballLeft == joystickLeftState && ballRight == joystickRightState) {
+            } else if (joystickDown != joystickDownState && joystickUp == joystickUpState && joystickLeft == joystickLeftState && joystickRight == joystickRightState) {
                 if (millis() - lastDebounceTime > debounceInterval) {
                     lastDebounceTime = millis();
-                    joystickDownState = ballDown;
+                    joystickDownState = joystickDown;
                     downCounter++;
                 }
-            } else if (ballLeft != joystickLeftState && ballUp == joystickUpState && ballDown == joystickDownState && ballRight == joystickRightState) {
+            } else if (joystickLeft != joystickLeftState && joystickUp == joystickUpState && joystickDown == joystickDownState && joystickRight == joystickRightState) {
                 if (millis() - lastDebounceTime > debounceInterval) {
                     lastDebounceTime = millis();
-                    joystickLeftState = ballLeft;
+                    joystickLeftState = joystickLeft;
                     leftCounter++;
                 }
-            } else if (ballRight != joystickRightState && ballUp == joystickUpState && ballDown == joystickDownState && ballLeft == joystickLeftState) {
+            } else if (joystickRight != joystickRightState && joystickUp == joystickUpState && joystickDown == joystickDownState && joystickLeft == joystickLeftState) {
                 if (millis() - lastDebounceTime > debounceInterval) {
                     lastDebounceTime = millis();
-                    joystickRightState = ballRight;
+                    joystickRightState = joystickRight;
                     rightCounter++;
                 }
             }
