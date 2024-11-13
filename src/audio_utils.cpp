@@ -1,15 +1,18 @@
+#include <driver/i2s.h>
+#include "boards_pinout.h"
 #include "audio_utils.h"
 
 
-#include <driver/i2s.h>
+#ifdef HAS_I2S
+
+    namespace AUDIO_Utils {
+
+        void setup() {
 
 
-namespace AUDIO_Utils {
+            //
+        }
 
-    void setup() {
-
-
-        //
     }
 
-}
+#endif
