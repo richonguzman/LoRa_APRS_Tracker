@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2024.11.13 Added Heltec Wireless Stick Lite V3 + GPS + Oled Display support for another DIY ESP32 Tracker.
 - 2024.11.13 T-Deck Joystick and Button Pressing Fix for smother operation.
 - 2024.10.24 Added QRP Labs LightTracker Plus1.0 support.
 - 2024.10.11 Added Lilygo TTGO T-Deck Plus support.
