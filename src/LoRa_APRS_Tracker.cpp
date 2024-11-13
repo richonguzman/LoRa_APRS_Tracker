@@ -28,6 +28,7 @@ ____________________________________________________________________*/
 #include "smartbeacon_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
+#include "joystick_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
 #include "boards_pinout.h"
@@ -142,6 +143,9 @@ void setup() {
         #ifdef BUTTON_PIN
             BUTTON_Utils::setup();
         #endif
+        #ifdef HAS_JOYSTICK
+            JOYSTICK_Utils::setup();
+        #endif
         KEYBOARD_Utils::setup();
     }
 
@@ -174,9 +178,6 @@ void loop() {
     Utils::checkDisplayEcoMode();
 
     KEYBOARD_Utils::read();
-    #ifdef HAS_JOYSTICK
-        KEYBOARD_Utils::joystickRead();
-    #endif
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 

@@ -433,14 +433,6 @@ namespace POWER_Utils {
             Wire1.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
-        #ifdef HAS_JOYSTICK
-            pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
-            pinMode(JOYSTICK_UP, INPUT_PULLUP);
-            pinMode(JOYSTICK_DOWN, INPUT_PULLUP);
-            pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
-            pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
-        #endif
-
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             pinMode(BOARD_POWERON, OUTPUT);
             digitalWrite(BOARD_POWERON, HIGH);

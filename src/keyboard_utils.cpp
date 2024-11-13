@@ -67,18 +67,6 @@ int         messagesIterator        = 0;
 
 bool        showHumanHeading        = false;
 
-bool        joystickUpState         = false;
-bool        joystickDownState       = false;
-bool        joystickLeftState       = false;
-bool        joystickRightState      = false;
-int         debounceInterval        = 50;
-uint32_t    lastDebounceTime        = millis();
-int         upCounter               = 0;
-int         downCounter             = 0;
-int         leftCounter             = 0;
-int         rightCounter            = 0;
-int         trackBallSensitivity    = 5;
-
 
 namespace KEYBOARD_Utils {
 
@@ -709,61 +697,6 @@ namespace KEYBOARD_Utils {
         else if (key == 183) {  // Arrow Right
             rightArrow();
         }
-    }
-
-    void clearTrackballCounter() {
-        upCounter       = 0;
-        downCounter     = 0;
-        leftCounter     = 0;
-        rightCounter    = 0;
-    }
-
-    void joystickRead() {
-        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-            int joystickUp      = digitalRead(JOYSTICK_UP);
-            int joystickDown    = digitalRead(JOYSTICK_DOWN);
-            int joystickLeft    = digitalRead(JOYSTICK_LEFT);
-            int joystickRight   = digitalRead(JOYSTICK_RIGHT);
-
-            if (joystickUp != joystickUpState && joystickDown == joystickDownState && joystickLeft == joystickLeftState && joystickRight == joystickRightState) {
-                if (millis() - lastDebounceTime > debounceInterval) {
-                    lastDebounceTime = millis();
-                    joystickUpState = joystickUp;
-                    upCounter++;
-                }
-            } else if (joystickDown != joystickDownState && joystickUp == joystickUpState && joystickLeft == joystickLeftState && joystickRight == joystickRightState) {
-                if (millis() - lastDebounceTime > debounceInterval) {
-                    lastDebounceTime = millis();
-                    joystickDownState = joystickDown;
-                    downCounter++;
-                }
-            } else if (joystickLeft != joystickLeftState && joystickUp == joystickUpState && joystickDown == joystickDownState && joystickRight == joystickRightState) {
-                if (millis() - lastDebounceTime > debounceInterval) {
-                    lastDebounceTime = millis();
-                    joystickLeftState = joystickLeft;
-                    leftCounter++;
-                }
-            } else if (joystickRight != joystickRightState && joystickUp == joystickUpState && joystickDown == joystickDownState && joystickLeft == joystickLeftState) {
-                if (millis() - lastDebounceTime > debounceInterval) {
-                    lastDebounceTime = millis();
-                    joystickRightState = joystickRight;
-                    rightCounter++;
-                }
-            }
-            if (upCounter == trackBallSensitivity) {
-                clearTrackballCounter();
-                upArrow();
-            } else if (downCounter == trackBallSensitivity) {
-                clearTrackballCounter();
-                downArrow();
-            } else if (leftCounter == trackBallSensitivity) {
-                clearTrackballCounter();
-                leftArrow();
-            } else if (rightCounter == trackBallSensitivity) {
-                clearTrackballCounter();
-                rightArrow();
-            }
-        #endif
     }
 
     void read() {

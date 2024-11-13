@@ -11,8 +11,8 @@ namespace KEYBOARD_Utils {
     void rightArrow();
     
     void processPressedKey(char key);
-    void joystickRead();
     void read();
+    
     void setup();
   
 }
