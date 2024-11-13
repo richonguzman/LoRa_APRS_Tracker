@@ -33,6 +33,7 @@ ____________________________________________________________________*/
 #include "station_utils.h"
 #include "boards_pinout.h"
 #include "button_utils.h"
+#include "audio_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "menu_utils.h"
@@ -45,9 +46,6 @@ ____________________________________________________________________*/
 #include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
-
-#include "audio_utils.h"
-#include <driver/i2s.h>
 
 
 Configuration                       Config;
@@ -154,7 +152,7 @@ void setup() {
     }
 
     #ifdef HAS_I2S
-        AUDIO_Utils::setupAmpI2S(SPK_I2S_PORT);
+        AUDIO_Utils::setup();
     #endif
 
     POWER_Utils::lowerCpuFrequency();

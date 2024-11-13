@@ -6,9 +6,8 @@
 
 namespace AUDIO_Utils {
 
-    //void setup();
-    void setupAmpI2S(i2s_port_t i2s_ch);
-    
+    void setup();
+        
 }
 
 #endif
