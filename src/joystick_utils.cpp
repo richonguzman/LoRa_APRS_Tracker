@@ -2,11 +2,13 @@
 #include "keyboard_utils.h"
 #include "boards_pinout.h"
 
+extern int menuDisplay;
+
 #ifdef HAS_JOYSTICK
 
     namespace JOYSTICK_Utils {
 
-        int         debounceDelay       = 200; // 50 ms debounce time
+        int         debounceDelay       = 300;
         uint32_t    lastInterruptTime   = 0;
 
         bool checkLastJoystickInterrupTime() {
@@ -18,21 +20,14 @@
             }
         }
 
-        void IRAM_ATTR joyStickUp() {
-            if (checkLastJoystickInterrupTime()) KEYBOARD_Utils::upArrow();
+        void IRAM_ATTR joystickHandler(void (*directionFunc)()) {
+            if (checkLastJoystickInterrupTime() && menuDisplay != 0) directionFunc();
         }
 
-        void IRAM_ATTR joyStickDown() {
-            if (checkLastJoystickInterrupTime()) KEYBOARD_Utils::downArrow();
-        }
-
-        void IRAM_ATTR joyStickLeft() {
-            if (checkLastJoystickInterrupTime()) KEYBOARD_Utils::leftArrow();
-        }
-
-        void IRAM_ATTR joyStickRight() {
-            if (checkLastJoystickInterrupTime()) KEYBOARD_Utils::rightArrow();
-        }
+        void IRAM_ATTR joystickUp() { joystickHandler(KEYBOARD_Utils::upArrow); }
+        void IRAM_ATTR joystickDown() { joystickHandler(KEYBOARD_Utils::downArrow); }
+        void IRAM_ATTR joystickLeft() { joystickHandler(KEYBOARD_Utils::leftArrow); }
+        void IRAM_ATTR joystickRight() { joystickHandler(KEYBOARD_Utils::rightArrow); }
 
         void setup() {
             pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
@@ -41,10 +36,10 @@
             pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
             pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
 
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_UP), joyStickUp, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_DOWN), joyStickDown, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_LEFT), joyStickLeft, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_RIGHT), joyStickRight, FALLING);
+            attachInterrupt(digitalPinToInterrupt(JOYSTICK_UP), joystickUp, FALLING);
+            attachInterrupt(digitalPinToInterrupt(JOYSTICK_DOWN), joystickDown, FALLING);
+            attachInterrupt(digitalPinToInterrupt(JOYSTICK_LEFT), joystickLeft, FALLING);
+            attachInterrupt(digitalPinToInterrupt(JOYSTICK_RIGHT), joystickRight, FALLING);
         }
     }
 
