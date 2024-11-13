@@ -46,6 +46,10 @@ ____________________________________________________________________*/
 #include "display.h"
 #include "utils.h"
 
+#include "audio_utils.h"
+#include <driver/i2s.h>
+
+
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
@@ -148,6 +152,10 @@ void setup() {
         #endif
         KEYBOARD_Utils::setup();
     }
+
+    #ifdef HAS_I2S
+        AUDIO_Utils::setupAmpI2S(SPK_I2S_PORT);
+    #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());

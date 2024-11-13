@@ -170,6 +170,9 @@
     #define DAC_I2S_WS          5
     #define DAC_I2S_DOUT        6
     #define DAC_I2S_BCK         7
+    #define SPK_I2S_PORT        I2S_NUM_0
+    #define MIC_I2S_SAMPLE_RATE 16000
+    #define MIC_I2S_PORT        I2S_NUM_1
 #endif
 
 
