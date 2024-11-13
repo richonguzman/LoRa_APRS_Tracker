@@ -78,10 +78,14 @@
 #endif
 
 
-#if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC)
+#if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
     #define OLED_SDA            17
     #define OLED_SCL            18
-    #define OLED_RST            21
+    #ifdef HELTEC_WSL_V3_GPS_DISPLAY
+        #define OLED_RST        -1
+    #else
+        #define OLED_RST        21
+    #endif
     #define BOARD_I2C_SDA       41
     #define BOARD_I2C_SCL       42
     #define GPS_RX              47
