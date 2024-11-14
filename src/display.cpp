@@ -14,6 +14,8 @@ String currentSymbol, lastSymbol, lastHeader;
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
 
+    #define red     0xB061
+    
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
         #define smallSizeFont   1
@@ -27,7 +29,7 @@ String currentSymbol, lastSymbol, lastHeader;
 
         #define color1  TFT_BLACK
         #define color2  0x0249
-        #define red     0xB061
+        
         #define green   0x1B08
 
         #define bigSizeFont     4
@@ -81,6 +83,7 @@ bool        symbolAvailable         = true;
 
 extern logging::Logger logger;
 
+#ifdef HAS_TFT
 void drawTop(const String& header, const String& datetime, const String& location) {  
     sprite.fillSprite(TFT_BLACK); 
     sprite.fillRect(0, 0, 320, 38, red);
@@ -104,17 +107,18 @@ void drawTop(const String& header, const String& datetime, const String& locatio
     sprite.drawString(location, 8, 44);
 }
 
-    void drawBody(const String& linea1, const String& linea2, const String& linea3, const String& linea4, const String& linea5, const String& linea6) {
-        sprite.setTextSize(2);
-        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+void drawBody(const String& linea1, const String& linea2, const String& linea3, const String& linea4, const String& linea5, const String& linea6) {
+    sprite.setTextSize(2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
-        sprite.drawString(linea1, 3, 70);
-        sprite.drawString(linea2, 3, 90);
-        sprite.drawString(linea3, 3, 110);
-        sprite.drawString(linea4, 3, 130);
-        sprite.drawString(linea5, 3, 150);
-        sprite.drawString(linea6, 3, 170);
-    }    
+    sprite.drawString(linea1, 3, 70);
+    sprite.drawString(linea2, 3, 90);
+    sprite.drawString(linea3, 3, 110);
+    sprite.drawString(linea4, 3, 130);
+    sprite.drawString(linea5, 3, 150);
+    sprite.drawString(linea6, 3, 170);
+}
+#endif
     
     /*String lat = location.substring(0, location.indexOf(" "));
     sprite.drawString(lat, 3, 46);

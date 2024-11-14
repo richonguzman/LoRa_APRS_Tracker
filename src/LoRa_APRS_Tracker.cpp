@@ -153,14 +153,14 @@ void setup() {
 
     #ifdef HAS_I2S
         AUDIO_Utils::setup();
+        delay(500);
+        AUDIO_Utils::playMP3("bell.mp3");
     #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
-
-    AUDIO_Utils::playMP3("bell.mp3");
 }
 
 void loop() {

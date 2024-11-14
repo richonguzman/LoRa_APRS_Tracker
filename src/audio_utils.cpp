@@ -1,12 +1,11 @@
 #include "boards_pinout.h"
 #include "audio_utils.h"
+#ifdef HAS_I2S
 #include "Audio.h"
 #include <SPIFFS.h>
 #include "es7210.h"
 #include <driver/i2s.h>
 
-
-#ifdef HAS_I2S
 
     Audio audio;
     
