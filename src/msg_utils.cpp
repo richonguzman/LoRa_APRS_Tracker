@@ -29,6 +29,7 @@ extern int                  ackRequestNumber;
 extern uint32_t             lastTxTime;
 
 extern uint8_t              winlinkStatus;
+extern uint32_t             lastChallengeTime;
 
 extern bool                 wxRequestStatus;
 extern uint32_t             wxRequestTime;
@@ -516,6 +517,7 @@ namespace MSG_Utils {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
                                 displayShow("_WINLINK_>", "", "    LOG OUT !!!", 2000);
+                                lastChallengeTime = 0;
                                 winlinkStatus = 0;
                             } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
                                 lastMsgRxTime = millis();
