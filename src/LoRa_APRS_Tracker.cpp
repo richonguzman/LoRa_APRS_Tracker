@@ -159,6 +159,8 @@ void setup() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
+
+    AUDIO_Utils::playMP3("bell.mp3");
 }
 
 void loop() {
