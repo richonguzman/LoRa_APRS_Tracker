@@ -166,8 +166,8 @@ namespace MSG_Utils {
                     loadedWLNKMails.push_back(fileToRead.readStringUntil('\n'));
                 }
                 fileToRead.close();
-            } 
-        }    
+            }
+        }
     }
 
     void ledNotification() {

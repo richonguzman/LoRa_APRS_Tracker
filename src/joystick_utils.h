@@ -5,6 +5,7 @@
 
 namespace JOYSTICK_Utils {
 
+    void loop();
     void setup();
 
 }

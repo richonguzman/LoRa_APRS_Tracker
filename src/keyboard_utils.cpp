@@ -283,7 +283,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
             if (MSG_Utils::warnNoAPRSMessages()) {
-                menuDisplay = 10;
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 11;
+                #else
+                    menuDisplay = 10;
+                #endif
             } else {
                 menuDisplay = 100;
             }
@@ -355,7 +359,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 51) {
             MSG_Utils::loadMessagesFromMemory(1);
             if (MSG_Utils::warnNoWLNKMails()) {
-                menuDisplay = 51;
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 50;
+                #else
+                    menuDisplay = 51;
+                #endif
             } else {
                 menuDisplay = 50101;
             }
@@ -387,7 +395,11 @@ namespace KEYBOARD_Utils {
             displayShow("___INFO___", "", " ALL MAILS DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             if (winlinkStatus == 0) {
-                menuDisplay = 52;
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 50;
+                #else
+                    menuDisplay = 52;
+                #endif
             } else {
                 menuDisplay = 50110;
             }

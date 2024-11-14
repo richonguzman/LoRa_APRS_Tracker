@@ -5,6 +5,8 @@
 
 namespace BUTTON_Utils {
 
+    void longPress();
+
     void loop();
     void setup();
 
