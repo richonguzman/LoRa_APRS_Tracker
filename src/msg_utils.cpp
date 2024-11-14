@@ -371,6 +371,14 @@ namespace MSG_Utils {
         }
     }
 
+    void cleanOutputAckRequestBuffer(const String& station) {
+        if (!outputAckRequestBuffer.empty()) {
+            for (int i = outputAckRequestBuffer.size() - 1; i >= 0; i--) {
+                if (outputAckRequestBuffer[i].indexOf(station) == 0) outputAckRequestBuffer.erase(outputAckRequestBuffer.begin() + i);
+            }
+        }
+    }
+
     void clean25SegBuffer() {
         if (!packet25SegBuffer.empty()) {
             String deltaTimeString = packet25SegBuffer[0].substring(0, packet25SegBuffer[0].indexOf(","));
@@ -512,11 +520,13 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 5;
                                 displayShow("_WINLINK_>", "", " LOGGED !!!!", 2000);
+                                cleanOutputAckRequestBuffer("WLNK-1");
                                 menuDisplay = 5000;
                             } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
                                 displayShow("_WINLINK_>", "", "    LOG OUT !!!", 2000);
+                                cleanOutputAckRequestBuffer("WLNK-1");
                                 lastChallengeTime = 0;
                                 winlinkStatus = 0;
                             } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
