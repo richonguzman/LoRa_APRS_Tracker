@@ -33,7 +33,6 @@ ____________________________________________________________________*/
 #include "station_utils.h"
 #include "boards_pinout.h"
 #include "button_utils.h"
-#include "audio_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "menu_utils.h"
@@ -150,12 +149,6 @@ void setup() {
         #endif
         KEYBOARD_Utils::setup();
     }
-
-    #ifdef HAS_I2S
-        AUDIO_Utils::setup();
-        delay(500);
-        AUDIO_Utils::playMP3("bell.mp3");
-    #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
