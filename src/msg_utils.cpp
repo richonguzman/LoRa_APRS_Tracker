@@ -49,7 +49,7 @@ std::vector<String>             loadedAPRSMessages;
 std::vector<String>             loadedWLNKMails;
 std::vector<String>             outputMessagesBuffer;
 std::vector<String>             outputAckRequestBuffer;
-std::vector<String>             packet25SegBuffer;
+std::vector<Packet15SegBuffer>  packet15SegBuffer;
 
 bool        ackRequestState     = false;
 String      ackCallsignRequest  = "";
@@ -379,37 +379,22 @@ namespace MSG_Utils {
         }
     }
 
-    void clean25SegBuffer() {
-        if (!packet25SegBuffer.empty()) {
-            String deltaTimeString = packet25SegBuffer[0].substring(0, packet25SegBuffer[0].indexOf(","));
-            uint32_t deltaTime = deltaTimeString.toInt();
-            if ((millis() - deltaTime) >  25 * 1000) {
-                packet25SegBuffer.erase(packet25SegBuffer.begin());
-            }
-        }
+    void clean15SegBuffer() {
+        if (!packet15SegBuffer.empty() && (millis() - packet15SegBuffer[0].receivedTime) >  15 * 1000) packet15SegBuffer.erase(packet15SegBuffer.begin());
     }
 
-    bool check25SegBuffer(const String& station, const String& textMessage) {
-        if (!packet25SegBuffer.empty()) {
-            bool shouldBeIgnored = false;
-            for (int i = 0; i < packet25SegBuffer.size(); i++) {
-                String temp = packet25SegBuffer[i].substring(packet25SegBuffer[i].indexOf(",") + 1);
-                String bufferStation = temp.substring(0, temp.indexOf(","));
-                String bufferMessage = temp.substring(temp.indexOf(",") + 1);
-                if (bufferStation == station && bufferMessage == textMessage) {
-                    shouldBeIgnored = true;
-                }
+    bool check15SegBuffer(const String& station, const String& textMessage) {
+        if (!packet15SegBuffer.empty()) {
+            for (int i = 0; i < packet15SegBuffer.size(); i++) {
+                if (packet15SegBuffer[i].station == station && packet15SegBuffer[i].payload == textMessage) return false;
             }
-            if (shouldBeIgnored) {
-                return false;
-            } else {
-                packet25SegBuffer.push_back(String(millis()) + "," + station + "," + textMessage);
-                return true;
-            }
-        } else {
-            packet25SegBuffer.push_back(String(millis()) + "," + station + "," + textMessage);
-            return true;
         }
+        Packet15SegBuffer   packet;
+        packet.receivedTime = millis();
+        packet.station      = station;
+        packet.payload      = textMessage;
+        packet15SegBuffer.push_back(packet);
+        return true;
     }
     
     void checkReceivedMessage(ReceivedLoRaPacket packet) {
@@ -425,7 +410,7 @@ namespace MSG_Utils {
                     lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("\x3c\xff\x01"));
                 }
 
-                if (check25SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {            
+                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {            
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);

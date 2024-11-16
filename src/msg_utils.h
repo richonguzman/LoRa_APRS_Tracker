@@ -4,6 +4,12 @@
 #include <Arduino.h>
 #include "lora_utils.h"
 
+struct Packet15SegBuffer {
+    uint32_t    receivedTime;
+    String      station;
+    String      payload;
+};
+
 namespace MSG_Utils {
 
     bool    warnNoAPRSMessages();
@@ -21,8 +27,8 @@ namespace MSG_Utils {
     void    addToOutputBuffer(uint8_t typeOfMessage, const String& station, const String& textMessage);
     bool    checkOutputBufferEmpty();
     void    processOutputBuffer();
-    void    clean25SegBuffer();
-    bool    check25SegBuffer(const String& station, const String& textMessage);
+    void    clean15SegBuffer();
+    bool    check15SegBuffer(const String& station, const String& textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
     
 }
