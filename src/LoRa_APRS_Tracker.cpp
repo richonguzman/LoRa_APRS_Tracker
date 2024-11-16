@@ -54,7 +54,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2024.11.14";
+String      versionDate             = "2024.11.16";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -187,7 +187,7 @@ void loop() {
 
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
-    MSG_Utils::clean25SegBuffer();
+    MSG_Utils::clean15SegBuffer();
 
     if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
         BLE_Utils::sendToPhone(packet.text.substring(3));
