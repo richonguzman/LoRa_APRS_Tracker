@@ -248,9 +248,6 @@ namespace STATION_Utils {
             if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) {
                 shouldSleepLowVoltage   = true;
             }
-            //
-            //BATTERY_Utils::checkLowVoltageAndSleep(batteryVoltage.toFloat());
-            //
         #endif
         if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();

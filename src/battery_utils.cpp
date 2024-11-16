@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include "battery_utils.h"
+#include "boards_pinout.h"
 #include "power_utils.h"
+#include "display.h"
 
 
 int telemetryCounter    = random(1,999);
@@ -57,6 +59,16 @@ namespace BATTERY_Utils {
         } else {
             return "100";
         }
+    }
+
+    void checkBatteryInitVoltage() {
+        #ifdef BATTERY_PIN
+            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+            if (batteryVoltage.toFloat() < 3.0) {
+                displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",3000);
+                POWER_Utils::shutdown();
+            }
+        #endif
     }
 
 }
