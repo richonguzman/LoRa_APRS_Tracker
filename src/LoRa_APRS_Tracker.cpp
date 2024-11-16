@@ -30,6 +30,7 @@ ____________________________________________________________________*/
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
 #include "configuration.h"
+#include "battery_utils.h"
 #include "station_utils.h"
 #include "boards_pinout.h"
 #include "button_utils.h"
@@ -112,6 +113,7 @@ void setup() {
 
     POWER_Utils::setup();
     displaySetup();
+    BATTERY_Utils::checkBatteryInitVoltage();
     POWER_Utils::externalPinSetup();
 
     STATION_Utils::loadIndex(0);
