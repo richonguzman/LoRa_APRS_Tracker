@@ -5,7 +5,8 @@
 #include "display.h"
 
 
-int telemetryCounter    = random(1,999);
+int         telemetryCounter    = random(1,999);
+uint32_t    lastNoGPSCheckTime  = 0;
 
 
 namespace BATTERY_Utils {
@@ -61,12 +62,15 @@ namespace BATTERY_Utils {
         }
     }
 
-    void checkBatteryInitVoltage() {
+    void checkVoltageWithoutGPSFix() {
         #ifdef BATTERY_PIN
-            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-            if (batteryVoltage.toFloat() < 3.0) {
-                displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",3000);
-                POWER_Utils::shutdown();
+            if (lastNoGPSCheckTime == 0 || millis() - lastNoGPSCheckTime > 15 * 60 * 1000) {
+                String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+                if (batteryVoltage.toFloat() < 3.0) {
+                    displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
+                    POWER_Utils::shutdown();
+                }
+                lastNoGPSCheckTime = millis();
             }
         #endif
     }

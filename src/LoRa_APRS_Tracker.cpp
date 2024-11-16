@@ -82,7 +82,6 @@ uint32_t    lastTxTime              = 0;
 double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
-uint32_t    lastBatteryCheckTime    = 0;
 
 uint32_t    menuTime                = millis();
 
@@ -114,7 +113,6 @@ void setup() {
 
     POWER_Utils::setup();
     displaySetup();
-    BATTERY_Utils::checkBatteryInitVoltage();
     POWER_Utils::externalPinSetup();
 
     STATION_Utils::loadIndex(0);
@@ -218,12 +216,10 @@ void loop() {
         if (gps_loc_update) {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
-        } else {
-            if (millis() - lastBatteryCheckTime > 15 * 1000) {
-                BATTERY_Utils::checkBatteryInitVoltage();
-                lastBatteryCheckTime = millis();
-            }   
         }
+
+        if (!gps.location.isValid()) BATTERY_Utils::checkVoltageWithoutGPSFix();
+
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) {
