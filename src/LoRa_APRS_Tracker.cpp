@@ -82,6 +82,7 @@ uint32_t    lastTxTime              = 0;
 double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
+uint32_t    lastBatteryCheckTime    = 0;
 
 uint32_t    menuTime                = millis();
 
@@ -217,6 +218,11 @@ void loop() {
         if (gps_loc_update) {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
+        } else {
+            if (millis() - lastBatteryCheckTime > 15 * 1000) {
+                BATTERY_Utils::checkBatteryInitVoltage();
+                lastBatteryCheckTime = millis();
+            }   
         }
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
