@@ -240,9 +240,9 @@ namespace MSG_Utils {
 
     void sendMessage(const String& station, const String& textMessage) {
         String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, station, textMessage);
-        #if HAS_TFT
+        /*#if HAS_TFT
         cleanTFT();
-        #endif
+        #endif*/
         if (textMessage.indexOf("ack") == 0 && station != "WLNK-1") {  // don't show Winlink ACK
             displayShow("<<ACK Tx>>", "", "", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {

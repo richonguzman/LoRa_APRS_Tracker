@@ -224,9 +224,7 @@ namespace STATION_Utils {
             }            
         } else {
             String path = Config.path;
-            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) {   // avoid plane speed and altitude
-                path = "";
-            }
+            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
             if (miceActive) {
                 packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
             } else {
@@ -242,6 +240,7 @@ namespace STATION_Utils {
             comment = currentBeacon->comment;
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
+
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
         bool shouldSleepLowVoltage = false;
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -249,6 +248,7 @@ namespace STATION_Utils {
                 shouldSleepLowVoltage   = true;
             }
         #endif
+
         if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #if defined(HAS_AXP192)
@@ -271,6 +271,7 @@ namespace STATION_Utils {
                 comment += "%";
             #endif
         }
+        
         if (shouldSleepLowVoltage) {
             packet += " **LowVoltagePowerOff**";
         } else {
@@ -283,10 +284,7 @@ namespace STATION_Utils {
                 }
             }
         }
-        #ifdef HAS_TFT
-            cleanTFT();
-        #endif
-        displayShow("<<< TX >>>", "", packet,100);
+        displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
 
         if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {     // send Tx packets to Phone too
@@ -306,9 +304,6 @@ namespace STATION_Utils {
         }
         lastTxTime  = millis();
         sendUpdate  = false;
-        #ifdef HAS_TFT
-            cleanTFT(); 
-        #endif
         if (currentBeacon->gpsEcoMode) {
             gpsShouldSleep = true;
         }

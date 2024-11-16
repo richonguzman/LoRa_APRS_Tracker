@@ -172,7 +172,7 @@ namespace POWER_Utils {
 
     void batteryManager() {
         #ifdef ADC_CTRL
-            if(batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
+            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
         #else
             obtainBatteryInfo();
         #endif

@@ -177,12 +177,6 @@ void draw_T_DECK_Body(const String& line1, const String& line2, const String& li
     sprite.drawString("REC:",190,208);
     sprite.drawString(String(recN), 215, 208);*/
 
-void cleanTFT() {
-    /*#ifdef HAS_TFT
-        tft.fillScreen(TFT_BLACK);
-    #endif*/
-}
-
 String fillStringLength(const String& line, uint8_t length) {
     String outputLine = line;
     for (int a = line.length(); a < length; a++) {
@@ -297,7 +291,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextSize(smallSizeFont);
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 2; i++) {
                 sprite.drawString(*lines[i], 3,(lineSpacing * (2 + i)) - 2);
             }
         #endif
@@ -453,9 +447,6 @@ void startupScreen(uint8_t index, const String& version) {
         case 2: workingFreq += "UK]"; break;
     }
     displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
-    #ifdef HAS_TFT
-        cleanTFT();
-    #endif
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
 }
