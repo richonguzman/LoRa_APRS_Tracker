@@ -15,7 +15,7 @@
 
     #define red     0xB061
     int             brightnessValues[6]     = {70, 90, 120, 160, 200, 250};
-    int             tftBrightness           = 3;
+    int             tftBrightness           = 5;
     unsigned short  grays[13];
     
     #ifdef HELTEC_WIRELESS_TRACKER
