@@ -150,21 +150,86 @@ void draw_T_DECK_Top(const String& header, const String& datetime, const String&
     sprite.fillRect(0, 60, 320, 2, greyColorDark);
 }
 
-void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
-    sprite.setTextSize(normalSizeFont);
-    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
-    const String* const lines[] = {&line1, &line2, &line3, &line4, &line5, &line6};
-    for (int i = 0; i < 6; i++) {
-        sprite.drawString(*lines[i], 3, 70 + (i * 20));
+void draw_T_DECK_MenuButtons(int menu) {
+    int ladoCuadrado            = 45;
+    int curvaCuadrado           = 8;
+    int espacioEntreCuadrados   = 18;
+    int margenLineaCuadrados    = 10;
+    int alturaPrimeraLinea      = 75;
+    int alturaSegundaLinea      = 145;
+    int16_t colorCuadrados      = 0x2925;
+    int16_t colorDestacado      = greyColor;
+
+    for (int i = 0; i < 5; i++) {
+        if (i == menu - 1) {
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)) - 1,
+                alturaPrimeraLinea - 1,
+                ladoCuadrado + 2,
+                ladoCuadrado + 2,
+                curvaCuadrado,
+                TFT_WHITE
+            );
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+                alturaPrimeraLinea,
+                ladoCuadrado,
+                ladoCuadrado,
+                curvaCuadrado,
+                TFT_BLACK
+            );
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
+                alturaPrimeraLinea,                                                     // y-coordinate
+                ladoCuadrado,                                                           // width
+                ladoCuadrado,                                                           // height
+                curvaCuadrado,                                                          // corner radius
+                colorDestacado                                                          // color
+            );
+        } else {
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
+                alturaPrimeraLinea,                                                     // y-coordinate
+                ladoCuadrado,                                                           // width
+                ladoCuadrado,                                                           // height
+                curvaCuadrado,                                                          // corner radius
+                colorCuadrados                                                          // color
+            );
+        }
+        sprite.fillRoundRect(
+            margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
+            alturaSegundaLinea,                                                     // y-coordinate
+            ladoCuadrado,                                                           // width
+            ladoCuadrado,                                                           // height
+            curvaCuadrado,                                                          // corner radius
+            colorCuadrados                                                          // color
+        );
     }
-
-    //drawButton(125, 210, 80, 28, "Menu", 0);
-
-    drawButton(30,  210, 80, 28, "Send", 1);
-    drawButton(125, 210, 80, 28, "Menu", 0);
-    drawButton(210, 210, 95, 28, "Cancel", 2);
 }
+
+void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
+    
+    if (menuDisplay > 0 && menuDisplay < 6) {
+        draw_T_DECK_MenuButtons(menuDisplay);
+    } else {
+        sprite.setTextSize(normalSizeFont);
+        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+        const String* const lines[] = {&line1, &line2, &line3, &line4, &line5, &line6};
+        for (int i = 0; i < 6; i++) {
+            sprite.drawString(*lines[i], 60, 70 + (i * 20));
+        }
+
+        //drawButton(125, 210, 80, 28, "Menu", 0);
+
+        drawButton(30,  210, 80, 28, "Send", 1);
+        drawButton(125, 210, 80, 28, "Menu", 0);
+        drawButton(210, 210, 95, 28, "Cancel", 2);
+    }
+}
+
+
 #endif
     
     //sprite.fillRect(0, 38, 320, 2, TFT_DARKGREY);
