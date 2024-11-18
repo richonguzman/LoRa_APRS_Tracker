@@ -172,6 +172,8 @@
     #define JOYSTICK_LEFT       1   // G S4
     #define JOYSTICK_RIGHT      2   // G S2
 
+    #define HAS_TOUCHSCREEN
+
     #define HAS_I2S
     #define DAC_I2S_WS          5
     #define DAC_I2S_DOUT        6

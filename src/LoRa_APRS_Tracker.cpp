@@ -46,7 +46,9 @@ ____________________________________________________________________*/
 #include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
-
+#ifdef HAS_TOUCHSCREEN
+#include "touch_utils.h"
+#endif
 
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
@@ -55,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2024.11.16";
+String      versionDate             = "2024.11.18";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -114,6 +116,10 @@ void setup() {
     POWER_Utils::setup();
     displaySetup();
     POWER_Utils::externalPinSetup();
+
+    #ifdef HAS_TOUCHSCREEN
+        TOUCH_Utils::setup();
+    #endif
 
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
@@ -183,6 +189,10 @@ void loop() {
     #ifdef HAS_JOYSTICK
         JOYSTICK_Utils::loop();
     #endif
+    #ifdef HAS_TOUCHSCREEN
+        TOUCH_Utils::loop();
+    #endif
+
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 

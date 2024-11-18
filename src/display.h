@@ -1,6 +1,8 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
+#include <Arduino.h>
+
 void displaySetup();
 void displayToggle(bool toggle);
 
