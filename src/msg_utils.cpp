@@ -180,8 +180,10 @@ namespace MSG_Utils {
         if (messageLed && ledOnDelta > 1 * 1000) {
             digitalWrite(Config.notification.ledMessagePin, LOW);
         }
-        if (!messageLed && digitalRead(Config.notification.ledMessagePin) == HIGH) {
-            digitalWrite(Config.notification.ledMessagePin, LOW);
+        if (!messageLed && Config.notification.ledMessage){
+            if (digitalRead(Config.notification.ledMessagePin) == HIGH){
+                digitalWrite(Config.notification.ledMessagePin, LOW);
+            }
         }
     }
 
