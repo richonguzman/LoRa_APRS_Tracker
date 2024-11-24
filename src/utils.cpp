@@ -19,7 +19,7 @@ extern bool                 flashlight;
 
 extern bool                 statusState;
 
-uint32_t    statusTime              = millis();
+uint32_t    statusTime      = millis();
 
 namespace Utils {
   
