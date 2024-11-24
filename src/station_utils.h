@@ -6,11 +6,12 @@
 namespace STATION_Utils {
 
     void    nearTrackerInit();
-    const String getNearTracker(uint8_t position);
+    const   String getNearTracker(uint8_t position);
 
     void    deleteListenedTrackersbyTime();
     void    checkListenedTrackersByTimeAndDelete();
     void    orderListenedTrackersByDistance(const String& callsign, float distance, float course);
+    
     void    checkStandingUpdateTime();
     void    sendBeacon(uint8_t type);
     void    checkTelemetryTx();
