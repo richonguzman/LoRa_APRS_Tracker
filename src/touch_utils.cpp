@@ -7,8 +7,10 @@
     #define TOUCH_MODULES_GT911
     #include "TouchLib.h"
 
+    // CA3EAP, 20241129: Some T-Decks displays work on 0X14 I2C address, some on 0X5D. Test activating one of the following lines based on your device operation:
 
-    TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);       //GT911_SLAVE_ADDRESS2    0X14
+    //TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);       //GT911_SLAVE_ADDRESS2    0X14
+    TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);       //GT911_SLAVE_ADDRESS1    0X5D
 
     void (*lastCalledAction)() = nullptr;       // keep track of last calledAction from Touch
 
@@ -65,11 +67,12 @@
 
         void loop() {
             if (touch.read() && (millis() - lastTouchTime > touchDebounce)) {
+                Serial.println("Toque!");
                 TP_Point touchPoint = touch.getPoint(0);
                 uint16_t xValueTouched = map(touchPoint.y, xCalibratedMin, xCalibratedMax, 0, xValueMax);   // x and y values are inverted because
                 uint16_t yValueTouched = map(touchPoint.x, yCalibratedMin, yCalibratedMax, 0, yValueMax);   // TFT screen is rotated!!!!
                 lastTouchTime = millis();
-                //Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
+                Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
                 checkLiveButtons(xValueTouched, yValueTouched);
             }
             if (millis() - lastTouchTime > 1500) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
