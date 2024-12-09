@@ -24,10 +24,10 @@
     #define GPS_RX              12
     #define GPS_TX              34
 
-    // OTHER    
+    // OTHER
     #define BUTTON_PIN          38 // The middle button GPIO on the T-Beam
 
     #define HAS_AXP2101
-	#define HAS_BT_CLASSIC  
+    #define HAS_BT_CLASSIC
 
 #endif

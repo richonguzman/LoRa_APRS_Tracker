@@ -2,6 +2,7 @@
 #define POWER_UTILS_H_
 
 #include <Arduino.h>
+#include "board_pinout.h"
 #if defined(HAS_AXP2101) || defined(HAS_AXP192)
     #include "XPowersLib.h"
 #else

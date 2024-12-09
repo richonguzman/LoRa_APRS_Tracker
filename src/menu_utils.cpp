@@ -6,6 +6,7 @@
 #include "configuration.h"
 #include "APRSPacketLib.h"
 #include "battery_utils.h"
+#include "board_pinout.h"
 #include "power_utils.h"
 #include "menu_utils.h"
 #include "msg_utils.h"

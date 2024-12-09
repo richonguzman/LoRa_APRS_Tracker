@@ -1,3 +1,4 @@
+#include "board_pinout.h"
 #include "sleep_utils.h"
 #include "power_utils.h"
 
