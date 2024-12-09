@@ -3,7 +3,7 @@
 #include "custom_characters.h"
 #include "custom_colors.h"
 #include "configuration.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "display.h"
 #include "TimeLib.h"
 
@@ -81,6 +81,8 @@ bool        symbolAvailable         = true;
 
 extern logging::Logger logger;
 
+
+#if defined(HAS_TFT) && (defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS))
 void drawButton(int xPos, int yPos, int wide, int height, String buttonText, int color) {
     uint16_t baseColor, lightColor, darkColor;
     switch (color) {
@@ -124,7 +126,6 @@ void drawButton(int xPos, int yPos, int wide, int height, String buttonText, int
     sprite.drawString(buttonText, textX, textY);
 }
 
-#if defined(HAS_TFT) && (defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS))
 void draw_T_DECK_Top(const String& header, const String& datetime, const String& location) {  
     sprite.fillSprite(TFT_BLACK); 
     sprite.fillRect(0, 0, 320, 38, redColor);

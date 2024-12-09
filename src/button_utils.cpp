@@ -1,6 +1,6 @@
 #include <OneButton.h>
 #include "keyboard_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
 #include "display.h"

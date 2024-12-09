@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "battery_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "power_utils.h"
 #include "display.h"
 

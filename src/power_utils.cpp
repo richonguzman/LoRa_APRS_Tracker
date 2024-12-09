@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "ble_utils.h"

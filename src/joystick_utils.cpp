@@ -1,6 +1,6 @@
 #include "joystick_utils.h"
 #include "keyboard_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "button_utils.h"
 
 extern  int                     menuDisplay;

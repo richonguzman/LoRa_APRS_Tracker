@@ -32,7 +32,7 @@ ____________________________________________________________________*/
 #include "configuration.h"
 #include "battery_utils.h"
 #include "station_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"

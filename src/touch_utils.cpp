@@ -1,4 +1,4 @@
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "button_utils.h"
 #include "touch_utils.h"
 
