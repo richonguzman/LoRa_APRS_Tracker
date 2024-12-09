@@ -5,7 +5,7 @@
 #ifdef HAS_TOUCHSCREEN
 
     #define TOUCH_MODULES_GT911
-    #include "TouchLib.h"
+    #include <TouchLib.h>
 
 
     TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);       //GT911_SLAVE_ADDRESS2    0X14

@@ -29,5 +29,5 @@
     #define ADC_CTRL            21
 
     #define HAS_BT_CLASSIC
-    
+
 #endif

@@ -26,11 +26,10 @@
     #define GPS_RX              8
     #define GPS_TX              9
 
-    // OTHER    
-    #define BATTERY_PIN         1
+    // OTHER
     #define BUTTON_PIN          0
 
     #define HAS_AXP2101
     #define BOARD_HAS_PSRAM
-    
+
 #endif

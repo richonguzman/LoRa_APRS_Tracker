@@ -30,6 +30,6 @@
     #define BUTTON_PIN          38 // The middle button GPIO on the T-Beam
 
     #define HAS_AXP2101
-	#define HAS_BT_CLASSIC
+    #define HAS_BT_CLASSIC
 
 #endif

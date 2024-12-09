@@ -33,10 +33,5 @@
     
     #define BOARD_I2C_SDA       41
     #define BOARD_I2C_SCL       42
-    
+
 #endif
-
-
-    
-    
-    

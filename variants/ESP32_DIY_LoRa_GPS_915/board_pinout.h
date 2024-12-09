@@ -27,5 +27,5 @@
     #define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 
     #define HAS_BT_CLASSIC
-    
+
 #endif

@@ -32,5 +32,5 @@
     #define BUTTON_PIN          15
 
     #define HAS_BT_CLASSIC
-    
+
 #endif

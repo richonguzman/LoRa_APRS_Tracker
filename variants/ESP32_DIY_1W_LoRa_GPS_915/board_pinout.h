@@ -27,10 +27,10 @@
     #define GPS_RX              17
     #define GPS_TX              16
 
-    // OTHER    
+    // OTHER
     #define BATTERY_PIN         35
     #define BUTTON_PIN          15
 
     #define HAS_BT_CLASSIC
-    
+
 #endif

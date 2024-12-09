@@ -23,7 +23,7 @@
     #define GPS_TX              44
     #define GPS_BAUDRATE        38400
 
-    // OTHER    
+    // OTHER
     #define BATTERY_PIN         4
 
     #define BOARD_POWERON       10
@@ -50,5 +50,5 @@
     #define SPK_I2S_PORT        I2S_NUM_0
     #define MIC_I2S_SAMPLE_RATE 16000
     #define MIC_I2S_PORT        I2S_NUM_1
-    
+
 #endif

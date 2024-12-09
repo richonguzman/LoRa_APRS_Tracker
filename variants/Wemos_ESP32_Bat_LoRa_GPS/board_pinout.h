@@ -29,5 +29,5 @@
     #define BATTERY_PIN         35
 
     #define HAS_BT_CLASSIC
-    
+
 #endif

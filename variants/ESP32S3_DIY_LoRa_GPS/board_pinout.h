@@ -21,9 +21,9 @@
 
     //  GPS
     #define GPS_RX              12
-        #define GPS_TX              34
+    #define GPS_TX              34
 
     // OTHER    
     #define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
-    
+
 #endif
