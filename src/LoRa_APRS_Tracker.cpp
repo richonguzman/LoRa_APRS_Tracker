@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2024.12.09";
+String      versionDate             = "2024.12.10";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -117,10 +117,6 @@ void setup() {
     displaySetup();
     POWER_Utils::externalPinSetup();
 
-    #ifdef HAS_TOUCHSCREEN
-        TOUCH_Utils::setup();
-    #endif
-
     STATION_Utils::loadIndex(0);
     STATION_Utils::loadIndex(1);
     STATION_Utils::nearTrackerInit();
@@ -132,6 +128,7 @@ void setup() {
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
+    Utils::i2cScannerForPeripherals();
     WX_Utils::setup();
     
     ackRequestNumber = random(1,999);
@@ -155,6 +152,9 @@ void setup() {
             JOYSTICK_Utils::setup();
         #endif
         KEYBOARD_Utils::setup();
+        #ifdef HAS_TOUCHSCREEN
+            TOUCH_Utils::setup();
+        #endif
     }
 
     POWER_Utils::lowerCpuFrequency();
@@ -258,3 +258,5 @@ void loop() {
         }
     }
 }
+
+// eliminar keyboardConnected y reemplazar por validar si es distinto de 0x00 ?

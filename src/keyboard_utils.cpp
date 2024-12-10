@@ -11,12 +11,7 @@
 #include "sleep_utils.h"
 #include "msg_utils.h"
 #include "display.h"
-
-#if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-    #define KB_ADDR     0x55    // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
-#else
-    #define KB_ADDR     0x5F    // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
-#endif
+#include "utils.h"
 
 
 extern Configuration    Config;
@@ -53,6 +48,7 @@ extern String           winlinkAliasComplete;
 extern bool             winlinkCommentState;
 extern bool             gpsIsActive;
 extern bool             sendStartTelemetry;
+extern uint8_t          keyboardAddress;
 
 extern std::vector<String>  outputMessagesBuffer;
 
@@ -715,8 +711,8 @@ namespace KEYBOARD_Utils {
         if (keyboardConnected) {
             uint32_t lastKey = millis() - keyboardTime;
             if (lastKey > 30 * 1000) keyDetected = false;
-            Wire.requestFrom(KB_ADDR, 1);
-            while(Wire.available()) {
+            Wire.requestFrom(keyboardAddress, static_cast<uint8_t>(1));
+            while (Wire.available()) {
                 char c = Wire.read();
                 if (c != 0) {
                     //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
@@ -728,13 +724,7 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
-        Wire.beginTransmission(KB_ADDR);
-        if (Wire.endTransmission() == 0) {
-            keyboardConnected = true;
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Keyboard Connected to I2C");
-        } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "No Keyboard Connected to I2C");
-        }
+        if (keyboardAddress != 0x00) keyboardConnected = true;
     }
 
 }

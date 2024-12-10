@@ -10,7 +10,6 @@
  
 namespace WX_Utils {
 
-    void  getWxModuleAddres();
     void  setup();
     const String generateTempString(const float sensorTemp, const uint8_t type);
     const String generateHumString(const float sensorHum, const uint8_t type);

@@ -52,6 +52,14 @@ extern bool                 gpsIsActive;
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
 
+#if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
+    String topHeader1   = "";
+    String topHeader1_1 = "";
+    String topHeader1_2 = "";
+    String topHeader1_3 = "";
+    String topHeader2   = "";
+#endif
+
 namespace MENU_Utils {
 
     const String checkBTType() {
@@ -96,6 +104,32 @@ namespace MENU_Utils {
         } else {
             lastLine = "1P=Down 2P=Back LP=Go";
         }
+
+        #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
+            topHeader1      = currentBeacon->callsign;
+            const auto time_now = now();
+            topHeader1_1    = Utils::createDateString(time_now);
+            topHeader1_2    = Utils::createTimeString(time_now);
+            topHeader1_3    = "";
+            topHeader2      = String(gps.location.lat(), 4);
+            topHeader2      += " ";
+            topHeader2      += String(gps.location.lng(), 4);
+
+            for(int i = topHeader2.length(); i < 19; i++) {
+                topHeader2 += " ";
+            }
+            if (gps.satellites.value() <= 9) topHeader2 += " ";
+            topHeader2 += "SAT:";
+            topHeader2 += String(gps.satellites.value());
+            if (gps.hdop.hdop() > 5) {
+                topHeader2 += "X";
+            } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
+                topHeader2 += "-";
+            } else if (gps.hdop.hdop() <= 2) {
+                topHeader2 += "+";
+            }
+        #endif
+
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1. Messages
                 displayShow("__MENU____","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);

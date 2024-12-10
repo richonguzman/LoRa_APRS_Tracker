@@ -13,6 +13,7 @@ namespace Utils {
     void    checkDisplayEcoMode();
     String  getSmartBeaconState();
     void    checkFlashlight();
+    void    i2cScannerForPeripherals();
 
 }
 

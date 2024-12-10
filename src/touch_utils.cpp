@@ -7,8 +7,9 @@
     #define TOUCH_MODULES_GT911
     #include <TouchLib.h>
 
+    extern uint8_t touchModuleAddress;
 
-    TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);       //GT911_SLAVE_ADDRESS2    0X14
+    TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
 
     void (*lastCalledAction)() = nullptr;       // keep track of last calledAction from Touch
 
@@ -22,11 +23,13 @@
     int16_t     xValueMax       = 320;
     int16_t     yValueMax       = 240;
 
-    int         touchDebounce   = 500;
+    int         touchDebounce   = 300;
     uint32_t    lastTouchTime   = 0;
 
     int16_t     xlastValue      = 0;
     int16_t     ylastValue      = 0;
+
+    extern int menuDisplay;
 
 
     namespace TOUCH_Utils {
@@ -35,17 +38,20 @@
 
         void enterMenuFromTouch() { BUTTON_Utils::doublePress();}
 
-        void cancelFromTouch() { Serial.println("CANCEL BUTTON PRESSED");}
+        void exitFromTouch() {
+            menuDisplay = 0;
+            //Serial.println("CANCEL BUTTON PRESSED");
+        }
 
         TouchButton touchButtons_0[] = {
-            {30,  110,   0,  28, "Send",   1, sendBeaconFromTouch},             // Button Send         //drawButton(30,  210, 80, 28, "Send", 1);
-            {125, 205,   0,  28, "Menu",   0, enterMenuFromTouch},              // Button Menu         //drawButton(125, 210, 80, 28, "Menu", 0);
-            {210, 305,   0,  28, "Cancel", 2, cancelFromTouch}                  // Button Cancel       //drawButton(210, 210, 95, 28, "Cancel", 2);
+            {30,  110,   0,  28, "Send",    1, sendBeaconFromTouch},    // Button Send  //drawButton(30,  210, 80, 28, "Send", 1);
+            {125, 205,   0,  28, "Menu",    0, enterMenuFromTouch},     // Button Menu  //drawButton(125, 210, 80, 28, "Menu", 0);
+            {210, 305,   0,  28, "Exit",    2, exitFromTouch}           // Button Exit  //drawButton(210, 210, 95, 28, "Exit", 2);
         };
         
 
         bool touchButtonPressed(int touchX, int touchY, int Xmin, int Xmax, int Ymin, int Ymax) {
-            return (touchX >= Xmin && touchX <= Xmax && touchY >= Ymin && touchY <= Ymax);
+            return (touchX >= (Xmin - 5) && touchX <= (Xmax + 5) && touchY >= (Ymin - 5) && touchY <= (Ymax + 5));
         }
         
         void checkLiveButtons(uint16_t x, uint16_t y) {
@@ -53,7 +59,7 @@
                 if (touchButtonPressed(x, y, touchButtons_0[i].Xmin, touchButtons_0[i].Xmax, touchButtons_0[i].Ymin, touchButtons_0[i].Ymax)) {
 
                     if (touchButtons_0[i].action != nullptr && touchButtons_0[i].action != lastCalledAction) {                      // Call the action function associated with the button
-                        Serial.println(touchButtons_0[i].label + "  pressed");
+                        Serial.println(touchButtons_0[i].label + " pressed");
                         touchButtons_0[i].action();                     // Call the function pointer
                         lastCalledAction = touchButtons_0[i].action;    // Update the last called action
                     } else {
@@ -72,12 +78,22 @@
                 //Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
                 checkLiveButtons(xValueTouched, yValueTouched);
             }
-            if (millis() - lastTouchTime > 1500) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
+            if (millis() - lastTouchTime > 1000) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
         }
 
         void setup() {
-            touch.init();
-        }
+            if (touchModuleAddress != 0x00) {
+                if (touchModuleAddress == 0x14) {
+                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+                    touch.init();
+                } else if (touchModuleAddress == 0x5d) {
+                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+                    touch.init();
+                } else {
+                    Serial.println("No Touch Module Address found");
+                }
+            }
+        }  
 
     }
 

@@ -14,11 +14,13 @@ extern Configuration    Config;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 
+extern uint8_t          wxModuleAddress;
+
 float newHum, newTemp, newPress, newGas;
 
 uint32_t    sensorLastReading   = -60000;
 int         wxModuleType        = 0;
-uint8_t     wxModuleAddress     = 0x00;
+
 bool        wxModuleFound       = false;
 
 
@@ -37,36 +39,15 @@ Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 
 namespace WX_Utils {    
 
-    void getWxModuleAddres() {
-        uint8_t err, addr;
-        for(addr = 1; addr < 0x7F; addr++) {
-            #ifdef HELTEC_V3_GPS
-                Wire1.beginTransmission(addr);
-                err = Wire1.endTransmission();
-            #else
-                Wire.beginTransmission(addr);
-                err = Wire.endTransmission();
-            #endif
-            if (err == 0) {
-                //Serial.println(addr); this shows any connected board to I2C
-                if (addr == 0x76 || addr == 0x77) {
-                    wxModuleAddress = addr;
-                    return;
-                }
-            }
-        }
-    }
-
     void setup() {
         if (Config.wxsensor.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
-                if (! shtc3.begin()) {
+                if (!shtc3.begin()) {
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
                     while (1) delay(1);
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
             #else
-                getWxModuleAddres();
                 if (wxModuleAddress != 0x00) {
                     #ifdef HELTEC_V3_GPS
                         if (bme280.begin(wxModuleAddress, &Wire1)) {

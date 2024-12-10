@@ -33,6 +33,12 @@
         #define normalSizeFont  2
         #define smallSizeFont   1
         #define lineSpacing     22
+
+        extern String topHeader1;
+        extern String topHeader1_1;
+        extern String topHeader1_2;
+        extern String topHeader1_3;
+        extern String topHeader2;
     #endif
 #else
     #include <Adafruit_GFX.h>
@@ -83,153 +89,152 @@ extern logging::Logger logger;
 
 
 #if defined(HAS_TFT) && (defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS))
-void drawButton(int xPos, int yPos, int wide, int height, String buttonText, int color) {
-    uint16_t baseColor, lightColor, darkColor;
-    switch (color) {
-        case 0:     // Grey Theme
-            baseColor   = greyColor;
-            lightColor  = greyColorLight;
-            darkColor   = greyColorDark;
-            break;
-        case 1:     // Green Theme
-            baseColor   = greenColor;
-            lightColor  = greenColorLight;
-            darkColor   = greenColorDark;
-            break;
-        case 2:     // Red Theme
-            baseColor   = redColor;
-            lightColor  = redColorLight;
-            darkColor   = redColorDark;
-            break;
-        default:    // Fallback color
-            baseColor   = 0x0000;   // Black
-            lightColor  = 0xFFFF;   // White
-            darkColor   = 0x0000;   // Black
-            break;
+    void drawButton(int xPos, int yPos, int wide, int height, String buttonText, int color) {
+        uint16_t baseColor, lightColor, darkColor;
+        switch (color) {
+            case 0:     // Grey Theme
+                baseColor   = greyColor;
+                lightColor  = greyColorLight;
+                darkColor   = greyColorDark;
+                break;
+            case 1:     // Green Theme
+                baseColor   = greenColor;
+                lightColor  = greenColorLight;
+                darkColor   = greenColorDark;
+                break;
+            case 2:     // Red Theme
+                baseColor   = redColor;
+                lightColor  = redColorLight;
+                darkColor   = redColorDark;
+                break;
+            default:    // Fallback color
+                baseColor   = 0x0000;   // Black
+                lightColor  = 0xFFFF;   // White
+                darkColor   = 0x0000;   // Black
+                break;
+        }
+
+        sprite.fillRect(xPos, yPos, wide, height, baseColor);           // Dibuja el fondo del botón
+        sprite.fillRect(xPos, yPos + height - 2, wide, 2, darkColor);   // Línea inferior
+        sprite.fillRect(xPos, yPos, wide, 2, lightColor);               // Línea superior
+        sprite.fillRect(xPos, yPos, 2, height, lightColor);             // Línea izquierda
+        sprite.fillRect(xPos + wide - 2, yPos, 2, height, darkColor);   // Línea derecha
+        
+        sprite.setTextSize(2);
+        sprite.setTextColor(TFT_WHITE, baseColor);
+
+        // Calcula la posición del texto para que esté centrado
+        int textWidth = sprite.textWidth(buttonText);           // Ancho del texto
+        int textHeight = 16;                                    // Altura aproximada (depende de `setTextSize`)
+        int textX = xPos + (wide - textWidth) / 2;              // Centrado horizontal
+        int textY = yPos + (height - textHeight) / 2;           // Centrado vertical
+
+        sprite.drawString(buttonText, textX, textY);
     }
 
-    sprite.fillRect(xPos, yPos, wide, height, baseColor);           // Dibuja el fondo del botón
-    sprite.fillRect(xPos, yPos + height - 2, wide, 2, darkColor);   // Línea inferior
-    sprite.fillRect(xPos, yPos, wide, 2, lightColor);               // Línea superior
-    sprite.fillRect(xPos, yPos, 2, height, lightColor);             // Línea izquierda
-    sprite.fillRect(xPos + wide - 2, yPos, 2, height, darkColor);   // Línea derecha
-    
-    sprite.setTextSize(2);
-    sprite.setTextColor(TFT_WHITE, baseColor);
+    void draw_T_DECK_Top() {//const String& header, const String& datetime, const String& location) {  
+        sprite.fillSprite(TFT_BLACK); 
+        sprite.fillRect(0, 0, 320, 38, redColor);
+        sprite.setTextFont(0);
+        sprite.setTextSize(bigSizeFont);
+        sprite.setTextColor(TFT_WHITE, redColor);
+        sprite.drawString(topHeader1, 3, 5);
+        
+        sprite.setTextSize(smallSizeFont);
+        sprite.setTextColor(TFT_WHITE, redColor);
+        //String date = datetime.substring(0, datetime.indexOf("   "));
+        sprite.drawString(topHeader1_1, 258, 5);
+        //String time = datetime.substring(datetime.indexOf("   ") + 3);
+        sprite.drawString("UTC:" + topHeader1_2, 246, 15);
 
-    // Calcula la posición del texto para que esté centrado
-    int textWidth = sprite.textWidth(buttonText);           // Ancho del texto
-    int textHeight = 16;                                    // Altura aproximada (depende de `setTextSize`)
-    int textX = xPos + (wide - textWidth) / 2;              // Centrado horizontal
-    int textY = yPos + (height - textHeight) / 2;           // Centrado vertical
+        sprite.fillRect(0, 38, 320, 2, redColorDark);//TFT_ORANGE);
 
-    sprite.drawString(buttonText, textX, textY);
-}
-
-void draw_T_DECK_Top(const String& header, const String& datetime, const String& location) {  
-    sprite.fillSprite(TFT_BLACK); 
-    sprite.fillRect(0, 0, 320, 38, redColor);
-    sprite.setTextFont(0);
-    sprite.setTextSize(bigSizeFont);
-    sprite.setTextColor(TFT_WHITE, redColor);
-    sprite.drawString(currentBeacon->callsign, 3, 5);
-    
-    sprite.setTextSize(smallSizeFont);
-    sprite.setTextColor(TFT_WHITE, redColor);
-    String date = datetime.substring(0, datetime.indexOf("   "));
-    sprite.drawString(date, 258, 5);
-    String time = datetime.substring(datetime.indexOf("   ") + 3);
-    sprite.drawString("UTC:" + time, 246, 15);
-
-    sprite.fillRect(0, 38, 320, 2, redColorDark);//TFT_ORANGE);
-
-    sprite.fillRect(0, 40, 320, 2, greyColorLight);
-    sprite.fillRect(0, 42, 320, 20, greyColor);
-    sprite.setTextSize(2);
-    sprite.setTextColor(TFT_WHITE, greyColor);
-    sprite.drawString(location, 8, 44);
-    sprite.fillRect(0, 60, 320, 2, greyColorDark);
-}
+        sprite.fillRect(0, 40, 320, 2, greyColorLight);
+        sprite.fillRect(0, 42, 320, 20, greyColor);
+        sprite.setTextSize(2);
+        sprite.setTextColor(TFT_WHITE, greyColor);
+        sprite.drawString(topHeader2, 8, 44);
+        sprite.fillRect(0, 60, 320, 2, greyColorDark);
+    }
 
 
-void draw_T_DECK_MenuButtons(int menu) {
-    int ladoCuadrado            = 45;
-    int curvaCuadrado           = 8;
-    int espacioEntreCuadrados   = 18;
-    int margenLineaCuadrados    = 10;
-    int alturaPrimeraLinea      = 75;
-    int alturaSegundaLinea      = 145;
-    int16_t colorCuadrados      = 0x2925;
-    int16_t colorDestacado      = greyColor;
+    void draw_T_DECK_MenuButtons(int menu) {
+        int ladoCuadrado            = 45;
+        int curvaCuadrado           = 8;
+        int espacioEntreCuadrados   = 18;
+        int margenLineaCuadrados    = 10;
+        int alturaPrimeraLinea      = 75;
+        int alturaSegundaLinea      = 145;
+        int16_t colorCuadrados      = 0x2925;
+        int16_t colorDestacado      = greyColor;
 
-    for (int i = 0; i < 5; i++) {
-        if (i == menu - 1) {
-            sprite.fillRoundRect(
-                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)) - 1,
-                alturaPrimeraLinea - 1,
-                ladoCuadrado + 2,
-                ladoCuadrado + 2,
-                curvaCuadrado,
-                TFT_WHITE
-            );
-            sprite.fillRoundRect(
-                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
-                alturaPrimeraLinea,
-                ladoCuadrado,
-                ladoCuadrado,
-                curvaCuadrado,
-                TFT_BLACK
-            );
-            sprite.fillRoundRect(
-                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-                alturaPrimeraLinea,                                                     // y-coordinate
-                ladoCuadrado,                                                           // width
-                ladoCuadrado,                                                           // height
-                curvaCuadrado,                                                          // corner radius
-                colorDestacado                                                          // color
-            );
-        } else {
+        for (int i = 0; i < 5; i++) {
+            if (i == menu - 1) {
+                sprite.fillRoundRect(
+                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)) - 1,
+                    alturaPrimeraLinea - 1,
+                    ladoCuadrado + 2,
+                    ladoCuadrado + 2,
+                    curvaCuadrado,
+                    TFT_WHITE
+                );
+                sprite.fillRoundRect(
+                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+                    alturaPrimeraLinea,
+                    ladoCuadrado,
+                    ladoCuadrado,
+                    curvaCuadrado,
+                    TFT_BLACK
+                );
+                sprite.fillRoundRect(
+                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
+                    alturaPrimeraLinea,                                                     // y-coordinate
+                    ladoCuadrado,                                                           // width
+                    ladoCuadrado,                                                           // height
+                    curvaCuadrado,                                                          // corner radius
+                    colorDestacado                                                          // color
+                );
+            } else {
+                sprite.fillRoundRect(
+                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
+                    alturaPrimeraLinea,                                                     // y-coordinate
+                    ladoCuadrado,                                                           // width
+                    ladoCuadrado,                                                           // height
+                    curvaCuadrado,                                                          // corner radius
+                    colorCuadrados                                                          // color
+                );
+            }
             sprite.fillRoundRect(
                 margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-                alturaPrimeraLinea,                                                     // y-coordinate
+                alturaSegundaLinea,                                                     // y-coordinate
                 ladoCuadrado,                                                           // width
                 ladoCuadrado,                                                           // height
                 curvaCuadrado,                                                          // corner radius
                 colorCuadrados                                                          // color
             );
         }
-        sprite.fillRoundRect(
-            margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-            alturaSegundaLinea,                                                     // y-coordinate
-            ladoCuadrado,                                                           // width
-            ladoCuadrado,                                                           // height
-            curvaCuadrado,                                                          // corner radius
-            colorCuadrados                                                          // color
-        );
     }
-}
 
-void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
-    
-    if (menuDisplay > 0 && menuDisplay < 6) {
-        draw_T_DECK_MenuButtons(menuDisplay);
-    } else {
+    void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
+        
+        /*if (menuDisplay > 0 && menuDisplay < 6) {
+            draw_T_DECK_MenuButtons(menuDisplay);
+        } else {*/
         sprite.setTextSize(normalSizeFont);
         sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
         const String* const lines[] = {&line1, &line2, &line3, &line4, &line5, &line6};
         for (int i = 0; i < 6; i++) {
-            sprite.drawString(*lines[i], 60, 70 + (i * 20));
+            sprite.drawString(*lines[i], 35, 70 + (i * 20));
         }
 
         //drawButton(125, 210, 80, 28, "Menu", 0);
 
         drawButton(30,  210, 80, 28, "Send", 1);
         drawButton(125, 210, 80, 28, "Menu", 0);
-        drawButton(210, 210, 95, 28, "Cancel", 2);
+        drawButton(220, 210, 80, 28, "Exit", 2);
+        //}
     }
-}
-
 
 #endif
     
@@ -394,7 +399,7 @@ void displayToggle(bool toggle) {
 void displayShow(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
-            draw_T_DECK_Top(header, line1, line2);
+            draw_T_DECK_Top();//header, line1, line2);
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
             sprite.fillSprite(TFT_BLACK); 
@@ -462,7 +467,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_PLUS)
-            draw_T_DECK_Top(header, line1, line2);
+            draw_T_DECK_Top();//header, line1, line2);
             draw_T_DECK_Body(header, line1, line2, line3, line4, line5);
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
