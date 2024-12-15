@@ -626,18 +626,20 @@ namespace APRSPacketLib {
             }
             int encodedBytePosition = temp0.indexOf(gpsChar) + 14;
             aprsPacket.message = temp0.substring(temp0.indexOf(gpsChar) + 2);
-            if (String(temp0[encodedBytePosition]) == "G" || String(temp0[encodedBytePosition]) == "Q" || String(temp0[encodedBytePosition]) == "[" || String(temp0[encodedBytePosition]) == "H") {
-                aprsPacket.latitude     = decodeEncodedLatitude(temp0.substring(temp0.indexOf(gpsChar) + 3, temp0.indexOf(gpsChar) + 7));
-                aprsPacket.longitude    = decodeEncodedLongitude(temp0.substring(temp0.indexOf(gpsChar) + 7, temp0.indexOf(gpsChar) + 11));
-                aprsPacket.symbol       = temp0.substring(temp0.indexOf(gpsChar) + 11, temp0.indexOf(gpsChar) + 12);
-                aprsPacket.overlay      = temp0.substring(temp0.indexOf(gpsChar) + 2, temp0.indexOf(gpsChar) + 3);
+            char currentChar = temp0[encodedBytePosition];
+            if (currentChar == 'G' || currentChar == 'Q' || currentChar == '[' || currentChar == 'H' || currentChar == 'X') {
+                aprsPacket.latitude  = decodeEncodedLatitude(temp0.substring(temp0.indexOf(gpsChar) + 3, temp0.indexOf(gpsChar) + 7));
+                aprsPacket.longitude = decodeEncodedLongitude(temp0.substring(temp0.indexOf(gpsChar) + 7, temp0.indexOf(gpsChar) + 11));
+                aprsPacket.symbol    = temp0.substring(temp0.indexOf(gpsChar) + 11, temp0.indexOf(gpsChar) + 12);
+                aprsPacket.overlay   = temp0.substring(temp0.indexOf(gpsChar) + 2, temp0.indexOf(gpsChar) + 3);
+
                 if (temp0.substring(temp0.indexOf(gpsChar) + 12, temp0.indexOf(gpsChar) + 13) == " ") {
                     aprsPacket.course   = 0;
                     aprsPacket.speed    = 0;
                     aprsPacket.altitude = 0;
                 } else {
-                    if (String(temp0[encodedBytePosition]) == "Q") { // altitude csT
-                        aprsPacket.altitude = decodeEncodedAltitude(temp0.substring(temp0.indexOf(gpsChar)+12, temp0.indexOf(gpsChar)+14));
+                    if (currentChar == 'Q') { // altitude csT
+                        aprsPacket.altitude = decodeEncodedAltitude(temp0.substring(temp0.indexOf(gpsChar) + 12, temp0.indexOf(gpsChar) + 14));
                         aprsPacket.course   = 0;
                         aprsPacket.speed    = 0;
                     } else { // normal csT

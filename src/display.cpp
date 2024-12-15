@@ -519,12 +519,14 @@ void displayShow(const String& header, const String& line1, const String& line2,
         #else
             display.setTextColor(SH110X_WHITE);
         #endif
+        display.drawLine(0, 16, 128, 16, WHITE);
+        display.drawLine(0, 17, 128, 17, WHITE);
         display.setTextSize(2);
         display.setCursor(0, 0);
         display.println(header);
         display.setTextSize(1);
         for (int i = 0; i < 5; i++) {
-            display.setCursor(0, 16 + (10 * i));
+            display.setCursor(0, 20 + (9 * i));
             display.println(*lines[i]);
         }
         #ifdef ssd1306
