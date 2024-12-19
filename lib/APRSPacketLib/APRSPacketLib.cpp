@@ -254,7 +254,7 @@ namespace APRSPacketLib {
         int degrees             = degreesLatitude.substring(0,2).toInt();
         int minute              = degreesLatitude.substring(2,4).toInt();
         int minuteHundredths    = degreesLatitude.substring(5,7).toInt();
-        float decimalLatitude   = degrees + (minute/60.0) + (minuteHundredths/10000.0);
+        float decimalLatitude   = degrees + (minute/60.0) + (minuteHundredths/6000.0);
         return (degreesLatitude[7] == 'N') ? decimalLatitude : -decimalLatitude;
     }
 
@@ -262,7 +262,7 @@ namespace APRSPacketLib {
         int degrees             = degreesLongitude.substring(0,3).toInt();
         int minute              = degreesLongitude.substring(3,5).toInt();
         int minuteHundredths    = degreesLongitude.substring(6,8).toInt();
-        float decimalLongitude  = degrees + (minute/60.0) + (minuteHundredths/10000.0);
+        float decimalLongitude  = degrees + (minute/60.0) + (minuteHundredths/6000.0);
         return (degreesLongitude[8] == 'W') ? -decimalLongitude : decimalLongitude;
     }
 
@@ -271,58 +271,34 @@ namespace APRSPacketLib {
         String northSouth = "S";
         for (int i = 0; i < 6; i++) {
             char currentChar = destinationField[i];
-            if (int(currentChar) > 57) {
+            if (currentChar > '9') {
                 gpsLat += char(int(currentChar) - 32);
             } else {
                 gpsLat += char(int(currentChar));
             }
             if (i == 3) {
                 gpsLat += ".";
-                if (int(currentChar) > 57) northSouth = "N";        // ???? para todos?
+                if (currentChar > '9') northSouth = "N";        // ???? para todos?
             }   
         }
         gpsLat += northSouth;
         return gpsDegreesToDecimalLatitude(gpsLat);
     }
 
-    /*float decodeMiceLatitude(const String& destinationField) {
-        String gpsLat;
-        String northSouth = "S";  // Default to South
-
-        for (int i = 0; i < 6; i++) {                           // Loop over the first 6 characters (latitude format: DDMM.MMMM)
-            char currentChar = destinationField[i];
-            if (currentChar >= '0' && currentChar <= '9') {     // If it's a digit, we can directly add it to gpsLat
-                gpsLat += currentChar;
-            } else if (currentChar > '9') {                     // If it's a letter (assuming it's a latitude degree symbol or some other format)
-                gpsLat += char(currentChar - 32);               // Adjust ASCII value for letter (assuming conversion logic here)
-            }
-            if (i == 3) {                                       // Insert decimal point after the first 3 characters (DDMM.MMMM format)
-                gpsLat += ".";
-            }
-            if (i == 5) {                                       // Set the hemisphere based on the 4th character
-                northSouth = (currentChar >= 'A' && currentChar <= 'Z') ? "N" : "S";
-            }
-        }
-
-        gpsLat += northSouth; // Add N or S at the end
-        return gpsDegreesToDecimalLatitude(gpsLat); // Convert to decimal latitude
-    }*/
-
-
     float decodeMiceLongitude(const String& destinationField, const String& informationField) {
         bool offset = false;
         String westEast = "E";
-        if (int(destinationField[4]) > 57) offset = true;
-        if (int(destinationField[5]) > 57) westEast = "W";
+        if (destinationField[4] > '9') offset = true;
+        if (destinationField[5] > '9') westEast = "W";
 
-        String longitudeString, temp;
+        String temp;
         int d28 = (int)informationField[0] - 28;
         if (offset) d28 += 100;
         temp = String(d28);
         for(int i = temp.length(); i < 3; i++) {
             temp = '0' + temp;
         }
-        longitudeString = temp;
+        String longitudeString = temp;
         
         int m28 = (int)informationField[1] - 28;
         if (m28 >= 60) m28 -= 60;
@@ -638,7 +614,7 @@ namespace APRSPacketLib {
             } else {
                 aprsPacket.payload  = temp0.substring(temp0.indexOf(":'") + 2);
             }
-            aprsPacket.miceType     = decodeMiceMsgType(aprsPacket.tocall.substring(0, 3));
+            aprsPacket.miceType     = decodeMiceMsgType(aprsPacket.tocall.substring(0,3));
             aprsPacket.symbol       = aprsPacket.payload.substring(6,7);
             aprsPacket.overlay      = aprsPacket.payload.substring(7,8);
             aprsPacket.latitude     = decodeMiceLatitude(aprsPacket.tocall);
