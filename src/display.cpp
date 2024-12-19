@@ -539,11 +539,13 @@ void displayShow(const String& header, const String& line1, const String& line2,
         display.clearDisplay();
         #ifdef ssd1306
             display.setTextColor(WHITE);
+            display.drawLine(0, 16, 128, 16, WHITE);
+            display.drawLine(0, 17, 128, 17, WHITE);
         #else
             display.setTextColor(SH110X_WHITE);
+            display.drawLine(0, 16, 128, 16, SH110X_WHITE);
+            display.drawLine(0, 17, 128, 17, SH110X_WHITE);
         #endif
-        display.drawLine(0, 16, 128, 16, WHITE);
-        display.drawLine(0, 17, 128, 17, WHITE);
         display.setTextSize(2);
         display.setCursor(0, 0);
         display.println(header);
