@@ -399,7 +399,30 @@ void displayToggle(bool toggle) {
 void displayShow(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
-            draw_T_DECK_Top();//header, line1, line2);
+            draw_T_DECK_Top();
+            String tftLine1, tftLine2, tftLine3, tftLine4;
+            if (line1.length() > 22 && line2.length() > 22) {
+                tftLine1 = line1.substring(0,22);
+                tftLine2 = line1.substring(22);
+                tftLine3 = line2.substring(0,22);
+                tftLine4 = line2.substring(22);
+            } else if (line1.length() > 22) {
+                tftLine1 = line1.substring(0,22);
+                tftLine2 = line1.substring(22);
+                tftLine3 = line2;
+                tftLine4 = "";
+            } else if (line2.length() > 22) {
+                tftLine1 = line1;
+                tftLine2 = line2.substring(0,22);
+                tftLine3 = line2.substring(22);
+                tftLine4 = "";
+            } else {
+                tftLine1 = line1;
+                tftLine2 = line2;
+                tftLine3 = "";
+                tftLine4 = "";
+            }
+            draw_T_DECK_Body(header, tftLine1, tftLine2, tftLine3, tftLine4, "");
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
             sprite.fillSprite(TFT_BLACK); 
