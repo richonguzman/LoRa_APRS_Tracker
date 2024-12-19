@@ -115,7 +115,7 @@ namespace MENU_Utils {
             topHeader2      += " ";
             topHeader2      += String(gps.location.lng(), 4);
 
-            for(int i = topHeader2.length(); i < 19; i++) {
+            for (int i = topHeader2.length(); i < 19; i++) {
                 topHeader2 += " ";
             }
             if (gps.satellites.value() <= 9) topHeader2 += " ";
@@ -326,13 +326,13 @@ namespace MENU_Utils {
             case 300:   //3.Stations ---> Packet Decoder
                 if (lastReceivedPacket.sender != currentBeacon->callsign) {
                     firstLineDecoder = lastReceivedPacket.sender;
-                    for(int i = firstLineDecoder.length(); i < 9; i++) {
+                    for (int i = firstLineDecoder.length(); i < 9; i++) {
                         firstLineDecoder += ' ';
                     }
                     firstLineDecoder += lastReceivedPacket.symbol;
                     if (lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4) {      // gps and Mic-E gps
                         courseSpeedAltitude = String(lastReceivedPacket.altitude);
-                        for(int j = courseSpeedAltitude.length(); j < 4; j++) {
+                        for (int j = courseSpeedAltitude.length(); j < 4; j++) {
                             courseSpeedAltitude = '0' + courseSpeedAltitude;
                         }
                         courseSpeedAltitude = "A=" + courseSpeedAltitude + "m ";
@@ -341,11 +341,11 @@ namespace MENU_Utils {
                             speedPacketDec = ' ' + speedPacketDec;
                         }
                         courseSpeedAltitude += speedPacketDec + "km/h ";
-                        for(int l = courseSpeedAltitude.length(); l < 17; l++) {
+                        for (int l = courseSpeedAltitude.length(); l < 17; l++) {
                             courseSpeedAltitude += ' ';
                         }
                         coursePacketDec = String(lastReceivedPacket.course);
-                        for(int m = coursePacketDec.length(); m < 3; m++) {
+                        for (int m = coursePacketDec.length(); m < 3; m++) {
                             coursePacketDec = ' ' + coursePacketDec;
                         }
                         courseSpeedAltitude += coursePacketDec;
@@ -584,7 +584,7 @@ namespace MENU_Utils {
                         }
                     }
                     
-                    for(int i = thirdRowMainMenu.length(); i < 18; i++) {
+                    for (int i = thirdRowMainMenu.length(); i < 18; i++) {
                         thirdRowMainMenu += " ";
                     }
 
@@ -619,7 +619,7 @@ namespace MENU_Utils {
                         fourthRowCourse = "---";
                     } else {
                         fourthRowCourse.trim();
-                        for(int c = fourthRowCourse.length(); c < 3; c++) {
+                        for (int c = fourthRowCourse.length(); c < 3; c++) {
                             fourthRowCourse = "0" + fourthRowCourse;
                         }
                     }

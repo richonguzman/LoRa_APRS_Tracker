@@ -172,7 +172,7 @@ namespace BLE_Utils {
                 delay(200);
             }
         } else {                                                            // TNC2
-            for(int n = 0; n < frame.length(); n++) txBLE(frame[n]);
+            for (int n = 0; n < frame.length(); n++) txBLE(frame[n]);
             txBLE('\n');
         }   
     }

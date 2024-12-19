@@ -295,7 +295,7 @@ namespace APRSPacketLib {
         int d28 = (int)informationField[0] - 28;
         if (offset) d28 += 100;
         temp = String(d28);
-        for(int i = temp.length(); i < 3; i++) {
+        for (int i = temp.length(); i < 3; i++) {
             temp = '0' + temp;
         }
         String longitudeString = temp;

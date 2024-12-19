@@ -126,7 +126,7 @@ namespace Utils {
     void i2cScannerForPeripherals() {
         uint8_t err, addr;
         if (Config.wxsensor.active) {
-            for(addr = 1; addr < 0x7F; addr++) {
+            for (addr = 1; addr < 0x7F; addr++) {
                 #ifdef HELTEC_V3_GPS
                     Wire1.beginTransmission(addr);
                     err = Wire1.endTransmission();
@@ -144,7 +144,7 @@ namespace Utils {
             }
         }
 
-        for(addr = 1; addr < 0x7F; addr++) {
+        for (addr = 1; addr < 0x7F; addr++) {
             Wire.beginTransmission(addr);
             err = Wire.endTransmission();
             if (err == 0) {
@@ -160,7 +160,7 @@ namespace Utils {
         }
 
         #ifdef HAS_TOUCHSCREEN
-            for(addr = 1; addr < 0x7F; addr++) {
+            for (addr = 1; addr < 0x7F; addr++) {
                 Wire.beginTransmission(addr);
                 err = Wire.endTransmission();
                 if (err == 0) {
