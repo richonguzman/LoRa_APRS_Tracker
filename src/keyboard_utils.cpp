@@ -289,7 +289,7 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 120) {
             MSG_Utils::deleteFile(0);
-            displayShow("___INFO___", "", "ALL MESSAGES DELETED!", 2000);
+            displayShow("   INFO", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
         } else if (menuDisplay == 130) {
@@ -388,7 +388,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 50111;
         } else if (menuDisplay == 50111) {
             MSG_Utils::deleteFile(1);
-            displayShow("___INFO___", "", " ALL MAILS DELETED!", 2000);
+            displayShow("   INFO", "", " ALL MAILS DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             if (winlinkStatus == 0) {
                 #ifdef HAS_JOYSTICK
@@ -682,7 +682,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && messageText.length() > 0) {
                 messageText.trim();
                 if (messageText.length() > 67) messageText = messageText.substring(0, 67);
-                String packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
                 packet += messageText;
                 displayShow("<<< TX >>>", "", packet,100);
                 LoRa_Utils::sendNewPacket(packet);       

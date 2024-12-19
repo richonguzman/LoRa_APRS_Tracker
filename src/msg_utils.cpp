@@ -137,7 +137,7 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/aprsMessages.txt");
             }
             if (noAPRSMsgWarning) {
-                displayShow("___INFO___", "", " NO APRS MSG SAVED", 1500);
+                displayShow("   INFO", "", " NO APRS MSG SAVED", 1500);
             } else {
                 if(!fileToRead) {
                     Serial.println("Failed to open file for reading");
@@ -157,7 +157,7 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/winlinkMails.txt");
             }
             if (noWLNKMsgWarning) {
-                displayShow("___INFO___", "", " NO WLNK MAILS SAVED", 1500);
+                displayShow("   INFO", "", " NO WLNK MAILS SAVED", 1500);
             } else {
                 if(!fileToRead) {
                     Serial.println("Failed to open file for reading");
@@ -406,11 +406,11 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender!=currentBeacon->callsign) {
 
-                if (lastReceivedPacket.message.indexOf("\x3c\xff\x01") != -1) {
-                    lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("\x3c\xff\x01"));
+                if (lastReceivedPacket.payload.indexOf("\x3c\xff\x01") != -1) {
+                    lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
                 }
 
-                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.message)) {            
+                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {            
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
@@ -425,29 +425,29 @@ namespace MSG_Utils {
 
                     if (lastReceivedPacket.type == 1 && lastReceivedPacket.addressee == currentBeacon->callsign) {
 
-                        if (ackRequestState && lastReceivedPacket.message.indexOf("ack") == 0) {
-                            if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
+                        if (ackRequestState && lastReceivedPacket.payload.indexOf("ack") == 0) {
+                            if (ackCallsignRequest == lastReceivedPacket.sender && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
                                 outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                                 ackRequestState = false;
                             }
                         }
-                        if (lastReceivedPacket.message.indexOf("{") >= 0) {
-                            MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "ack" + lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("{") + 1));
+                        if (lastReceivedPacket.payload.indexOf("{") >= 0) {
+                            MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "ack" + lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("{") + 1));
                             lastMsgRxTime = millis();
-                            lastReceivedPacket.message = lastReceivedPacket.message.substring(0, lastReceivedPacket.message.indexOf("{"));
+                            lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("{"));
                         }
 
                         if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
                             NOTIFICATION_Utils::messageBeep();
                         }
-                        if (lastReceivedPacket.message.indexOf("ping") == 0 || lastReceivedPacket.message.indexOf("Ping") == 0 || lastReceivedPacket.message.indexOf("PING") == 0) {
+                        if (lastReceivedPacket.payload.indexOf("ping") == 0 || lastReceivedPacket.payload.indexOf("Ping") == 0 || lastReceivedPacket.payload.indexOf("PING") == 0) {
                             lastMsgRxTime = millis();
                             MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
                         }
 
-                        if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.message.indexOf("WX") == 0) {    // WX = WeatherReport
+                        if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.payload.indexOf("WX") == 0) {    // WX = WeatherReport
                             Serial.println("Weather Report Received");
-                            const String& wxCleaning     = lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("WX ") + 3);
+                            const String& wxCleaning     = lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("WX ") + 3);
                             const String& place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
                             const String& placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);
                             const String& summary        = placeCleaning.substring(0,placeCleaning.indexOf(","));
@@ -481,56 +481,56 @@ namespace MSG_Utils {
                         } else if (lastReceivedPacket.sender == "WLNK-1") {
                             if (winlinkStatus == 0 && !Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
-                                if (lastReceivedPacket.message.indexOf("ack") != 0) {
-                                    saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.message);
+                                if (lastReceivedPacket.payload.indexOf("ack") != 0) {
+                                    saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
                                 }                                    
-                            } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
+                            } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Waiting Challenge");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 2;
                                 menuDisplay = 500;
-                            } else if ((winlinkStatus >= 1 || winlinkStatus <= 3) &&lastReceivedPacket.message.indexOf("Login [") == 0) {
-                                WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("[")+1,lastReceivedPacket.message.indexOf("]")));
+                            } else if ((winlinkStatus >= 1 || winlinkStatus <= 3) &&lastReceivedPacket.payload.indexOf("Login [") == 0) {
+                                WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("[")+1,lastReceivedPacket.payload.indexOf("]")));
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received/Processed/Sended");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
-                            } else if (winlinkStatus == 3 && ackNumberRequest == lastReceivedPacket.message.substring(lastReceivedPacket.message.indexOf("ack") + 3)) {
+                            } else if (winlinkStatus == 3 && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Challenge Ack Received");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 4;
                                 menuDisplay = 502;
-                            } else if (lastReceivedPacket.message.indexOf("Login valid for") > 0) {
+                            } else if (lastReceivedPacket.payload.indexOf("Login valid for") > 0) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 5;
                                 displayShow("_WINLINK_>", "", " LOGGED !!!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");
                                 menuDisplay = 5000;
-                            } else if (winlinkStatus == 5 && lastReceivedPacket.message.indexOf("Log off successful") == 0 ) {
+                            } else if (winlinkStatus == 5 && lastReceivedPacket.payload.indexOf("Log off successful") == 0 ) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
                                 displayShow("_WINLINK_>", "", "    LOG OUT !!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");
                                 lastChallengeTime = 0;
                                 winlinkStatus = 0;
-                            } else if ((winlinkStatus == 5) && (lastReceivedPacket.message.indexOf("Log off successful") == -1) && (lastReceivedPacket.message.indexOf("Login valid") == -1) && (lastReceivedPacket.message.indexOf("Login [") == -1) && (lastReceivedPacket.message.indexOf("ack") == -1)) {
+                            } else if ((winlinkStatus == 5) && (lastReceivedPacket.payload.indexOf("Log off successful") == -1) && (lastReceivedPacket.payload.indexOf("Login valid") == -1) && (lastReceivedPacket.payload.indexOf("Login [") == -1) && (lastReceivedPacket.payload.indexOf("ack") == -1)) {
                                 lastMsgRxTime = millis();
-                                displayShow("<WLNK Rx >", "", lastReceivedPacket.message, 3000);
-                                saveNewMessage(1, lastReceivedPacket.sender, lastReceivedPacket.message);
+                                displayShow("<WLNK Rx >", "", lastReceivedPacket.payload, 3000);
+                                saveNewMessage(1, lastReceivedPacket.sender, lastReceivedPacket.payload);
                             } 
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
 
                                 #ifdef HAS_TFT
-                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.message, 26, false, 3000);
+                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.payload, 26, false, 3000);
                                 #else
-                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.message , "", "", 3000);
+                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.payload , "", "", 3000);
                                 #endif
 
-                                if (lastReceivedPacket.message.indexOf("ack") != 0) {
-                                    saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.message);
+                                if (lastReceivedPacket.payload.indexOf("ack") != 0) {
+                                    saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
                                 }                            
                             }
                         }

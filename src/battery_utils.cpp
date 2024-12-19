@@ -53,13 +53,7 @@ namespace BATTERY_Utils {
 
     String getPercentVoltageBattery(float voltage) {
         int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
-        if (percent < 10) {
-            return "  " + String(percent);
-        } else if (percent >= 10 && percent < 100) {
-            return " " + String(percent);
-        } else {
-            return "100";
-        }
+        return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
     void checkVoltageWithoutGPSFix() {
