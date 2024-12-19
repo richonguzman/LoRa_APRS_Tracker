@@ -1,6 +1,6 @@
 #include <TinyGPS++.h>
 #include "TimeLib.h"
-#include "APRSPacketLib.h"
+#include <APRSPacketLib.h>
 #include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"

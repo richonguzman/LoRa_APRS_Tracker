@@ -1,8 +1,8 @@
+#include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <logger.h>
 #include <Wire.h>
 #include "keyboard_utils.h"
-#include "APRSPacketLib.h"
 #include "winlink_utils.h"
 #include "station_utils.h"
 #include "configuration.h"

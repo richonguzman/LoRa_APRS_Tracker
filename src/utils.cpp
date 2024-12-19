@@ -1,6 +1,6 @@
+#include <APRSPacketLib.h>
 #include <logger.h>
 #include <Wire.h>
-#include "APRSPacketLib.h"
 #include "configuration.h"
 #include "board_pinout.h"
 #include "lora_utils.h"

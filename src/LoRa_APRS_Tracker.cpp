@@ -20,11 +20,11 @@
 ____________________________________________________________________*/
 
 #include <BluetoothSerial.h>
+#include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
-#include "APRSPacketLib.h"
 #include "smartbeacon_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
