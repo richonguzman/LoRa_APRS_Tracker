@@ -318,7 +318,9 @@ void displaySetup() {
         } else {
             tft.setRotation(1);
         }
-        analogWrite(BOARD_BL_PIN, brightnessValues[tftBrightness]);
+        pinMode(TFT_BL, OUTPUT);
+        digitalWrite(TFT_BL, HIGH);
+        //analogWrite(BOARD_BL_PIN, brightnessValues[tftBrightness]);
         tft.setTextFont(0);
         tft.fillScreen(TFT_BLACK);
         #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)

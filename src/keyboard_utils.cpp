@@ -270,7 +270,7 @@ namespace KEYBOARD_Utils {
             statusState  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            displayShow("__ INFO __", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
+            displayShow("   INFO", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
@@ -321,25 +321,25 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 220) {
             if (!displayEcoMode) {
                 displayEcoMode = true;
-                displayShow("_DISPLAY__", "", "   ECO MODE -> ON", 1000);
+                displayShow(" DISPLAY", "", "   ECO MODE -> ON", 1000);
             } else {
                 displayEcoMode = false;
-                displayShow("_DISPLAY__", "", "   ECO MODE -> OFF", 1000);
+                displayShow(" DISPLAY", "", "   ECO MODE -> OFF", 1000);
             }
         } else if (menuDisplay == 221) {
             if (screenBrightness ==1) {
-                displayShow("_SCREEN___", "", "SCREEN BRIGHTNESS MAX", 1000);
+                displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MAX", 1000);
                 screenBrightness = 255;   
             } else {
-                displayShow("_SCREEN___", "", "SCREEN BRIGHTNESS MIN", 1000);
+                displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MIN", 1000);
                 screenBrightness = 1;
             }
         } else if (menuDisplay == 240) {
-            displayShow("_STATUS___", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow("  STATUS", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
-            displayShow("_STATUS___", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
-            displayShow("_NOTIFIC__", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } 
 
         else if (menuDisplay == 4) {
@@ -368,10 +368,10 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 53) {
             if (winlinkCommentState) {
                 winlinkCommentState = false;
-                displayShow("_WINLINK_>", "", "  WLNK COMMENTs OFF!", 2000);
+                displayShow(" WINLINK>", "", "  WLNK COMMENTs OFF!", 2000);
             } else {
                 winlinkCommentState = true;
-                displayShow("_WINLINK_>", "", "  WLNK COMMENTs ON!", 2000);
+                displayShow(" WINLINK>", "", "  WLNK COMMENTs ON!", 2000);
             }
         } else if (menuDisplay == 5000) {
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "L");
@@ -438,32 +438,32 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 60) {
             if (Config.notification.ledFlashlight) {
                 if (flashlight) {
-                    displayShow("__EXTRAS__", "","     Flashlight","   Status --> OFF", "", "", 2000);
+                    displayShow("  EXTRAS", "","     Flashlight","   Status --> OFF", "", "", 2000);
                     flashlight = false;
                 } else {
-                    displayShow("__EXTRAS__", "","     Flashlight","   Status --> ON", "", "", 2000);
+                    displayShow("  EXTRAS", "","     Flashlight","   Status --> ON", "", "", 2000);
                     flashlight = true;
                 }
             } else {
-                displayShow("__EXTRAS__", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
+                displayShow("  EXTRAS", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
         } else if (menuDisplay == 61) {
             if (digipeaterActive) {
-                displayShow("__EXTRAS__", "","     Digipeater","   Status --> OFF", "", "", 2000);
+                displayShow("  EXTRAS", "","     Digipeater","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater OFF");
                 digipeaterActive = false;
             } else {
-                displayShow("__EXTRAS__", "","     Digipeater","   Status --> ON","", "", 2000);
+                displayShow("  EXTRAS", "","     Digipeater","   Status --> ON","", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater ON");
                 digipeaterActive = true;
             }
         } else if (menuDisplay == 62) {
             if (sosActive) {
-                displayShow("__EXTRAS__", "","       S.O.S.","   Status --> OFF", "", "", 2000);
+                displayShow("  EXTRAS", "","       S.O.S.","   Status --> OFF", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode OFF");
                 sosActive = false;
             } else {
-                displayShow("__EXTRAS__", "","       S.O.S.","   Status --> ON", "", "", 2000);
+                displayShow("  EXTRAS", "","       S.O.S.","   Status --> ON", "", "", 2000);
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode ON");
                 sosActive = true;
             }

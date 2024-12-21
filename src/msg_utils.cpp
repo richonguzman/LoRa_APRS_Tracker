@@ -504,13 +504,13 @@ namespace MSG_Utils {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 5;
-                                displayShow("_WINLINK_>", "", " LOGGED !!!!", 2000);
+                                displayShow(" WINLINK>", "", " LOGGED !!!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");
                                 menuDisplay = 5000;
                             } else if (winlinkStatus == 5 && lastReceivedPacket.payload.indexOf("Log off successful") == 0 ) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
                                 lastMsgRxTime = millis();
-                                displayShow("_WINLINK_>", "", "    LOG OUT !!!", 2000);
+                                displayShow(" WINLINK>", "", "    LOG OUT !!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");
                                 lastChallengeTime = 0;
                                 winlinkStatus = 0;
