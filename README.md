@@ -23,9 +23,9 @@ ____________________________________________________
     - Read, Write and Delete Messages (with I2C Keyboard or Phone).
     - Asking Weather Report.
     - Listening to other Trackers arround.
-    - Changing Display Eco Mode (turn off after 4 seg) and Screen Brightness.
+    - Changing Display Eco Mode (turn off after 4 seconds) and Screen Brightness.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption.
-- All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
+- All GPS beacons/packets are encoded for less time on RF/LoRa Tx.
 - Oled Screen shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
 - Oled Screen shows Recent Heard Trackers/Station/iGates Tx.
 - Bluetooth capabilities to connect (Android + APRSDroid) or (iPhone + APRS.fi app) and use it as TNC.
