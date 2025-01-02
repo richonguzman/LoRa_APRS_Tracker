@@ -491,7 +491,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
-        #if defined(TTGO_T_DECK_PLUS)
+        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();//header, line1, line2);
             draw_T_DECK_Body(header, line1, line2, line3, line4, line5);
         #endif
