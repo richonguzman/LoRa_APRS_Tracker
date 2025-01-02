@@ -23,7 +23,8 @@
     #define GPS_RX              12
     #define GPS_TX              34
 
-    // OTHER    
+    //  OTHER
+    #define BUTTON_PIN          15
     #define BATTERY_PIN         35  //LoRa32 Battery PIN 100k/100k
 
     #define HAS_BT_CLASSIC
