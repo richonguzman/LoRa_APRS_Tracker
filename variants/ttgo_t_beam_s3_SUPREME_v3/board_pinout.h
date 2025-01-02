@@ -26,7 +26,7 @@
     #define GPS_RX              8
     #define GPS_TX              9
 
-    // OTHER
+    //  OTHER
     #define BUTTON_PIN          0
 
     #define HAS_AXP2101

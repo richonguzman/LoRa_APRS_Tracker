@@ -29,7 +29,7 @@
     #define GPS_RESET           35
     #define GPS_BAUDRATE        115200
 
-    // OTHER
+    //  OTHER
     #define BUTTON_PIN          0
     #define WAKEUP_BUTTON       GPIO_NUM_0
     #define BATTERY_PIN         1

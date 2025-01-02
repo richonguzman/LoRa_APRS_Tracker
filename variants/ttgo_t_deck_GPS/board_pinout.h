@@ -23,7 +23,7 @@
     #define GPS_TX              44
     #define GPS_BAUDRATE        38400
 
-    // OTHER
+    //  OTHER
     #define BATTERY_PIN         4
 
     #define BOARD_POWERON       10

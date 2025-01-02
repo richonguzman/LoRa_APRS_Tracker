@@ -23,7 +23,7 @@
     #define GPS_RX              20
     #define GPS_TX              21
 
-    // OTHER
+    //  OTHER
     #define BATTERY_PIN         1
 
 #endif

@@ -29,7 +29,7 @@
     #define GPS_TX              18
     #define GPS_VCC             33    //#define LED_PIN             16
 
-    // OTHER
+    //  OTHER
     #define BUTTON_PIN          0
     #define BATTERY_PIN         1
     

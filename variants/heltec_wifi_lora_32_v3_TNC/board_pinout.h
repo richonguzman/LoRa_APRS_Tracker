@@ -25,7 +25,7 @@
     #define GPS_RX              -1
     #define GPS_TX              -1
 
-    // OTHER
+    //  OTHER
     #define BUTTON_PIN          0
     #define BATTERY_PIN         1
     #define VEXT_CTRL           36

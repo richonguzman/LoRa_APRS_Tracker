@@ -24,7 +24,7 @@
     #define GPS_RX              12
     #define GPS_TX              34
 
-    // OTHER
+    //  OTHER
     #define BATTERY_PIN         37
     #define BUTTON_PIN          0
     #define ADC_CTRL            21
