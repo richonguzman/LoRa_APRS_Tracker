@@ -403,7 +403,7 @@ namespace MENU_Utils {
                 displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> waiting", "" , "");
                 break;
             case 501:    // 5.Winlink ---> Login
-                displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> sended", "" , "");
+                displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> sent", "" , "");
                 break;
             case 502:    // 5.Winlink ---> Login
                 displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
