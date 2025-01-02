@@ -491,7 +491,7 @@ namespace MSG_Utils {
                                 menuDisplay = 500;
                             } else if ((winlinkStatus >= 1 || winlinkStatus <= 3) &&lastReceivedPacket.payload.indexOf("Login [") == 0) {
                                 WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("[")+1,lastReceivedPacket.payload.indexOf("]")));
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received/Processed/Sended");
+                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received/Processed/Sent");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
