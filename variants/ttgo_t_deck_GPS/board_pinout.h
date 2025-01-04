@@ -21,7 +21,6 @@
     //  GPS
     #define GPS_RX              43
     #define GPS_TX              44
-    #define GPS_BAUDRATE        38400
 
     //  OTHER
     #define BATTERY_PIN         4
