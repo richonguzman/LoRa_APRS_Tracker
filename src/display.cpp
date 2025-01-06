@@ -26,7 +26,7 @@
     #endif
     #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         #define color1  TFT_BLACK
-        #define color2  0x0249        
+        #define color2  0x0249
         #define green   0x1B08
 
         #define bigSizeFont     4
@@ -333,7 +333,7 @@ void displaySetup() {
             grays[i] = tft.color565(co, co, co);
             co = co - 20;
         }
-    #else    
+    #else
         #ifdef OLED_DISPLAY_HAS_RST_PIN
             pinMode(OLED_RST, OUTPUT);
             digitalWrite(OLED_RST, LOW);
@@ -585,7 +585,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             } else if (bluetoothConnected) {    // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
                 drawSymbol(symbol, true);
             }
-        }        
+        }
         display.display();
     #endif
     delay(wait);
@@ -630,5 +630,5 @@ void displayMessage(const String& sender, const String& message, const int& line
     } else {
         displayShow("< MSG Rx >", "From --> " + sender, "", fillMessageLine(messageLine1, lineLength) , fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), wait);
     }
-    
+
 }
