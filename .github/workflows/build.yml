@@ -77,6 +77,8 @@ jobs:
                       chip: esp32c3
                     - name: QRPLabs_LightTracker_Plus_1_0
                       chip: esp32s3
+                    - name: TROY_LoRa_APRS
+                      chip: esp32
         steps:
             - uses: actions/checkout@v3
 
