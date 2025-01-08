@@ -25,7 +25,6 @@
 
     //  OTHER
     #define BUTTON_PIN          4
-    #define BATTERY_PIN         35
 
     #define HAS_BT_CLASSIC
 
