@@ -39,7 +39,7 @@
     },
 	"battery": {
 		"sendVoltage": false,
-		"voltageAsTelemetry": true,
+		"voltageAsTelemetry": false,
 		"sendVoltageAlways": false,
 		"monitorVoltage": false,
 		"sleepVoltage": 2.9
