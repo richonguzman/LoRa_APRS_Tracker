@@ -25,7 +25,7 @@ bool        wxModuleFound       = false;
 
 
 Adafruit_BME280     bme280;
-#ifdef HELTEC_V3_GPS
+#if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
 Adafruit_BMP280     bmp280(&Wire1);
 #else
 Adafruit_BMP280     bmp280;
@@ -49,7 +49,7 @@ namespace WX_Utils {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
             #else
                 if (wxModuleAddress != 0x00) {
-                    #ifdef HELTEC_V3_GPS
+                    #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
                         if (bme280.begin(wxModuleAddress, &Wire1)) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
                             wxModuleType = 1;
@@ -99,7 +99,7 @@ namespace WX_Utils {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
                                 break;
                             case 3:
-                                #ifndef HELTEC_V3_GPS
+                                #if !defined(HELTEC_V3_GPS) && !defined(HELTEC_V3_TNC) && !defined(HELTEC_V3_2_GPS) && !defined(HELTEC_V3_2_TNC)
                                     bme680.setTemperatureOversampling(BME680_OS_1X);
                                     bme680.setHumidityOversampling(BME680_OS_1X);
                                     bme680.setPressureOversampling(BME680_OS_1X);
@@ -226,7 +226,7 @@ namespace WX_Utils {
                         newHum      = 0;
                         break;
                     case 3: // BME680
-                        #ifndef HELTEC_V3_GPS
+                        #if !defined(HELTEC_V3_GPS) && !defined(HELTEC_V3_TNC) && !defined(HELTEC_V3_2_GPS) && !defined(HELTEC_V3_2_TNC)
                             bme680.performReading();
                             delay(50);
                             if (bme680.endReading()) {
