@@ -37,6 +37,10 @@ jobs:
                       chip: esp32s3
                     - name: heltec_wifi_lora_32_v3_TNC
                       chip: esp32s3
+                    - name: heltec_wifi_lora_32_v3_2_GPS
+                      chip: esp32s3
+                    - name: heltec_wifi_lora_32_v3_2_TNC
+                      chip: esp32s3
                     - name: heltec_wireless_stick_lite_v3_GPS_display
                       chip: esp32s3
                     - name: heltec-lora32-v2_GPS
