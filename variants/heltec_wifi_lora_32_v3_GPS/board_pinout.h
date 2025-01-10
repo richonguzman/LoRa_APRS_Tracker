@@ -28,7 +28,7 @@
     #define BUTTON_PIN          0
     #define BATTERY_PIN         1
     #define VEXT_CTRL           36
-    #define ADC_CTRL            37  // Heltec V3 needs ADC_CTRL = LOW powers the voltage divider to read BatteryPin
+    #define ADC_CTRL            37
 
     #define BOARD_I2C_SDA       41
     #define BOARD_I2C_SCL       42
