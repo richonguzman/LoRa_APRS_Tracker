@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025.01.11 Added HELTEC V3.2 board support.
 - 2025.01.07 TROY_LoRa_APRS board added.
 - 2025.01.02 Buttons added for DIY Boards and Boards without buttons.
 - 2024.11.13 Added Heltec Wireless Stick Lite V3 + GPS + Oled Display support for another DIY ESP32 Tracker.
