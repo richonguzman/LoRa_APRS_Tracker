@@ -47,6 +47,8 @@ namespace WX_Utils {
                     while (1) delay(1);
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
+                wxModuleFound = true;
+                wxModuleType = 4;
             #else
                 if (wxModuleAddress != 0x00) {
                     #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
