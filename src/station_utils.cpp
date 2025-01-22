@@ -287,7 +287,7 @@ namespace STATION_Utils {
         displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
 
-        if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
+        if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
         if (shouldSleepLowVoltage) {
             delay(3000);

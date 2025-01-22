@@ -515,14 +515,14 @@
                                     <label
                                         for="bluetooth.active"
                                         class="form-label"
-                                        >Enable bluetooth</label
+                                        >Enable Bluetooth</label
                                     >
                                 </div>
                                 <div class="col-12">
                                     <label 
                                         for="bluetooth.deviceName" 
                                         class="form-label"
-                                        >Password</label>
+                                        >Bluetooth Device Name</label>
                                     <input
                                         name="bluetooth.deviceName"
                                         id="bluetooth.deviceName"
@@ -531,31 +531,33 @@
                                         value="LoRaTracker"
                                     />
                                 </div>
-                                <div class="form-check form-switch">
-                                    <input
-                                        type="checkbox"
-                                        name="bluetooth.useBLE"
-                                        id="bluetooth.useBLE"
-                                        class="form-check-input"
-                                    />
-                                    <label
-                                        for="bluetooth.useBLE"
-                                        class="form-label"
-                                        >Enable = BLE / Disable = BT Classic</label
-                                    >
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input
-                                        type="checkbox"
-                                        name="bluetooth.useKISS"
-                                        id="bluetooth.useKISS"
-                                        class="form-check-input"
-                                    />
-                                    <label
-                                        for="bluetooth.useKISS"
-                                        class="form-label"
-                                        >Enable = KISS / Disable = TNC2</label
-                                    >
+                                <div class="col-12 mt-3">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            type="checkbox"
+                                            name="bluetooth.useBLE"
+                                            id="bluetooth.useBLE"
+                                            class="form-check-input"
+                                        />
+                                        <label
+                                            for="bluetooth.useBLE"
+                                            class="form-label"
+                                            >Enable: use BLE  / Disable: use BT Classic</label
+                                        >
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            type="checkbox"
+                                            name="bluetooth.useKISS"
+                                            id="bluetooth.useKISS"
+                                            class="form-check-input"
+                                        />
+                                        <label
+                                            for="bluetooth.useKISS"
+                                            class="form-label"
+                                            >Enable: use KISS / Disable: use TNC2</label
+                                        >
+                                    </div>
                                 </div>
                             </div>
                         </div>

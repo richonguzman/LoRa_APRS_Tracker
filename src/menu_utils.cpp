@@ -63,15 +63,10 @@ uint8_t     lowBatteryPercent       = 21;
 namespace MENU_Utils {
 
     const String checkBTType() {
-        switch (Config.bluetooth.type) {
-            case 0:
-                return "BLE iPhone";
-            case 1:
-                return "BT Android";
-            case 2:
-                return "BLE Text";
-            default:
-                return "no BT";
+        if (Config.bluetooth.useBLE) {
+            return "BLE";
+        } else {
+            return "BT Classic";
         }
     }
 
