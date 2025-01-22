@@ -43,7 +43,7 @@ namespace BLUETOOTH_Utils {
                 delay(1000);
             }
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth init done!");
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth Classic init done!");
     }
 
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
