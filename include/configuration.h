@@ -91,8 +91,10 @@ public:
 
 class BLUETOOTH {
 public:
-    byte    type;
     bool    active;
+    String  deviceName;
+    bool    useBLE;
+    bool    useKISS;
 };
 
 

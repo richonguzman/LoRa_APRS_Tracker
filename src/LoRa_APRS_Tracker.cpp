@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.01.11";
+String      versionDate             = "2025.01.22";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -76,6 +76,7 @@ uint32_t    refreshDisplayTime      = millis();
 
 bool        sendUpdate              = true;
 
+bool        bluetoothActive         = Config.bluetooth.active;
 bool        bluetoothConnected      = false;
 
 uint32_t    lastTx                  = 0.0;
@@ -136,12 +137,14 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
-        BLE_Utils::setup();
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::setup();
-        #endif
+    if (bluetoothActive) {
+        if (Config.bluetooth.useBLE) {
+            BLE_Utils::setup();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::setup();
+            #endif
+        }
     }
 
     if (!Config.simplifiedTrackerMode) {
@@ -200,14 +203,16 @@ void loop() {
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();
 
-    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
-        BLE_Utils::sendToPhone(packet.text.substring(3));
-        BLE_Utils::sendToLoRa();
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
-            BLUETOOTH_Utils::sendToLoRa();
-        #endif
+    if (bluetoothActive) {
+        if (Config.bluetooth.useBLE) {
+            BLE_Utils::sendToPhone(packet.text.substring(3));
+            BLE_Utils::sendToLoRa();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
+                BLUETOOTH_Utils::sendToLoRa();
+            #endif
+        }
     }
     
     MSG_Utils::ledNotification();

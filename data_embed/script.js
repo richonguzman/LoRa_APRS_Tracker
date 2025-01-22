@@ -246,7 +246,9 @@ function loadSettings(settings) {
 
     // BLUETOOTH
     document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
-    document.getElementById("bluetooth.type").value                     = settings.bluetooth.type;
+    document.getElementById("bluetooth.deviceName").value               = settings.bluetooth.deviceName;
+    document.getElementById("bluetooth.useBLE").checked                 = settings.bluetooth.useBLE;
+    document.getElementById("bluetooth.useKISS").checked                = settings.bluetooth.useKISS;
     
     //  PTT Trigger
     document.getElementById("ptt.active").checked                       = settings.pttTrigger.active;

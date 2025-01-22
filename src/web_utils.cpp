@@ -179,7 +179,9 @@ namespace WEB_Utils {
 
         //  Bluetooth
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
-        Config.bluetooth.type                   = request->getParam("bluetooth.type", true)->value().toInt();
+        Config.bluetooth.deviceName             = request->getParam("bluetooth.deviceName", true)->value();
+        Config.bluetooth.useBLE                 = request->hasParam("bluetooth.useBLE", true);
+        Config.bluetooth.useKISS                = request->hasParam("bluetooth.useKISS", true);
 
         //  PTT Trigger
         Config.ptt.active                       = request->hasParam("ptt.active", true);
@@ -190,7 +192,10 @@ namespace WEB_Utils {
 
         //  WiFi AP
         Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
-        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
+        
+        //
+        Config.wifiAP.active                    = true;
+        //Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
 
         Config.writeFile();
 
