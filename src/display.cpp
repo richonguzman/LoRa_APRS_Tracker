@@ -438,7 +438,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             for (int i = 0; i < 2; i++) {
-                sprite.drawString(*lines[i], 3,(lineSpacing * (2 + i)) - 2);
+                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
             }
         #endif
         sprite.pushSprite(0,0);
@@ -507,7 +507,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             for (int i = 0; i < 5; i++) {
-                sprite.drawString(*lines[i], 3,(lineSpacing * (2 + i)) - 2);
+                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
             }
         #endif
             if (menuDisplay == 0 && Config.display.showSymbol) {
