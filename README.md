@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025.02.09 Now Bluetooth connections lets you decide to use BLE/BT Classic and KISS/TNC.
 - 2025.01.11 Added HELTEC V3.2 board support.
 - 2025.01.07 TROY_LoRa_APRS board added.
 - 2025.01.02 Buttons added for DIY Boards and Boards without buttons.
