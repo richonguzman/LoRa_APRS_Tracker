@@ -116,9 +116,9 @@ namespace KEYBOARD_Utils {
             if (menuDisplay < 5084) menuDisplay = 5085;
         }
         
-        else if (menuDisplay >= 60 && menuDisplay <= 63) {
+        else if (menuDisplay >= 60 && menuDisplay <= 64) {
             menuDisplay--;
-            if (menuDisplay < 60) menuDisplay = 63;
+            if (menuDisplay < 60) menuDisplay = 64;
         }
         
         else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
@@ -212,9 +212,9 @@ namespace KEYBOARD_Utils {
             if (menuDisplay > 5085) menuDisplay = 5084;
         } 
 
-        else if (menuDisplay >= 60 && menuDisplay <= 63) {
+        else if (menuDisplay >= 60 && menuDisplay <= 64) {
             menuDisplay++;
-            if (menuDisplay > 63) menuDisplay = 60;
+            if (menuDisplay > 64) menuDisplay = 60;
         }
 
         else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
@@ -238,7 +238,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -451,40 +451,25 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay == 60) {
-            if (Config.notification.ledFlashlight) {
-                if (flashlight) {
-                    displayShow("  EXTRAS", "","     Flashlight","   Status --> OFF", "", "", 2000);
-                    flashlight = false;
-                } else {
-                    displayShow("  EXTRAS", "","     Flashlight","   Status --> ON", "", "", 2000);
-                    flashlight = true;
-                }
-            } else {
-                displayShow("  EXTRAS", "","     Flashlight","NOT ACTIVE IN CONFIG!", "", "", 2000);
-            }
+            MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "posmsg richon2001@hotmail.com");
         } else if (menuDisplay == 61) {
-            if (digipeaterActive) {
-                displayShow("  EXTRAS", "","     Digipeater","   Status --> OFF", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater OFF");
-                digipeaterActive = false;
-            } else {
-                displayShow("  EXTRAS", "","     Digipeater","   Status --> ON","", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Digipeater ON");
-                digipeaterActive = true;
-            }
+            digipeaterActive = !digipeaterActive;
+            displayShow("  EXTRAS", "", "     Digipeater", digipeaterActive ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", digipeaterActive ? "Digipeater ON" : "Digipeater OFF");
         } else if (menuDisplay == 62) {
-            if (sosActive) {
-                displayShow("  EXTRAS", "","       S.O.S.","   Status --> OFF", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode OFF");
-                sosActive = false;
-            } else {
-                displayShow("  EXTRAS", "","       S.O.S.","   Status --> ON", "", "", 2000);
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "S.O.S Mode ON");
-                sosActive = true;
-            }
+            sosActive = !sosActive;
+            displayShow("  EXTRAS", "", "       S.O.S.", sosActive ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "S.O.S Mode %s", sosActive ? "ON" : "OFF");
         } else if (menuDisplay == 63) {
             menuDisplay = 630;
-        }
+        } else if (menuDisplay == 64) {
+            if (Config.notification.ledFlashlight) {
+                flashlight = !flashlight;
+                displayShow("  EXTRAS", "", "     Flashlight", flashlight ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);
+            } else {
+                displayShow("  EXTRAS", "", "     Flashlight", "NOT ACTIVE IN CONFIG!", "", "", 2000);
+            }
+        } 
 
         else if (menuDisplay == 9000) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
