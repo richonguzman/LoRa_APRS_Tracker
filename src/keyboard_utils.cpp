@@ -451,7 +451,7 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay == 60) {
-            MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "posmsg richon2001@hotmail.com");
+            if (Config.email != "") MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "posmsg " + String(Config.email));
         } else if (menuDisplay == 61) {
             digipeaterActive = !digipeaterActive;
             displayShow("  EXTRAS", "", "     Digipeater", digipeaterActive ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);

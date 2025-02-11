@@ -125,6 +125,7 @@ namespace WEB_Utils {
         Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
         Config.disableGPS                       = request->hasParam("disableGPS", true);
+        Config.email                            = request->getParam("email", true)->value();
 
         //  Display
         Config.display.showSymbol               = request->hasParam("display.showSymbol", true);

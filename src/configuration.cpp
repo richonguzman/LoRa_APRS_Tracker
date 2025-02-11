@@ -94,6 +94,8 @@ void Configuration::writeFile() {
     data["other"]["sendAltitude"]               = sendAltitude;
     data["other"]["disableGPS"]                 = disableGPS;
     data["other"]["acceptOwnFrameFromTNC"]      = acceptOwnFrameFromTNC;
+    data["other"]["email"]                      = email;
+
 
     serializeJson(data, configFile);
     configFile.close();
@@ -201,6 +203,7 @@ bool Configuration::readFile() {
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
         acceptOwnFrameFromTNC           = data["other"]["acceptOwnFrameFromTNC"] | false;
+        email                           = data["other"]["email"] | "";
 
         configFile.close();
         Serial.println("Config read successfuly");
@@ -332,6 +335,7 @@ void Configuration::init() {
     sendAltitude                    = true;
     disableGPS                      = false;
     acceptOwnFrameFromTNC           = false;
+    email                           = "";
 
     Serial.println("New Data Created...");
 }

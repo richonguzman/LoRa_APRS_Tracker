@@ -53,7 +53,8 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
-		"acceptOwnFrameFromTNC": false
+		"acceptOwnFrameFromTNC": false,
+		"email": ""
 	},
 	"winlink": {
 		"password": "ABCDEF"
