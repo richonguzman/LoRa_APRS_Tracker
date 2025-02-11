@@ -179,7 +179,7 @@ namespace MENU_Utils {
                         displayShow("WRITE MSG>", "CALLSIGN -> " + messageCallsign, "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    displayShow("WRITE MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
@@ -202,7 +202,7 @@ namespace MENU_Utils {
                         displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    displayShow("WRITE MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
@@ -216,7 +216,7 @@ namespace MENU_Utils {
                         displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                     }     
                 } else {
-                    displayShow("WRITE MSG>", "---  MSG TO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
                 }
                 break;
             case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
@@ -493,7 +493,7 @@ namespace MENU_Utils {
                 if (winlinkBody.length() <= 67) {
                 displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
                 } else {
-                displayShow("WLNK MAIL>", "-- Body To Long = " + String(winlinkBody.length()) + "!", "-> " + winlinkBody, "", "", "<Clear Body");
+                displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
                 }
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //
@@ -507,27 +507,32 @@ namespace MENU_Utils {
                 // check si no esta logeado o si
 
 //////////
-            case 60:    // 6. Extras ---> Flashlight
-                displayShow(" EXTRAS>", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+            case 60:    // 6. Extras ---> Send Email with GPS info
+                displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", lastLine);
                 break;
             case 61:    // 6. Extras ---> Digipeater
-                displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS) + Comment", lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
-                displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")","  Send GPS + Comment",lastLine);
+                displayShow(" EXTRAS>", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", lastLine);
                 break;
-            case 63:    // 6. Extras ---> Extra Comment.
-                displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")","> Send GPS + Comment",lastLine);
+            case 63:    // 6. Extras ---> Beacon(GPS) + Comment
+                displayShow(" EXTRAS>", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "> Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Send Email(GPS)", lastLine);
                 break;
+            case 64:    // 6. Extras ---> Flashlight
+                displayShow(" EXTRAS>", "  Beacon(GPS)+Comment", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", lastLine);
+                break;
+
             case 630:
-                if (messageText.length() <= 67) {
-                    if (messageText.length() < 10) {
-                        displayShow(" COMMENT>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                if (keyDetected) {
+                    if (messageText.length() <= 67) {
+                        String lengthStr = (messageText.length() < 10) ? "0" + String(messageText.length()) : String(messageText.length());
+                        displayShow(" COMMENT>", "Send this Comment in", "the next GPS Beacon :", messageText, "", "<Back   (" + lengthStr + ")   Enter>");
                     } else {
-                        displayShow(" COMMENT>", "Send this Comment in","the next GPS Beacon :", messageText, "", "<Back   (" + String(messageText.length()) + ")   Enter>");
-                    }     
+                        displayShow(" COMMENT>", "Comment is too long! ", "Comment too long:" + messageText, "", "", "<Back   (" + String(messageText.length()) + ")>");
+                    }
                 } else {
-                    displayShow(" COMMENT>", " Comment is to long! ", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    displayShow(" COMMENT>", "No Keyboard Detected", "", "", "", lastLine);
                 }
                 break;
 
