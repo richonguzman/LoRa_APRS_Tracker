@@ -76,7 +76,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay--;
             if (menuDisplay < 130) menuDisplay = 133;
-        } 
+        }
 
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
             menuDisplay--;
@@ -87,12 +87,17 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
-        } 
+        }
         
-        else if (menuDisplay >= 30 && menuDisplay <= 31) {
+        else if (menuDisplay >= 30 && menuDisplay <= 33) {
             menuDisplay--;
-            if (menuDisplay < 30) menuDisplay = 31;
-        } 
+            if (menuDisplay < 30) menuDisplay = 33;
+        }
+
+        else if (menuDisplay >= 40 && menuDisplay <= 41) {
+            menuDisplay--;
+            if (menuDisplay < 40) menuDisplay = 41;
+        }
         
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
             menuDisplay--;
@@ -109,10 +114,14 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay--;
             if (menuDisplay < 5084) menuDisplay = 5085;
-        } else if (menuDisplay >= 60 && menuDisplay <= 63) {
+        }
+        
+        else if (menuDisplay >= 60 && menuDisplay <= 63) {
             menuDisplay--;
             if (menuDisplay < 60) menuDisplay = 63;
-        } else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
+        }
+        
+        else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
             menuDisplay--;
             if (menuDisplay < 9000) menuDisplay = 9001;
         }
@@ -128,11 +137,11 @@ namespace KEYBOARD_Utils {
                 displayTime = millis();   
                 displayState = true;  
             }
-        }    
+        }
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay++;
             if (menuDisplay > 6) menuDisplay = 1;
-        } 
+        }
         else if (menuDisplay >= 10 && menuDisplay <= 13) {
             menuDisplay++;
             if (menuDisplay > 13) menuDisplay = 10;
@@ -150,7 +159,7 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 110) {
             menuDisplay = 11;
-        } 
+        }
         
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
         menuDisplay++;
@@ -163,15 +172,16 @@ namespace KEYBOARD_Utils {
             if (menuDisplay > 241) menuDisplay = 240;
         }
 
-        else if (menuDisplay >= 30 && menuDisplay <= 31) {
+        else if (menuDisplay >= 30 && menuDisplay <= 33) {
             menuDisplay++;  
-            if (menuDisplay > 31) menuDisplay = 30;
-        }
-        
-        else if (menuDisplay == 40) {
-            menuDisplay = 4;
+            if (menuDisplay > 33) menuDisplay = 30;
         }
 
+        else if (menuDisplay >= 40 && menuDisplay <= 41) {
+            menuDisplay++;  
+            if (menuDisplay > 41) menuDisplay = 40;
+        }
+        
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
         menuDisplay++;  
         if (menuDisplay > 53) menuDisplay = 50;
@@ -228,7 +238,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=31) || (menuDisplay>=300 && menuDisplay<=310) || (menuDisplay == 40)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=63) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -257,7 +267,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 63;
         }
     }
-    
+
     void rightArrow() {
         if (menuDisplay == 0 || menuDisplay == 200) {
             if(myBeaconsIndex >= (myBeaconsSize - 1)) {
@@ -274,7 +284,7 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 3) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 30 && menuDisplay <= 31)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -342,14 +352,21 @@ namespace KEYBOARD_Utils {
             displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } 
 
-        else if (menuDisplay == 4) {
+        else if (menuDisplay == 30) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
+        } else if (menuDisplay == 31) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Hospital");
+            MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "hospital");
+        } else if (menuDisplay == 32) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4 : Police");
+            MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "police");
+        } else if (menuDisplay == 33) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Fire Station");
+            MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "fire_station");
         }
 
-        else if (menuDisplay == 5) {
-            menuDisplay = 50;
-        } else if (menuDisplay == 50) {
+        else if (menuDisplay == 50) {
             WINLINK_Utils::login();
             menuDisplay = 500;
         } else if (menuDisplay == 51) {
@@ -433,9 +450,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 5083;
         }
 
-        else if (menuDisplay == 6) {
-            menuDisplay = 60;
-        } else if (menuDisplay == 60) {
+        else if (menuDisplay == 60) {
             if (Config.notification.ledFlashlight) {
                 if (flashlight) {
                     displayShow("  EXTRAS", "","     Flashlight","   Status --> OFF", "", "", 2000);

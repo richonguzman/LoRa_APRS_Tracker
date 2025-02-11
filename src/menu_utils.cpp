@@ -87,9 +87,9 @@ namespace MENU_Utils {
     }
 
     void showOnScreen() {
-        String lastLine, firstLineDecoder, courseSpeedAltitude, speedPacketDec, coursePacketDec, pathDec;
+        String lastLine;
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==300) && !(menuDisplay==310) && !(menuDisplay==40) && !(menuDisplay>=500 && menuDisplay<=5100) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==400) && !(menuDisplay==410) && !(menuDisplay==300) && !(menuDisplay>=500 && menuDisplay<=5100) && lastMenuTime > 30*1000) {
             menuDisplay = 0;
             messageCallsign = "";
             messageText = "";
@@ -127,19 +127,19 @@ namespace MENU_Utils {
 
         switch (menuDisplay) { // Graphic Menu is in here!!!!
             case 1:     // 1. Messages
-                displayShow("<< MENU >>","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Stations", lastLine);
+                displayShow("<< MENU >>","  6.Extras", "> 1.Messages", "  2.Configuration", "  3.Reports", lastLine);
                 break;
             case 2:     // 2. Configuration
-                displayShow("<< MENU >>", "  1.Messages", "> 2.Configuration", "  3.Stations", "  4.Weather Report", lastLine);
+                displayShow("<< MENU >>", "  1.Messages", "> 2.Configuration", "  3.Reports", "  4.Stations", lastLine);
                 break;
-            case 3:     //3. Stations
-                displayShow("<< MENU >>", "  2.Configuration", "> 3.Stations", "  4.Weather Report", "  5.Winlink/Mail", lastLine);
+            case 3:     //3. Reports
+                displayShow("<< MENU >>", "  2.Configuration", "> 3.Reports", "  4.Stations", "  5.Winlink/Mail", lastLine);
                 break;
-            case 4:     //4. Weather
-                displayShow("<< MENU >>", "  3.Stations", "> 4.Weather Report", "  5.Winlink/Mail", "  6.Extras", lastLine);
+            case 4:     //4. Stations
+                displayShow("<< MENU >>", "  3.Reports", "> 4.Stations", "  5.Winlink/Mail", "  6.Extras", lastLine);
                 break;
             case 5:     //5. Winlink
-                displayShow("<< MENU >>", "  4.Weather Report", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
+                displayShow("<< MENU >>", "  4.Stations", "> 5.Winlink/Mail", "  6.Extras", "  1.Messages", lastLine);
                 break;
             case 6:     //6. Extras
                 displayShow("<< MENU >>", "  5.Winlink/Mail", "> 6.Extras", "  1.Messages", "  2.Configuration", lastLine);
@@ -311,48 +311,49 @@ namespace MENU_Utils {
                 break;
 
 //////////
-            case 30:    //3.Stations ---> Packet Decoder
+            case 30:     // 3. Reports : Wx Report
+                displayShow(" REPORTS >","> 1.Wx Report", "  2.Hospital QTH", "  3.Police QTH", "  4.Fire Station QTH", lastLine);
+                break;
+            case 31:     // 3. Reports : Nearest Hospital
+                displayShow(" REPORTS >","  1.Wx Report", "> 2.Hospital QTH", "  3.Police QTH", "  4.Fire Station QTH", lastLine);
+                break;
+            case 32:     // 3. Reports : Nearest Police Station
+                displayShow(" REPORTS >","  1.Wx Report", "  2.Hospital QTH", "> 3.Police QTH", "  4.Fire Station QTH", lastLine);
+                break;
+            case 33:     // 3. Reports : Nearest Fire Station
+                displayShow(" REPORTS >","  1.Wx Report", "  2.Hospital QTH", "  3.Police QTH", "> 4.Fire Station QTH", lastLine);
+                break;
+            
+            case 300:
+                // waiting for Report
+                break;
+
+//////////
+            case 40:    //3.Stations ---> Packet Decoder
                 displayShow("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
                 break;
-            case 31:    //3.Stations ---> Near By Stations
+            case 41:    //3.Stations ---> Near By Stations
                 displayShow("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
-            case 300:   //3.Stations ---> Packet Decoder
+            case 400:   //3.Stations ---> Packet Decoder
                 if (lastReceivedPacket.sender != currentBeacon->callsign) {
-                    firstLineDecoder = lastReceivedPacket.sender;
+                    String firstLineDecoder = lastReceivedPacket.sender;
                     for (int i = firstLineDecoder.length(); i < 9; i++) {
                         firstLineDecoder += ' ';
                     }
                     firstLineDecoder += lastReceivedPacket.symbol;
+
                     if (lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4) {      // gps and Mic-E gps
-                        courseSpeedAltitude = String(lastReceivedPacket.altitude);
-                        for (int j = courseSpeedAltitude.length(); j < 4; j++) {
-                            courseSpeedAltitude = '0' + courseSpeedAltitude;
-                        }
-                        courseSpeedAltitude = "A=" + courseSpeedAltitude + "m ";
-                        speedPacketDec = String(lastReceivedPacket.speed);
-                        for (int k = speedPacketDec.length(); k < 3; k++) {
-                            speedPacketDec = ' ' + speedPacketDec;
-                        }
-                        courseSpeedAltitude += speedPacketDec + "km/h ";
-                        for (int l = courseSpeedAltitude.length(); l < 17; l++) {
-                            courseSpeedAltitude += ' ';
-                        }
-                        coursePacketDec = String(lastReceivedPacket.course);
-                        for (int m = coursePacketDec.length(); m < 3; m++) {
-                            coursePacketDec = ' ' + coursePacketDec;
-                        }
-                        courseSpeedAltitude += coursePacketDec;
-                        
+
+                        char bufferCourseSpeedAltitude[24];
+                        sprintf(bufferCourseSpeedAltitude, "A=%04dm %3dkm/h %3d", lastReceivedPacket.altitude, lastReceivedPacket.speed, lastReceivedPacket.course);
+                        String courseSpeedAltitude = String(bufferCourseSpeedAltitude);
+
                         double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
                         double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
                         
-                        if (lastReceivedPacket.path.length()>14) {
-                            pathDec = "P:";
-                        } else {
-                            pathDec = "PATH:  ";
-                        }
+                        String pathDec = (lastReceivedPacket.path.length() > 14) ? "P:" : "PATH:  ";
                         pathDec += lastReceivedPacket.path;
 
                         displayShow(firstLineDecoder, "GPS " + String(lastReceivedPacket.latitude,3) + " " + String(lastReceivedPacket.longitude,3), courseSpeedAltitude, "D:" + String(distanceKm) + "km    " + String(courseTo,0), pathDec, "< RSSI:" + String(lastReceivedPacket.rssi) + " SNR:" + String(lastReceivedPacket.snr));
@@ -367,13 +368,8 @@ namespace MENU_Utils {
                     }
                 }
                 break;
-            case 310:    //3.Stations ---> Near By Stations
+            case 410:    //3.Stations ---> Near By Stations
                 displayShow("NEAR BY >", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
-                break;
-
-//////////
-            case 40:
-                // waiting for Weather Report
                 break;
 
 //////////

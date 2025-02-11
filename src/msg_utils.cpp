@@ -476,7 +476,7 @@ namespace MSG_Utils {
                             sixthLineWR += "deg)";
 
                             displayShow("<WEATHER>", "From --> " + lastReceivedPacket.sender, place, summary, fifthLineWR, sixthLineWR);
-                            menuDisplay = 40;
+                            menuDisplay = 300;
                             menuTime = millis();
                         } else if (lastReceivedPacket.sender == "WLNK-1") {
                             if (winlinkStatus == 0 && !Config.simplifiedTrackerMode) {
