@@ -90,9 +90,9 @@ namespace MENU_Utils {
         String lastLine;
         uint32_t lastMenuTime = millis() - menuTime;
         if (!(menuDisplay==0) && !(menuDisplay==400) && !(menuDisplay==410) && !(menuDisplay==300) && !(menuDisplay>=500 && menuDisplay<=5100) && lastMenuTime > 30*1000) {
-            menuDisplay = 0;
+            menuDisplay     = 0;
             messageCallsign = "";
-            messageText = "";
+            messageText     = "";
         }
         if (keyDetected) {
             lastLine = "<Back Up/Down Select>";
@@ -147,7 +147,7 @@ namespace MENU_Utils {
 
 //////////
             case 10:    // 1.Messages ---> Messages Read
-                displayShow("MESSAGES>", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
                 {
@@ -157,12 +157,12 @@ namespace MENU_Utils {
                     #ifdef HAS_TFT
                         displayMessage(msgSender, msgText, 26, true);
                     #else
-                        displayShow("MSG APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
+                        displayShow(" MSG APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
                     #endif                   
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
-                displayShow("MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
                 if (keyDetected) {
@@ -183,16 +183,16 @@ namespace MENU_Utils {
                 }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
-                displayShow("MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
                 displayShow("DELETE MSG", "", "  DELETE APRS MSG?", "", "", " Confirm = LP or '>'");
                 break;
             case 13:    // 1.Messages ---> APRSThursday
-                displayShow("MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow(" APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1300:
                 if (messageText.length() <= 67) {
@@ -206,7 +206,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu.", "  Check In", "> Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow(" APRS Thu.", "  Check In", "> Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 1310:
                 if (messageText.length() <= 67) {
@@ -220,10 +220,10 @@ namespace MENU_Utils {
                 }
                 break;
             case 132:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu.", "  Check In", "  Join", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
+                displayShow(" APRS Thu.", "  Check In", "  Join", "> Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
             case 133:   // 1.Messages ---> APRSThursday ---> Delete: ALL
-                displayShow("APRS Thu.", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
+                displayShow(" APRS Thu.", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
 //////////            
@@ -254,7 +254,7 @@ namespace MENU_Utils {
 
 
             case 200:   // 2.Configuration ---> Change Callsign
-                displayShow("CALLSIGN>", "","  Confirm Change?","","","<Back         Select>");
+                displayShow(" CALLSIGN>", "","  Confirm Change?","","","<Back         Select>");
                 break;
 
             case 210:   // 2.Configuration ---> Change Frequency
@@ -330,10 +330,10 @@ namespace MENU_Utils {
 
 //////////
             case 40:    //3.Stations ---> Packet Decoder
-                displayShow("STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
+                displayShow(" STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
                 break;
             case 41:    //3.Stations ---> Near By Stations
-                displayShow("STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
+                displayShow(" STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
             case 400:   //3.Stations ---> Packet Decoder
@@ -369,7 +369,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 410:    //3.Stations ---> Near By Stations
-                displayShow("NEAR BY >", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
+                displayShow(" NEAR BY>", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
                 break;
 
 //////////
