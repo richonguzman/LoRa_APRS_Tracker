@@ -25,7 +25,6 @@ namespace MSG_Utils {
     void    sendMessage(const String& station, const String& textMessage);
     const String ackRequestNumberGenerator();
     void    addToOutputBuffer(uint8_t typeOfMessage, const String& station, const String& textMessage);
-    bool    checkOutputBufferEmpty();
     void    processOutputBuffer();
     void    clean15SegBuffer();
     bool    check15SegBuffer(const String& station, const String& textMessage);

@@ -217,11 +217,7 @@ namespace STATION_Utils {
         String packet;
         if (Config.wxsensor.sendTelemetry && wxModuleFound && type == 1) { // WX
             packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
-            if (wxModuleType != 0) {
-                packet += WX_Utils::readDataSensor(0);
-            } else {
-                packet += ".../...g...t...";
-            }            
+            packet += (wxModuleType != 0) ? WX_Utils::readDataSensor(0) : ".../...g...t...";
         } else {
             String path = Config.path;
             if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
@@ -307,55 +303,40 @@ namespace STATION_Utils {
 
     void checkTelemetryTx() {
         if (Config.wxsensor.active && Config.wxsensor.sendTelemetry && sendStandingUpdate) {
-            lastTx = millis() - lastTxTime;
-            telemetryTx = millis() - lastTelemetryTx;
+            uint32_t currenTime = millis();
+            lastTx = currenTime - lastTxTime;
+            telemetryTx = currenTime - lastTelemetryTx;
             if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {
                 sendBeacon(1);
-                lastTelemetryTx = millis();
+                lastTelemetryTx = currenTime;
             }
         }
     }
 
     void saveIndex(uint8_t type, uint8_t index) {
-        String filePath;
-        if (type == 0) {
-            filePath = "/callsignIndex.txt";
-        } else {
-            filePath = "/freqIndex.txt";
-        }
+        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
         File fileIndex = SPIFFS.open(filePath, "w");
-        if(!fileIndex) {
-            return;
-        }
+        if(!fileIndex) return;
+
         String dataToSave = String(index);
-        if (fileIndex.println(dataToSave)) {
-            if (type == 0) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Callsign Index saved to SPIFFS");
-            } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Frequency Index saved to SPIFFS");
-            }
-        } 
+        if (fileIndex.println(dataToSave)) logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", (type == 0) ? "New Callsign Index saved to SPIFFS": "New Frequency Index saved to SPIFFS");
         fileIndex.close();
     }
 
     void loadIndex(uint8_t type) {
-        String filePath;
-        if (type == 0) {
-            filePath = "/callsignIndex.txt";
-        } else {
-            filePath = "/freqIndex.txt";
-        }
+        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
         File fileIndex = SPIFFS.open(filePath);
         if(!fileIndex) {
             return;
         } else {
             while (fileIndex.available()) {
                 String firstLine = fileIndex.readStringUntil('\n');
+                int index = firstLine.toInt();
                 if (type == 0) {
-                    myBeaconsIndex = firstLine.toInt();
+                    myBeaconsIndex = index;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Callsign Index: %s", firstLine);
                 } else {
-                    loraIndex = firstLine.toInt();
+                    loraIndex = index;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "LoRa Freq Index: %s", firstLine);
                 }
             }

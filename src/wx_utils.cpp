@@ -247,11 +247,7 @@ namespace WX_Utils {
         String wx;
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
             Serial.println("WX Sensor data failed");
-            if (type == 1) {
-                wx = " - C    - %    - hPa";
-            } else {
-                wx = ".../...g...t...";
-            }
+            wx = ((type == 1) ? " - C    - %    - hPa" : ".../...g...t...");
             return wx;
         } else {
             String tempStr = generateTempString(newTemp + Config.wxsensor.temperatureCorrection, type);

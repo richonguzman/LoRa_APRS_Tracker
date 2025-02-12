@@ -270,7 +270,7 @@ namespace KEYBOARD_Utils {
 
     void rightArrow() {
         if (menuDisplay == 0 || menuDisplay == 200) {
-            if(myBeaconsIndex >= (myBeaconsSize - 1)) {
+            if (myBeaconsIndex >= (myBeaconsSize - 1)) {
                 myBeaconsIndex = 0;
             } else {
                 myBeaconsIndex++;
@@ -302,26 +302,16 @@ namespace KEYBOARD_Utils {
             displayShow("   INFO", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
-        } else if (menuDisplay == 130) {
+        } else if (menuDisplay == 130 || menuDisplay == 131) {
             if (keyDetected) {
-                menuDisplay = 1300;
+                menuDisplay *= 10;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, "APRSPH" , "HOTG Happy #APRSThursday from LoRa Tracker 73!");                
+                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!"); 
             }
-        } else if (menuDisplay == 131) {
-            if (keyDetected) {
-                menuDisplay = 1310;
-            } else {
-                displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, "ANSRVR", "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
-            }
-        } else if (menuDisplay == 132) {
-            displayShow(" APRS Thu.", "", "   Unsubscribe", "   from APRS Thursday", "", "", 2000);
-            MSG_Utils::addToOutputBuffer(0, "ANSRVR", "U HOTG");
-        } else if (menuDisplay == 133) {
-            displayShow(" APRS Thu.", "", "  Keep Subscribed" ,"  for 12hours more", "", "", 2000);
-            MSG_Utils::addToOutputBuffer(0, "ANSRVR", "K HOTG");
+        } else if (menuDisplay == 132 || menuDisplay == 133) {
+            displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
+            MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
         }
 
         else if (menuDisplay == 210) {
@@ -329,21 +319,11 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(1, loraIndex);
             menuDisplay = 21;
         } else if (menuDisplay == 220) {
-            if (!displayEcoMode) {
-                displayEcoMode = true;
-                displayShow(" DISPLAY", "", "   ECO MODE -> ON", 1000);
-            } else {
-                displayEcoMode = false;
-                displayShow(" DISPLAY", "", "   ECO MODE -> OFF", 1000);
-            }
+            displayEcoMode = !displayEcoMode;
+            displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
-            if (screenBrightness ==1) {
-                displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MAX", 1000);
-                screenBrightness = 255;   
-            } else {
-                displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MIN", 1000);
-                screenBrightness = 1;
-            }
+            screenBrightness = (screenBrightness == 1) ? 255 : 1;
+            displayShow("  SCREEN", "", (screenBrightness == 255) ? "SCREEN BRIGHTNESS MAX" : "SCREEN BRIGHTNESS MIN", 1000);
         } else if (menuDisplay == 240) {
             displayShow("  STATUS", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
@@ -416,22 +396,11 @@ namespace KEYBOARD_Utils {
             } else {
                 menuDisplay = 50110;
             }
-        } else if (menuDisplay == 5020) {
-            menuDisplay = 5021;
-        } else if (menuDisplay == 5030) {
-            menuDisplay = 5031;
-        } else if (menuDisplay == 5040) {
-            menuDisplay = 5041;
-        } else if (menuDisplay == 5050) {
-            menuDisplay = 5051;
-        } else if (menuDisplay == 5060) {
-            menuDisplay = 5061;
-        } else if (menuDisplay == 5061) {
-            menuDisplay = 50610;
-        } else if (menuDisplay == 5061) {
-            menuDisplay = 50610;
-        } else if (menuDisplay == 5062) {
-            menuDisplay = 50620;
+
+        } else if (menuDisplay >= 5020 && menuDisplay <= 5060 && menuDisplay % 10 == 0) {
+            menuDisplay++;
+        } else if (menuDisplay >= 5061 && menuDisplay <= 5062) {
+            menuDisplay *= 10;
         } else if (menuDisplay == 5063) {
             MSG_Utils::addToOutputBuffer(1, "WLNK-1", "AL");
         } else if (menuDisplay == 5070) {
@@ -533,14 +502,11 @@ namespace KEYBOARD_Utils {
                 if (menuDisplay == 111) {
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
                     menuDisplay = 11;
-                } else if (menuDisplay == 1300) {
-                    messageCallsign = "APRSPH";
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "HOTG " + messageText);                    
-                    menuDisplay = 130;
-                } else if (menuDisplay == 1310) {
-                    messageCallsign = "ANSRVR";
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, "CQ HOTG " + messageText);                    
-                    menuDisplay = 131;
+                } else if (menuDisplay == 1300 || menuDisplay == 1310) {
+                    messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
+                    String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
+                    MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
+                    menuDisplay /= 10;
                 }
                 messageCallsign = "";
                 messageText = "";

@@ -172,16 +172,16 @@ namespace MSG_Utils {
     }
 
     void ledNotification() {
-        uint32_t ledTimeDelta = millis() - messageLedTime;
-        if (messageLed && ledTimeDelta > 5 * 1000) {
-            digitalWrite(Config.notification.ledMessagePin, HIGH);
-            messageLedTime = millis();
-        }
-        uint32_t ledOnDelta = millis() - messageLedTime;
-        if (messageLed && ledOnDelta > 1 * 1000) {
-            digitalWrite(Config.notification.ledMessagePin, LOW);
-        }
-        if (!messageLed && digitalRead(Config.notification.ledMessagePin) == HIGH) {
+        uint32_t currentTime = millis();
+        uint32_t ledTimeDelta = currentTime - messageLedTime;
+        if (messageLed) {
+            if (ledTimeDelta > 5 * 1000) {
+                digitalWrite(Config.notification.ledMessagePin, HIGH);
+                messageLedTime = currentTime;
+            } else if (ledTimeDelta > 1 * 1000) {
+                digitalWrite(Config.notification.ledMessagePin, LOW);
+            }
+        } else if (!messageLed && digitalRead(Config.notification.ledMessagePin) == HIGH) {
             digitalWrite(Config.notification.ledMessagePin, LOW);
         }
     }
@@ -196,9 +196,7 @@ namespace MSG_Utils {
         } else if (typeOfFile == 1) {   //WLNK
             SPIFFS.remove("/winlinkMails.txt");
         }    
-        if (Config.notification.ledMessage) {
-            messageLed = false;
-        }
+        if (Config.notification.ledMessage) messageLed = false;
     }
 
     void saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage) {
@@ -240,9 +238,6 @@ namespace MSG_Utils {
 
     void sendMessage(const String& station, const String& textMessage) {
         String newPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, station, textMessage);
-        /*#if HAS_TFT
-        cleanTFT();
-        #endif*/
         if (textMessage.indexOf("ack") == 0 && station != "WLNK-1") {  // don't show Winlink ACK
             displayShow("<<ACK Tx>>", "", "", 500);
         } else if (station.indexOf("CA2RXU-15") == 0 && textMessage.indexOf("wrl") == 0) {
@@ -250,11 +245,7 @@ namespace MSG_Utils {
             wxRequestTime = millis();
             wxRequestStatus = true;
         } else {
-            if (station == "WLNK-1") {
-                displayShow("WINLINK Tx", "", newPacket, 100);
-            } else {
-                displayShow("MSG Tx >>", "", newPacket, 100);
-            }
+            displayShow((station == "WLNK-1") ? "WINLINK Tx" : " MSG Tx >", "", newPacket, 100);
         }
         LoRa_Utils::sendNewPacket(newPacket);
     }
@@ -275,6 +266,7 @@ namespace MSG_Utils {
                 for (int i = 0; i < outputMessagesBuffer.size(); i++) {
                     if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
                         alreadyInBuffer = true;
+                        break;
                     }
                 }
             }
@@ -282,6 +274,7 @@ namespace MSG_Utils {
                 for (int j = 0; j < outputAckRequestBuffer.size(); j++) {
                     if (outputAckRequestBuffer[j].indexOf(station + "," + textMessage) > 1) {
                         alreadyInBuffer = true;
+                        break;
                     }
                 }
             }               
@@ -294,6 +287,7 @@ namespace MSG_Utils {
                 for (int k = 0; k < outputMessagesBuffer.size(); k++) {
                     if (outputMessagesBuffer[k].indexOf(station + "," + textMessage) == 0) {
                         alreadyInBuffer = true;
+                        break;
                     }
                 }
             }
@@ -301,13 +295,6 @@ namespace MSG_Utils {
                 outputMessagesBuffer.push_back(station + "," + textMessage);
             }
         }
-    }
-
-    bool checkOutputBufferEmpty() {
-        if(outputMessagesBuffer.empty()) {
-            return true;
-        }
-        return false;
     }
 
     void processOutputBuffer() {
@@ -437,9 +424,8 @@ namespace MSG_Utils {
                             lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("{"));
                         }
 
-                        if (Config.notification.buzzerActive && Config.notification.messageRxBeep) {
-                            NOTIFICATION_Utils::messageBeep();
-                        }
+                        if (Config.notification.buzzerActive && Config.notification.messageRxBeep) NOTIFICATION_Utils::messageBeep();
+                        
                         if (lastReceivedPacket.payload.indexOf("ping") == 0 || lastReceivedPacket.payload.indexOf("Ping") == 0 || lastReceivedPacket.payload.indexOf("PING") == 0) {
                             lastMsgRxTime = millis();
                             MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");

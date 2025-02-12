@@ -48,21 +48,13 @@ namespace SMARTBEACON_Utils {
     void checkFixedBeaconTime() {
         if (!smartBeaconActive) {
             uint32_t lastTxSmartBeacon = millis() - lastTxTime;
-            if (lastTxSmartBeacon >= Config.nonSmartBeaconRate * 60 * 1000) {
-                sendUpdate = true;
-            }
+            if (lastTxSmartBeacon >= Config.nonSmartBeaconRate * 60 * 1000) sendUpdate = true;
         }
     }
 
     void checkState() {
-        if (wxRequestStatus && (millis() - wxRequestTime) > 20000) {
-            wxRequestStatus = false;
-        }
-        if(winlinkStatus == 0 && !wxRequestStatus) {
-            smartBeaconActive = currentBeacon->smartBeaconActive;
-        } else {
-            smartBeaconActive = false;
-        }
+        if (wxRequestStatus && (millis() - wxRequestTime) > 20000) wxRequestStatus = false;
+        smartBeaconActive = (winlinkStatus == 0 && !wxRequestStatus) ? currentBeacon->smartBeaconActive : false;
     }
     
 }

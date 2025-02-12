@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.02.11";
+String      versionDate             = "2025.02.12";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -237,9 +237,7 @@ void loop() {
 
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
-            if (!sendUpdate) {
-                GPS_Utils::calculateHeadingDelta(currentSpeed);
-            }
+            if (!sendUpdate) GPS_Utils::calculateHeadingDelta(currentSpeed);
             STATION_Utils::checkStandingUpdateTime();
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();

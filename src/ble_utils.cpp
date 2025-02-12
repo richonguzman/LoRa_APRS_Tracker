@@ -49,7 +49,6 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     }
 };
 
-
 class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
@@ -97,27 +96,19 @@ namespace BLE_Utils {
 
         BLEService *pService = nullptr;
 
-        if (Config.bluetooth.useKISS) {   // KISS (AX.25)
-            pService = pServer->createService(SERVICE_UUID_0);
-            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_0, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_0, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-        } else {                            // TNC2
-            pService = pServer->createService(SERVICE_UUID_1);
-            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-        }
+        //  KISS (AX.25) or TNC2
+        bool useKISS = Config.bluetooth.useKISS;
+        pService = pServer->createService(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
+        pCharacteristicTx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+        pCharacteristicRx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
 
         if (pService != nullptr) {
             pCharacteristicRx->setCallbacks(new MyCallbacks());
             pService->start();
 
             BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+            pAdvertising->addServiceUUID(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
 
-            if (Config.bluetooth.useKISS) {
-                pAdvertising->addServiceUUID(SERVICE_UUID_0);
-            } else {
-                pAdvertising->addServiceUUID(SERVICE_UUID_1);
-            }
             pServer->getAdvertising()->setScanResponse(true);
             pServer->getAdvertising()->setMinPreferred(0x06);
             pServer->getAdvertising()->setMaxPreferred(0x0C);
@@ -170,7 +161,7 @@ namespace BLE_Utils {
                 delete[] chunk;
                 delay(200);
             }
-        } else {                            // TNC2
+        } else {        // TNC2
             for (int n = 0; n < frame.length(); n++) txBLE(frame[n]);
             txBLE('\n');
         }   
