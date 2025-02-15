@@ -473,12 +473,11 @@ namespace POWER_Utils {
             displayToggle(false);
             PMU.shutdown();
         #else
-
             if (Config.bluetooth.active && Config.bluetooth.useBLE) {
                 BLE_Utils::stop();
-            } else {
+            } /*else {
                 // turn off BT classic ???
-            }
+            }*/
 
             #ifdef VEXT_CTRL
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
