@@ -43,6 +43,8 @@
     #define JOYSTICK_RIGHT      2   // G S2
 
     #define HAS_TOUCHSCREEN
+    #define BOARD_TOUCH_INT     16
+    
     #define HAS_I2S
     #define DAC_I2S_WS          5
     #define DAC_I2S_DOUT        6

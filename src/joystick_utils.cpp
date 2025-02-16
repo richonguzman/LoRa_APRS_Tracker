@@ -3,7 +3,7 @@
 #include "board_pinout.h"
 #include "button_utils.h"
 
-extern  int                     menuDisplay;
+extern  int menuDisplay;
 
 bool    exitJoystickInterrupt  = false;
 

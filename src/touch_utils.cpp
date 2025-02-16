@@ -31,8 +31,14 @@
 
     extern int menuDisplay;
 
+    bool touchDetected = false;
+
 
     namespace TOUCH_Utils {
+
+        void IRAM_ATTR handleTouchInterrupt() {
+            touchDetected = true;
+        }
 
         void sendBeaconFromTouch() { sendUpdate = true;}
 
@@ -70,24 +76,38 @@
         }
 
         void loop() {
-            if (touch.read() && (millis() - lastTouchTime > touchDebounce)) {
-                TP_Point touchPoint = touch.getPoint(0);
-                uint16_t xValueTouched = map(touchPoint.y, xCalibratedMin, xCalibratedMax, 0, xValueMax);   // x and y values are inverted because
-                uint16_t yValueTouched = map(touchPoint.x, yCalibratedMin, yCalibratedMax, 0, yValueMax);   // TFT screen is rotated!!!!
-                lastTouchTime = millis();
-                //Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
-                checkLiveButtons(xValueTouched, yValueTouched);
+            if (touchDetected) {
+                Serial.println("touch");
+                touchDetected = false;
+                //touch.read();
+                if (touch.read()){//} && */(millis() - lastTouchTime > touchDebounce)) {
+                    TP_Point touchPoint = touch.getPoint(0);
+                    uint16_t xValueTouched = map(touchPoint.y, xCalibratedMin, xCalibratedMax, 0, xValueMax);   // x and y values are inverted because
+                    uint16_t yValueTouched = map(touchPoint.x, yCalibratedMin, yCalibratedMax, 0, yValueMax);   // TFT screen is rotated!!!!
+                    lastTouchTime = millis();
+                    Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
+                    checkLiveButtons(xValueTouched, yValueTouched);
+                }
+                //if (millis() - lastTouchTime > 1000) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
             }
-            if (millis() - lastTouchTime > 1000) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
+        }
+
+
+
+        void interruptDefinition() {
+            pinMode(BOARD_TOUCH_INT, INPUT_PULLUP);  // Configure the interrupt pin
+            attachInterrupt(digitalPinToInterrupt(BOARD_TOUCH_INT), handleTouchInterrupt, FALLING);
         }
 
         void setup() {
             if (touchModuleAddress != 0x00) {
                 if (touchModuleAddress == 0x14) {
                     touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+                    interruptDefinition();
                     touch.init();
                 } else if (touchModuleAddress == 0x5d) {
                     touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+                    interruptDefinition();
                     touch.init();
                 } else {
                     Serial.println("No Touch Module Address found");
