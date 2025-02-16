@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.02.14";
+String      versionDate             = "2025.02.16";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -203,7 +203,7 @@ void loop() {
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();
 
-    if (bluetoothActive) {
+    if (bluetoothActive && bluetoothConnected) {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::sendToPhone(packet.text.substring(3));
             BLE_Utils::sendToLoRa();

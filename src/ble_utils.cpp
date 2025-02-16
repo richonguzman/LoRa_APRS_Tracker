@@ -164,11 +164,11 @@ namespace BLE_Utils {
         } else {        // TNC2
             for (int n = 0; n < frame.length(); n++) txBLE(frame[n]);
             txBLE('\n');
-        }   
+        }
     }
 
     void sendToPhone(const String& packet) {
-        if (!packet.isEmpty() && bluetoothConnected) {
+        if (!packet.isEmpty()) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Rx", "%s", packet.c_str());
             String receivedPacketString = "";
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
