@@ -168,7 +168,7 @@ namespace BLE_Utils {
     }
 
     void sendToPhone(const String& packet) {
-        if (!packet.isEmpty()) {
+        if (!packet.isEmpty() && bluetoothConnected) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Rx", "%s", packet.c_str());
             String receivedPacketString = "";
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
