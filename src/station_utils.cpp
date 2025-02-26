@@ -1,10 +1,10 @@
+#include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
-#include "APRSPacketLib.h"
 #include "station_utils.h"
 #include "battery_utils.h"
 #include "configuration.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
@@ -216,21 +216,15 @@ namespace STATION_Utils {
 
         String packet;
         if (Config.wxsensor.sendTelemetry && wxModuleFound && type == 1) { // WX
-            packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
-            if (wxModuleType != 0) {
-                packet += WX_Utils::readDataSensor(0);
-            } else {
-                packet += ".../...g...t...";
-            }            
+            packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
+            packet += (wxModuleType != 0) ? WX_Utils::readDataSensor(0) : ".../...g...t...";
         } else {
             String path = Config.path;
-            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) {   // avoid plane speed and altitude
-                path = "";
-            }
+            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
             if (miceActive) {
-                packet = APRSPacketLib::generateMiceGPSBeacon(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
+                packet = APRSPacketLib::generateMiceGPSBeaconPacket(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
             } else {
-                packet = APRSPacketLib::generateGPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPS(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
             }
         }
         String comment;
@@ -242,16 +236,15 @@ namespace STATION_Utils {
             comment = currentBeacon->comment;
             sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
         }
+
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
         bool shouldSleepLowVoltage = false;
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) {
                 shouldSleepLowVoltage   = true;
             }
-            //
-            //BATTERY_Utils::checkLowVoltageAndSleep(batteryVoltage.toFloat());
-            //
         #endif
+
         if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
             String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
             #if defined(HAS_AXP192)
@@ -274,6 +267,7 @@ namespace STATION_Utils {
                 comment += "%";
             #endif
         }
+        
         if (shouldSleepLowVoltage) {
             packet += " **LowVoltagePowerOff**";
         } else {
@@ -286,15 +280,10 @@ namespace STATION_Utils {
                 }
             }
         }
-        #ifdef HAS_TFT
-            cleanTFT();
-        #endif
-        displayShow("<<< TX >>>", "", packet,100);
+        displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
 
-        if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {     // send Tx packets to Phone too
-            BLE_Utils::sendToPhone(packet);
-        }
+        if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
         if (shouldSleepLowVoltage) {
             delay(3000);
@@ -309,65 +298,45 @@ namespace STATION_Utils {
         }
         lastTxTime  = millis();
         sendUpdate  = false;
-        #ifdef HAS_TFT
-            cleanTFT(); 
-        #endif
-        if (currentBeacon->gpsEcoMode) {
-            gpsShouldSleep = true;
-        }
+        if (currentBeacon->gpsEcoMode) gpsShouldSleep = true;
     }
 
     void checkTelemetryTx() {
         if (Config.wxsensor.active && Config.wxsensor.sendTelemetry && sendStandingUpdate) {
-            lastTx = millis() - lastTxTime;
-            telemetryTx = millis() - lastTelemetryTx;
+            uint32_t currenTime = millis();
+            lastTx = currenTime - lastTxTime;
+            telemetryTx = currenTime - lastTelemetryTx;
             if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {
                 sendBeacon(1);
-                lastTelemetryTx = millis();
+                lastTelemetryTx = currenTime;
             }
         }
     }
 
     void saveIndex(uint8_t type, uint8_t index) {
-        String filePath;
-        if (type == 0) {
-            filePath = "/callsignIndex.txt";
-        } else {
-            filePath = "/freqIndex.txt";
-        }
+        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
         File fileIndex = SPIFFS.open(filePath, "w");
-        if(!fileIndex) {
-            return;
-        }
+        if(!fileIndex) return;
+
         String dataToSave = String(index);
-        if (fileIndex.println(dataToSave)) {
-            if (type == 0) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Callsign Index saved to SPIFFS");
-            } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "New Frequency Index saved to SPIFFS");
-            }
-        } 
+        if (fileIndex.println(dataToSave)) logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", (type == 0) ? "New Callsign Index saved to SPIFFS": "New Frequency Index saved to SPIFFS");
         fileIndex.close();
     }
 
     void loadIndex(uint8_t type) {
-        String filePath;
-        if (type == 0) {
-            filePath = "/callsignIndex.txt";
-        } else {
-            filePath = "/freqIndex.txt";
-        }
+        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
         File fileIndex = SPIFFS.open(filePath);
         if(!fileIndex) {
             return;
         } else {
             while (fileIndex.available()) {
                 String firstLine = fileIndex.readStringUntil('\n');
+                int index = firstLine.toInt();
                 if (type == 0) {
-                    myBeaconsIndex = firstLine.toInt();
+                    myBeaconsIndex = index;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Callsign Index: %s", firstLine);
                 } else {
-                    loraIndex = firstLine.toInt();
+                    loraIndex = index;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "LoRa Freq Index: %s", firstLine);
                 }
             }

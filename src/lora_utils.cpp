@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
 
@@ -33,7 +33,7 @@ bool transmitFlag    = true;
 #if defined(HAS_SX1276)
     SX1276 radio = new Module(RADIO_CS_PIN, RADIO_BUSY_PIN, RADIO_RST_PIN);
 #endif
-#if defined(HAS_LLCC68) //LLCC68 supports spreading factor only in range of 5-11!
+#if defined(HAS_LLCC68) //  LLCC68 supports spreading factor only in range of 5-11!
     LLCC68 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 #endif
 
@@ -179,9 +179,9 @@ namespace LoRa_Utils {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }
-        #ifdef HAS_TFT
+        /*#ifdef HAS_TFT
             cleanTFT();
-        #endif
+        #endif*/
     }
 
     void wakeRadio() {

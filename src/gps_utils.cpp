@@ -1,10 +1,10 @@
 #include <TinyGPS++.h>
 #include "TimeLib.h"
-#include "APRSPacketLib.h"
+#include <APRSPacketLib.h>
 #include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "gps_utils.h"
@@ -68,9 +68,7 @@ namespace GPS_Utils {
 
     void getData() {
         if (disableGPS) return;
-        while (gpsSerial.available() > 0) {
-            gps.encode(gpsSerial.read());
-        }
+        while (gpsSerial.available() > 0) gps.encode(gpsSerial.read());
     }
 
     void setDateFromData() {
@@ -131,18 +129,14 @@ namespace GPS_Utils {
         bearing += "(";
         bearing += center;
         bearing += ").....";
-        if (right.length() == 1 && center.length() != 2) {
-            bearing += ".";
-        }
+        if (right.length() == 1 && center.length() != 2) bearing += ".";
         bearing += right;
         bearing += ".<";
         return bearing;
     }
 
     String getCardinalDirection(float course) {
-        if (gps.speed.kmph() > 0.5) {
-            bearing = course;
-        }
+        if (gps.speed.kmph() > 0.5) bearing = course;
 
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
         if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";

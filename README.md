@@ -23,9 +23,9 @@ ____________________________________________________
     - Read, Write and Delete Messages (with I2C Keyboard or Phone).
     - Asking Weather Report.
     - Listening to other Trackers arround.
-    - Changing Display Eco Mode (turn off after 4 seg) and Screen Brightness.
+    - Changing Display Eco Mode (turn off after 4 seconds) and Screen Brightness.
 - Processor from 240Mhz to 80MHz to save almost 20% power consumption.
-- All GPS beacons/packet are encoded for less time on RF/LoRa Tx.
+- All GPS beacons/packets are encoded for less time on RF/LoRa Tx.
 - Oled Screen shows Altitude+Speed+Course or BME280 Wx Data or Number of New Messages Received.
 - Oled Screen shows Recent Heard Trackers/Station/iGates Tx.
 - Bluetooth capabilities to connect (Android + APRSDroid) or (iPhone + APRS.fi app) and use it as TNC.
@@ -53,6 +53,10 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025.02.09 Now Bluetooth connections lets you decide to use BLE/BT Classic and KISS/TNC.
+- 2025.01.11 Added HELTEC V3.2 board support.
+- 2025.01.07 TROY_LoRa_APRS board added.
+- 2025.01.02 Buttons added for DIY Boards and Boards without buttons.
 - 2024.11.13 Added Heltec Wireless Stick Lite V3 + GPS + Oled Display support for another DIY ESP32 Tracker.
 - 2024.11.13 T-Deck Joystick and Button Pressing Fix for smother operation.
 - 2024.10.24 Added QRP Labs LightTracker Plus1.0 support.

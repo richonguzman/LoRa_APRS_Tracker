@@ -15,23 +15,23 @@
 #define CHARACTERISTIC_UUID_RX_0  "00000002-ba2a-46c9-ae49-01b0961f68bb"
 
 // ANDROID - BLE Terminal app (Serial Bluetooth Terminal from Playstore)
-#define SERVICE_UUID_2            "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
-#define CHARACTERISTIC_UUID_TX_2  "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
-#define CHARACTERISTIC_UUID_RX_2  "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+#define SERVICE_UUID_1            "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_TX_1  "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_RX_1  "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
-BLEServer *pServer;
-BLECharacteristic *pCharacteristicTx;
-BLECharacteristic *pCharacteristicRx;
+BLEServer               *pServer;
+BLECharacteristic       *pCharacteristicTx;
+BLECharacteristic       *pCharacteristicRx;
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 extern bool             bluetoothConnected;
+extern bool             bluetoothActive;
 
 bool    shouldSendBLEtoLoRa     = false;
 String  BLEToLoRaPacket         = "";
-
-String kissSerialBuffer = "";
+String  kissSerialBuffer        = "";
 
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
@@ -49,10 +49,9 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     }
 };
 
-
 class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
-        if (Config.bluetooth.type == 0) {                               // AX25 KISS
+        if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             std::string receivedData = pCharacteristic->getValue();
             delay(100);
             for (int i = 0; i < receivedData.length(); i++) {
@@ -72,7 +71,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                     }
                 }
             }
-        } else if (Config.bluetooth.type == 2) {                        // TNC2
+        } else {                            // TNC2
             std::string receivedData = pCharacteristic->getValue();
             String receivedString = "";
             for (int i = 0; i < receivedData.length(); i++) receivedString += receivedData[i];
@@ -90,42 +89,33 @@ namespace BLE_Utils {
     }
   
     void setup() {
-        String id = currentBeacon->callsign;
-        String BLEid = id.substring(0, id.indexOf("-")) + "-BLE";
-        BLEDevice::init(BLEid.c_str());
+        String BLEid = Config.bluetooth.deviceName;
+        BLEDevice::init(BLEid.c_str()); 
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
         BLEService *pService = nullptr;
 
-        if (Config.bluetooth.type == 0) {
-            pService = pServer->createService(SERVICE_UUID_0);
-            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_0, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_0, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-        } else if (Config.bluetooth.type == 2) {
-            pService = pServer->createService(SERVICE_UUID_2);
-            pCharacteristicTx = pService->createCharacteristic(CHARACTERISTIC_UUID_TX_2, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-            pCharacteristicRx = pService->createCharacteristic(CHARACTERISTIC_UUID_RX_2, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-        }
+        //  KISS (AX.25) or TNC2
+        bool useKISS = Config.bluetooth.useKISS;
+        pService = pServer->createService(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
+        pCharacteristicTx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+        pCharacteristicRx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
 
         if (pService != nullptr) {
             pCharacteristicRx->setCallbacks(new MyCallbacks());
             pService->start();
 
             BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+            pAdvertising->addServiceUUID(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
 
-            if (Config.bluetooth.type == 0) {
-                pAdvertising->addServiceUUID(SERVICE_UUID_0);
-            } else if (Config.bluetooth.type == 2) {
-                pAdvertising->addServiceUUID(SERVICE_UUID_2);
-            }
             pServer->getAdvertising()->setScanResponse(true);
             pServer->getAdvertising()->setMinPreferred(0x06);
             pServer->getAdvertising()->setMaxPreferred(0x0C);
             pAdvertising->start();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE", "%s", "Waiting for BLE central to connect...");
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service. Invalid bluetoothType: %d", Config.bluetooth.type);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service");
         }
     }
 
@@ -155,7 +145,7 @@ namespace BLE_Utils {
     }
 
     void txToPhoneOverBLE(const String& frame) {
-        if (Config.bluetooth.type == 0) {                                   // AX25 KISS
+        if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             const String kissEncodedFrame = KISS_Utils::encodeKISS(frame);
 
             const char* t   = kissEncodedFrame.c_str();
@@ -171,10 +161,10 @@ namespace BLE_Utils {
                 delete[] chunk;
                 delay(200);
             }
-        } else {                                                            // TNC2
-            for(int n = 0; n < frame.length(); n++) txBLE(frame[n]);
+        } else {        // TNC2
+            for (int n = 0; n < frame.length(); n++) txBLE(frame[n]);
             txBLE('\n');
-        }   
+        }
     }
 
     void sendToPhone(const String& packet) {

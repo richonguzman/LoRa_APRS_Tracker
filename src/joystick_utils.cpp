@@ -1,14 +1,19 @@
 #include "joystick_utils.h"
 #include "keyboard_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
+#include "button_utils.h"
 
-extern int menuDisplay;
+extern  int                     menuDisplay;
+
+bool    exitJoystickInterrupt  = false;
+
+typedef void (*DirectionFunc)();
 
 #ifdef HAS_JOYSTICK
 
     namespace JOYSTICK_Utils {
 
-        int         debounceDelay       = 300;
+        int         debounceDelay       = 400;
         uint32_t    lastInterruptTime   = 0;
 
         bool checkLastJoystickInterrupTime() {
@@ -20,14 +25,33 @@ extern int menuDisplay;
             }
         }
 
-        void IRAM_ATTR joystickHandler(void (*directionFunc)()) {
-            if (checkLastJoystickInterrupTime() && menuDisplay != 0) directionFunc();
+        bool checkMenuDisplayToExitInterrupt(int menu) {
+            if (menu == 10 || menu == 120 || menu == 200 || menu == 210 || menu == 51 || menu == 50100 || menu == 50111 || menu == 9001) {
+                return true;    // read / delete/ callsignIndex / loraIndex / readW / readW / delete / enter WiFiAP
+            } else {
+                return false;
+            }
+        }
+
+        void loop() {   // for running process with SPIFFS outside interrupt
+            if (checkMenuDisplayToExitInterrupt(menuDisplay) && exitJoystickInterrupt) BUTTON_Utils::longPress();
+        }
+
+        void IRAM_ATTR joystickHandler(DirectionFunc directionFunc) {
+            if (checkLastJoystickInterrupTime() && menuDisplay != 0) {
+                if (checkMenuDisplayToExitInterrupt(menuDisplay) && directionFunc == BUTTON_Utils::longPress) {
+                    exitJoystickInterrupt = true;
+                } else {
+                    exitJoystickInterrupt = false;
+                    directionFunc();
+                }
+            }
         }
 
         void IRAM_ATTR joystickUp() { joystickHandler(KEYBOARD_Utils::upArrow); }
         void IRAM_ATTR joystickDown() { joystickHandler(KEYBOARD_Utils::downArrow); }
         void IRAM_ATTR joystickLeft() { joystickHandler(KEYBOARD_Utils::leftArrow); }
-        void IRAM_ATTR joystickRight() { joystickHandler(KEYBOARD_Utils::rightArrow); }
+        void IRAM_ATTR joystickRight() { joystickHandler(BUTTON_Utils::longPress); }
 
         void setup() {
             pinMode(JOYSTICK_CENTER, INPUT_PULLUP);

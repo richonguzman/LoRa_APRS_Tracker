@@ -1,25 +1,33 @@
-#include "APRSPacketLib.h"
+#include <APRSPacketLib.h>
+#include <logger.h>
+#include <Wire.h>
 #include "configuration.h"
+#include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
 #include "utils.h"
 
-extern Beacon               *currentBeacon;
-extern Configuration        Config;
+extern Beacon                   *currentBeacon;
+extern Configuration            Config;
+extern logging::Logger          logger;
 
-extern uint32_t             lastTx;
-extern uint32_t             lastTxTime;
+extern uint32_t                 lastTx;
+extern uint32_t                 lastTxTime;
 
-extern bool                 displayEcoMode;
-extern uint32_t             displayTime;
-extern bool                 displayState;
-extern int                  menuDisplay;
-extern String               versionDate;
-extern bool                 flashlight;
+extern bool                     displayEcoMode;
+extern uint32_t                 displayTime;
+extern bool                     displayState;
+extern int                      menuDisplay;
+extern String                   versionDate;
+extern bool                     flashlight;
 
-extern bool                 statusState;
+extern bool                     statusState;
 
-uint32_t    statusTime              = millis();
+uint32_t    statusTime          = millis();
+uint8_t     wxModuleAddress     = 0x00;
+uint8_t     keyboardAddress     = 0x00;
+uint8_t     touchModuleAddress  = 0x00;
+
 
 namespace Utils {
   
@@ -85,19 +93,20 @@ namespace Utils {
 
     void checkStatus() {
         if (statusState) {
-            lastTx = millis() - lastTxTime;
-            uint32_t statusTx = millis() - statusTime;
+            uint32_t currentTime = millis();
+            uint32_t statusTx = currentTime - statusTime;
+            lastTx = currentTime - lastTxTime;
             if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
                 LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, "https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate));
                 statusState = false;
-                lastTxTime = millis();
             }
         }
     }
 
     void checkDisplayEcoMode() {
-        uint32_t lastDisplayTime = millis() - displayTime;
-        if (displayEcoMode && menuDisplay == 0 && millis() > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
+        uint32_t currentTime = millis();
+        uint32_t lastDisplayTime = currentTime - displayTime;
+        if (displayEcoMode && menuDisplay == 0 && currentTime > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
             displayToggle(false);
             displayState = false;
         }
@@ -114,6 +123,56 @@ namespace Utils {
         } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
             digitalWrite(Config.notification.ledFlashlightPin, LOW);
         }       
+    }
+
+    void i2cScannerForPeripherals() {
+        uint8_t err, addr;
+        if (Config.wxsensor.active) {
+            for (addr = 1; addr < 0x7F; addr++) {
+                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_2_GPS)
+                    Wire1.beginTransmission(addr);
+                    err = Wire1.endTransmission();
+                #else
+                    Wire.beginTransmission(addr);
+                    err = Wire.endTransmission();
+                #endif
+                if (err == 0) {
+                    //Serial.println(addr); this shows any connected board to I2C
+                    if (addr == 0x76 || addr == 0x77) {
+                        wxModuleAddress = addr;
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Wx Module Connected to I2C");
+                    }
+                }
+            }
+        }
+
+        for (addr = 1; addr < 0x7F; addr++) {
+            Wire.beginTransmission(addr);
+            err = Wire.endTransmission();
+            if (err == 0) {
+                //Serial.println(addr); this shows any connected board to I2C
+                if (addr == 0x55) {         // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
+                    keyboardAddress = addr;
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected to I2C");
+                } else if (addr == 0x5F) {  // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
+                    keyboardAddress = addr;
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
+                }
+            }
+        }
+
+        #ifdef HAS_TOUCHSCREEN
+            for (addr = 1; addr < 0x7F; addr++) {
+                Wire.beginTransmission(addr);
+                err = Wire.endTransmission();
+                if (err == 0) {
+                    if (addr == 0x14 || addr == 0x5D ) {
+                        touchModuleAddress = addr;
+                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Touch Module Connected to I2C");
+                    }
+                }
+            }
+        #endif
     }
   
 }

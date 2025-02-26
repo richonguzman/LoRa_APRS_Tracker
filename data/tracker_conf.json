@@ -39,7 +39,7 @@
     },
 	"battery": {
 		"sendVoltage": false,
-		"voltageAsTelemetry": true,
+		"voltageAsTelemetry": false,
 		"sendVoltageAlways": false,
 		"monitorVoltage": false,
 		"sleepVoltage": 2.9
@@ -53,7 +53,8 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
-		"acceptOwnFrameFromTNC": false
+		"acceptOwnFrameFromTNC": false,
+		"email": ""
 	},
 	"winlink": {
 		"password": "ABCDEF"
@@ -104,8 +105,10 @@
 		}
 	],
 	"bluetooth": {
-		"type": 1,
-		"active": false
+		"active": false,
+		"deviceName": "LoRaTracker",
+		"useBLE": false,
+		"useKISS": false
 	},
 	"pttTrigger": {
 		"active": false,

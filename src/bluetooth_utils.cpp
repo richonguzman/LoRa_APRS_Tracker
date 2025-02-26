@@ -14,16 +14,14 @@ extern BluetoothSerial  SerialBT;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 extern bool             bluetoothConnected;
-
-bool bluetoothActive;
+extern bool             bluetoothActive;
 
 namespace BLUETOOTH_Utils {
     String serialReceived;
     bool shouldSendToLoRa = false;
-    bool useKiss = false;
+    bool useKiss = Config.bluetooth.useKISS? true : false;
 
     void setup() {
-        bluetoothActive = Config.bluetooth.active;
         if (!bluetoothActive) {
             btStop();
             esp_bt_controller_disable();
@@ -36,8 +34,7 @@ namespace BLUETOOTH_Utils {
         SerialBT.register_callback(BLUETOOTH_Utils::bluetoothCallback);
         SerialBT.onData(BLUETOOTH_Utils::getData); // callback instead of while to avoid RX buffer limit when NMEA data received
 
-        String id = currentBeacon->callsign;
-        String BTid = id.substring(0, id.indexOf("-")) + "-BT";
+        String BTid = Config.bluetooth.deviceName;
 
         if (!SerialBT.begin(String(BTid))) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Bluetooth", "Starting Bluetooth failed!");
@@ -46,14 +43,13 @@ namespace BLUETOOTH_Utils {
                 delay(1000);
             }
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth init done!");
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth Classic init done!");
     }
 
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
         if (event == ESP_SPP_SRV_OPEN_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client connected !");
             bluetoothConnected = true;
-            useKiss = false;
         } else if (event == ESP_SPP_CLOSE_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client disconnected !");
             bluetoothConnected = false;
@@ -63,9 +59,7 @@ namespace BLUETOOTH_Utils {
     }
 
     void getData(const uint8_t *buffer, size_t size) {
-        if (size == 0) {
-            return;
-        }
+        if (size == 0) return;
         shouldSendToLoRa = false;
         serialReceived.clear();
         bool isNmea = buffer[0] == '$';
@@ -111,7 +105,7 @@ namespace BLUETOOTH_Utils {
     }
 
     void sendToPhone(const String& packet) {
-        if (!packet.isEmpty() && bluetoothActive) {
+        if (!packet.isEmpty()) {
             if (useKiss) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX Kiss", "%s", serialReceived.c_str());
                 SerialBT.println(KISS_Utils::encodeKISS(packet));

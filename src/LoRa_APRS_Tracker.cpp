@@ -6,13 +6,13 @@
 ██║     ██║   ██║██╔══██╗██╔══██║    ██╔══██║██╔═══╝ ██╔══██╗╚════██║
 ███████╗╚██████╔╝██║  ██║██║  ██║    ██║  ██║██║     ██║  ██║███████║
 ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝
-                                                                     
-      ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗             
-      ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗            
-         ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝            
-         ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗            
-         ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║            
-         ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝  
+
+      ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗
+      ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+         ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝
+         ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+         ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+         ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 
                        Ricardo Guzman - CA2RXU 
           https://github.com/richonguzman/LoRa_APRS_Tracker
@@ -20,20 +20,20 @@
 ____________________________________________________________________*/
 
 #include <BluetoothSerial.h>
+#include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
 #include <logger.h>
 #include <WiFi.h>
-#include "APRSPacketLib.h"
 #include "smartbeacon_utils.h"
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
 #include "configuration.h"
+#include "battery_utils.h"
 #include "station_utils.h"
-#include "boards_pinout.h"
+#include "board_pinout.h"
 #include "button_utils.h"
-#include "audio_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "menu_utils.h"
@@ -46,7 +46,9 @@ ____________________________________________________________________*/
 #include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
-
+#ifdef HAS_TOUCHSCREEN
+#include "touch_utils.h"
+#endif
 
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
@@ -55,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2024.11.13";
+String      versionDate             = "2025.02.17";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -74,6 +76,7 @@ uint32_t    refreshDisplayTime      = millis();
 
 bool        sendUpdate              = true;
 
+bool        bluetoothActive         = Config.bluetooth.active;
 bool        bluetoothConnected      = false;
 
 uint32_t    lastTx                  = 0.0;
@@ -126,6 +129,7 @@ void setup() {
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
+    Utils::i2cScannerForPeripherals();
     WX_Utils::setup();
     
     ackRequestNumber = random(1,999);
@@ -133,12 +137,14 @@ void setup() {
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
 
-    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
-        BLE_Utils::setup();
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::setup();
-        #endif
+    if (bluetoothActive) {
+        if (Config.bluetooth.useBLE) {
+            BLE_Utils::setup();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::setup();
+            #endif
+        }
     }
 
     if (!Config.simplifiedTrackerMode) {
@@ -149,11 +155,10 @@ void setup() {
             JOYSTICK_Utils::setup();
         #endif
         KEYBOARD_Utils::setup();
+        #ifdef HAS_TOUCHSCREEN
+            TOUCH_Utils::setup();
+        #endif
     }
-
-    #ifdef HAS_I2S
-        AUDIO_Utils::setup();
-    #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
@@ -184,21 +189,30 @@ void loop() {
     Utils::checkDisplayEcoMode();
 
     KEYBOARD_Utils::read();
+    #ifdef HAS_JOYSTICK
+        JOYSTICK_Utils::loop();
+    #endif
+    #ifdef HAS_TOUCHSCREEN
+        TOUCH_Utils::loop();
+    #endif
+
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
-    MSG_Utils::clean25SegBuffer();
+    MSG_Utils::clean15SegBuffer();
 
-    if (Config.bluetooth.type == 0 || Config.bluetooth.type == 2) {
-        BLE_Utils::sendToPhone(packet.text.substring(3));
-        BLE_Utils::sendToLoRa();
-    } else {
-        #ifdef HAS_BT_CLASSIC
-            BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
-            BLUETOOTH_Utils::sendToLoRa();
-        #endif
+    if (bluetoothActive && bluetoothConnected) {
+        if (Config.bluetooth.useBLE) {
+            BLE_Utils::sendToPhone(packet.text.substring(3));
+            BLE_Utils::sendToLoRa();
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
+                BLUETOOTH_Utils::sendToLoRa();
+            #endif
+        }
     }
     
     MSG_Utils::ledNotification();
@@ -218,11 +232,12 @@ void loop() {
             Utils::checkStatus();
             STATION_Utils::checkTelemetryTx();
         }
+
+        if (!gps.location.isValid()) BATTERY_Utils::checkVoltageWithoutGPSFix();
+
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
-            if (!sendUpdate) {
-                GPS_Utils::calculateHeadingDelta(currentSpeed);
-            }
+            if (!sendUpdate) GPS_Utils::calculateHeadingDelta(currentSpeed);
             STATION_Utils::checkStandingUpdateTime();
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();
@@ -246,3 +261,5 @@ void loop() {
         }
     }
 }
+
+// eliminar keyboardConnected y reemplazar por validar si es distinto de 0x00 ?

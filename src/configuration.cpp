@@ -1,6 +1,7 @@
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include "configuration.h"
+#include "board_pinout.h"
 #include "display.h"
 #include "logger.h"
 
@@ -75,8 +76,14 @@ void Configuration::writeFile() {
     data["pttTrigger"]["postDelay"]             = ptt.postDelay;
     data["pttTrigger"]["reverse"]               = ptt.reverse;
 
-    data["bluetooth"]["type"]                   = bluetooth.type;
     data["bluetooth"]["active"]                 = bluetooth.active;
+    data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
+    #ifdef HAS_BT_CLASSIC
+        data["bluetooth"]["useBLE"]             = bluetooth.useBLE;
+    #else
+        data["bluetooth"]["useBLE"]             = true; // fixed as BLE        
+    #endif
+    data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
 
     data["other"]["simplifiedTrackerMode"]      = simplifiedTrackerMode;
     data["other"]["sendCommentAfterXBeacons"]   = sendCommentAfterXBeacons;
@@ -87,6 +94,8 @@ void Configuration::writeFile() {
     data["other"]["sendAltitude"]               = sendAltitude;
     data["other"]["disableGPS"]                 = disableGPS;
     data["other"]["acceptOwnFrameFromTNC"]      = acceptOwnFrameFromTNC;
+    data["other"]["email"]                      = email;
+
 
     serializeJson(data, configFile);
     configFile.close();
@@ -175,8 +184,15 @@ bool Configuration::readFile() {
         ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
         ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
 
-        bluetooth.type                  = data["bluetooth"]["type"] | 1;
         bluetooth.active                = data["bluetooth"]["active"] | false;
+        bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
+        #ifdef HAS_BT_CLASSIC
+            bluetooth.useBLE            = data["bluetooth"]["useBLE"] | false;
+            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | false;
+        #else
+            bluetooth.useBLE            = true;    // fixed as BLE
+            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | true;    // true=KISS,  false=TNC2            
+        #endif
 
         simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
@@ -187,6 +203,7 @@ bool Configuration::readFile() {
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
         acceptOwnFrameFromTNC           = data["other"]["acceptOwnFrameFromTNC"] | false;
+        email                           = data["other"]["email"] | "";
 
         configFile.close();
         Serial.println("Config read successfuly");
@@ -299,9 +316,16 @@ void Configuration::init() {
     ptt.postDelay                   = 0;
     ptt.reverse                     = false;
 
-    bluetooth.type                  = 1;
     bluetooth.active                = false;
-
+    bluetooth.deviceName            = "LoRaTracker";
+    #ifdef HAS_BT_CLASSIC
+        bluetooth.useBLE            = false;
+        bluetooth.useKISS           = false;
+    #else
+        bluetooth.useBLE            = true;    // fixed as BLE
+        bluetooth.useKISS           = true;
+    #endif
+    
     simplifiedTrackerMode           = false;
     sendCommentAfterXBeacons        = 10;
     path                            = "WIDE1-1";
@@ -311,6 +335,7 @@ void Configuration::init() {
     sendAltitude                    = true;
     disableGPS                      = false;
     acceptOwnFrameFromTNC           = false;
+    email                           = "";
 
     Serial.println("New Data Created...");
 }

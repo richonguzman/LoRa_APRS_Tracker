@@ -14,16 +14,18 @@ extern Configuration    Config;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 
+extern uint8_t          wxModuleAddress;
+
 float newHum, newTemp, newPress, newGas;
 
 uint32_t    sensorLastReading   = -60000;
 int         wxModuleType        = 0;
-uint8_t     wxModuleAddress     = 0x00;
+
 bool        wxModuleFound       = false;
 
 
 Adafruit_BME280     bme280;
-#ifdef HELTEC_V3_GPS
+#if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
 Adafruit_BMP280     bmp280(&Wire1);
 #else
 Adafruit_BMP280     bmp280;
@@ -37,38 +39,19 @@ Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 
 namespace WX_Utils {    
 
-    void getWxModuleAddres() {
-        uint8_t err, addr;
-        for(addr = 1; addr < 0x7F; addr++) {
-            #ifdef HELTEC_V3_GPS
-                Wire1.beginTransmission(addr);
-                err = Wire1.endTransmission();
-            #else
-                Wire.beginTransmission(addr);
-                err = Wire.endTransmission();
-            #endif
-            if (err == 0) {
-                //Serial.println(addr); this shows any connected board to I2C
-                if (addr == 0x76 || addr == 0x77) {
-                    wxModuleAddress = addr;
-                    return;
-                }
-            }
-        }
-    }
-
     void setup() {
         if (Config.wxsensor.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
-                if (! shtc3.begin()) {
+                if (!shtc3.begin()) {
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
                     while (1) delay(1);
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
+                wxModuleFound = true;
+                wxModuleType = 4;
             #else
-                getWxModuleAddres();
                 if (wxModuleAddress != 0x00) {
-                    #ifdef HELTEC_V3_GPS
+                    #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
                         if (bme280.begin(wxModuleAddress, &Wire1)) {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
                             wxModuleType = 1;
@@ -118,7 +101,7 @@ namespace WX_Utils {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
                                 break;
                             case 3:
-                                #ifndef HELTEC_V3_GPS
+                                #if !defined(HELTEC_V3_GPS) && !defined(HELTEC_V3_TNC) && !defined(HELTEC_V3_2_GPS) && !defined(HELTEC_V3_2_TNC)
                                     bme680.setTemperatureOversampling(BME680_OS_1X);
                                     bme680.setHumidityOversampling(BME680_OS_1X);
                                     bme680.setPressureOversampling(BME680_OS_1X);
@@ -245,7 +228,7 @@ namespace WX_Utils {
                         newHum      = 0;
                         break;
                     case 3: // BME680
-                        #ifndef HELTEC_V3_GPS
+                        #if !defined(HELTEC_V3_GPS) && !defined(HELTEC_V3_TNC) && !defined(HELTEC_V3_2_GPS) && !defined(HELTEC_V3_2_TNC)
                             bme680.performReading();
                             delay(50);
                             if (bme680.endReading()) {
@@ -264,11 +247,7 @@ namespace WX_Utils {
         String wx;
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
             Serial.println("WX Sensor data failed");
-            if (type == 1) {
-                wx = " - C    - %    - hPa";
-            } else {
-                wx = ".../...g...t...";
-            }
+            wx = ((type == 1) ? " - C    - %    - hPa" : ".../...g...t...");
             return wx;
         } else {
             String tempStr = generateTempString(newTemp + Config.wxsensor.temperatureCorrection, type);
