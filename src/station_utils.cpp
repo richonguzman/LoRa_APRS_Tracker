@@ -354,7 +354,13 @@ namespace STATION_Utils {
             switch (type) {
                 case 0: myBeaconsIndex = 0; break;
                 case 1: loraIndex = 0; break;
-                case 2: screenBrightness = 1; break;
+                case 2: 
+                    #ifdef HAS_TFT
+                        screenBrightness = 40;
+                    #else
+                        screenBrightness = 1;
+                    #endif
+                    break;
                 default: return; // Invalid type, exit function
             }
             return;
