@@ -349,7 +349,9 @@ namespace KEYBOARD_Utils {
                     #endif
                     break;
             }
-            analogWrite(TFT_BL, screenBrightness);
+            #ifdef HAS_TFT
+                analogWrite(TFT_BL, screenBrightness);
+            #endif
             displayShow("  SCREEN", "", "SCREEN BRIGHTNESS " + MENU_Utils::screenBrightnessAsString(screenBrightness), 1000);
             STATION_Utils::saveIndex(2, screenBrightness);
             #ifdef HAS_JOYSTICK
