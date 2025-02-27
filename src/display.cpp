@@ -3,6 +3,7 @@
 #include "custom_characters.h"
 #include "custom_colors.h"
 #include "configuration.h"
+#include "station_utils.h"
 #include "board_pinout.h"
 #include "display.h"
 #include "TimeLib.h"
@@ -310,6 +311,7 @@ String fillStringLength(const String& line, uint8_t length) {
 
 void displaySetup() {
     delay(500);
+    STATION_Utils::loadIndex(2);    // Screen Brightness value
     #ifdef HAS_TFT
         tft.init();
         tft.begin();

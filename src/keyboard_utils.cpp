@@ -84,6 +84,9 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) menuDisplay = 221;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            menuDisplay--;
+            if (menuDisplay < 2210) menuDisplay = 2212;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
@@ -167,6 +170,9 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) menuDisplay = 220;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            menuDisplay++;
+            if (menuDisplay > 2212) menuDisplay = 2210;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
             if (menuDisplay > 241) menuDisplay = 240;
@@ -238,7 +244,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -322,9 +328,22 @@ namespace KEYBOARD_Utils {
             displayEcoMode = !displayEcoMode;
             displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
-            screenBrightness = (screenBrightness == 1) ? 255 : 1;
-            displayShow("  SCREEN", "", (screenBrightness == 255) ? "SCREEN BRIGHTNESS MAX" : "SCREEN BRIGHTNESS MIN", 1000);
-        } else if (menuDisplay == 240) {
+            menuDisplay = 2210;
+        } else if (menuDisplay == 2210) {
+            screenBrightness = 1;
+            STATION_Utils::saveIndex(2, screenBrightness);
+            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS LOW", 1000);
+        } else if (menuDisplay == 2211) {
+            screenBrightness = 50;
+            STATION_Utils::saveIndex(2, screenBrightness);
+            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MID", 1000);
+        } else if (menuDisplay == 2212) {
+            screenBrightness = 255;
+            STATION_Utils::saveIndex(2, screenBrightness);
+            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MAX", 1000);
+        }
+        
+        else if (menuDisplay == 240) {
             displayShow("  STATUS", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////

@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.02.17";
+String      versionDate             = "2025.02.27";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -118,8 +118,8 @@ void setup() {
     displaySetup();
     POWER_Utils::externalPinSetup();
 
-    STATION_Utils::loadIndex(0);
-    STATION_Utils::loadIndex(1);
+    STATION_Utils::loadIndex(0);    // callsign Index
+    STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearTrackerInit();
     startupScreen(loraIndex, versionDate);
 

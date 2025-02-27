@@ -80,9 +80,11 @@ namespace MENU_Utils {
 
     const String screenBrightnessAsString(const uint8_t bright) {
         if (bright == 255) {
-            return "MAX";
+            return "Max";
+        } else if (bright == 1) {
+            return "Low";
         } else {
-            return "min";
+            return "Mid";
         }
     }
 
@@ -267,10 +269,20 @@ namespace MENU_Utils {
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
-                displayShow(" DISPLAY>", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                displayShow(" DISPLAY>", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")", "  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
+
             case 221:   // 2.Configuration ---> Display ---> Brightness
-                displayShow(" DISPLAY>", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                displayShow(" DISPLAY>", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")", "> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                break;
+            case 2210:   // 2.Configuration ---> Display ---> Brightness: MIN
+                displayShow("BRIGHTNESS", "", "> Low", "  Mid","  Max",lastLine);
+                break;
+            case 2211:   // 2.Configuration ---> Display ---> Brightness: MID
+                displayShow("BRIGHTNESS", "", "  Low", "> Mid","  Max",lastLine);
+                break;
+            case 2212:   // 2.Configuration ---> Display ---> Brightness: MAX
+                displayShow("BRIGHTNESS", "", "  Low", "  Mid","> Max",lastLine);
                 break;
 
             case 230:
