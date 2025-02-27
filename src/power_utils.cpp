@@ -497,6 +497,10 @@ namespace POWER_Utils {
                 #endif
             #endif
 
+            #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+                digitalWrite(BOARD_POWERON, LOW);
+            #endif
+
             LoRa_Utils::sleepRadio();
 
             long DEEP_SLEEP_TIME_SEC = 1296000; // 15 days
