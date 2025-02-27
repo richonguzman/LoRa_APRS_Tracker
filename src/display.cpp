@@ -15,10 +15,7 @@
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
 
-    
-    int                 brightnessValues[6]     = {70, 90, 120, 160, 200, 250};
-    int                 tftBrightness           = 5;
-    unsigned short      grays[13];
+    unsigned short      grays[13];      // ready to delete this?
     
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
@@ -252,14 +249,6 @@ extern logging::Logger logger;
     //sprite.fillSmoothRoundRect(308,   6,   8,  8 , 2, green,        grays[9]);          // bateria
     //sprite.fillSmoothRoundRect(275,   4,  34, 12 , 2, TFT_BLACK,    green);             // centro bateria
 
-    /*for (int i = 0; i < 5; i++) {                                                      // cubos que muestran el brillo (abajo a la derecha)
-        if(i < tftBrightness) {
-            sprite.fillRect(282+(i*8), 207, 5, 8, grays[3]);
-        } else {
-            sprite.fillRect(282+(i*8), 207, 5, 8, grays[7]);
-        }
-    }*/
-
     //for (int i = 0; i < 9; i++) sprite.drawFastHLine(4, 38+(i*18), 312, grays[8]);      // draw horizonatl lines
     
     /*sprite.setTextFont(0);
@@ -321,8 +310,7 @@ void displaySetup() {
             tft.setRotation(1);
         }
         pinMode(TFT_BL, OUTPUT);
-        digitalWrite(TFT_BL, HIGH);
-        //analogWrite(BOARD_BL_PIN, brightnessValues[tftBrightness]);
+        analogWrite(TFT_BL, screenBrightness);
         tft.setTextFont(0);
         tft.fillScreen(TFT_BLACK);
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
@@ -377,7 +365,7 @@ void displaySetup() {
 void displayToggle(bool toggle) {
     if (toggle) {
         #ifdef HAS_TFT
-            digitalWrite(TFT_BL, HIGH);
+            analogWrite(TFT_BL, screenBrightness);
         #else
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYON); 
@@ -387,7 +375,7 @@ void displayToggle(bool toggle) {
         #endif
     } else {
         #ifdef HAS_TFT
-            digitalWrite(TFT_BL, LOW);
+            analogWrite(TFT_BL, 0);
         #else
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYOFF);

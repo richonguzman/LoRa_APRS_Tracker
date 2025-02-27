@@ -9,6 +9,7 @@
 #include "board_pinout.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
+#include "menu_utils.h"
 #include "msg_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -329,18 +330,31 @@ namespace KEYBOARD_Utils {
             displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
             menuDisplay = 2210;
-        } else if (menuDisplay == 2210) {
-            screenBrightness = 1;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            switch (menuDisplay) {
+                case 2210:
+                    screenBrightness = 1;
+                    break;
+                case 2211:
+                    screenBrightness = 40;
+                    break;
+                case 2212:
+                    screenBrightness = 255;
+                    break;
+                default:
+                    #ifdef HAS_TFT
+                        screenBrightness = 40;
+                    #else
+                        screenBrightness = 1;
+                    #endif
+                    break;
+            }
+            analogWrite(TFT_BL, screenBrightness);
+            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS " + MENU_Utils::screenBrightnessAsString(screenBrightness), 1000);
             STATION_Utils::saveIndex(2, screenBrightness);
-            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS LOW", 1000);
-        } else if (menuDisplay == 2211) {
-            screenBrightness = 50;
-            STATION_Utils::saveIndex(2, screenBrightness);
-            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MID", 1000);
-        } else if (menuDisplay == 2212) {
-            screenBrightness = 255;
-            STATION_Utils::saveIndex(2, screenBrightness);
-            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS MAX", 1000);
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 221;
+            #endif
         }
         
         else if (menuDisplay == 240) {
