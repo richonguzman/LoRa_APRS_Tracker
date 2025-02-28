@@ -12,6 +12,7 @@
 #include "display.h"
 #include "logger.h"
 
+
 extern Beacon               *currentBeacon;
 extern logging::Logger      logger;
 extern Configuration        Config;

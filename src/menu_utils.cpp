@@ -15,6 +15,7 @@
 #include "display.h"
 #include "utils.h"
 
+
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
@@ -59,6 +60,7 @@ uint8_t     lowBatteryPercent       = 21;
     String topHeader1_3 = "";
     String topHeader2   = "";
 #endif
+
 
 namespace MENU_Utils {
 
