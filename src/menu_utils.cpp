@@ -81,13 +81,23 @@ namespace MENU_Utils {
     }
 
     const String screenBrightnessAsString(const uint8_t bright) {
-        if (bright == 255) {
-            return "Max";
-        } else if (bright == 1) {
-            return "Low";
-        } else {
-            return "Mid";
-        }
+        #ifdef HAS_TFT
+            if (bright == 255) {
+                return "Max";
+            } else if (bright == 70) {
+                return "Low";
+            } else {
+                return "Mid";
+            }
+        #else
+            if (bright == 255) {
+                return "Max";
+            } else if (bright == 1) {
+                return "Low";
+            } else {
+                return "Mid";
+            }
+        #endif
     }
 
     void showOnScreen() {

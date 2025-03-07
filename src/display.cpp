@@ -80,7 +80,7 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 //#define OLED_DISPLAY_HAS_RST_PIN
 
 int         lastMenuDisplay         = 0;
-uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of oled scren
+uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of screens
 bool        symbolAvailable         = true;
 
 extern logging::Logger logger;
@@ -154,7 +154,6 @@ extern logging::Logger logger;
         sprite.drawString(topHeader2, 8, 44);
         sprite.fillRect(0, 60, 320, 2, greyColorDark);
     }
-
 
     void draw_T_DECK_MenuButtons(int menu) {
         int ladoCuadrado            = 45;
@@ -460,7 +459,6 @@ void displayShow(const String& header, const String& line1, const String& line2,
     delay(wait);
 }
 
-
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
     const uint8_t *bitMap = symbolsAPRS[symbolIndex];
     #ifdef HAS_TFT
@@ -475,7 +473,6 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
         display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
     #endif
 }
-
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT

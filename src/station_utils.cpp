@@ -349,14 +349,13 @@ namespace STATION_Utils {
             default: return; // Invalid type, exit function
         }
     
-        File fileIndex = SPIFFS.open(filePath);
-        if (!fileIndex) {
+        if (!SPIFFS.exists(filePath)) {
             switch (type) {
                 case 0: myBeaconsIndex = 0; break;
                 case 1: loraIndex = 0; break;
-                case 2: 
+                case 2:
                     #ifdef HAS_TFT
-                        screenBrightness = 40;
+                        screenBrightness = 255;
                     #else
                         screenBrightness = 1;
                     #endif
@@ -364,26 +363,26 @@ namespace STATION_Utils {
                 default: return; // Invalid type, exit function
             }
             return;
+        } else {
+            File fileIndex = SPIFFS.open(filePath, "r");
+            while (fileIndex.available()) {
+                String firstLine = fileIndex.readStringUntil('\n');
+                int index = firstLine.toInt();
+                String logMessage;
+                if (type == 0) {
+                    myBeaconsIndex = index;
+                    logMessage = "Callsign Index:";
+                } else if (type == 1) {
+                    loraIndex = index;
+                    logMessage = "LoRa Freq Index:";
+                } else {
+                    screenBrightness = index;
+                    logMessage = "Brightness:";
+                }
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
+            }        
+            fileIndex.close();
         }
-    
-        while (fileIndex.available()) {
-            String firstLine = fileIndex.readStringUntil('\n');
-            int index = firstLine.toInt();
-            String logMessage;
-            if (type == 0) {
-                myBeaconsIndex = index;
-                logMessage = "Callsign Index:";
-            } else if (type == 1) {
-                loraIndex = index;
-                logMessage = "LoRa Freq Index:";
-            } else {
-                screenBrightness = index;
-                logMessage = "Brightness:";
-            }
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
-        }
-    
-        fileIndex.close();
     }
 
 }

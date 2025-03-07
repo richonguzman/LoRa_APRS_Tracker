@@ -332,18 +332,26 @@ namespace KEYBOARD_Utils {
             menuDisplay = 2210;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
             switch (menuDisplay) {
-                case 2210:
-                    screenBrightness = 1;
+                case 2210:  // low
+                    #ifdef HAS_TFT
+                        screenBrightness = 70;
+                    #else
+                        screenBrightness = 1;
+                    #endif
                     break;
-                case 2211:
-                    screenBrightness = 40;
+                case 2211:  // mid
+                    #ifdef HAS_TFT
+                        screenBrightness = 150;
+                    #else
+                        screenBrightness = 40;
+                    #endif
                     break;
-                case 2212:
+                case 2212:  // max
                     screenBrightness = 255;
                     break;
                 default:
                     #ifdef HAS_TFT
-                        screenBrightness = 40;
+                        screenBrightness = 255;
                     #else
                         screenBrightness = 1;
                     #endif
