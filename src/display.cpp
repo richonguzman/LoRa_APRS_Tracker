@@ -3,7 +3,6 @@
 #include "custom_characters.h"
 #include "custom_colors.h"
 #include "configuration.h"
-#include "station_utils.h"
 #include "board_pinout.h"
 #include "display.h"
 #include "TimeLib.h"
@@ -15,7 +14,10 @@
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
 
-    unsigned short      grays[13];      // ready to delete this?
+    
+    int                 brightnessValues[6]     = {70, 90, 120, 160, 200, 250};
+    int                 tftBrightness           = 5;
+    unsigned short      grays[13];
     
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
@@ -249,6 +251,14 @@ extern logging::Logger logger;
     //sprite.fillSmoothRoundRect(308,   6,   8,  8 , 2, green,        grays[9]);          // bateria
     //sprite.fillSmoothRoundRect(275,   4,  34, 12 , 2, TFT_BLACK,    green);             // centro bateria
 
+    /*for (int i = 0; i < 5; i++) {                                                      // cubos que muestran el brillo (abajo a la derecha)
+        if(i < tftBrightness) {
+            sprite.fillRect(282+(i*8), 207, 5, 8, grays[3]);
+        } else {
+            sprite.fillRect(282+(i*8), 207, 5, 8, grays[7]);
+        }
+    }*/
+
     //for (int i = 0; i < 9; i++) sprite.drawFastHLine(4, 38+(i*18), 312, grays[8]);      // draw horizonatl lines
     
     /*sprite.setTextFont(0);
@@ -300,7 +310,6 @@ String fillStringLength(const String& line, uint8_t length) {
 
 void displaySetup() {
     delay(500);
-    STATION_Utils::loadIndex(2);    // Screen Brightness value
     #ifdef HAS_TFT
         tft.init();
         tft.begin();
@@ -310,7 +319,8 @@ void displaySetup() {
             tft.setRotation(1);
         }
         pinMode(TFT_BL, OUTPUT);
-        analogWrite(TFT_BL, screenBrightness);
+        digitalWrite(TFT_BL, HIGH);
+        //analogWrite(BOARD_BL_PIN, brightnessValues[tftBrightness]);
         tft.setTextFont(0);
         tft.fillScreen(TFT_BLACK);
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
@@ -365,7 +375,7 @@ void displaySetup() {
 void displayToggle(bool toggle) {
     if (toggle) {
         #ifdef HAS_TFT
-            analogWrite(TFT_BL, screenBrightness);
+            digitalWrite(TFT_BL, HIGH);
         #else
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYON); 
@@ -375,7 +385,7 @@ void displayToggle(bool toggle) {
         #endif
     } else {
         #ifdef HAS_TFT
-            analogWrite(TFT_BL, 0);
+            digitalWrite(TFT_BL, LOW);
         #else
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYOFF);

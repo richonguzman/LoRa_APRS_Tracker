@@ -15,7 +15,6 @@
 #include "display.h"
 #include "utils.h"
 
-
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
@@ -61,7 +60,6 @@ uint8_t     lowBatteryPercent       = 21;
     String topHeader2   = "";
 #endif
 
-
 namespace MENU_Utils {
 
     const String checkBTType() {
@@ -82,11 +80,9 @@ namespace MENU_Utils {
 
     const String screenBrightnessAsString(const uint8_t bright) {
         if (bright == 255) {
-            return "Max";
-        } else if (bright == 1) {
-            return "Low";
+            return "MAX";
         } else {
-            return "Mid";
+            return "min";
         }
     }
 
@@ -271,20 +267,10 @@ namespace MENU_Utils {
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
-                displayShow(" DISPLAY>", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")", "  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
+                displayShow(" DISPLAY>", "", "> ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","  Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
-
             case 221:   // 2.Configuration ---> Display ---> Brightness
-                displayShow(" DISPLAY>", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")", "> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
-                break;
-            case 2210:   // 2.Configuration ---> Display ---> Brightness: MIN
-                displayShow("BRIGHTNESS", "", "> Low", "  Mid","  Max",lastLine);
-                break;
-            case 2211:   // 2.Configuration ---> Display ---> Brightness: MID
-                displayShow("BRIGHTNESS", "", "  Low", "> Mid","  Max",lastLine);
-                break;
-            case 2212:   // 2.Configuration ---> Display ---> Brightness: MAX
-                displayShow("BRIGHTNESS", "", "  Low", "  Mid","> Max",lastLine);
+                displayShow(" DISPLAY>", "", "  ECO Mode    (" + checkProcessActive(displayEcoMode) + ")","> Brightness  (" + screenBrightnessAsString(screenBrightness) + ")","",lastLine);
                 break;
 
             case 230:
