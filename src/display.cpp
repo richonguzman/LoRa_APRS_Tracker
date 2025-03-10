@@ -43,7 +43,7 @@
 
     #define ssd1306 //comment this line with "//" when using SH1106 screen instead of SSD1306
 
-    #if defined(TTGO_T_Beam_S3_SUPREME_V3)
+    #if defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(TTGO_T_Beam_V0_7_SH1106)
         #undef ssd1306
     #endif
     #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
