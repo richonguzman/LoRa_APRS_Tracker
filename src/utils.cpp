@@ -104,11 +104,13 @@ namespace Utils {
     }
 
     void checkDisplayEcoMode() {
-        uint32_t currentTime = millis();
-        uint32_t lastDisplayTime = currentTime - displayTime;
-        if (displayEcoMode && menuDisplay == 0 && currentTime > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
-            displayToggle(false);
-            displayState = false;
+        if (displayState && displayEcoMode && menuDisplay == 0) {
+            uint32_t currentTime = millis();
+            uint32_t lastDisplayTime = currentTime - displayTime;
+            if (currentTime > 10 * 1000 && lastDisplayTime >= Config.display.timeout * 1000) {
+                displayToggle(false);
+                displayState = false;
+            }
         }
     }
 
