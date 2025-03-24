@@ -172,7 +172,7 @@ namespace MENU_Utils {
                         displayMessage(msgSender, msgText, true);
                     #else
                         displayShow(" MSG APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
-                    #endif                   
+                    #endif
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
@@ -437,7 +437,12 @@ namespace MENU_Utils {
             case 50101:    // WINLINK: Downloaded Mails //
                 {
                     String mailText = loadedWLNKMails[messagesIterator];
-                    displayShow("WLNK MAIL>", "", mailText, "", "", "           Next=Down");
+
+                    #ifdef HAS_TFT
+                        displayMessage("WLNK MAIL>", mailText, true);
+                    #else
+                        displayShow("WLNK MAIL>", "", mailText, "", "", "           Next=Down");
+                    #endif
                 }
                 break;
             case 50110:    // WINLINK: Downloaded Mails //
@@ -515,9 +520,9 @@ namespace MENU_Utils {
                 break;
             case 5083:    // WINLINK: WRITE MAIL: Body //
                 if (winlinkBody.length() <= 67) {
-                displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
+                    displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
                 } else {
-                displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
+                    displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
                 }
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //

@@ -214,13 +214,28 @@ extern logging::Logger logger;
 
     void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
         
-        /*if (menuDisplay > 0 && menuDisplay < 6) {
-            draw_T_DECK_MenuButtons(menuDisplay);
-        } else {*/
         sprite.setTextSize(normalSizeFont);
         sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
-        const String* const lines[] = {&line1, &line2, &line3, &line4, &line5, &line6};
+        int lineLength  = 22;
+        int line3Length = line3.length();
+
+        String line3Temp, line4Temp, line5Temp;
+        if (line3.length() > 0 && line4 == "" && line5 == "") {
+            line3Temp = line3.substring(0, lineLength);
+            if (line3Length > lineLength) {
+                line4Temp = line3.substring(lineLength, min(2 * lineLength, line3Length));
+                if (line3Length > 2 * lineLength) {
+                    line5Temp = line3.substring(2 * lineLength);
+                }
+            }
+        } else {
+            line3Temp = line3;
+            line4Temp = line4;
+            line5Temp = line5;
+        }
+
+        const String* const lines[] = {&line1, &line2, &line3Temp, &line4Temp, &line5Temp, &line6};
         for (int i = 0; i < 6; i++) {
             sprite.drawString(*lines[i], 35, 70 + (i * 20));
         }
