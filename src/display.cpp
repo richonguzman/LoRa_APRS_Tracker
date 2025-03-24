@@ -596,9 +596,16 @@ String fillMessageLine(const String& line, const int& length) {
     return completeLine;
 }
 
-void displayMessage(const String& sender, const String& message, const int& lineLength, bool next, int wait) {
+void displayMessage(const String& sender, const String& message, bool next, int wait) {
     String messageLine1, messageLine2, messageLine3;
-    int messageLength = message.length();
+
+    int messageLength   = message.length();
+    int lineLength      = 0;
+    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+        lineLength = 22;
+    #else   // Heltec Wireless Tracker
+        lineLengthh = 26;
+    #endif
 
     if (message.length() > 0) {
         messageLine1 = message.substring(0, min(lineLength, messageLength));

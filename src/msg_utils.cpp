@@ -5,6 +5,7 @@
 #include "bluetooth_utils.h"
 #include "winlink_utils.h"
 #include "configuration.h"
+#include "board_pinout.h"
 #include "lora_utils.h"
 #include "ble_utils.h"
 #include "msg_utils.h"
@@ -511,7 +512,7 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
 
                                 #ifdef HAS_TFT
-                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.payload, 26, false, 3000);
+                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.payload, false, 3000);
                                 #else
                                     displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.payload , "", "", 3000);
                                 #endif

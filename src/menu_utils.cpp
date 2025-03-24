@@ -169,7 +169,7 @@ namespace MENU_Utils {
                     String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",") + 1);
 
                     #ifdef HAS_TFT
-                        displayMessage(msgSender, msgText, 26, true);
+                        displayMessage(msgSender, msgText, true);
                     #else
                         displayShow(" MSG APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
                     #endif                   
