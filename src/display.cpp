@@ -619,7 +619,7 @@ void displayMessage(const String& sender, const String& message, bool next, int 
     #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         lineLength = 22;
     #else   // Heltec Wireless Tracker
-        lineLengthh = 26;
+        lineLength = 26;
     #endif
 
     if (message.length() > 0) {
