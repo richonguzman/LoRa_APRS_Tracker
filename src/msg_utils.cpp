@@ -512,9 +512,13 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
 
                                 #ifdef HAS_TFT
-                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.payload, false, 3000);
+                                    #if defined(HELTEC_WIRELESS_TRACKER)
+                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
+                                    #else   // T-Deck
+                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
+                                    #endif                                    
                                 #else
-                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.payload , "", "", 3000);
+                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , "", "", "", 3000);
                                 #endif
 
                                 if (lastReceivedPacket.payload.indexOf("ack") != 0) {

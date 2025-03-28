@@ -314,11 +314,17 @@ namespace KEYBOARD_Utils {
                 menuDisplay *= 10;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!"); 
+                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 13;
+                #endif
             }
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 13;
+            #endif
         }
 
         else if (menuDisplay == 210) {
@@ -378,15 +384,27 @@ namespace KEYBOARD_Utils {
         else if (menuDisplay == 30) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 31) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Hospital");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "hospital");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 32) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4 : Police");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "police");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 33) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Fire Station");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "fire_station");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         }
 
         else if (menuDisplay == 50) {
@@ -549,7 +567,11 @@ namespace KEYBOARD_Utils {
                     messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
                     String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
-                    menuDisplay /= 10;
+                    #ifdef HAS_JOYSTICK
+                        menuDisplay = 13;
+                    #else
+                        menuDisplay /= 10;
+                    #endif                    
                 }
                 messageCallsign = "";
                 messageText = "";
