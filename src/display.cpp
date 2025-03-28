@@ -21,6 +21,7 @@
         #define bigSizeFont     2
         #define smallSizeFont   1
         #define lineSpacing     12
+        #define maxLineLength   26
     #endif
     #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         #define color1  TFT_BLACK
@@ -31,6 +32,7 @@
         #define normalSizeFont  2
         #define smallSizeFont   1
         #define lineSpacing     22
+        #define maxLineLength   22
 
         extern String topHeader1;
         extern String topHeader1_1;
@@ -441,8 +443,21 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextSize(smallSizeFont);
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
+            int yLineOffset = (lineSpacing * 2) - 2;
+
             for (int i = 0; i < 2; i++) {
-                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
+                String text = *lines[i];
+                if (text.length() > 0) {                    
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 3, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
             }
         #endif
         sprite.pushSprite(0,0);
@@ -508,8 +523,21 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextSize(smallSizeFont);
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
+            int yLineOffset = (lineSpacing * 2) - 2;
+
             for (int i = 0; i < 5; i++) {
-                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
+                String text = *lines[i];
+                if (text.length() > 0) {
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 3, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
             }
         #endif
             if (menuDisplay == 0 && Config.display.showSymbol) {
@@ -611,31 +639,27 @@ String fillMessageLine(const String& line, const int& length) {
     return completeLine;
 }
 
-void displayMessage(const String& sender, const String& message, bool next, int wait) {
+void displayMessage(const String& sender, const String& message, bool next, int wait) { // only for T-DECK ?
+    #ifdef maxLineLength
     String messageLine1, messageLine2, messageLine3;
 
     int messageLength   = message.length();
-    int lineLength      = 0;
-    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-        lineLength = 22;
-    #else   // Heltec Wireless Tracker
-        lineLength = 26;
-    #endif
 
     if (message.length() > 0) {
-        messageLine1 = message.substring(0, min(lineLength, messageLength));
-        if (messageLength > lineLength) {
-            messageLine2 = message.substring(lineLength, min(2 * lineLength, messageLength));
-            if (messageLength > 2 * lineLength) {
-                messageLine3 = message.substring(2 * lineLength);
+        messageLine1 = message.substring(0, min(maxLineLength, messageLength));
+        if (messageLength > maxLineLength) {
+            messageLine2 = message.substring(maxLineLength, min(2 * maxLineLength, messageLength));
+            if (messageLength > 2 * maxLineLength) {
+                messageLine3 = message.substring(2 * maxLineLength);
             }
         }
     }
     if (next) {
-        String nextLine = fillMessageLine("Next=Down", lineLength);
-        displayShow("MSG_APRS>", "From --> " + sender, fillMessageLine(messageLine1, lineLength), fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), nextLine);
+        String nextLine = fillMessageLine("Next=Down", maxLineLength);
+        displayShow("MSG_APRS>", "From --> " + sender, fillMessageLine(messageLine1, maxLineLength), fillMessageLine(messageLine2, maxLineLength), fillMessageLine(messageLine3, maxLineLength), nextLine);
     } else {
-        displayShow("< MSG Rx >", "From --> " + sender, "", fillMessageLine(messageLine1, lineLength) , fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), wait);
+        displayShow("< MSG Rx >", "From --> " + sender, "", fillMessageLine(messageLine1, maxLineLength) , fillMessageLine(messageLine2, maxLineLength), fillMessageLine(messageLine3, maxLineLength), wait);
     }
+    #endif
 
 }

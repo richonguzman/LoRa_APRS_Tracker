@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.03.24";
+String      versionDate             = "2025.03.28";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
