@@ -85,6 +85,8 @@ jobs:
                       chip: esp32
                     - name: F4GOH_1W_LoRa_Tracker
                       chip: esp32
+                    - name: F4GOH_1W_LoRa_Tracker_LLCC68
+                      chip: esp32
         steps:
             - uses: actions/checkout@v3
 
