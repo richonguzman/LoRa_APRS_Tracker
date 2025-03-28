@@ -828,7 +828,7 @@ namespace MENU_Utils {
                         }
                     #endif
                     #ifdef HAS_AXP2101
-                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
+                        if (Config.notification.buzzerActive && Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
                             lowBatteryPercent = batteryCharge.toInt();
                             NOTIFICATION_Utils::lowBatteryBeep();
                             if (batteryCharge.toInt() < 6) {
