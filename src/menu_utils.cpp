@@ -524,7 +524,7 @@ namespace MENU_Utils {
 
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
-                            displayShow("WLNK MAIL>", "", mailText, "                 Next=Down", "", "");
+                            displayShow("WLNK MAIL>", mailText, "                 Next=Down", "", "", "");
                         #else   // T-Deck?
                             displayMessage("WLNK MAIL>", mailText, true);
                         #endif
@@ -627,12 +627,12 @@ namespace MENU_Utils {
                 if (winlinkBody.length() <= 67) {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
-                            displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "<Clear Body         Enter>", "", "");
+                            displayShow("WLNK MAIL>", "-- Body (Lenght =" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "<Clear Body         Enter>", "", "");
                         #else   // T-Deck?
-                            displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "<Clear Body         Enter>", "", "");
+                            displayShow("WLNK MAIL>", "-- Body (Lenght =" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "<Clear Body         Enter>", "", "");
                         #endif
                     #else
-                        displayShow("WLNK MAIL>", "-- Body (lenght=" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
+                        displayShow("WLNK MAIL>", "-- Body (Lenght =" + String(winlinkBody.length()) + ")", "-> " + winlinkBody, "", "", "<Clear Body    Enter>");
                     #endif
                 } else {
                     #ifdef HAS_TFT
