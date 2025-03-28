@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025.03.28 F4GOH DIY board with ESP32 + GPS + 1W LLCC68 added. APRSPacketLib Updated.
 - 2025.03.06 F4GOH DIY board with ESP32 + GPS + 1W SX1268 added.
 - 2025.02.09 Now Bluetooth connections lets you decide to use BLE/BT Classic and KISS/TNC.
 - 2025.01.11 Added HELTEC V3.2 board support.

@@ -56,7 +56,7 @@ namespace GPS_Utils {
             digitalWrite(GPS_VCC, LOW);
             delay(200);
         #endif
-        #ifdef F4GOH_1W_LoRa_Tracker
+        #if defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
             pinMode(GPS_VCC, OUTPUT);
             digitalWrite(GPS_VCC, HIGH);
             delay(200);
