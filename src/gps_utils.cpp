@@ -56,6 +56,12 @@ namespace GPS_Utils {
             digitalWrite(GPS_VCC, LOW);
             delay(200);
         #endif
+        #if defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
+            pinMode(GPS_VCC, OUTPUT);
+            digitalWrite(GPS_VCC, HIGH);
+            delay(200);
+        #endif
+        
         gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
     }
 

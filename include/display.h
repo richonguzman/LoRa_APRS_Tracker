@@ -11,6 +11,4 @@ void displayShow(const String& header, const String& line1, const String& line2,
 
 void startupScreen(uint8_t index, const String& version);
 
-void displayMessage(const String& sender, const String& message, const int& lineLength, bool next, int wait = 0);
-
 #endif

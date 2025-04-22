@@ -6,7 +6,7 @@
 #include "display.h"
 #include "logger.h"
 
-#define BLE_CHUNK_SIZE  64
+#define BLE_CHUNK_SIZE  256
 
 
 // APPLE - APRS.fi app

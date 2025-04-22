@@ -9,6 +9,7 @@
 #include "board_pinout.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
+#include "menu_utils.h"
 #include "msg_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -84,6 +85,9 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) menuDisplay = 221;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            menuDisplay--;
+            if (menuDisplay < 2210) menuDisplay = 2212;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
@@ -167,6 +171,9 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) menuDisplay = 220;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            menuDisplay++;
+            if (menuDisplay > 2212) menuDisplay = 2210;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
             if (menuDisplay > 241) menuDisplay = 240;
@@ -238,7 +245,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -307,11 +314,17 @@ namespace KEYBOARD_Utils {
                 menuDisplay *= 10;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!"); 
+                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 13;
+                #endif
             }
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 13;
+            #endif
         }
 
         else if (menuDisplay == 210) {
@@ -322,9 +335,45 @@ namespace KEYBOARD_Utils {
             displayEcoMode = !displayEcoMode;
             displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
-            screenBrightness = (screenBrightness == 1) ? 255 : 1;
-            displayShow("  SCREEN", "", (screenBrightness == 255) ? "SCREEN BRIGHTNESS MAX" : "SCREEN BRIGHTNESS MIN", 1000);
-        } else if (menuDisplay == 240) {
+            menuDisplay = 2210;
+        } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
+            switch (menuDisplay) {
+                case 2210:  // low
+                    #ifdef HAS_TFT
+                        screenBrightness = 70;
+                    #else
+                        screenBrightness = 1;
+                    #endif
+                    break;
+                case 2211:  // mid
+                    #ifdef HAS_TFT
+                        screenBrightness = 150;
+                    #else
+                        screenBrightness = 40;
+                    #endif
+                    break;
+                case 2212:  // max
+                    screenBrightness = 255;
+                    break;
+                default:
+                    #ifdef HAS_TFT
+                        screenBrightness = 255;
+                    #else
+                        screenBrightness = 1;
+                    #endif
+                    break;
+            }
+            #ifdef HAS_TFT
+                analogWrite(TFT_BL, screenBrightness);
+            #endif
+            displayShow("  SCREEN", "", "SCREEN BRIGHTNESS " + MENU_Utils::screenBrightnessAsString(screenBrightness), 1000);
+            STATION_Utils::saveIndex(2, screenBrightness);
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 221;
+            #endif
+        }
+        
+        else if (menuDisplay == 240) {
             displayShow("  STATUS", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
@@ -335,15 +384,27 @@ namespace KEYBOARD_Utils {
         else if (menuDisplay == 30) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 31) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Hospital");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "hospital");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 32) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4 : Police");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "police");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 33) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Fire Station");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "fire_station");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         }
 
         else if (menuDisplay == 50) {
@@ -506,7 +567,11 @@ namespace KEYBOARD_Utils {
                     messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
                     String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
-                    menuDisplay /= 10;
+                    #ifdef HAS_JOYSTICK
+                        menuDisplay = 13;
+                    #else
+                        menuDisplay /= 10;
+                    #endif                    
                 }
                 messageCallsign = "";
                 messageText = "";

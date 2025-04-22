@@ -19,6 +19,7 @@ extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
 extern uint8_t              myBeaconsIndex;
 extern uint8_t              loraIndex;
+extern uint8_t              screenBrightness;
 
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
@@ -179,7 +180,7 @@ namespace STATION_Utils {
     }
 
     void sendBeacon(uint8_t type) {
-        if (sendStartTelemetry && Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) {                
+        if (sendStartTelemetry && Config.battery.sendVoltage && Config.battery.voltageAsTelemetry && lastTxTime > 0) {                
             String sender = currentBeacon->callsign;
             for (int i = sender.length(); i < 9; i++) {
                 sender += ' ';
@@ -314,32 +315,72 @@ namespace STATION_Utils {
     }
 
     void saveIndex(uint8_t type, uint8_t index) {
-        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
+        String filePath;
+        switch (type) {
+            case 0: filePath = "/callsignIndex.txt"; break;
+            case 1: filePath = "/freqIndex.txt"; break;
+            case 2: filePath = "/brightness.txt"; break;
+            default: return; // Invalid type, exit function
+        }
+    
         File fileIndex = SPIFFS.open(filePath, "w");
-        if(!fileIndex) return;
-
+        if (!fileIndex) return;
+    
         String dataToSave = String(index);
-        if (fileIndex.println(dataToSave)) logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", (type == 0) ? "New Callsign Index saved to SPIFFS": "New Frequency Index saved to SPIFFS");
+        if (fileIndex.println(dataToSave)) {
+            String logMessage;
+            switch (type) {
+                case 0: logMessage = "New Callsign Index"; break;
+                case 1: logMessage = "New Frequency Index"; break;
+                case 2: logMessage = "New Brightness"; break;
+                default: return; // Invalid type, exit function
+            }
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s saved to SPIFFS", logMessage.c_str());
+        }
         fileIndex.close();
     }
-
+    
     void loadIndex(uint8_t type) {
-        String filePath = (type == 0) ? "/callsignIndex.txt" : "/freqIndex.txt";
-        File fileIndex = SPIFFS.open(filePath);
-        if(!fileIndex) {
+        String filePath;
+        switch (type) {
+            case 0: filePath = "/callsignIndex.txt"; break;
+            case 1: filePath = "/freqIndex.txt"; break;
+            case 2: filePath = "/brightness.txt"; break;
+            default: return; // Invalid type, exit function
+        }
+    
+        if (!SPIFFS.exists(filePath)) {
+            switch (type) {
+                case 0: myBeaconsIndex = 0; break;
+                case 1: loraIndex = 0; break;
+                case 2:
+                    #ifdef HAS_TFT
+                        screenBrightness = 255;
+                    #else
+                        screenBrightness = 1;
+                    #endif
+                    break;
+                default: return; // Invalid type, exit function
+            }
             return;
         } else {
+            File fileIndex = SPIFFS.open(filePath, "r");
             while (fileIndex.available()) {
                 String firstLine = fileIndex.readStringUntil('\n');
                 int index = firstLine.toInt();
+                String logMessage;
                 if (type == 0) {
                     myBeaconsIndex = index;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Callsign Index: %s", firstLine);
-                } else {
+                    logMessage = "Callsign Index:";
+                } else if (type == 1) {
                     loraIndex = index;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "LoRa Freq Index: %s", firstLine);
+                    logMessage = "LoRa Freq Index:";
+                } else {
+                    screenBrightness = index;
+                    logMessage = "Brightness:";
                 }
-            }
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
+            }        
             fileIndex.close();
         }
     }
