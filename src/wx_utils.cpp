@@ -43,7 +43,7 @@ namespace WX_Utils {
         if (Config.wxsensor.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
                 if (!shtc3.begin()) {
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor not found");
                     while (1) delay(1);
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
