@@ -855,7 +855,7 @@ namespace MENU_Utils {
                         }
                     #endif
                 } else {
-                    sixthRowMainMenu = "No Battery Connected" ;
+                    sixthRowMainMenu = "No Battery Connected";
                 }
                 displayShow(firstRowMainMenu,
                             secondRowMainMenu,
