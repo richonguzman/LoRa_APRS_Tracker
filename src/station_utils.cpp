@@ -1,6 +1,7 @@
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
+#include "telemetry_utils.h"
 #include "station_utils.h"
 #include "battery_utils.h"
 #include "configuration.h"
@@ -276,7 +277,7 @@ namespace STATION_Utils {
                 updateCounter++;
                 if (updateCounter >= sendCommentAfterXBeacons) {
                     if (comment != "") packet += comment;
-                    if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += BATTERY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
+                    if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += TELEMETRY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
                     updateCounter = 0;
                 }
             }
