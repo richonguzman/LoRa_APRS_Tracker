@@ -166,9 +166,9 @@ namespace WX_Utils {
         }
         
         String sensorTelemetry;
-        if (isnan(newTemp) || isnan(newHum) || isnan(newPress)) {
-            Serial.println("WX Sensor data failed");
-            sensorTelemetry = ((type == 1) ? " - C    - %    - hPa" : "XX");
+        if (isnan(newTemp) || isnan(newHum) || isnan(newPress) || (!wxModuleFound)) {
+            Serial.println("WX Sensor data failed/not found");
+            sensorTelemetry = ((type == 1) ? " - C    - %    - hPa" : "");
         } else {
             if (type == 0) {
                 sensorTelemetry = TELEMETRY_Utils::generateEncodedTelemetryBytes(newTemp + Config.telemetry.temperatureCorrection, false, 2); // temperature
