@@ -49,8 +49,6 @@ uint8_t     updateCounter           = 100;
 
 
 bool        sendStartTelemetry      = true;
-uint32_t    lastTelemetryTx         = 0;
-uint32_t    telemetryTx             = millis();
 
 uint32_t    lastDeleteListenedTracker;
 
@@ -180,54 +178,19 @@ namespace STATION_Utils {
         }
     }
 
-    void sendBeacon(uint8_t type) {
-        if (sendStartTelemetry && Config.battery.sendVoltage && Config.battery.voltageAsTelemetry && lastTxTime > 0) {                
-            String sender = currentBeacon->callsign;
-            for (int i = sender.length(); i < 9; i++) {
-                sender += ' ';
-            }
-            String basePacket = currentBeacon->callsign;
-            basePacket += ">APLRT1";
-            if (Config.path != "") {
-                basePacket += ",";
-                basePacket += Config.path;
-            }
-            basePacket += "::";
-            basePacket += sender;
-            basePacket += ":";
-
-            String tempPacket = basePacket;
-            tempPacket += "EQNS.0,0.01,0";
-            displayShow("<<< TX >>>", "Telemetry Packet:", "Equation Coefficients",100);
-            LoRa_Utils::sendNewPacket(tempPacket);
-            delay(3000);
-
-            tempPacket = basePacket;
-            tempPacket += "UNIT.VDC";
-            displayShow("<<< TX >>>", "Telemetry Packet:", "Unit/Label",100);
-            LoRa_Utils::sendNewPacket(tempPacket);
-            delay(3000);
-
-            tempPacket = basePacket;
-            tempPacket += "PARM.V_Batt";
-            displayShow("<<< TX >>>", "Telemetry Packet:", "Parameter Name",100);
-            LoRa_Utils::sendNewPacket(tempPacket);
-            delay(3000);
+    void sendBeacon() {
+        if (sendStartTelemetry && ((Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) && lastTxTime > 0) {                
+            TELEMETRY_Utils::sendEquationsUnitsParameters();
             sendStartTelemetry = false;
         }
 
+        String path = Config.path;
+        if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
         String packet;
-        if (Config.wxsensor.sendTelemetry && wxModuleFound && type == 1) { // WX
-            packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, "/", APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), 0.0, currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "Wx"));
-            packet += (wxModuleType != 0) ? WX_Utils::readDataSensor(0) : ".../...g...t...";
+        if (miceActive) {
+            packet = APRSPacketLib::generateMiceGPSBeaconPacket(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
         } else {
-            String path = Config.path;
-            if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
-            if (miceActive) {
-                packet = APRSPacketLib::generateMiceGPSBeaconPacket(currentBeacon->micE, currentBeacon->callsign, currentBeacon->symbol, currentBeacon->overlay, path, gps.location.lat(), gps.location.lng(), gps.course.deg(), gps.speed.knots(), gps.altitude.meters());
-            } else {
-                packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
-            }
+            packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
         }
         String comment;
         int sendCommentAfterXBeacons;
@@ -273,11 +236,11 @@ namespace STATION_Utils {
         if (shouldSleepLowVoltage) {
             packet += " **LowVoltagePowerOff**";
         } else {
-            if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry)) {
+            if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
                 updateCounter++;
                 if (updateCounter >= sendCommentAfterXBeacons) {
                     if (comment != "") packet += comment;
-                    if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) packet += TELEMETRY_Utils::generateEncodedTelemetry(batteryVoltage.toFloat());
+                    if ((Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) packet += TELEMETRY_Utils::generateEncodedTelemetry();
                     updateCounter = 0;
                 }
             }
@@ -301,18 +264,6 @@ namespace STATION_Utils {
         lastTxTime  = millis();
         sendUpdate  = false;
         if (currentBeacon->gpsEcoMode) gpsShouldSleep = true;
-    }
-
-    void checkTelemetryTx() {
-        if (Config.wxsensor.active && Config.wxsensor.sendTelemetry && sendStandingUpdate) {
-            uint32_t currenTime = millis();
-            lastTx = currenTime - lastTxTime;
-            telemetryTx = currenTime - lastTelemetryTx;
-            if ((lastTelemetryTx == 0 || telemetryTx > 10 * 60 * 1000) && lastTx > 10 * 1000) {
-                sendBeacon(1);
-                lastTelemetryTx = currenTime;
-            }
-        }
     }
 
     void saveIndex(uint8_t type, uint8_t index) {

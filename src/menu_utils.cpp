@@ -775,7 +775,7 @@ namespace MENU_Utils {
                     fourthRowMainMenu += fourthRowSpeed;
                     fourthRowMainMenu += "km/h  ";
                     fourthRowMainMenu += fourthRowCourse;
-                    if (Config.wxsensor.active && (time_now % 10 < 5) && wxModuleType != 0) {
+                    if (Config.telemetry.active && (time_now % 10 < 5) && wxModuleType != 0) {
                         fourthRowMainMenu = WX_Utils::readDataSensor(1);
                     }
                     if (MSG_Utils::getNumWLNKMails() > 0) {

@@ -1,13 +1,106 @@
+#include <APRSPacketLib.h>
 #include <Arduino.h>
+#include <vector>
 #include "telemetry_utils.h"
+#include "configuration.h"
+#include "power_utils.h"
+#include "lora_utils.h"
+#include "wx_utils.h"
+#include "display.h"
 
 
-int telemetryCounter = random(1,999);
+extern Configuration    Config;
+extern Beacon           *currentBeacon;
+extern int              wxModuleType;
+
+
+int telemetryCounter    = random(1,999);
 
 
 namespace TELEMETRY_Utils {
 
-    String generateEncodedTelemetryBytes(float value, bool counterBytes, byte telemetryType) {  // 0 = internal battery(0-4,2V) , 1 = external battery(0-15V)
+    String joinWithCommas(const std::vector<String>& items) {
+        String result;
+        for (size_t i = 0; i < items.size(); ++i) {
+            result += items[i];
+            if (i < items.size() - 1) result += ",";
+        }
+        return result;
+    }
+
+    std::vector<String> getEquationCoefficients() {
+        std::vector<String> coefficients;
+        if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) coefficients.push_back("0,0.01,0");
+        if (Config.telemetry.sendTelemetry) {
+            switch (wxModuleType) {
+                case 1: coefficients.insert(coefficients.end(), {"0,0.1,-50", "0,0.01,0", "0,0.125,0"}); break;
+                case 2: coefficients.insert(coefficients.end(), {"0,0.1,-50", "0,0.125,0"}); break;
+                case 3: coefficients.insert(coefficients.end(), {"0,0.1,-50", "0,0.01,0", "0,0.125,0", "0,0.01,0"}); break;
+                case 4: coefficients.insert(coefficients.end(), {"0,0.1,-50", "0,0.01,0"}); break;
+            }
+        }
+        return coefficients;
+    }
+
+    std::vector<String> getUnitLabels() {
+        std::vector<String> labels;
+        if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) labels.push_back("VDC");
+        if (Config.telemetry.sendTelemetry) {
+            switch (wxModuleType) {
+                case 1: labels.insert(labels.end(), {"C", "%", "hPa"}); break;
+                case 2: labels.insert(labels.end(), {"C", "hPa"}); break;
+                case 3: labels.insert(labels.end(), {"C", "%", "hPa", "%"}); break;
+                case 4: labels.insert(labels.end(), {"C", "%"}); break;
+            }
+        }
+        return labels;
+    }
+
+    std::vector<String> getParameterNames() {
+        std::vector<String> names;
+        if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) names.push_back("Voltage");
+        if (Config.telemetry.sendTelemetry) {
+            switch (wxModuleType) {
+                case 1: names.insert(names.end(), {"Celsius", "Rel_Hum", "Atm_Press"}); break;
+                case 2: names.insert(names.end(), {"Celsius", "Atm_Press"}); break;
+                case 3: names.insert(names.end(), {"Celsius", "Rel_Hum", "Atm_Press", "GAS"}); break;
+                case 4: names.insert(names.end(), {"Celsius", "Rel_Hum"}); break;
+            }
+        }
+        return names;
+    }
+
+    void sendEquationCoefficients() {
+        String equationPacket = "EQNS." + joinWithCommas(getEquationCoefficients());
+        String tempPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->callsign, equationPacket);
+        displayShow("<<< TX >>>", "Telemetry Packet:", "Equation Coefficients", 100);
+        LoRa_Utils::sendNewPacket(tempPacket);
+    }
+
+    void sendUnitLabels() {
+        String unitPacket = "UNIT." + joinWithCommas(getUnitLabels());
+        String tempPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->callsign, unitPacket);
+        displayShow("<<< TX >>>", "Telemetry Packet:", "Unit/Label", 100);
+        LoRa_Utils::sendNewPacket(tempPacket);
+    }
+
+    void sendParameterNames() {
+        String parameterPacket = "PARM." + joinWithCommas(getParameterNames());
+        String tempPacket = APRSPacketLib::generateMessagePacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->callsign, parameterPacket);
+        displayShow("<<< TX >>>", "Telemetry Packet:", "Parameter Name",100);
+        LoRa_Utils::sendNewPacket(tempPacket);
+    }
+
+    void sendEquationsUnitsParameters() {
+        sendEquationCoefficients();
+        delay(3000);
+        sendUnitLabels();
+        delay(3000);
+        sendParameterNames();
+        delay(3000);
+    }
+
+    String generateEncodedTelemetryBytes(float value, bool counterBytes, byte telemetryType) {
         String encodedBytes;
         int tempValue;
 
@@ -15,21 +108,11 @@ namespace TELEMETRY_Utils {
             tempValue = value;
         } else {
             switch (telemetryType) {
-                case 0:
-                    tempValue = value * 100;           // Internal voltage or Humidity calculation
-                    break;
-                case 1:
-                    tempValue = (value * 100) / 2;     // External voltage calculation
-                    break;
-                case 2:
-                    tempValue = (value * 10) + 500;     // Temperature
-                    break;
-                case 3:
-                    tempValue = (value * 8);            // Pressure
-                    break;
-                default:
-                    tempValue = value;
-                    break;
+                case 0: tempValue = value * 100; break;         // Internal voltage (0-4,2V), Humidity, Gas calculation
+                case 1: tempValue = (value * 100) / 2; break;   // External voltage calculation (0-15V)
+                case 2: tempValue = (value * 10) + 500; break;  // Temperature
+                case 3: tempValue = (value * 8); break;         // Pressure
+                default: tempValue = value; break;
             }
         }        
 
@@ -41,23 +124,17 @@ namespace TELEMETRY_Utils {
         return encodedBytes;
     }
 
-    String generateEncodedTelemetry(float voltage) {
+    String generateEncodedTelemetry() {
         String telemetry = "|";
         telemetry += generateEncodedTelemetryBytes(telemetryCounter, true, 0);
         telemetryCounter++;
-        if (telemetryCounter == 1000) {
-            telemetryCounter = 0;
+        if (telemetryCounter == 1000) telemetryCounter = 0;
+        
+        if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) {  
+            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+            telemetry += generateEncodedTelemetryBytes(batteryVoltage.toFloat(), false, 0); // voltage
         }
-        //
-        bool telemetryNotAsWxPacket = true;
-        //
-        if (telemetryNotAsWxPacket) {
-            telemetry += generateEncodedTelemetryBytes(24.8, false, 2);     // temperature
-            telemetry += generateEncodedTelemetryBytes(63, false, 0);       // humidity
-            telemetry += generateEncodedTelemetryBytes(1015.5, false, 3);   // pressure
-        }
-        //
-        telemetry += generateEncodedTelemetryBytes(voltage, false, 0);
+        if (Config.telemetry.sendTelemetry) telemetry += WX_Utils::readDataSensor(0);
         telemetry += "|";
         return telemetry;
     }

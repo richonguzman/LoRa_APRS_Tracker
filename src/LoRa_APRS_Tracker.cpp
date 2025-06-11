@@ -57,7 +57,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025.04.11";
+String      versionDate             = "2025-06-11";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -228,10 +228,7 @@ void loop() {
 
         int currentSpeed = (int) gps.speed.kmph();
 
-        if (gps_loc_update) {
-            Utils::checkStatus();
-            STATION_Utils::checkTelemetryTx();
-        }
+        if (gps_loc_update) Utils::checkStatus();
 
         if (!gps.location.isValid()) BATTERY_Utils::checkVoltageWithoutGPSFix();
 
@@ -241,7 +238,7 @@ void loop() {
             STATION_Utils::checkStandingUpdateTime();
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();
-        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
+        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon();
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {

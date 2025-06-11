@@ -129,7 +129,7 @@ namespace Utils {
 
     void i2cScannerForPeripherals() {
         uint8_t err, addr;
-        if (Config.wxsensor.active) {
+        if (Config.telemetry.active) {
             for (addr = 1; addr < 0x7F; addr++) {
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_2_GPS)
                     Wire1.beginTransmission(addr);

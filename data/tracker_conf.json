@@ -59,10 +59,10 @@
 	"winlink": {
 		"password": "ABCDEF"
 	},
-	"wxsensor": {
+	"telemetry": {
 		"active": false,
-		"temperatureCorrection": 0.0,
-		"sendTelemetry": false
+		"sendTelemetry": false,
+		"temperatureCorrection": 0.0		
 	},
 	"notification": {
 		"ledTx": false,

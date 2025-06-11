@@ -42,9 +42,9 @@ void Configuration::writeFile() {
 
     data["winlink"]["password"]                 = winlink.password;
 
-    data["wxsensor"]["active"]                  = wxsensor.active;
-    data["wxsensor"]["temperatureCorrection"]   = wxsensor.temperatureCorrection;
-    data["wxsensor"]["sendTelemetry"]           = wxsensor.sendTelemetry;
+    data["telemetry"]["active"]                 = telemetry.active;
+    data["telemetry"]["sendTelemetry"]          = telemetry.sendTelemetry;
+    data["telemetry"]["temperatureCorrection"]  = telemetry.temperatureCorrection;
 
     data["notification"]["ledTx"]               = notification.ledTx;
     data["notification"]["ledTxPin"]            = notification.ledTxPin;
@@ -146,10 +146,10 @@ bool Configuration::readFile() {
 
         winlink.password                = data["winlink"]["password"] | "NOPASS";
 
-        wxsensor.active                 = data["wxsensor"]["active"] | false;
-        wxsensor.temperatureCorrection  = data["wxsensor"]["temperatureCorrection"] | 0.0;
-        wxsensor.sendTelemetry          = data["wxsensor"]["sendTelemetry"] | false;
-
+        telemetry.active                = data["telemetry"]["active"] | false;
+        telemetry.sendTelemetry         = data["telemetry"]["sendTelemetry"] | false;
+        telemetry.temperatureCorrection = data["telemetry"]["temperatureCorrection"] | 0.0;
+        
         notification.ledTx              = data["notification"]["ledTx"] | false;
         notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
         notification.ledMessage         = data["notification"]["ledMessage"] | false;
@@ -266,9 +266,9 @@ void Configuration::init() {
 
     winlink.password                = "NOPASS";
 
-    wxsensor.active                 = false;
-    wxsensor.temperatureCorrection  = 0.0;
-    wxsensor.sendTelemetry          = false;
+    telemetry.active                 = false;
+    telemetry.sendTelemetry          = false;
+    telemetry.temperatureCorrection  = 0.0;
 
     notification.ledTx              = false;
     notification.ledTxPin           = 13;

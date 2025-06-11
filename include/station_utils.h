@@ -13,8 +13,7 @@ namespace STATION_Utils {
     void    orderListenedTrackersByDistance(const String& callsign, float distance, float course);
     
     void    checkStandingUpdateTime();
-    void    sendBeacon(uint8_t type);
-    void    checkTelemetryTx();
+    void    sendBeacon();
     void    saveIndex(uint8_t type, uint8_t index);
     void    loadIndex(uint8_t type);
 

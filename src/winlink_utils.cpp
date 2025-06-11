@@ -22,7 +22,6 @@ uint32_t    lastChallengeTime       = 0;
 String      challengeAnswer;
 
 
-
 namespace WINLINK_Utils {
 
     void processWinlinkChallenge(const String& winlinkInteger) {

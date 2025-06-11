@@ -433,9 +433,9 @@
                                             d="M3.05 3.05a7 7 0 0 0 0 9.9.5.5 0 0 1-.707.707 8 8 0 0 1 0-11.314.5.5 0 0 1 .707.707m2.122 2.122a4 4 0 0 0 0 5.656.5.5 0 1 1-.708.708 5 5 0 0 1 0-7.072.5.5 0 0 1 .708.708m5.656-.708a.5.5 0 0 1 .708 0 5 5 0 0 1 0 7.072.5.5 0 1 1-.708-.708 4 4 0 0 0 0-5.656.5.5 0 0 1 0-.708m2.122-2.12a.5.5 0 0 1 .707 0 8 8 0 0 1 0 11.313.5.5 0 0 1-.707-.707 7 7 0 0 0 0-9.9.5.5 0 0 1 0-.707zM6 8a2 2 0 1 1 2.5 1.937V15.5a.5.5 0 0 1-1 0V9.937A2 2 0 0 1 6 8"
                                         />
                                     </svg>
-                                    Wx Telemetry
+                                    Telemetry
                                 </h5>
-                                <small>Define Wx Telemetry (Wx Data will only be sent when Station doesn't move for at least 15 min)</small>
+                                <small>Telemetry data to be available on Screen, as Telemetry APRS Packet or as APRS Wx Packet</small>
                             </div>
                             <div class="col-9 mt-2">
                                 <div class="row">
@@ -443,46 +443,44 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="wxsensor.active"
-                                                id="wxsensor.active"
+                                                name="telemetry.active"
+                                                id="telemetry.active"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="wxsensor.active"
+                                                for="telemetry.active"
                                                 class="form-label"
-                                                ><b>Activate Wx Telemetry</b>
+                                                ><b>Activate Sensor</b>
                                                 <small
-                                                    >Requires a BME/BMP280, BME680 or Si7021 sensor</small
+                                                    >(Requires a BME280/BMP280/BME680/SHTC3 sensor)</small
                                                 ></label
                                             >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="wxsensor.sendTelemetry"
-                                                id="wxsensor.sendTelemetry"
+                                                name="telemetry.sendTelemetry"
+                                                id="telemetry.sendTelemetry"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="wxsensor.sendTelemetry"
+                                                for="telemetry.sendTelemetry"
                                                 class="form-label"
-                                                >Send Wx Telemetry in GPS Beacon
+                                                >Send Telemetry over LoRa APRS
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-6 mt-3">
-                                        <label for="wxsensor.temperatureCorrection" class="form-label"
+                                        <label for="telemetry.temperatureCorrection" class="form-label"
                                             >Temperature Correction</label
                                         >
                                         <div class="input-group">
                                             <input
                                                 type="number"
-                                                name="wxsensor.temperatureCorrection"
-                                                id="wxsensor.temperatureCorrection"
+                                                name="telemetry.temperatureCorrection"
+                                                id="telemetry.temperatureCorrection"
                                                 placeholder="0.0"
                                                 class="form-control"
                                                 step="0.1"

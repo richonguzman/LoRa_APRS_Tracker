@@ -10,11 +10,8 @@
  
 namespace WX_Utils {
 
-    void  setup();
-    const String generateTempString(const float sensorTemp, const uint8_t type);
-    const String generateHumString(const float sensorHum, const uint8_t type);
-    const String generatePresString(const float sensorPress, const uint8_t type);
-    const String readDataSensor(const uint8_t type);
+    void    setup();
+    String  readDataSensor(const uint8_t type);
 
 }
 

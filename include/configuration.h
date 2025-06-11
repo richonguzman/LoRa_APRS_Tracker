@@ -45,11 +45,11 @@ public:
     String  password;
 };
 
-class WXSENSOR {
+class Telemetry {
 public:
     bool    active;
-    float   temperatureCorrection;
     bool    sendTelemetry;
+    float   temperatureCorrection;
 };
 
 class Notification {
@@ -106,7 +106,7 @@ public:
     Display                 display;
     Battery                 battery;
     Winlink                 winlink;
-    WXSENSOR                wxsensor;
+    Telemetry               telemetry;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
     PTT                     ptt;
