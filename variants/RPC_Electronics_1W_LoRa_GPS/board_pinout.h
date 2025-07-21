@@ -46,8 +46,8 @@
     #define GPS_TX              16
 
     //  OTHER
-    #define BUTTON_PIN          34
-    #define BUTTON2_PIN         15
+    #define BUTTON_PIN          15
+    #define BUTTON2_PIN         2
     #define BUTTON3_PIN         33
     #define BUTTON4_PIN         26
     #define BATTERY_PIN         35

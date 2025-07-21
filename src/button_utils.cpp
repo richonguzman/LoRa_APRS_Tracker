@@ -29,7 +29,6 @@
     extern uint32_t         displayTime;
     extern uint32_t         menuTime;
 
-    int whichButton         = 0;
 
     namespace BUTTON_Utils {
         
@@ -41,46 +40,31 @@
             OneButton userButton4 = OneButton(BUTTON4_PIN, true, true);
         #endif
 
-        static bool buttonSinglePressed;
-        static bool buttonLongPressed;
-        static bool buttonDoublePressed;
-        static bool buttonMultiPressed;
-
-        #ifdef RPC_Electronics_1W_LoRa_GPS
-            static bool button2SinglePressed;
-            static bool button3SinglePressed;
-            static bool button4SinglePressed;
-        #endif
-
-        void singlePress() {
+        void singlePress1() {
             menuTime = millis();
-            Serial.println("boton 1");
-            //KEYBOARD_Utils::downArrow();
+            KEYBOARD_Utils::downArrow();
         }
         #ifdef RPC_Electronics_1W_LoRa_GPS
             void singlePress2() {
                 menuTime = millis();
-                Serial.println("boton 2");
-                //KEYBOARD_Utils::upArrow();
+                KEYBOARD_Utils::upArrow();
             }
             void singlePress3() {
                 menuTime = millis();
-                Serial.println("boton 3");
-                //KEYBOARD_Utils::rightArrow();
+                KEYBOARD_Utils::rightArrow();
             }
             void singlePress4() {
                 menuTime = millis();
-                Serial.println("boton 4");
-                //KEYBOARD_Utils::leftArrow();
+                KEYBOARD_Utils::leftArrow();
             }
         #endif
 
-        void longPress() {
+        void longPress1() {
             menuTime = millis();
             KEYBOARD_Utils::rightArrow();
         }
 
-        void doublePress() {
+        void doublePress1() {
             displayToggle(true);
             menuTime = millis();
             if (menuDisplay == 0) {
@@ -91,111 +75,30 @@
             }
         }
 
-        void multiPress() {
+        void multiPress1() {
             displayToggle(true);
             menuTime = millis();
             menuDisplay = 9000;
         }
 
-        void isrSinglePress1() {
-            buttonSinglePressed = true;
-            whichButton = 1;
-        }
-        #ifdef RPC_Electronics_1W_LoRa_GPS
-            void isrSinglePress2() {
-                button2SinglePressed = true;
-                whichButton = 2;
-            }
-            void isrSinglePress3() {
-                button3SinglePressed = true;
-                whichButton = 3;
-            }
-            void isrSinglePress4() {
-                button4SinglePressed = true;
-                whichButton = 4;
-            }
-        #endif
-
-        void isrLongPress() {
-            buttonLongPressed = true;
-        }
-
-        void isrDoublePress() {
-            buttonDoublePressed = true;
-        }
-
-        void isrMultiPress() {
-            buttonMultiPressed = true;
-        }
-
-        void IRAM_ATTR buttonIsr() {    //  Interrupt Service Routine
-            userButton.tick();
-            #ifdef RPC_Electronics_1W_LoRa_GPS
-                userButton2.tick();
-                userButton3.tick();
-                userButton4.tick();
-            #endif
-        }
-
         void loop() {
-            noInterrupts();
             userButton.tick();
             #ifdef RPC_Electronics_1W_LoRa_GPS
                 userButton2.tick();
                 userButton3.tick();
                 userButton4.tick();
             #endif
-            interrupts();
-
-            if (buttonSinglePressed) {
-                buttonSinglePressed = false;
-                singlePress();                
-            }
-            #ifdef RPC_Electronics_1W_LoRa_GPS
-                if (button2SinglePressed) {
-                    button2SinglePressed = false;
-                    singlePress2();                
-                }
-                if (button3SinglePressed) {
-                    button3SinglePressed = false;
-                    singlePress3();                
-                }
-                if (button4SinglePressed) {
-                    button4SinglePressed = false;
-                    singlePress4();                
-                }
-            #endif
-
-            if (buttonLongPressed) {
-                buttonLongPressed = false;
-                longPress();                
-            }
-            if (buttonDoublePressed) {
-                buttonDoublePressed = false;
-                doublePress();
-            }
-            if (buttonMultiPressed) {
-                buttonMultiPressed = false;
-                multiPress();                
-            }
         }
 
         void setup() {
-            userButton.attachClick(BUTTON_Utils::isrSinglePress1);
-            userButton.attachLongPressStart(BUTTON_Utils::isrLongPress);
-            userButton.attachDoubleClick(BUTTON_Utils::isrDoublePress);
-            userButton.attachMultiClick(BUTTON_Utils::isrMultiPress);
-            attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), buttonIsr, FALLING);
-
+            userButton.attachClick(singlePress1);
+            userButton.attachLongPressStart(longPress1);
+            userButton.attachDoubleClick(doublePress1);
+            userButton.attachMultiClick(multiPress1);
             #ifdef RPC_Electronics_1W_LoRa_GPS
-                userButton2.attachClick(BUTTON_Utils::isrSinglePress2);
-                attachInterrupt(digitalPinToInterrupt(BUTTON2_PIN), buttonIsr, FALLING);
-
-                userButton3.attachClick(BUTTON_Utils::isrSinglePress3);
-                attachInterrupt(digitalPinToInterrupt(BUTTON3_PIN), buttonIsr, FALLING);
-
-                userButton4.attachClick(BUTTON_Utils::isrSinglePress4);
-                attachInterrupt(digitalPinToInterrupt(BUTTON4_PIN), buttonIsr, FALLING);
+                userButton2.attachClick(singlePress2);
+                userButton3.attachClick(singlePress3);
+                userButton4.attachClick(singlePress4);
             #endif
         }
 
