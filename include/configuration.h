@@ -21,6 +21,7 @@ public:
     byte    smartBeaconSetting;
     String  micE;
     bool    gpsEcoMode;
+    String  profilelabel;
 };
 
 class Display {

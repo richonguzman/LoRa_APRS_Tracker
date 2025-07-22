@@ -27,6 +27,7 @@ void Configuration::writeFile() {
         data["beacons"][i]["smartBeaconSetting"]    = beacons[i].smartBeaconSetting;
         data["beacons"][i]["micE"]                  = beacons[i].micE;
         data["beacons"][i]["gpsEcoMode"]            = beacons[i].gpsEcoMode;
+        data["beacons"][i]["profilelabel"]          = beacons[i].profilelabel;
     }
 
     data["display"]["showSymbol"]               = display.showSymbol;
@@ -129,7 +130,7 @@ bool Configuration::readFile() {
             bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
             bcn.micE                    = BeaconsArray[i]["micE"] | "";
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
-            
+            bcn.profilelabel            = BeaconsArray[i]["profilelabel"] | "";
             beacons.push_back(bcn);
         }
 
@@ -250,6 +251,7 @@ void Configuration::init() {
         beacon.smartBeaconSetting   = 0;
         beacon.micE                 = "";
         beacon.gpsEcoMode           = false;
+        beacon.profilelabel         = "";
         beacons.push_back(beacon);
     }
 
