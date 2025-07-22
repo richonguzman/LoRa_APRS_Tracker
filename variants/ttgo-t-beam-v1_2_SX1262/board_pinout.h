@@ -43,6 +43,7 @@
     #define HAS_GPS_CTRL
     #define GPS_RX              12
     #define GPS_TX              34
+    #define GPS_BAUDRATE        115200
 
     //  OTHER
     #define BUTTON_PIN          38 // The middle button GPIO on the T-Beam
