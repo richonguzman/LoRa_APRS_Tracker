@@ -166,16 +166,6 @@ namespace Utils {
             }
         }
 
-        for (addr = 1; addr < 0x7F; addr++) {
-            Wire.beginTransmission(addr);
-            err = Wire.endTransmission();
-            if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
-                //Serial.println(addr); this shows any connected board to I2C
-                keyboardAddress = addr;
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
-            }
-        }
-
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             delay(500);
             const uint8_t keyboardAddr = 0x55;
@@ -188,6 +178,16 @@ namespace Utils {
                     break;
                 }
                 delay(50);
+            }
+        #else
+            for (addr = 1; addr < 0x7F; addr++) {
+                Wire.beginTransmission(addr);
+                err = Wire.endTransmission();
+                if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
+                    //Serial.println(addr); this shows any connected board to I2C
+                    keyboardAddress = addr;
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
+                }
             }
         #endif
 

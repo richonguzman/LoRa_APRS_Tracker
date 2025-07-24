@@ -75,7 +75,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025-07-21";
+String      versionDate             = "2025-07-24";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -276,5 +276,3 @@ void loop() {
         }
     }
 }
-
-// eliminar keyboardConnected y reemplazar por validar si es distinto de 0x00 ?
