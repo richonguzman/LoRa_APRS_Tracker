@@ -54,7 +54,7 @@
 
         void sendBeaconFromTouch() { sendUpdate = true;}
 
-        void enterMenuFromTouch() { BUTTON_Utils::doublePress();}
+        void enterMenuFromTouch() { BUTTON_Utils::doublePress1();}
 
         void exitFromTouch() {
             menuDisplay = 0;

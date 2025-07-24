@@ -169,17 +169,27 @@ namespace Utils {
         for (addr = 1; addr < 0x7F; addr++) {
             Wire.beginTransmission(addr);
             err = Wire.endTransmission();
-            if (err == 0) {
+            if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
                 //Serial.println(addr); this shows any connected board to I2C
-                if (addr == 0x55) {         // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
-                    keyboardAddress = addr;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected to I2C");
-                } else if (addr == 0x5F) {  // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
-                    keyboardAddress = addr;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
-                }
+                keyboardAddress = addr;
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
             }
         }
+
+        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+            delay(500);
+            const uint8_t keyboardAddr = 0x55;
+            for (int i = 0; i < 10; ++i) {
+                Wire.beginTransmission(keyboardAddr);
+                int err = Wire.endTransmission();
+                if (err == 0) {
+                    keyboardAddress = keyboardAddr;
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected to I2C");
+                    break;
+                }
+                delay(50);
+            }
+        #endif
 
         #ifdef HAS_TOUCHSCREEN
             for (addr = 1; addr < 0x7F; addr++) {

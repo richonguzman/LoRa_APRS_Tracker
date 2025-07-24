@@ -52,12 +52,12 @@ typedef void (*DirectionFunc)();
         }
 
         void loop() {   // for running process with SPIFFS outside interrupt
-            if (checkMenuDisplayToExitInterrupt(menuDisplay) && exitJoystickInterrupt) BUTTON_Utils::longPress();
+            if (checkMenuDisplayToExitInterrupt(menuDisplay) && exitJoystickInterrupt) BUTTON_Utils::longPress1();
         }
 
         void IRAM_ATTR joystickHandler(DirectionFunc directionFunc) {
             if (checkLastJoystickInterrupTime() && menuDisplay != 0) {
-                if (checkMenuDisplayToExitInterrupt(menuDisplay) && directionFunc == BUTTON_Utils::longPress) {
+                if (checkMenuDisplayToExitInterrupt(menuDisplay) && directionFunc == BUTTON_Utils::longPress1) {
                     exitJoystickInterrupt = true;
                 } else {
                     exitJoystickInterrupt = false;
@@ -69,7 +69,7 @@ typedef void (*DirectionFunc)();
         void IRAM_ATTR joystickUp() { joystickHandler(KEYBOARD_Utils::upArrow); }
         void IRAM_ATTR joystickDown() { joystickHandler(KEYBOARD_Utils::downArrow); }
         void IRAM_ATTR joystickLeft() { joystickHandler(KEYBOARD_Utils::leftArrow); }
-        void IRAM_ATTR joystickRight() { joystickHandler(BUTTON_Utils::longPress); }
+        void IRAM_ATTR joystickRight() { joystickHandler(BUTTON_Utils::longPress1); }
 
         void setup() {
             pinMode(JOYSTICK_CENTER, INPUT_PULLUP);

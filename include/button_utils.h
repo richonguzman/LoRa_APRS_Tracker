@@ -23,8 +23,8 @@
 
 namespace BUTTON_Utils {
 
-    void longPress();
-    void doublePress();
+    void longPress1();
+    void doublePress1();
 
     void loop();
     void setup();
