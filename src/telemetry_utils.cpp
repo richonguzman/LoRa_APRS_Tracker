@@ -21,6 +21,7 @@
 #include <vector>
 #include "telemetry_utils.h"
 #include "configuration.h"
+#include "station_utils.h"
 #include "power_utils.h"
 #include "lora_utils.h"
 #include "wx_utils.h"
@@ -30,7 +31,7 @@
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              wxModuleType;
-
+extern bool             sendStartTelemetry;
 
 int telemetryCounter    = random(1,999);
 
@@ -116,6 +117,7 @@ namespace TELEMETRY_Utils {
         delay(3000);
         sendParameterNames();
         delay(3000);
+        sendStartTelemetry = false;
     }
 
     String generateEncodedTelemetryBytes(float value, bool counterBytes, byte telemetryType) {

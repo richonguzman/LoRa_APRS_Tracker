@@ -197,10 +197,7 @@ namespace STATION_Utils {
     }
 
     void sendBeacon() {
-        if (sendStartTelemetry && ((Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) && lastTxTime > 0) {                
-            TELEMETRY_Utils::sendEquationsUnitsParameters();
-            sendStartTelemetry = false;
-        }
+        if (sendStartTelemetry && ((Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) && lastTxTime > 0) TELEMETRY_Utils::sendEquationsUnitsParameters();
 
         String path = Config.path;
         if (gps.speed.kmph() > 200 || gps.altitude.meters() > 9000) path = ""; // avoid plane speed and altitude
@@ -210,50 +207,40 @@ namespace STATION_Utils {
         } else {
             packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
         }
-        String comment;
-        int sendCommentAfterXBeacons;
-        if (winlinkCommentState || Config.battery.sendVoltageAlways) {
-            if (winlinkCommentState) comment = " winlink";
-            sendCommentAfterXBeacons = 1;
-        } else {
-            comment = currentBeacon->comment;
-            sendCommentAfterXBeacons = Config.sendCommentAfterXBeacons;
-        }
 
         String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
         bool shouldSleepLowVoltage = false;
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
-            if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) {
-                shouldSleepLowVoltage   = true;
-            }
+            if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) shouldSleepLowVoltage = true;
         #endif
-
-        if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
-            String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-            #if defined(HAS_AXP192)
-                comment += " Bat=";
-                comment += batteryVoltage;
-                comment += "V (";
-                comment += batteryChargeCurrent;
-                comment += "mA)";
-            #elif defined(HAS_AXP2101)
-                comment += " Bat=";
-                comment += String(batteryVoltage.toFloat(),2);
-                comment += "V (";
-                comment += batteryChargeCurrent;
-                comment += "%)";
-            #elif defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
-                comment += " Bat=";
-                comment += String(batteryVoltage.toFloat(),2);
-                comment += "V";
-                comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
-                comment += "%";
-            #endif
-        }
         
-        if (shouldSleepLowVoltage) {
-            packet += " **LowVoltagePowerOff**";
-        } else {
+        if (!shouldSleepLowVoltage) {
+            String comment = (winlinkCommentState ? "winlink" : currentBeacon->comment);
+            int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
+
+            if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
+                String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
+                #if defined(HAS_AXP192)
+                    comment += " Bat=";
+                    comment += batteryVoltage;
+                    comment += "V (";
+                    comment += batteryChargeCurrent;
+                    comment += "mA)";
+                #elif defined(HAS_AXP2101)
+                    comment += " Bat=";
+                    comment += String(batteryVoltage.toFloat(),2);
+                    comment += "V (";
+                    comment += batteryChargeCurrent;
+                    comment += "%)";
+                #elif defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
+                    comment += " Bat=";
+                    comment += String(batteryVoltage.toFloat(),2);
+                    comment += "V";
+                    comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
+                    comment += "%";
+                #endif
+            }
+
             if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
                 updateCounter++;
                 if (updateCounter >= sendCommentAfterXBeacons) {
@@ -262,16 +249,16 @@ namespace STATION_Utils {
                     updateCounter = 0;
                 }
             }
+        } else {
+            packet += "**LowVoltagePowerOff**";
         }
+
         displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
-        if (shouldSleepLowVoltage) {
-            delay(3000);
-            POWER_Utils::shutdown();
-        }
+        if (shouldSleepLowVoltage) POWER_Utils::shutdown();
         
         if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();

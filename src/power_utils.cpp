@@ -485,6 +485,7 @@ namespace POWER_Utils {
     }
 
     void shutdown() {
+        delay(3000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
