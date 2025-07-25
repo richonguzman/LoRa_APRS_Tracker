@@ -306,14 +306,20 @@ namespace KEYBOARD_Utils {
             statusTime = millis();
             winlinkCommentState = false;
             
-            String callsignAndProfileLabel = "--> ";
-            callsignAndProfileLabel += Config.beacons[myBeaconsIndex].callsign;
-            if (Config.beacons[myBeaconsIndex].profileLabel.length() > 0 ) {
-                callsignAndProfileLabel += " (";
-                callsignAndProfileLabel += Config.beacons[myBeaconsIndex].profileLabel;
-                callsignAndProfileLabel += ")";
+            String newCallsign = "-----> ";
+            newCallsign += Config.beacons[myBeaconsIndex].callsign;
+            String profileLabel = "";
+            int labelLength = Config.beacons[myBeaconsIndex].profileLabel.length();
+            if (labelLength > 0 ) {
+                int extraSpaces = (max(0, (22 - (labelLength + 2)))) / 2;
+                for (int i = 0; i < extraSpaces; i++) {
+                    profileLabel += " ";
+                }
+                profileLabel += "(";
+                profileLabel += Config.beacons[myBeaconsIndex].profileLabel;
+                profileLabel += ")";
             }
-            displayShow("   INFO", "", "  CHANGING CALLSIGN!", "", callsignAndProfileLabel, "", 2000);
+            displayShow("   INFO", "", "  CHANGING CALLSIGN!", newCallsign, profileLabel, "", 2000);
             
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
