@@ -8,7 +8,8 @@
 			"micE": "",
 			"comment": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 0	
+			"smartBeaconSetting": 0,
+			"profileLabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -18,7 +19,8 @@
 			"micE": "",
 			"comment": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 2
+			"smartBeaconSetting": 2,
+			"profileLabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -28,7 +30,8 @@
 			"micE": "",
 			"comment": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 1
+			"smartBeaconSetting": 1,
+			"profileLabel": ""
 		}
 	],
 	"display": {

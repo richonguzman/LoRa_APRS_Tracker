@@ -108,6 +108,7 @@ namespace WEB_Utils {
             Config.beacons[i].overlay               = request->getParam("beacons." + String(i) + ".overlay", true)->value();
             Config.beacons[i].micE                  = request->getParam("beacons." + String(i) + ".micE", true)->value();
             Config.beacons[i].comment               = request->getParam("beacons." + String(i) + ".comment", true)->value();
+            Config.beacons[i].profileLabel          = request->getParam("beacons." + String(i) + ".profileLabel", true)->value();
 
             String paramGpsEcoMode = "beacons." + String(i) + ".gpsEcoMode";
             if (request->hasParam(paramGpsEcoMode, true)) {

@@ -305,7 +305,16 @@ namespace KEYBOARD_Utils {
             statusState  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            displayShow("   INFO", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
+            
+            String callsignAndProfileLabel = "--> ";
+            callsignAndProfileLabel += Config.beacons[myBeaconsIndex].callsign;
+            if (Config.beacons[myBeaconsIndex].profileLabel.length() > 0 ) {
+                callsignAndProfileLabel += " (";
+                callsignAndProfileLabel += Config.beacons[myBeaconsIndex].profileLabel;
+                callsignAndProfileLabel += ")";
+            }
+            displayShow("   INFO", "", "  CHANGING CALLSIGN!", "", callsignAndProfileLabel, "", 2000);
+            
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
