@@ -197,12 +197,12 @@ void loop() {
 
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();
-
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
+    
+    #ifdef BUTTON_PIN
+        if (!Config.simplifiedTrackerMode) {
             BUTTON_Utils::loop();
-        #endif
     }
+    #endif
 
     Utils::checkDisplayEcoMode();
 
