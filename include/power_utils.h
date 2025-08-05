@@ -29,6 +29,8 @@
 
 namespace POWER_Utils {
 
+    void    batteryManager();
+    void    batteryManager_Init();
     double  getBatteryVoltage();
     const String getBatteryInfoVoltage();
     const String getBatteryInfoCurrent();
@@ -42,7 +44,11 @@ namespace POWER_Utils {
     double  getBatteryChargeDischargeCurrent();
     bool    isBatteryConnected();
     void    obtainBatteryInfo();
-    void    batteryManager();
+
+#ifdef ADC_CTRL
+    void adc_ctrl_on();
+    void adc_ctrl_off();
+#endif
 
     void    activateMeasurement();
 

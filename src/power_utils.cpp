@@ -57,10 +57,18 @@ extern bool             gpsIsActive;
 
 uint32_t    batteryMeasurmentTime   = 0;
 
+#ifdef ADC_CTRL
+    uint32_t    ADCCtrlTime         = 0;
+    uint8_t     meas_State          = 0;
+#endif
+
+#if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
+    double      battADCVal          = 0;
+#endif
+
 bool        pmuInterrupt;
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 bool        disableGPS;
-
 
 namespace POWER_Utils {
 
@@ -68,30 +76,76 @@ namespace POWER_Utils {
     String batteryVoltage = "";
     String batteryChargeDischargeCurrent = "";
 
+
+    void batteryManager_Init() {
+        #ifdef ADC_CTRL
+            adc_ctrl_on();
+            delay(50);
+            obtainBatteryInfo();
+            adc_ctrl_off();
+        #else
+            obtainBatteryInfo();
+        #endif
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            handleChargingLed();
+        #endif
+    }
+
+    void batteryManager() {
+        #ifdef ADC_CTRL
+            if ((millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
+                switch(meas_State){
+                    case 0: //ADC_CTRL_ON State
+                        adc_ctrl_on();
+                        ADCCtrlTime = millis();
+                        meas_State = 1;
+                        break;
+                    case 1: // Measurement State
+                        if((millis() - ADCCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
+                            obtainBatteryInfo();
+                            adc_ctrl_off();
+                            meas_State = 0;
+                        }
+                        break;
+                }
+            }
+        #else
+            obtainBatteryInfo();
+        #endif
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            handleChargingLed();
+        #endif
+    }
+
+    void obtainBatteryInfo() {
+        static unsigned int rate_limit_check_battery = 0;
+        if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
+
+        if(BatteryIsConnected){
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                batteryVoltage = String(getBatteryVoltage(), 2);
+            #else
+                for(uint8_t i = 0;i<20;i++){ //20 measurements
+                    battADCVal += getBatteryVoltage();
+                    delay(3);
+                }
+                batteryVoltage = String(battADCVal/20, 2); //divide by 20 to get average voltage
+                battADCVal = 0;
+                batteryMeasurmentTime = millis();
+            #endif
+            
+            batteryChargeDischargeCurrent = String(getBatteryChargeDischargeCurrent(), 0);
+        }
+    }
+
     double getBatteryVoltage() {
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
         return (PMU.getBattVoltage() / 1000.0);
     #else
         #ifdef BATTERY_PIN
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-            #endif
-                int adc_value = analogRead(BATTERY_PIN);
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                batteryMeasurmentTime = millis();
-            #endif
-
+            analogRead(BATTERY_PIN); //DummyRead
+            delay(1);
+            int adc_value = analogRead(BATTERY_PIN);
             double voltage = (adc_value * 3.3 ) / 4095.0;
             
             #ifdef LIGHTTRACKER_PLUS_1_0
@@ -113,6 +167,21 @@ namespace POWER_Utils {
             return 0.0;
         #endif
     #endif    
+    }
+
+    double getBatteryChargeDischargeCurrent() {
+        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
+            return 0;
+        #endif
+        #ifdef HAS_AXP192
+            if (PMU.isCharging()) {
+                return PMU.getBatteryChargeCurrent();
+            }
+            return -1.0 * PMU.getBattDischargeCurrent();
+        #endif
+        #ifdef HAS_AXP2101
+            return PMU.getBatteryPercent();
+        #endif
     }
 
     const String getBatteryInfoVoltage() {
@@ -155,20 +224,6 @@ namespace POWER_Utils {
         }
     }
 
-    double getBatteryChargeDischargeCurrent() {
-        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
-            return 0;
-        #endif
-        #ifdef HAS_AXP192
-            if (PMU.isCharging()) {
-                return PMU.getBatteryChargeCurrent();
-            }
-            return -1.0 * PMU.getBattDischargeCurrent();
-        #endif
-        #ifdef HAS_AXP2101
-            return PMU.getBatteryPercent();
-        #endif
-    }
 
     bool isBatteryConnected() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -182,25 +237,27 @@ namespace POWER_Utils {
         #endif
     }
 
-    void obtainBatteryInfo() {
-        static unsigned int rate_limit_check_battery = 0;
-        if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
-        if (BatteryIsConnected) {
-            batteryVoltage                  = String(getBatteryVoltage(), 2);
-            batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
-        }
+
+#ifdef ADC_CTRL
+    void adc_ctrl_on(){
+        #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+            digitalWrite(ADC_CTRL, HIGH);
+        #endif
+        #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+            digitalWrite(ADC_CTRL, LOW);
+        #endif   
     }
 
-    void batteryManager() {
-        #ifdef ADC_CTRL
-            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
-        #else
-            obtainBatteryInfo();
+    void adc_ctrl_off(){
+        #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+            digitalWrite(ADC_CTRL, LOW);
         #endif
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            handleChargingLed();
+        #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+        digitalWrite(ADC_CTRL, HIGH);
         #endif
     }
+
+#endif
 
     void activateMeasurement() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -474,6 +531,8 @@ namespace POWER_Utils {
             delay(500);
             Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
+
+        batteryManager_Init();
     }
 
     void lowerCpuFrequency() {
@@ -508,12 +567,7 @@ namespace POWER_Utils {
             #endif
 
             #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
+                adc_ctrl_off();
             #endif
 
             #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
