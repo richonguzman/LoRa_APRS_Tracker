@@ -92,27 +92,29 @@ namespace POWER_Utils {
     }
 
     void batteryManager() {
-        #ifdef ADC_CTRL
+        #if BATTERY_PIN
             if ((millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
-                switch(meas_State){
-                    case 0: //ADC_CTRL_ON State
-                        adc_ctrl_on();
-                        ADCCtrlTime = millis();
-                        meas_State = 1;
-                        break;
-                    case 1: // Measurement State
-                        if((millis() - ADCCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
-                            obtainBatteryInfo();
-                            adc_ctrl_off();
-                            meas_State = 0;
-                        }
-                        break;
-                }
+                #ifdef ADC_CTRL
+                    switch(meas_State){
+                        case 0: //ADC_CTRL_ON State
+                            adc_ctrl_on();
+                            ADCCtrlTime = millis();
+                            meas_State = 1;
+                            break;
+                        case 1: // Measurement State
+                            if((millis() - ADCCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
+                                obtainBatteryInfo();
+                                adc_ctrl_off();
+                                meas_State = 0;
+                            }
+                            break;
+                    }
+                #else
+                    obtainBatteryInfo();
+                #endif       
             }
-        #else
+        #else if defined(HAS_AXP192) || defined(HAS_AXP2101)
             obtainBatteryInfo();
-        #endif
-            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             handleChargingLed();
         #endif
     }
