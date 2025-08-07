@@ -86,8 +86,8 @@ namespace GPS_Utils {
     void calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude) {
         double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
         double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
-        STATION_Utils::deleteListenedTrackersbyTime();
-        STATION_Utils::orderListenedTrackersByDistance(callsign, distanceKm, courseTo);
+        STATION_Utils::deleteListenedStationsByTime();
+        STATION_Utils::orderListenedStationsByDistance(callsign, distanceKm, courseTo);
     }
 
     void getData() {

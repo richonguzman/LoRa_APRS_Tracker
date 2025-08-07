@@ -85,6 +85,7 @@ int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
 int         menuDisplay             = 100;
+uint32_t    menuTime                = millis();
 
 bool        statusState             = true;
 bool        displayEcoMode          = Config.display.ecoMode;
@@ -103,8 +104,6 @@ uint32_t    lastTxTime              = 0;
 double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
-
-uint32_t    menuTime                = millis();
 
 bool        flashlight              = false;
 bool        digipeaterActive        = false;
@@ -138,7 +137,7 @@ void setup() {
 
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
-    STATION_Utils::nearTrackerInit();
+    STATION_Utils::nearStationInit();
     startupScreen(loraIndex, versionDate);
 
     WIFI_Utils::checkIfWiFiAP();
@@ -233,7 +232,7 @@ void loop() {
     
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
-    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+    STATION_Utils::checkListenedStationsByTimeAndDelete();
 
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {

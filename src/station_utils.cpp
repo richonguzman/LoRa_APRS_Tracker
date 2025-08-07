@@ -68,117 +68,112 @@ uint8_t     updateCounter           = 100;
 
 bool        sendStartTelemetry      = true;
 
-uint32_t    lastDeleteListenedTracker;
+uint32_t    lastDeleteListenedStation;
+const int   nearbyStationsSize  = 4;
 
-struct nearTracker {
+
+struct nearStation {
     String      callsign;
     float       distance;
     int         course;
     uint32_t    lastTime;
 };
 
-nearTracker nearTrackers[4];
+nearStation nearbyStations[nearbyStationsSize];
 
 
 namespace STATION_Utils {
 
-    void nearTrackerInit() {
-        for (int i = 0; i < 4; i++) {
-            nearTrackers[i].callsign    = "";
-            nearTrackers[i].distance    = 0.0;
-            nearTrackers[i].course      = 0;
-            nearTrackers[i].lastTime    = 0;
+    void nearStationInit() {
+        for (int i = 0; i < nearbyStationsSize; i++) {
+            nearbyStations[i].callsign    = "";
+            nearbyStations[i].distance    = 0.0;
+            nearbyStations[i].course      = 0;
+            nearbyStations[i].lastTime    = 0;
         }
     }
 
-    const String getNearTracker(uint8_t position) {
-        if (nearTrackers[position].callsign == "") {
-            return "";
-        } else {
-            return nearTrackers[position].callsign + "> " + String(nearTrackers[position].distance,2) + "km " + String(nearTrackers[position].course);
-        }
+    String getNearStation(uint8_t position) {
+        if (nearbyStations[position].callsign == "") return "";
+        return nearbyStations[position].callsign + "> " + String(nearbyStations[position].distance,2) + "km " + String(nearbyStations[position].course);
     }
 
-    void deleteListenedTrackersbyTime() {
-        for (int a = 0; a < 4; a++) {                       // clean nearTrackers[] after time
-            if (nearTrackers[a].callsign != "" && (millis() - nearTrackers[a].lastTime > Config.rememberStationTime * 60 * 1000)) {
-                nearTrackers[a].callsign    = "";
-                nearTrackers[a].distance    = 0.0;
-                nearTrackers[a].course      = 0;
-                nearTrackers[a].lastTime    = 0;
+    void deleteListenedStationsByTime() {
+        for (int a = 0; a < nearbyStationsSize; a++) {                       // clean nearbyStations[] after time
+            if (nearbyStations[a].callsign != "" && (millis() - nearbyStations[a].lastTime > Config.rememberStationTime * 60 * 1000)) {
+                nearbyStations[a].callsign    = "";
+                nearbyStations[a].distance    = 0.0;
+                nearbyStations[a].course      = 0;
+                nearbyStations[a].lastTime    = 0;
             }
         }
 
-        for (int b = 0; b < 4 - 1; b++) {
-            for (int c = 0; c < 4 - b - 1; c++) {
-                if (nearTrackers[c].callsign == "") {       // get "" nearTrackers[] at the end
-                    nearTracker temp = nearTrackers[c];
-                    nearTrackers[c] = nearTrackers[c + 1];
-                    nearTrackers[c + 1] = temp;
+        for (int b = 0; b < nearbyStationsSize - 1; b++) {
+            for (int c = 0; c < nearbyStationsSize - b - 1; c++) {
+                if (nearbyStations[c].callsign == "") {       // get "" nearbyStations[] at the end
+                    nearStation temp    = nearbyStations[c];
+                    nearbyStations[c]     = nearbyStations[c + 1];
+                    nearbyStations[c + 1] = temp;
                 }
             }
         }
-        lastDeleteListenedTracker = millis();
+        lastDeleteListenedStation = millis();
     }
 
-    void checkListenedTrackersByTimeAndDelete() {
-        if (millis() - lastDeleteListenedTracker > Config.rememberStationTime * 60 * 1000) {
-            deleteListenedTrackersbyTime();
-        }
+    void checkListenedStationsByTimeAndDelete() {
+        if (millis() - lastDeleteListenedStation > Config.rememberStationTime * 60 * 1000) deleteListenedStationsByTime();
     }
 
-    void orderListenedTrackersByDistance(const String& callsign, float distance, float course) {   
+    void orderListenedStationsByDistance(const String& callsign, float distance, float course) {   
         bool shouldSortbyDistance = false;
-        bool callsignInNearTrackers = false;
+        bool callsignInNearStations = false;
 
-        for (int a = 0; a < 4; a++) {                       // check if callsign is in nearTrackers[]
-            if (nearTrackers[a].callsign == callsign) {
-                callsignInNearTrackers  = true;
-                nearTrackers[a].lastTime = millis();        // update listened millis()
-                if (nearTrackers[a].distance != distance) { // update distance if needed
-                    nearTrackers[a].distance    = distance;
+        for (int a = 0; a < nearbyStationsSize; a++) {                       // check if callsign is in nearbyStations[]
+            if (nearbyStations[a].callsign == callsign) {
+                callsignInNearStations  = true;
+                nearbyStations[a].lastTime = millis();        // update listened millis()
+                if (nearbyStations[a].distance != distance) { // update distance if needed
+                    nearbyStations[a].distance    = distance;
                     shouldSortbyDistance        = true;
                 }
                 break;           
             }
         }
     
-        if (!callsignInNearTrackers) {                      // callsign not in nearTrackers[]
-            for (int b = 0; b < 4; b++) {                   // if nearTrackers[] is available
-                if (nearTrackers[b].callsign == "") {
+        if (!callsignInNearStations) {                      // callsign not in nearbyStations[]
+            for (int b = 0; b < nearbyStationsSize; b++) {                   // if nearbyStations[] is available
+                if (nearbyStations[b].callsign == "") {
                     shouldSortbyDistance        = true;
-                    nearTrackers[b].callsign    = callsign;
-                    nearTrackers[b].distance    = distance;
-                    nearTrackers[b].course      = int(course);
-                    nearTrackers[b].lastTime    = millis();
+                    nearbyStations[b].callsign    = callsign;
+                    nearbyStations[b].distance    = distance;
+                    nearbyStations[b].course      = int(course);
+                    nearbyStations[b].lastTime    = millis();
                     break;
                 }
             }
 
-            if (!shouldSortbyDistance) {                    // if no more nearTrackers[] available , it compares distances to move and replace
-                for (int c = 0; c < 4; c++) {
-                    if (nearTrackers[c].distance > distance) {
-                        for (int d = 3; d > c; d--) {
-                            nearTrackers[d] = nearTrackers[d - 1];
-                        }
-                        nearTrackers[c].callsign    = callsign;
-                        nearTrackers[c].distance    = distance;
-                        nearTrackers[c].course      = int(course);
-                        nearTrackers[c].lastTime    = millis();
+            if (!shouldSortbyDistance) {                    // if no more nearbyStations[] available , it compares distances to move and replace
+                for (int c = 0; c < nearbyStationsSize; c++) {
+                    if (nearbyStations[c].distance > distance) {
+                        for (int d = nearbyStationsSize - 1; d > c; d--) nearbyStations[d] = nearbyStations[d - 1]; // move all one position down
+                        nearbyStations[c].callsign    = callsign;
+                        nearbyStations[c].distance    = distance;
+                        nearbyStations[c].course      = int(course);
+                        nearbyStations[c].lastTime    = millis();
                         break;
                     }
                 }
             }
         }
 
-        if (shouldSortbyDistance) {                         // sorts by distance (only nearTrackers[] that are not "")
-            for (int f = 0; f < 4 - 1; f++) {
-                for (int g = 0; g < 4 - f - 1; g++) {
-                    if (nearTrackers[g].callsign != "" && nearTrackers[g + 1].callsign != "") {
-                        if (nearTrackers[g].distance > nearTrackers[g + 1].distance) {
-                            nearTracker temp = nearTrackers[g];
-                            nearTrackers[g] = nearTrackers[g + 1];
-                            nearTrackers[g + 1] = temp;
+        if (shouldSortbyDistance) { /*  BUBLE SORT  */      // sorts by distance (only nearbyStations[] that are not "")
+            for (int e = 0; e < nearbyStationsSize - 1; e++) {
+                for (int f = 0; f < nearbyStationsSize - e - 1; f++) {
+                    if (nearbyStations[f].callsign != "" && nearbyStations[f + 1].callsign != "") {
+                        if (nearbyStations[f].distance > nearbyStations[f + 1].distance) {
+                            nearStation temp        = nearbyStations[f];
+                            nearbyStations[f]       = nearbyStations[f + 1];
+                            nearbyStations[f + 1]   = temp;
                         }
                     }
                 }

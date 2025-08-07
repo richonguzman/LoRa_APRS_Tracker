@@ -455,14 +455,14 @@ namespace MENU_Utils {
                 break;
 
 //////////
-            case 40:    //3.Stations ---> Packet Decoder
+            case 40:    //4.Stations ---> Packet Decoder
                 displayShow(" STATIONS>", "", "> Packet Decoder", "  Near By Stations", "", "<Back");
                 break;
-            case 41:    //3.Stations ---> Near By Stations
+            case 41:    //4.Stations ---> Near By Stations
                 displayShow(" STATIONS>", "", "  Packet Decoder", "> Near By Stations", "", "<Back");
                 break;
 
-            case 400:   //3.Stations ---> Packet Decoder
+            case 400:   //4.Stations ---> Packet Decoder
                 if (lastReceivedPacket.sender != currentBeacon->callsign) {
                     String firstLineDecoder = lastReceivedPacket.sender;
                     for (int i = firstLineDecoder.length(); i < 9; i++) {
@@ -494,8 +494,8 @@ namespace MENU_Utils {
                     }
                 }
                 break;
-            case 410:    //3.Stations ---> Near By Stations
-                displayShow(" NEAR BY>", STATION_Utils::getNearTracker(0), STATION_Utils::getNearTracker(1), STATION_Utils::getNearTracker(2), STATION_Utils::getNearTracker(3), "<Back");
+            case 410:    //4.Stations ---> Near By Stations
+                displayShow(" NEAR BY>", STATION_Utils::getNearStation(0), STATION_Utils::getNearStation(1), STATION_Utils::getNearStation(2), STATION_Utils::getNearStation(3), "<Back");
                 break;
 
 //////////
