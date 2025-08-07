@@ -49,6 +49,11 @@
     XPowersAXP2101 PMU;
 #endif
 
+#ifdef ADC_CTRL
+    uint32_t    adcCtrlTime         = 0;
+    uint8_t     measuring_State     = 0;
+#endif
+
 
 extern Configuration    Config;
 extern logging::Logger  logger;
@@ -56,6 +61,7 @@ extern bool             transmitFlag;
 extern bool             gpsIsActive;
 
 uint32_t    batteryMeasurmentTime   = 0;
+int         averageReadings         = 20;
 
 bool        pmuInterrupt;
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
@@ -68,51 +74,91 @@ namespace POWER_Utils {
     String batteryVoltage = "";
     String batteryChargeDischargeCurrent = "";
 
-    double getBatteryVoltage() {
-    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-        return (PMU.getBattVoltage() / 1000.0);
-    #else
-        #ifdef BATTERY_PIN
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
+    #ifdef VEXT_CTRL
+        void vext_ctrl_ON() {
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(VEXT_CTRL, HIGH);
             #endif
-                int adc_value = analogRead(BATTERY_PIN);
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                batteryMeasurmentTime = millis();
+            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(VEXT_CTRL, LOW);
             #endif
+        }
 
-            double voltage = (adc_value * 3.3 ) / 4095.0;
-            
-            #ifdef LIGHTTRACKER_PLUS_1_0
-                double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
-                return (voltage / inputDivider) + 0.1;
+        void vext_ctrl_OFF() {
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(VEXT_CTRL, LOW);
             #endif
-            #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_GPS) || defined(ESP32S3_DIY_LoRa_GPS_915) || defined(TROY_LoRa_APRS) || defined(RPC_Electronics_1W_LoRa_GPS)
-                return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
+            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(VEXT_CTRL, HIGH);
             #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-                double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+        }
+    #endif
+
+
+    #ifdef ADC_CTRL
+        void adc_ctrl_ON() {
+            #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(ADC_CTRL, HIGH);
             #endif
-            #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
-                double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
-                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(ADC_CTRL, LOW);
             #endif
+        }
+
+        void adc_ctrl_OFF() {
+            #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(ADC_CTRL, LOW);
+            #endif
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(ADC_CTRL, HIGH);
+            #endif
+        }
+    #endif
+
+    double getBatteryVoltage() {
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            return (PMU.getBattVoltage() / 1000.0);
         #else
-            return 0.0;
+            #ifdef BATTERY_PIN
+                #ifdef ADC_CTRL
+                    adc_ctrl_ON();
+                #endif
+
+                int sample;
+                int sampleSum = 0;
+                for (int i = 0; i < averageReadings; i++) {
+                    sample = analogRead(BATTERY_PIN);
+                    sampleSum += sample;
+                    delay(3);//delayMicroseconds(50);
+                }
+                int adc_value = sampleSum/averageReadings;
+
+                #ifdef ADC_CTRL
+                    adc_ctrl_OFF();
+                    batteryMeasurmentTime = millis();
+                #endif
+
+                double voltage = (adc_value * 3.3 ) / 4095.0;
+                
+                #ifdef LIGHTTRACKER_PLUS_1_0
+                    double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
+                    return (voltage / inputDivider) + 0.1;
+                #endif
+                #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_GPS) || defined(ESP32S3_DIY_LoRa_GPS_915) || defined(TROY_LoRa_APRS) || defined(RPC_Electronics_1W_LoRa_GPS)
+                    return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
+                #endif
+                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
+                    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+                #endif
+                #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
+                    double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
+                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
+                #endif
+            #else
+                return 0.0;
+            #endif
         #endif
-    #endif    
     }
 
     const String getBatteryInfoVoltage() {
@@ -192,13 +238,30 @@ namespace POWER_Utils {
     }
 
     void batteryManager() {
-        #ifdef ADC_CTRL
-            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
-        #else
-            obtainBatteryInfo();
-        #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            obtainBatteryInfo();
             handleChargingLed();
+        #elif defined(BATTERY_PIN)
+            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
+                #ifdef ADC_CTRL
+                    switch(measuring_State){
+                        case 0:     //ADC_CTRL_ON State
+                            adc_ctrl_ON();
+                            adcCtrlTime = millis();
+                            measuring_State = 1;
+                            break;
+                        case 1:     // Measurement State
+                            if((millis() - adcCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
+                                obtainBatteryInfo();
+                                adc_ctrl_OFF();
+                                measuring_State = 0;
+                            }
+                            break;
+                    }
+                #else
+                    obtainBatteryInfo();
+                #endif
+            }
         #endif
     }
 
@@ -228,7 +291,7 @@ namespace POWER_Utils {
             #endif
         #endif
         #ifdef HELTEC_WIRELESS_TRACKER
-            digitalWrite(VEXT_CTRL, HIGH);
+            vext_ctrl_ON();
         #endif
         gpsIsActive = true;
     }
@@ -246,7 +309,7 @@ namespace POWER_Utils {
             #endif
         #endif
         #ifdef HELTEC_WIRELESS_TRACKER
-            digitalWrite(VEXT_CTRL, LOW);
+            vext_ctrl_OFF();
         #endif
         gpsIsActive = false;
     }
@@ -381,7 +444,7 @@ namespace POWER_Utils {
                 disableGPS = true;
             } else {
                 disableGPS = Config.disableGPS;
-            }            
+            }
         #endif
 
         #ifdef HAS_AXP192
@@ -439,12 +502,7 @@ namespace POWER_Utils {
 
         #ifdef VEXT_CTRL
             pinMode(VEXT_CTRL,OUTPUT);
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                digitalWrite(VEXT_CTRL, HIGH);   // HWT needs this for GPS and TFT Screen
-            #endif
-            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                digitalWrite(VEXT_CTRL, LOW);
-            #endif
+            vext_ctrl_ON();
         #endif
         
         #ifdef ADC_CTRL
@@ -499,21 +557,11 @@ namespace POWER_Utils {
             }*/
 
             #ifdef VEXT_CTRL
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(VEXT_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(VEXT_CTRL, HIGH);
-                #endif
+                vext_ctrl_OFF();
             #endif
 
             #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
+                adc_ctrl_OFF();
             #endif
 
             #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
