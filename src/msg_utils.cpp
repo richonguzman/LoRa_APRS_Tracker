@@ -67,7 +67,7 @@ String  lastHeardTracker        = "NONE";
 
 std::vector<String>             loadedAPRSMessages;
 std::vector<String>             loadedWLNKMails;
-std::vector<String>             outputMessagesBuffer;
+std::vector<String>             outputPacketBuffer;
 std::vector<String>             outputAckRequestBuffer;
 std::vector<Packet15SegBuffer>  packet15SegBuffer;
 
@@ -282,9 +282,9 @@ namespace MSG_Utils {
         bool alreadyInBuffer;
         if (typeOfMessage == 1) {
             alreadyInBuffer = false;
-            if (!outputMessagesBuffer.empty()) {
-                for (int i = 0; i < outputMessagesBuffer.size(); i++) {
-                    if (outputMessagesBuffer[i].indexOf(station + "," + textMessage) == 0) {
+            if (!outputPacketBuffer.empty()) {
+                for (int i = 0; i < outputPacketBuffer.size(); i++) {
+                    if (outputPacketBuffer[i].indexOf(station + "," + textMessage) == 0) {
                         alreadyInBuffer = true;
                         break;
                     }
@@ -299,34 +299,34 @@ namespace MSG_Utils {
                 }
             }               
             if (!alreadyInBuffer) {
-                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+                outputPacketBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
             }
         } else if (typeOfMessage == 0) {
             alreadyInBuffer = false;
-            if (!outputMessagesBuffer.empty()) {
-                for (int k = 0; k < outputMessagesBuffer.size(); k++) {
-                    if (outputMessagesBuffer[k].indexOf(station + "," + textMessage) == 0) {
+            if (!outputPacketBuffer.empty()) {
+                for (int k = 0; k < outputPacketBuffer.size(); k++) {
+                    if (outputPacketBuffer[k].indexOf(station + "," + textMessage) == 0) {
                         alreadyInBuffer = true;
                         break;
                     }
                 }
             }
             if (!alreadyInBuffer) {
-                outputMessagesBuffer.push_back(station + "," + textMessage);
+                outputPacketBuffer.push_back(station + "," + textMessage);
             }
         }
     }
 
     void processOutputBuffer() {
-        if (!outputMessagesBuffer.empty() && (millis() - lastMsgRxTime) >= 6000 && (millis() - lastTxTime) > 3000) {
-            String addressee = outputMessagesBuffer[0].substring(0, outputMessagesBuffer[0].indexOf(","));
-            String message = outputMessagesBuffer[0].substring(outputMessagesBuffer[0].indexOf(",") + 1);
+        if (!outputPacketBuffer.empty() && (millis() - lastMsgRxTime) >= 6000 && (millis() - lastTxTime) > 3000) {
+            String addressee = outputPacketBuffer[0].substring(0, outputPacketBuffer[0].indexOf(","));
+            String message = outputPacketBuffer[0].substring(outputPacketBuffer[0].indexOf(",") + 1);
             if (message.indexOf("{") > 0) {     // message with ack Request
                 outputAckRequestBuffer.push_back("6," + addressee + "," + message);  // 6 is for ack packets retries
-                outputMessagesBuffer.erase(outputMessagesBuffer.begin());
+                outputPacketBuffer.erase(outputPacketBuffer.begin());
             } else {                            // message without ack Request
                 sendMessage(addressee, message);
-                outputMessagesBuffer.erase(outputMessagesBuffer.begin());
+                outputPacketBuffer.erase(outputPacketBuffer.begin());
                 lastTxTime = millis();
             }
         }

@@ -17,6 +17,7 @@
  */
 
 #include <NimBLEDevice.h>
+#include <vector>
 #include "configuration.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
@@ -51,6 +52,9 @@ bool    shouldSendBLEtoLoRa     = false;
 String  BLEToLoRaPacket         = "";
 String  kissSerialBuffer        = "";
 
+std::string receivedBLEData;
+//extern std::vector<String> outputPacketBuffer;
+
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
@@ -70,13 +74,13 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
-            std::string receivedData = pCharacteristic->getValue();
-            delay(100);
-            for (int i = 0; i < receivedData.length(); i++) {
-                char character = receivedData[i];
+            receivedBLEData = pCharacteristic->getValue();
+
+            for (int i = 0; i < receivedBLEData.length(); i++) {
+                char character = receivedBLEData[i];
 
                 if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;
-                kissSerialBuffer += receivedData[i];
+                kissSerialBuffer += receivedBLEData[i];
                 
                 if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
                     bool isDataFrame = false;
@@ -90,9 +94,9 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 }
             }
         } else {                            // TNC2
-            std::string receivedData = pCharacteristic->getValue();
+            receivedBLEData = pCharacteristic->getValue();
             String receivedString = "";
-            for (int i = 0; i < receivedData.length(); i++) receivedString += receivedData[i];
+            for (int i = 0; i < receivedBLEData.length(); i++) receivedString += receivedBLEData[i];
             BLEToLoRaPacket = receivedString;
             shouldSendBLEtoLoRa = true;
         }

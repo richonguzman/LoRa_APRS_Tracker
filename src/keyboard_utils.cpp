@@ -49,7 +49,6 @@ extern bool             displayEcoMode;
 extern uint8_t          screenBrightness;
 extern bool             statusState;
 extern uint32_t         statusTime;
-extern int              messagesIterator;
 extern bool             messageLed;
 extern String           messageCallsign;
 extern String           messageText;
