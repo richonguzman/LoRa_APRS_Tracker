@@ -788,7 +788,9 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
-        if (keyboardAddress != 0x00) keyboardConnected = true;
+        if (!Config.simplifiedTrackerMode) {
+            if (keyboardAddress != 0x00) keyboardConnected = true;
+        }
     }
 
 }

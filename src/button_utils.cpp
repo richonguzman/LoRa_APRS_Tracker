@@ -18,6 +18,7 @@
 
 #include <OneButton.h>
 #include "keyboard_utils.h"
+#include "configuration.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
@@ -25,6 +26,7 @@
 
 #ifdef BUTTON_PIN
 
+    extern Configuration    Config;
     extern int              menuDisplay;
     extern uint32_t         displayTime;
     extern uint32_t         menuTime;
@@ -91,15 +93,17 @@
         }
 
         void setup() {
-            userButton.attachClick(singlePress1);
-            userButton.attachLongPressStart(longPress1);
-            userButton.attachDoubleClick(doublePress1);
-            userButton.attachMultiClick(multiPress1);
-            #ifdef RPC_Electronics_1W_LoRa_GPS
-                userButton2.attachClick(singlePress2);
-                userButton3.attachClick(singlePress3);
-                userButton4.attachClick(singlePress4);
-            #endif
+            if (!Config.simplifiedTrackerMode) {
+                userButton.attachClick(singlePress1);
+                userButton.attachLongPressStart(longPress1);
+                userButton.attachDoubleClick(doublePress1);
+                userButton.attachMultiClick(multiPress1);
+                #ifdef RPC_Electronics_1W_LoRa_GPS
+                    userButton2.attachClick(singlePress2);
+                    userButton3.attachClick(singlePress3);
+                    userButton4.attachClick(singlePress4);
+                #endif
+            }
         }
 
     }

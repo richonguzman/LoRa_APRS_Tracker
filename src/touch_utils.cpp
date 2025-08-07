@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "configuration.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "touch_utils.h"
@@ -25,7 +26,8 @@
     #define TOUCH_MODULES_GT911
     #include <TouchLib.h>
 
-    extern uint8_t touchModuleAddress;
+    extern Configuration    Config;
+    extern uint8_t          touchModuleAddress;
 
     TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
 
@@ -100,15 +102,17 @@
         }
 
         void setup() {
-            if (touchModuleAddress != 0x00) {
-                if (touchModuleAddress == 0x14) {
-                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
-                    touch.init();
-                } else if (touchModuleAddress == 0x5d) {
-                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
-                    touch.init();
-                } else {
-                    Serial.println("No Touch Module Address found");
+            if (!Config.simplifiedTrackerMode) {
+                if (touchModuleAddress != 0x00) {
+                    if (touchModuleAddress == 0x14) {
+                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+                        touch.init();
+                    } else if (touchModuleAddress == 0x5d) {
+                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+                        touch.init();
+                    } else {
+                        Serial.println("No Touch Module Address found");
+                    }
                 }
             }
         }  

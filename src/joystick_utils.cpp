@@ -17,11 +17,13 @@
  */
 
 #include "joystick_utils.h"
+#include "configuration.h"
 #include "keyboard_utils.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 
 extern  int                     menuDisplay;
+extern  Configuration           Config;
 
 bool    exitJoystickInterrupt  = false;
 
@@ -72,16 +74,18 @@ typedef void (*DirectionFunc)();
         void IRAM_ATTR joystickRight() { joystickHandler(BUTTON_Utils::longPress1); }
 
         void setup() {
-            pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
-            pinMode(JOYSTICK_UP, INPUT_PULLUP);
-            pinMode(JOYSTICK_DOWN, INPUT_PULLUP);
-            pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
-            pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
+            if (!Config.simplifiedTrackerMode) {
+                pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
+                pinMode(JOYSTICK_UP, INPUT_PULLUP);
+                pinMode(JOYSTICK_DOWN, INPUT_PULLUP);
+                pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
+                pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
 
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_UP), joystickUp, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_DOWN), joystickDown, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_LEFT), joystickLeft, FALLING);
-            attachInterrupt(digitalPinToInterrupt(JOYSTICK_RIGHT), joystickRight, FALLING);
+                attachInterrupt(digitalPinToInterrupt(JOYSTICK_UP), joystickUp, FALLING);
+                attachInterrupt(digitalPinToInterrupt(JOYSTICK_DOWN), joystickDown, FALLING);
+                attachInterrupt(digitalPinToInterrupt(JOYSTICK_LEFT), joystickLeft, FALLING);
+                attachInterrupt(digitalPinToInterrupt(JOYSTICK_RIGHT), joystickRight, FALLING);
+            }
         }
     }
 

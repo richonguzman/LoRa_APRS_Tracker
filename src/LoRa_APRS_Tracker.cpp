@@ -75,7 +75,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025-07-25";
+String      versionDate             = "2025-08-07";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -165,18 +165,16 @@ void setup() {
         }
     }
 
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            BUTTON_Utils::setup();
-        #endif
-        #ifdef HAS_JOYSTICK
-            JOYSTICK_Utils::setup();
-        #endif
-        KEYBOARD_Utils::setup();
-        #ifdef HAS_TOUCHSCREEN
-            TOUCH_Utils::setup();
-        #endif
-    }
+    #ifdef BUTTON_PIN
+        BUTTON_Utils::setup();
+    #endif
+    #ifdef HAS_JOYSTICK
+        JOYSTICK_Utils::setup();
+    #endif
+    KEYBOARD_Utils::setup();
+    #ifdef HAS_TOUCHSCREEN
+        TOUCH_Utils::setup();
+    #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
