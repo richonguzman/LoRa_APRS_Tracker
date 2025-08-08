@@ -135,9 +135,9 @@ namespace POWER_Utils {
 
                 #ifdef ADC_CTRL
                     adc_ctrl_OFF();
-                    batteryMeasurmentTime = millis();
                 #endif
-
+                
+                batteryMeasurmentTime = millis();
                 double voltage = (adc_value * 3.3 ) / 4095.0;
                 
                 #ifdef LIGHTTRACKER_PLUS_1_0
