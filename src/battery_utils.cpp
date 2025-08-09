@@ -33,9 +33,10 @@ extern      Configuration           Config;
 uint32_t    batteryMeasurmentTime   = 0;
 int         averageReadings         = 20;
 
-String batteryVoltage = "";
-extern String batteryChargeDischargeCurrent;
-extern bool   BatteryIsConnected;
+String      batteryVoltage          = "";
+
+extern      String                  batteryChargeDischargeCurrent;
+extern      bool                    BatteryIsConnected;
 
 
 namespace BATTERY_Utils {
@@ -43,6 +44,10 @@ namespace BATTERY_Utils {
     String getPercentVoltageBattery(float voltage) {
         int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
+    }
+
+    String getBatteryInfoVoltage() {
+        return batteryVoltage;
     }
 
     float readBatteryVoltage() {
@@ -85,7 +90,7 @@ namespace BATTERY_Utils {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             // check for T-beams !!!
             static unsigned int rate_limit_check_battery = 0;
-            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
+            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = POWER_Utils::isBatteryConnected();
             if (BatteryIsConnected) {
                 batteryVoltage                  = String(getBatteryVoltage(), 2);
                 batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);

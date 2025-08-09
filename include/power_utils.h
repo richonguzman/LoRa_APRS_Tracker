@@ -34,20 +34,19 @@ namespace POWER_Utils {
         void    adc_ctrl_OFF();
     #endif
 
-    //void obtainBatteryInfo();
 
-    //double  getBatteryVoltage();
-    const String getBatteryInfoVoltage();
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+        //void activateMeasurement();
+        //void enableChgLed();
+        //void disableChgLed();
+        //void handleChargingLed();
+    #endif
+
     const String getBatteryInfoCurrent();
     bool    getBatteryInfoIsConnected();
 
-    void    enableChgLed();
-    void    disableChgLed();
-
     bool    isCharging();
     double  getBatteryChargeDischargeCurrent();
-
-    void    activateMeasurement();
 
     void    activateGPS();
     void    deactivateGPS();

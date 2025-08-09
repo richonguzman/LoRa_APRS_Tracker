@@ -50,18 +50,18 @@
     XPowersAXP2101 PMU;
 #endif
 
-extern Configuration    Config;
-extern logging::Logger  logger;
-extern bool             transmitFlag;
-extern bool             gpsIsActive;
+extern  Configuration                   Config;
+extern  logging::Logger                 logger;
+extern  bool                            transmitFlag;
+extern  bool                            gpsIsActive;
 
-bool        pmuInterrupt;
-float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
-bool        disableGPS;
+bool    pmuInterrupt;
+float   lora32BatReadingCorr            = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+bool    disableGPS;
 
-extern String batteryVoltage;
-String batteryChargeDischargeCurrent    = "";
-bool   BatteryIsConnected               = false;
+String  batteryChargeDischargeCurrent    = "";
+bool    BatteryIsConnected               = false;
+
 
 namespace POWER_Utils {    
 
@@ -106,10 +106,6 @@ namespace POWER_Utils {
         }
     #endif
 
-    const String getBatteryInfoVoltage() {
-        return batteryVoltage;
-    }
-
     const String getBatteryInfoCurrent() {
         return batteryChargeDischargeCurrent;
     }
@@ -118,17 +114,35 @@ namespace POWER_Utils {
         return BatteryIsConnected;
     }
 
-    void enableChgLed() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
-        #endif
-    }
-
-    void disableChgLed() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
-        #endif
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+        void activateMeasurement() {
+                PMU.disableTSPinMeasure();
+                PMU.enableBattDetection();
+                PMU.enableVbusVoltageMeasure();
+                PMU.enableBattVoltageMeasure();
+                PMU.enableSystemVoltageMeasure();
         }
+
+        void enableChgLed() {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
+        }
+
+        void disableChgLed() {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
+        }
+
+        void handleChargingLed() {
+            if (isCharging()) {
+                enableChgLed();
+            } else {
+                disableChgLed();
+            }
+        }
+
+        bool isBatteryConnected() {
+            return PMU.isBatteryConnect();
+        }  
+    #endif
 
     bool isCharging() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -136,15 +150,7 @@ namespace POWER_Utils {
         #else
             return 0;
         #endif
-    }
-
-    void handleChargingLed() {
-        if (isCharging()) {
-            enableChgLed();
-        } else {
-            disableChgLed();
-        }
-    }
+    }  
 
     double getBatteryChargeDischargeCurrent() {
         #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
@@ -159,29 +165,7 @@ namespace POWER_Utils {
         #ifdef HAS_AXP2101
             return PMU.getBatteryPercent();
         #endif
-    }
-
-    bool isBatteryConnected() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            return PMU.isBatteryConnect();
-        #else
-            if(BATTERY_Utils::readBatteryVoltage() > 1.0) {
-                return true;
-            } else {
-                return false;
-            }
-        #endif
-    }
-
-    void activateMeasurement() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.disableTSPinMeasure();
-            PMU.enableBattDetection();
-            PMU.enableVbusVoltageMeasure();
-            PMU.enableBattVoltageMeasure();
-            PMU.enableSystemVoltageMeasure();
-        #endif
-    }
+    }      
 
     void activateGPS() {
         #ifdef HAS_AXP192

@@ -25,7 +25,7 @@
 namespace BATTERY_Utils {
 
     String  getPercentVoltageBattery(float voltage);
-
+    String  getBatteryInfoVoltage();
     float   readBatteryVoltage();
     void    monitor();
     

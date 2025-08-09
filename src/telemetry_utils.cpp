@@ -22,7 +22,7 @@
 #include "telemetry_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
-#include "power_utils.h"
+#include "battery_utils.h"
 #include "lora_utils.h"
 #include "wx_utils.h"
 #include "display.h"
@@ -151,7 +151,7 @@ namespace TELEMETRY_Utils {
         if (telemetryCounter == 1000) telemetryCounter = 0;
         
         if (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) {  
-            String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+            String batteryVoltage = BATTERY_Utils::getBatteryInfoVoltage();
             telemetry += generateEncodedTelemetryBytes(batteryVoltage.toFloat(), false, 0); // voltage
         }
         if (Config.telemetry.sendTelemetry) telemetry += WX_Utils::readDataSensor(0);

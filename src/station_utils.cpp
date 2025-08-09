@@ -203,7 +203,7 @@ namespace STATION_Utils {
             packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
         }
 
-        String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
+        String batteryVoltage = BATTERY_Utils::getBatteryInfoVoltage();
         bool shouldSleepLowVoltage = false;
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) shouldSleepLowVoltage = true;
