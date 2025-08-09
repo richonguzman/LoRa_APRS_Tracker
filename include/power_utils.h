@@ -29,6 +29,13 @@
 
 namespace POWER_Utils {
 
+    #ifdef ADC_CTRL
+        void    adc_ctrl_ON();
+        void    adc_ctrl_OFF();
+    #endif
+
+    void obtainBatteryInfo(uint8_t type);
+
     double  getBatteryVoltage();
     const String getBatteryInfoVoltage();
     const String getBatteryInfoCurrent();
@@ -38,11 +45,7 @@ namespace POWER_Utils {
     void    disableChgLed();
 
     bool    isCharging();
-    //void    handleChargingLed();
     double  getBatteryChargeDischargeCurrent();
-    //bool    isBatteryConnected();
-    //void    obtainBatteryInfo();
-    void    batteryManager();
 
     void    activateMeasurement();
 

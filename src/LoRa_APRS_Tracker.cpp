@@ -48,7 +48,7 @@ ____________________________________________________________________*/
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
 #include "configuration.h"
-//#include "battery_utils.h"    // change for next version ...
+#include "battery_utils.h"
 #include "station_utils.h"
 #include "board_pinout.h"
 #include "button_utils.h"
@@ -190,7 +190,8 @@ void loop() {
         }
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
-    POWER_Utils::batteryManager();
+
+    BATTERY_Utils::monitor();
 
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();

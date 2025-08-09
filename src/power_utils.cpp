@@ -49,30 +49,31 @@
     XPowersAXP2101 PMU;
 #endif
 
-#ifdef ADC_CTRL
+//
+/*#ifdef ADC_CTRL
     uint32_t    adcCtrlTime         = 0;
     uint8_t     measuring_State     = 0;
-#endif
-
+#endif*/
+//
 
 extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             transmitFlag;
 extern bool             gpsIsActive;
 
-uint32_t    batteryMeasurmentTime   = 0;
+//uint32_t    batteryMeasurmentTime   = 0;
 int         averageReadings         = 20;
 
 bool        pmuInterrupt;
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 bool        disableGPS;
 
+String batteryVoltage = "";
+String batteryChargeDischargeCurrent = "";
 
 namespace POWER_Utils {
 
     bool   BatteryIsConnected = false;
-    String batteryVoltage = "";
-    String batteryChargeDischargeCurrent = "";
 
     #ifdef VEXT_CTRL
         void vext_ctrl_ON() {
@@ -120,7 +121,7 @@ namespace POWER_Utils {
             return (PMU.getBattVoltage() / 1000.0);
         #else
             #ifdef BATTERY_PIN
-                
+
                 int sample;
                 int sampleSum = 0;
                 analogRead(BATTERY_PIN);    // Dummy Read
@@ -131,10 +132,8 @@ namespace POWER_Utils {
                     delay(3);//delayMicroseconds(50);
                 }
                 int adc_value = sampleSum/averageReadings;
-                
-                batteryMeasurmentTime = millis();
                 double voltage = (adc_value * 3.3 ) / 4095.0;
-                
+
                 #ifdef LIGHTTRACKER_PLUS_1_0
                     double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
                     return (voltage / inputDivider) + 0.1;
@@ -223,46 +222,18 @@ namespace POWER_Utils {
         #endif
     }
 
-    void obtainBatteryInfo() {
-        static unsigned int rate_limit_check_battery = 0;
-        if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
-        if (BatteryIsConnected) {
+    void obtainBatteryInfo(uint8_t type) {
+        if (type == 0) {
+            static unsigned int rate_limit_check_battery = 0;
+            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
+            if (BatteryIsConnected) {
+                batteryVoltage                  = String(getBatteryVoltage(), 2);
+                batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
+            }
+        } else if (type == 1) {
             batteryVoltage                  = String(getBatteryVoltage(), 2);
             batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
         }
-    }
-
-    void batteryManager() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            obtainBatteryInfo();
-            handleChargingLed();
-        #elif defined(BATTERY_PIN)
-            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
-                #ifdef ADC_CTRL
-                    switch(measuring_State){
-                        case 0:     //ADC_CTRL_ON State
-                            adc_ctrl_ON();
-                            adcCtrlTime = millis();
-                            measuring_State = 1;
-                            break;
-                        case 1:     // Measurement State
-                            if((millis() - adcCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
-                                obtainBatteryInfo();
-                                adc_ctrl_OFF();
-                                measuring_State = 0;
-                                
-                                if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
-                                    displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
-                                    POWER_Utils::shutdown();
-                                }
-                            }
-                            break;
-                    }
-                #else
-                    obtainBatteryInfo();
-                #endif
-            }
-        #endif
     }
 
     void activateMeasurement() {
