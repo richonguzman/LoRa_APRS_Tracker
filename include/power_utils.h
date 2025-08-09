@@ -40,13 +40,12 @@ namespace POWER_Utils {
         //void enableChgLed();
         //void disableChgLed();
         //void handleChargingLed();
+        String  getBatteryInfoCurrent();
     #endif
-
-    const String getBatteryInfoCurrent();
+    
     bool    getBatteryInfoIsConnected();
 
     bool    isCharging();
-    double  getBatteryChargeDischargeCurrent();
 
     void    activateGPS();
     void    deactivateGPS();

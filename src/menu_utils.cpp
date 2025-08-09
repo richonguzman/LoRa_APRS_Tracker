@@ -820,7 +820,6 @@ namespace MENU_Utils {
 
                 if (POWER_Utils::getBatteryInfoIsConnected()) {
                     String batteryVoltage = BATTERY_Utils::getBatteryInfoVoltage();
-                    String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(LIGHTTRACKER_PLUS_1_0)
                         sixthRowMainMenu = "Battery: ";
                         sixthRowMainMenu += batteryVoltage;
@@ -828,49 +827,52 @@ namespace MENU_Utils {
                         sixthRowMainMenu += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
                         sixthRowMainMenu += "%";
                     #endif
-                    #ifdef HAS_AXP192
-                        if (batteryCharge.toInt() == 0) {
-                            sixthRowMainMenu = "Battery Charged ";
-                            sixthRowMainMenu += batteryVoltage;
-                            sixthRowMainMenu += "V";
-                        } else if (batteryCharge.toInt() > 0) {
-                            sixthRowMainMenu = "Bat: ";
-                            sixthRowMainMenu += batteryVoltage;
-                            sixthRowMainMenu += "V (charging)";
-                        } else {
-                            sixthRowMainMenu = "Battery ";
-                            sixthRowMainMenu += batteryVoltage;
-                            sixthRowMainMenu += "V ";
-                            sixthRowMainMenu += batteryCharge;
-                            sixthRowMainMenu += "mA";
-                        }
-                    #endif
-                    #ifdef HAS_AXP2101
-                        if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
-                            lowBatteryPercent = batteryCharge.toInt();
-                            NOTIFICATION_Utils::lowBatteryBeep();
-                            if (batteryCharge.toInt() < 6) {
-                                NOTIFICATION_Utils::lowBatteryBeep();
+                    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                        String batteryCharge = POWER_Utils::getBatteryInfoCurrent();
+                        #ifdef HAS_AXP192
+                            if (batteryCharge.toInt() == 0) {
+                                sixthRowMainMenu = "Battery Charged ";
+                                sixthRowMainMenu += batteryVoltage;
+                                sixthRowMainMenu += "V";
+                            } else if (batteryCharge.toInt() > 0) {
+                                sixthRowMainMenu = "Bat: ";
+                                sixthRowMainMenu += batteryVoltage;
+                                sixthRowMainMenu += "V (charging)";
+                            } else {
+                                sixthRowMainMenu = "Battery ";
+                                sixthRowMainMenu += batteryVoltage;
+                                sixthRowMainMenu += "V ";
+                                sixthRowMainMenu += batteryCharge;
+                                sixthRowMainMenu += "mA";
                             }
-                        } 
-                        if (POWER_Utils::isCharging()) {
-                            lowBatteryPercent = 21;
-                        }
-                        if (POWER_Utils::isCharging() && batteryCharge != "100") {
-                            sixthRowMainMenu = "Bat: ";
-                            sixthRowMainMenu += String(batteryVoltage);
-                            sixthRowMainMenu += "V (charging)";
-                        } else if (!POWER_Utils::isCharging() && batteryCharge == "100") {
-                            sixthRowMainMenu = "Battery Charged ";
-                            sixthRowMainMenu += String(batteryVoltage);
-                            sixthRowMainMenu += "V";
-                        } else {
-                            sixthRowMainMenu = "Battery  ";
-                            sixthRowMainMenu += String(batteryVoltage);
-                            sixthRowMainMenu += "V   ";
-                            sixthRowMainMenu += batteryCharge;
-                            sixthRowMainMenu += "%";
-                        }
+                        #endif
+                        #ifdef HAS_AXP2101
+                            if (Config.notification.lowBatteryBeep && !POWER_Utils::isCharging() && batteryCharge.toInt() < lowBatteryPercent) {
+                                lowBatteryPercent = batteryCharge.toInt();
+                                NOTIFICATION_Utils::lowBatteryBeep();
+                                if (batteryCharge.toInt() < 6) {
+                                    NOTIFICATION_Utils::lowBatteryBeep();
+                                }
+                            } 
+                            if (POWER_Utils::isCharging()) {
+                                lowBatteryPercent = 21;
+                            }
+                            if (POWER_Utils::isCharging() && batteryCharge != "100") {
+                                sixthRowMainMenu = "Bat: ";
+                                sixthRowMainMenu += String(batteryVoltage);
+                                sixthRowMainMenu += "V (charging)";
+                            } else if (!POWER_Utils::isCharging() && batteryCharge == "100") {
+                                sixthRowMainMenu = "Battery Charged ";
+                                sixthRowMainMenu += String(batteryVoltage);
+                                sixthRowMainMenu += "V";
+                            } else {
+                                sixthRowMainMenu = "Battery  ";
+                                sixthRowMainMenu += String(batteryVoltage);
+                                sixthRowMainMenu += "V   ";
+                                sixthRowMainMenu += batteryCharge;
+                                sixthRowMainMenu += "%";
+                            }
+                        #endif
                     #endif
                 } else {
                     sixthRowMainMenu = "No Battery Connected";

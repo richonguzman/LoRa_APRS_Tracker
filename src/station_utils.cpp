@@ -214,20 +214,22 @@ namespace STATION_Utils {
             int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
 
             if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
-                String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
-                #if defined(HAS_AXP192)
-                    comment += " Bat=";
-                    comment += batteryVoltage;
-                    comment += "V (";
-                    comment += batteryChargeCurrent;
-                    comment += "mA)";
-                #elif defined(HAS_AXP2101)
-                    comment += " Bat=";
-                    comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V (";
-                    comment += batteryChargeCurrent;
-                    comment += "%)";
-                #elif defined(BATTERY_PIN) && !defined(HAS_AXP192) && !defined(HAS_AXP2101)
+                #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                    String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
+                    #if defined(HAS_AXP192)
+                        comment += " Bat=";
+                        comment += batteryVoltage;
+                        comment += "V (";
+                        comment += batteryChargeCurrent;
+                        comment += "mA)";
+                    #elif defined(HAS_AXP2101)
+                        comment += " Bat=";
+                        comment += String(batteryVoltage.toFloat(),2);
+                        comment += "V (";
+                        comment += batteryChargeCurrent;
+                        comment += "%)";
+                    #endif
+                #elif defined(BATTERY_PIN)
                     comment += " Bat=";
                     comment += String(batteryVoltage.toFloat(),2);
                     comment += "V";

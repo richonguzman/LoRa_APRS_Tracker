@@ -97,7 +97,7 @@ namespace BATTERY_Utils {
             }
         #else
             batteryVoltage                  = String(readBatteryVoltage(), 2);
-            batteryChargeDischargeCurrent   = String(POWER_Utils::getBatteryChargeDischargeCurrent(), 0);
+            //batteryChargeDischargeCurrent   = "0";//String(POWER_Utils::getBatteryChargeDischargeCurrent(), 0);
             if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
         #endif
     }

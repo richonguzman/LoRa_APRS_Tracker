@@ -106,10 +106,6 @@ namespace POWER_Utils {
         }
     #endif
 
-    const String getBatteryInfoCurrent() {
-        return batteryChargeDischargeCurrent;
-    }
-
     bool getBatteryInfoIsConnected() {
         return BatteryIsConnected;
     }
@@ -141,7 +137,23 @@ namespace POWER_Utils {
 
         bool isBatteryConnected() {
             return PMU.isBatteryConnect();
-        }  
+        }
+
+        String getBatteryInfoCurrent() {
+            return batteryChargeDischargeCurrent;
+        }
+
+        float getBatteryChargeDischargeCurrent() {
+            #ifdef HAS_AXP192
+                if (PMU.isCharging()) {
+                    return PMU.getBatteryChargeCurrent();
+                }
+                return -1.0 * PMU.getBattDischargeCurrent();
+            #endif
+            #ifdef HAS_AXP2101
+                return PMU.getBatteryPercent();
+            #endif
+        }
     #endif
 
     bool isCharging() {
@@ -151,21 +163,6 @@ namespace POWER_Utils {
             return 0;
         #endif
     }  
-
-    double getBatteryChargeDischargeCurrent() {
-        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
-            return 0;
-        #endif
-        #ifdef HAS_AXP192
-            if (PMU.isCharging()) {
-                return PMU.getBatteryChargeCurrent();
-            }
-            return -1.0 * PMU.getBattDischargeCurrent();
-        #endif
-        #ifdef HAS_AXP2101
-            return PMU.getBatteryPercent();
-        #endif
-    }      
 
     void activateGPS() {
         #ifdef HAS_AXP192
