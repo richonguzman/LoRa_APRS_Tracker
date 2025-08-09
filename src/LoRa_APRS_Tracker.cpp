@@ -48,7 +48,7 @@ ____________________________________________________________________*/
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
 #include "configuration.h"
-#include "battery_utils.h"
+//#include "battery_utils.h"    // change for next version ...
 #include "station_utils.h"
 #include "board_pinout.h"
 #include "button_utils.h"
@@ -75,7 +75,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025-08-07";
+String      versionDate             = "2025-08-09";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -244,8 +244,6 @@ void loop() {
         int currentSpeed = (int) gps.speed.kmph();
 
         if (gps_loc_update) Utils::checkStatus();
-
-        if (!gps.location.isValid()) BATTERY_Utils::checkVoltageWithoutGPSFix();
 
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();

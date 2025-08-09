@@ -120,22 +120,17 @@ namespace POWER_Utils {
             return (PMU.getBattVoltage() / 1000.0);
         #else
             #ifdef BATTERY_PIN
-                #ifdef ADC_CTRL
-                    adc_ctrl_ON();
-                #endif
-
+                
                 int sample;
                 int sampleSum = 0;
+                analogRead(BATTERY_PIN);    // Dummy Read
+                delay(1);
                 for (int i = 0; i < averageReadings; i++) {
                     sample = analogRead(BATTERY_PIN);
                     sampleSum += sample;
                     delay(3);//delayMicroseconds(50);
                 }
                 int adc_value = sampleSum/averageReadings;
-
-                #ifdef ADC_CTRL
-                    adc_ctrl_OFF();
-                #endif
                 
                 batteryMeasurmentTime = millis();
                 double voltage = (adc_value * 3.3 ) / 4095.0;
@@ -255,6 +250,11 @@ namespace POWER_Utils {
                                 obtainBatteryInfo();
                                 adc_ctrl_OFF();
                                 measuring_State = 0;
+                                
+                                if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
+                                    displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
+                                    POWER_Utils::shutdown();
+                                }
                             }
                             break;
                     }

@@ -33,17 +33,6 @@ namespace BATTERY_Utils {
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
-    void checkVoltageWithoutGPSFix() {
-        #ifdef BATTERY_PIN
-            if (lastNoGPSCheckTime == 0 || millis() - lastNoGPSCheckTime > 15 * 60 * 1000) {
-                String batteryVoltage = POWER_Utils::getBatteryInfoVoltage();
-                if (batteryVoltage.toFloat() < 3.0) {
-                    displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
-                    POWER_Utils::shutdown();
-                }
-                lastNoGPSCheckTime = millis();
-            }
-        #endif
-    }
+    // move POWER_Utils:: battery readings and all process to here....
 
 }

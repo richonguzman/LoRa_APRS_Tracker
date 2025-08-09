@@ -25,7 +25,6 @@
 namespace BATTERY_Utils {
 
     String  getPercentVoltageBattery(float voltage);
-    void    checkVoltageWithoutGPSFix();
     
 }
 
