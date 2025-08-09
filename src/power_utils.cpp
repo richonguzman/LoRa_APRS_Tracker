@@ -56,7 +56,6 @@ extern  bool                            transmitFlag;
 extern  bool                            gpsIsActive;
 
 bool    pmuInterrupt;
-float   lora32BatReadingCorr            = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 bool    disableGPS;
 
 String  batteryChargeDischargeCurrent    = "";

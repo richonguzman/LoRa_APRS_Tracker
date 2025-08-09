@@ -38,6 +38,8 @@ String      batteryVoltage          = "";
 extern      String                  batteryChargeDischargeCurrent;
 extern      bool                    BatteryIsConnected;
 
+float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
+
 
 namespace BATTERY_Utils {
 
@@ -96,8 +98,7 @@ namespace BATTERY_Utils {
                 batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
             }
         #else
-            batteryVoltage                  = String(readBatteryVoltage(), 2);
-            //batteryChargeDischargeCurrent   = "0";//String(POWER_Utils::getBatteryChargeDischargeCurrent(), 0);
+            batteryVoltage = String(readBatteryVoltage(), 2);
             if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
         #endif
     }
