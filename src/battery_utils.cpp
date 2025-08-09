@@ -29,14 +29,21 @@
     uint8_t     measuringState      = 0;
 #endif
 
+#ifdef HAS_AXP192
+    extern XPowersAXP192 PMU;
+#endif
+#ifdef HAS_AXP2101
+    extern XPowersAXP2101 PMU;
+#endif
+
 extern      Configuration           Config;
 uint32_t    batteryMeasurmentTime   = 0;
 int         averageReadings         = 20;
 
 String      batteryVoltage          = "";
+bool        batteryConnected      = false;
 
 extern      String                  batteryChargeDischargeCurrent;
-extern      bool                    BatteryIsConnected;
 
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 
@@ -90,23 +97,24 @@ namespace BATTERY_Utils {
 
     void obtainBatteryInfo() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            // check for T-beams !!!
-            static unsigned int rate_limit_check_battery = 0;
-            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = POWER_Utils::isBatteryConnected();
-            if (BatteryIsConnected) {
-                batteryVoltage                  = String(getBatteryVoltage(), 2);
-                batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
+            batteryConnected = PMU.isBatteryConnect();
+            if (batteryConnected) {
+                batteryVoltage                  = String(readBatteryVoltage(), 2);
+                batteryChargeDischargeCurrent   = String(POWER_Utils::getBatteryChargeDischargeCurrent(), 0);
             }
         #else
             batteryVoltage = String(readBatteryVoltage(), 2);
-            if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
+            if (batteryVoltage.toFloat() > 1.0) batteryConnected = true;
         #endif
-    }
+    }   
 
     void monitor() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            obtainBatteryInfo();
-            POWER_Utils::handleChargingLed();
+            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 1 * 1000){
+                obtainBatteryInfo();
+                POWER_Utils::handleChargingLed();
+                batteryMeasurmentTime = millis();
+            }
         #elif defined(BATTERY_PIN)
             if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
                 #ifdef ADC_CTRL

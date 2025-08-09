@@ -34,32 +34,27 @@ namespace POWER_Utils {
         void    adc_ctrl_OFF();
     #endif
 
-
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-        //void activateMeasurement();
-        //void enableChgLed();
-        //void disableChgLed();
-        //void handleChargingLed();
         String  getBatteryInfoCurrent();
+        float   getBatteryChargeDischargeCurrent();
+        void    handleChargingLed();
     #endif
-    
-    bool    getBatteryInfoIsConnected();
 
-    bool    isCharging();
+    bool isCharging();    
 
-    void    activateGPS();
-    void    deactivateGPS();
+    void activateGPS();
+    void deactivateGPS();
 
-    void    activateLoRa();
-    void    deactivateLoRa();
+    void activateLoRa();
+    void deactivateLoRa();
 
-    void    externalPinSetup();
+    void externalPinSetup();
 
-    bool    begin(TwoWire &port);
-    void    setup();
+    bool begin(TwoWire &port);
+    void setup();
 
-    void    lowerCpuFrequency();
-    void    shutdown();
+    void lowerCpuFrequency();
+    void shutdown();
   
 }
 

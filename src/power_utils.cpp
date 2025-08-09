@@ -59,7 +59,6 @@ bool    pmuInterrupt;
 bool    disableGPS;
 
 String  batteryChargeDischargeCurrent    = "";
-bool    BatteryIsConnected               = false;
 
 
 namespace POWER_Utils {    
@@ -105,10 +104,6 @@ namespace POWER_Utils {
         }
     #endif
 
-    bool getBatteryInfoIsConnected() {
-        return BatteryIsConnected;
-    }
-
     #if defined(HAS_AXP192) || defined(HAS_AXP2101)
         void activateMeasurement() {
                 PMU.disableTSPinMeasure();
@@ -132,10 +127,6 @@ namespace POWER_Utils {
             } else {
                 disableChgLed();
             }
-        }
-
-        bool isBatteryConnected() {
-            return PMU.isBatteryConnect();
         }
 
         String getBatteryInfoCurrent() {
