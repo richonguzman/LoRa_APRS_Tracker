@@ -45,6 +45,7 @@ extern uint8_t              loraIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern bool                 keyDetected;
+extern bool                 keyboardConnected;
 extern String               messageCallsign;
 extern String               messageText;
 extern bool                 flashlight;
@@ -203,7 +204,7 @@ namespace MENU_Utils {
                 displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
-                if (keyDetected) {
+                if (keyDetected || keyboardConnected) {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
                             displayShow("WRITE MSG>", "", "CALLSIGN = " + String(messageCallsign), "", "", "<Back               Enter>");
