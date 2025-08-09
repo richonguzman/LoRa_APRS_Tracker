@@ -113,8 +113,6 @@ bool        miceActive              = false;
 
 bool        smartBeaconActive       = true;
 
-int         ackRequestNumber;
-
 uint32_t    lastGPSTime             = 0;
 
 APRSPacket                          lastReceivedPacket;
@@ -148,8 +146,6 @@ void setup() {
     LoRa_Utils::setup();
     Utils::i2cScannerForPeripherals();
     WX_Utils::setup();
-    
-    ackRequestNumber = random(1,999);
 
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");

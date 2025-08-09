@@ -71,6 +71,7 @@ std::vector<String>             outputMessagesBuffer;
 std::vector<String>             outputAckRequestBuffer;
 std::vector<Packet15SegBuffer>  packet15SegBuffer;
 
+int         ackRequestNumber    = random(1,999);
 bool        ackRequestState     = false;
 String      ackCallsignRequest  = "";
 String      ackNumberRequest    = "";
@@ -270,7 +271,7 @@ namespace MSG_Utils {
         LoRa_Utils::sendNewPacket(newPacket);
     }
 
-    const String ackRequestNumberGenerator() {
+    String getAckRequestNumber() {
         ackRequestNumber++;
         if (ackRequestNumber > 999) {
             ackRequestNumber = 1;
@@ -299,7 +300,7 @@ namespace MSG_Utils {
                 }
             }               
             if (!alreadyInBuffer) {
-                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + getAckRequestNumber());
             }
         } else if (typeOfMessage == 0) {
             alreadyInBuffer = false;
