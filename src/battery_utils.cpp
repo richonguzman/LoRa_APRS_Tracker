@@ -26,7 +26,7 @@
 
 #ifdef ADC_CTRL
     uint32_t    adcCtrlTime         = 0;
-    uint8_t     measuring_State     = 0;
+    uint8_t     measuringState      = 0;
 #endif
 
 extern      Configuration           Config;
@@ -51,17 +51,25 @@ namespace BATTERY_Utils {
         #elif defined(BATTERY_PIN)
             if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
                 #ifdef ADC_CTRL
-                    switch(measuring_State){
-                        case 0:     //ADC_CTRL_ON State
+                    switch(measuringState){
+                        case 0:     // Initial Measurement
                             POWER_Utils::adc_ctrl_ON();
                             adcCtrlTime = millis();
-                            measuring_State = 1;
+                            delay(50);
+                            POWER_Utils::obtainBatteryInfo();
+                            POWER_Utils::adc_ctrl_OFF();
+                            measuringState = 1;
                             break;
-                        case 1:     // Measurement State
+                        case 1:     //ADC_CTRL_ON State
+                            POWER_Utils::adc_ctrl_ON();
+                            adcCtrlTime = millis();
+                            measuringState = 2;
+                            break;
+                        case 2:     // Measurement State
                             if((millis() - adcCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
-                                POWER_Utils::obtainBatteryInfo(1);
+                                POWER_Utils::obtainBatteryInfo();
                                 POWER_Utils::adc_ctrl_OFF();
-                                measuring_State = 0;
+                                measuringState = 1;
                                 
                                 if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
                                     displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);

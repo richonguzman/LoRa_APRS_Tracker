@@ -49,19 +49,11 @@
     XPowersAXP2101 PMU;
 #endif
 
-//
-/*#ifdef ADC_CTRL
-    uint32_t    adcCtrlTime         = 0;
-    uint8_t     measuring_State     = 0;
-#endif*/
-//
-
 extern Configuration    Config;
 extern logging::Logger  logger;
 extern bool             transmitFlag;
 extern bool             gpsIsActive;
 
-//uint32_t    batteryMeasurmentTime   = 0;
 int         averageReadings         = 20;
 
 bool        pmuInterrupt;
@@ -222,18 +214,19 @@ namespace POWER_Utils {
         #endif
     }
 
-    void obtainBatteryInfo(uint8_t type) {
-        if (type == 0) {
+    void obtainBatteryInfo() {
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             static unsigned int rate_limit_check_battery = 0;
             if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
             if (BatteryIsConnected) {
                 batteryVoltage                  = String(getBatteryVoltage(), 2);
                 batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
             }
-        } else if (type == 1) {
+        #else
             batteryVoltage                  = String(getBatteryVoltage(), 2);
             batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
-        }
+            if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
+        #endif
     }
 
     void activateMeasurement() {

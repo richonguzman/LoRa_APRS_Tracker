@@ -34,7 +34,7 @@ namespace POWER_Utils {
         void    adc_ctrl_OFF();
     #endif
 
-    void obtainBatteryInfo(uint8_t type);
+    void obtainBatteryInfo();
 
     double  getBatteryVoltage();
     const String getBatteryInfoVoltage();
