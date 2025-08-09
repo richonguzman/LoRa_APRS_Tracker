@@ -31,10 +31,11 @@
 
 extern      Configuration           Config;
 uint32_t    batteryMeasurmentTime   = 0;
+int         averageReadings         = 20;
 
-//
-extern String      batteryVoltage;
-//
+String batteryVoltage = "";
+extern String batteryChargeDischargeCurrent;
+extern bool   BatteryIsConnected;
 
 
 namespace BATTERY_Utils {
@@ -44,9 +45,61 @@ namespace BATTERY_Utils {
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
+    float readBatteryVoltage() {
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            return (PMU.getBattVoltage() / 1000.0);
+        #else
+            #ifdef BATTERY_PIN
+                int sampleSum = 0;
+                analogRead(BATTERY_PIN);    // Dummy Read
+                delay(1);
+                for (int i = 0; i < averageReadings; i++) {
+                    sampleSum += analogRead(BATTERY_PIN);
+                    delay(3);
+                }
+                int adc_value = sampleSum/averageReadings;
+                double voltage = (adc_value * 3.3 ) / 4095.0;
+
+                #ifdef LIGHTTRACKER_PLUS_1_0
+                    double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
+                    return (voltage / inputDivider) + 0.1;
+                #endif
+                #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_GPS) || defined(ESP32S3_DIY_LoRa_GPS_915) || defined(TROY_LoRa_APRS) || defined(RPC_Electronics_1W_LoRa_GPS)
+                    return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
+                #endif
+                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
+                    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+                #endif
+                #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
+                    double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
+                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
+                #endif
+            #else
+                return 0.0;
+            #endif
+        #endif
+    }
+
+    void obtainBatteryInfo() {
+        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+            // check for T-beams !!!
+            static unsigned int rate_limit_check_battery = 0;
+            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
+            if (BatteryIsConnected) {
+                batteryVoltage                  = String(getBatteryVoltage(), 2);
+                batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
+            }
+        #else
+            batteryVoltage                  = String(readBatteryVoltage(), 2);
+            batteryChargeDischargeCurrent   = String(POWER_Utils::getBatteryChargeDischargeCurrent(), 0);
+            if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
+        #endif
+    }
+
     void monitor() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            POWER_Utils::obtainBatteryInfo();
+            obtainBatteryInfo();
             POWER_Utils::handleChargingLed();
         #elif defined(BATTERY_PIN)
             if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
@@ -56,7 +109,7 @@ namespace BATTERY_Utils {
                             POWER_Utils::adc_ctrl_ON();
                             adcCtrlTime = millis();
                             delay(50);
-                            POWER_Utils::obtainBatteryInfo();
+                            obtainBatteryInfo();
                             POWER_Utils::adc_ctrl_OFF();
                             measuringState = 1;
                             break;
@@ -67,7 +120,7 @@ namespace BATTERY_Utils {
                             break;
                         case 2:     // Measurement State
                             if((millis() - adcCtrlTime) > 50){ //At least 50ms have to pass after ADC_Ctrl Mosfet is turned on for voltage to stabilize
-                                POWER_Utils::obtainBatteryInfo();
+                                obtainBatteryInfo();
                                 POWER_Utils::adc_ctrl_OFF();
                                 measuringState = 1;
                                 
@@ -79,7 +132,7 @@ namespace BATTERY_Utils {
                             break;
                     }
                 #else
-                    POWER_Utils::obtainBatteryInfo();
+                    obtainBatteryInfo();
                 #endif
                 batteryMeasurmentTime = millis();
             }

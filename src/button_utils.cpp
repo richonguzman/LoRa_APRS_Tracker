@@ -84,12 +84,14 @@
         }
 
         void loop() {
-            userButton.tick();
-            #ifdef RPC_Electronics_1W_LoRa_GPS
-                userButton2.tick();
-                userButton3.tick();
-                userButton4.tick();
-            #endif
+            if (!Config.simplifiedTrackerMode) {
+                userButton.tick();
+                #ifdef RPC_Electronics_1W_LoRa_GPS
+                    userButton2.tick();
+                    userButton3.tick();
+                    userButton4.tick();
+                #endif
+            }
         }
 
         void setup() {

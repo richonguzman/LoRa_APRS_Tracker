@@ -190,20 +190,16 @@ void loop() {
         }
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
-
-    BATTERY_Utils::monitor();
-
+    
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();
-
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            BUTTON_Utils::loop();
-        #endif
-    }
-
+    
+    BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
 
+    #ifdef BUTTON_PIN
+        BUTTON_Utils::loop();
+    #endif
     KEYBOARD_Utils::read();
     #ifdef HAS_JOYSTICK
         JOYSTICK_Utils::loop();
@@ -211,7 +207,6 @@ void loop() {
     #ifdef HAS_TOUCHSCREEN
         TOUCH_Utils::loop();
     #endif
-
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 

@@ -19,6 +19,7 @@
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
+#include "battery_utils.h"
 #include "board_pinout.h"
 #include "power_utils.h"
 #include "lora_utils.h"
@@ -54,18 +55,15 @@ extern logging::Logger  logger;
 extern bool             transmitFlag;
 extern bool             gpsIsActive;
 
-int         averageReadings         = 20;
-
 bool        pmuInterrupt;
 float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
 bool        disableGPS;
 
-String batteryVoltage = "";
-String batteryChargeDischargeCurrent = "";
+extern String batteryVoltage;
+String batteryChargeDischargeCurrent    = "";
+bool   BatteryIsConnected               = false;
 
-namespace POWER_Utils {
-
-    bool   BatteryIsConnected = false;
+namespace POWER_Utils {    
 
     #ifdef VEXT_CTRL
         void vext_ctrl_ON() {
@@ -107,45 +105,6 @@ namespace POWER_Utils {
             #endif
         }
     #endif
-
-    double getBatteryVoltage() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            return (PMU.getBattVoltage() / 1000.0);
-        #else
-            #ifdef BATTERY_PIN
-
-                int sample;
-                int sampleSum = 0;
-                analogRead(BATTERY_PIN);    // Dummy Read
-                delay(1);
-                for (int i = 0; i < averageReadings; i++) {
-                    sample = analogRead(BATTERY_PIN);
-                    sampleSum += sample;
-                    delay(3);//delayMicroseconds(50);
-                }
-                int adc_value = sampleSum/averageReadings;
-                double voltage = (adc_value * 3.3 ) / 4095.0;
-
-                #ifdef LIGHTTRACKER_PLUS_1_0
-                    double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
-                    return (voltage / inputDivider) + 0.1;
-                #endif
-                #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_GPS) || defined(ESP32S3_DIY_LoRa_GPS_915) || defined(TROY_LoRa_APRS) || defined(RPC_Electronics_1W_LoRa_GPS)
-                    return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-                    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
-                #endif
-                #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
-                    double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
-                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
-                #endif
-            #else
-                return 0.0;
-            #endif
-        #endif
-    }
 
     const String getBatteryInfoVoltage() {
         return batteryVoltage;
@@ -206,26 +165,11 @@ namespace POWER_Utils {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             return PMU.isBatteryConnect();
         #else
-            if(getBatteryVoltage() > 1.0) {
+            if(BATTERY_Utils::readBatteryVoltage() > 1.0) {
                 return true;
             } else {
                 return false;
             }
-        #endif
-    }
-
-    void obtainBatteryInfo() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            static unsigned int rate_limit_check_battery = 0;
-            if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
-            if (BatteryIsConnected) {
-                batteryVoltage                  = String(getBatteryVoltage(), 2);
-                batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
-            }
-        #else
-            batteryVoltage                  = String(getBatteryVoltage(), 2);
-            batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
-            if (batteryVoltage.toFloat() > 1.0) BatteryIsConnected = true;
         #endif
     }
 
