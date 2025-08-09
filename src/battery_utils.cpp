@@ -33,6 +33,4 @@ namespace BATTERY_Utils {
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
-    // move POWER_Utils:: battery readings and all process to here....
-
 }

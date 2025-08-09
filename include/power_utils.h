@@ -38,10 +38,8 @@ namespace POWER_Utils {
     void    disableChgLed();
 
     bool    isCharging();
-    //void    handleChargingLed();
     double  getBatteryChargeDischargeCurrent();
-    //bool    isBatteryConnected();
-    //void    obtainBatteryInfo();
+    
     void    batteryManager();
 
     void    activateMeasurement();
