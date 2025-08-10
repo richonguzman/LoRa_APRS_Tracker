@@ -104,7 +104,7 @@ namespace BATTERY_Utils {
             }
         #else
             batteryVoltage = String(readBatteryVoltage(), 2);
-            if (batteryVoltage.toFloat() > 1.0) batteryConnected = true;
+            if (batteryVoltage.toFloat() > 1.5) batteryConnected = true;
         #endif
     }   
 
