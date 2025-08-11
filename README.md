@@ -53,6 +53,9 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025-08-11 New improved Battery Monitor for Heltec Boards. Thanks Tilen S54B.
+- 2025-08-10 RPC Electronics 1W LoRa GPS with 1W SX1268 added. APRSPacketLib Library Updated.
+- 2025-08-02 Personal Note for each Beacon Callsign. Thanks Tilen S54B.
 - 2025.03.28 F4GOH DIY board with ESP32 + GPS + 1W LLCC68 added. APRSPacketLib Library Updated.
 - 2025.03.06 F4GOH DIY board with ESP32 + GPS + 1W SX1268 added.
 - 2025.02.09 Now Bluetooth connections lets you decide to use BLE/BT Classic and KISS/TNC.
