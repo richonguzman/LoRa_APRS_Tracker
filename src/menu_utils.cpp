@@ -432,11 +432,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 270:   // 2.Configuration ---> Power Off
-                if (keyDetected) {
-                    displayShow("POWER OFF?", "","Confirm Power Off...","","","<Back   Enter=Confirm");
-                } else {
-                    displayShow("POWER OFF?", "no Keyboard Detected"," Use PWR Button to","Power Off Tracker","",lastLine);
-                }
+                displayShow("POWER OFF?", "","Confirm Power Off...","","","<Back Enter/>=Confirm");
                 break;
 
 //////////

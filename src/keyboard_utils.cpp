@@ -412,7 +412,14 @@ namespace KEYBOARD_Utils {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
             displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
-        } 
+        } else if (menuDisplay == 270) {
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                displayShow("", "", "    POWER OFF ...", 2000);
+            #else
+                displayShow("", "", " starting DEEP SLEEP", 2000);
+            #endif
+            POWER_Utils::shutdown();
+        }
 
         else if (menuDisplay == 30) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
