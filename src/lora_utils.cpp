@@ -98,7 +98,7 @@ namespace LoRa_Utils {
         currentLoRainfo += String(currentLoRaType->codingRate4);
         
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
-        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 100);
     }
 
     void setup() {
