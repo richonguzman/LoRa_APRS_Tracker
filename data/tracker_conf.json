@@ -86,23 +86,23 @@
 	},
 	"lora": [
 		{
-			"frequency": 433775000,
+			"frequency": 924650000,
 			"spreadingFactor": 12,
 			"signalBandwidth": 125000,
 			"codingRate4": 5,
 			"power": 20
 		},
 		{
-			"frequency": 434855000,
+			"frequency": 924650000,
 			"spreadingFactor": 9,
 			"signalBandwidth": 125000,
 			"codingRate4": 7,
 			"power": 20
 		},
 		{
-			"frequency": 439912500,
-			"spreadingFactor": 12,
-			"signalBandwidth": 125000,
+			"frequency": 924650000,
+			"spreadingFactor": 11,
+			"signalBandwidth": 250000,
 			"codingRate4": 5,
 			"power": 20
 		}
