@@ -170,52 +170,71 @@ namespace LoRa_Utils {
         }        
     }
 
-    void sendNewPacket(const String& newPacket) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
+    void sendNewPacket(const String &newPacket)
+    {
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx", "---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa","Send data: %s", newPacket.c_str());*/
 
-        if (Config.ptt.active) {
+        if (Config.ptt.active)
+        {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
         }
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
-        if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
-        
-        int state = radio.transmit("\x3c\xff\x01" + newPacket);
-        transmitFlag = true;
-        if (state == RADIOLIB_ERR_NONE) {
-            //Serial.println(F("success!"));
-        } else {
-            Serial.print(F("failed, code "));
-            Serial.println(state);
-        }
-        
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
-        if (Config.ptt.active) {
-            delay(Config.ptt.postDelay);
-            digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
-        }
-        /*#ifdef HAS_TFT
-            cleanTFT();
-        #endif*/
-    }
+        if (Config.notification.ledTx)
+            digitalWrite(Config.notification.ledTxPin, HIGH);
+        if (Config.notification.buzzerActive && Config.notification.txBeep)
+            NOTIFICATION_Utils::beaconTxBeep();
 
-    void wakeRadio() {
+        // Cycle through the different frequency profiles
+        for (int frequencyindex = 1; frequencyindex < 3; frequencyindex++)
+        {
+            LoRa_Utils::changeFreq();
+
+            int state = radio.transmit("\x3c\xff\x01" + newPacket);
+            transmitFlag = true;
+            if (state == RADIOLIB_ERR_NONE)
+            {
+                // Serial.println(F("success!"));
+            }
+            else
+            {
+                Serial.print(F("TX failed, code "));
+                Serial.println(state);
+            }
+
+            if (Config.notification.ledTx)
+                digitalWrite(Config.notification.ledTxPin, LOW);
+            if (Config.ptt.active)
+            {
+                delay(Config.ptt.postDelay);
+                digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
+            }
+            /*#ifdef HAS_TFT
+                cleanTFT();
+            #endif*/
+        }
+    }
+    void wakeRadio()
+    {
         radio.startReceive();
     }
 
-    ReceivedLoRaPacket receiveFromSleep() {
+    ReceivedLoRaPacket receiveFromSleep()
+    {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
         int state = radio.readData(packet);
-        if (state == RADIOLIB_ERR_NONE) {
-            receivedLoraPacket.text       = packet;
-            receivedLoraPacket.rssi       = radio.getRSSI();
-            receivedLoraPacket.snr        = radio.getSNR();
-            receivedLoraPacket.freqError  = radio.getFrequencyError();
-        } else {
+        if (state == RADIOLIB_ERR_NONE)
+        {
+            receivedLoraPacket.text = packet;
+            receivedLoraPacket.rssi = radio.getRSSI();
+            receivedLoraPacket.snr = radio.getSNR();
+            receivedLoraPacket.freqError = radio.getFrequencyError();
+        }
+        else
+        {
             //
         }
         return receivedLoraPacket;
