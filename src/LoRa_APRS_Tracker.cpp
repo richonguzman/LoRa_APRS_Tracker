@@ -75,7 +75,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "2025-08-26";
+String      versionDate             = "MaricopaExtentions";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -83,6 +83,9 @@ Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
 uint8_t     loraIndex               = 0;
 int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
+
+uint8_t     quarterMinute           = 0; 
+bool        cycledFreq              = false;
 
 int         menuDisplay             = 100;
 uint32_t    menuTime                = millis();
@@ -251,6 +254,20 @@ void loop() {
             MENU_Utils::showOnScreen();
             refreshDisplayTime = millis();
         }
+
+         quarterMinute = (gps.time.second() % 15);
+        if (quarterMinute > 0)
+            cycledFreq = false;
+        if (quarterMinute == 0)
+        {
+            if (cycledFreq == false)
+            {
+                cycledFreq = true;
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Switching Frequency Profile...");
+                LoRa_Utils::changeFreq();
+            }
+        }
+
         SLEEP_Utils::checkIfGPSShouldSleep();
     } else {
         if (millis() - lastGPSTime > txInterval) {
