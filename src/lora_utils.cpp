@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+//https://jgromes.github.io/RadioLib/group__status__codes.html
+/// You're welcome.
+
 #include <RadioLib.h>
 #include <logger.h>
 #include <SPI.h>
@@ -116,6 +119,9 @@ namespace LoRa_Utils {
         #if defined(RADIO_HAS_XTAL)
             radio.XTAL = true;
         #endif
+
+         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "About to set frequency %d", freq);
+
         int state = radio.begin(freq);
         if (state == RADIOLIB_ERR_NONE) {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
@@ -188,7 +194,7 @@ namespace LoRa_Utils {
             NOTIFICATION_Utils::beaconTxBeep();
 
         // Cycle through the different frequency profiles
-        for (int frequencyindex = 1; frequencyindex < 3; frequencyindex++)
+        for (int frequencyindex = 0; frequencyindex < 3; frequencyindex++)
         {
             LoRa_Utils::changeFreq();
 
