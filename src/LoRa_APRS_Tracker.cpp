@@ -85,7 +85,6 @@ int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
 uint8_t     quarterMinute           = 0; 
-bool        cycledFreq              = false;
 
 int         menuDisplay             = 100;
 uint32_t    menuTime                = millis();
@@ -120,8 +119,12 @@ uint32_t    lastGPSTime             = 0;
 
 APRSPacket                          lastReceivedPacket;
 
+uint32_t cycledFreqMillis           =   millis(); // Mark what system time the start of our cycle is.
+uint32_t   profileCycleOffset            = 0; //our calculated cycle start time 
+bool        cycledFreq              = false;
+uint32_t profilecycleOffset                        = 0;
 logging::Logger                     logger;
-//#define DEBUG
+#define DEBUG
 
 extern bool gpsIsActive;
 
@@ -181,6 +184,25 @@ void setup() {
 }
 
 void loop() {
+
+
+         quarterMinute = (gps.time.second() % 15);
+
+         if ((quarterMinute == 0) && (cycledFreq == true))
+         {
+             String maidenHead = Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8);
+             u_int32_t offset = ((maidenHead.substring(7, 8).toInt()) + (maidenHead.substring(6, 7).toInt() * 10)); // cycle offset can be fom 0-3000, allowing for a 0-3 second overlap.
+             profilecycleOffset = map(offset, 0, 99, 0, 15);
+             cycledFreq = false;
+         }
+
+         if ((quarterMinute == profilecycleOffset) && (cycledFreq == false))
+         {
+             cycledFreq = true;
+             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Changing frequency profile, current offset is +%d seconds from start", profilecycleOffset);
+             LoRa_Utils::changeFreq();
+         }
+
     currentBeacon = &Config.beacons[myBeaconsIndex];
     if (statusState) {
         if (Config.validateConfigFile(currentBeacon->callsign)) {
@@ -230,6 +252,8 @@ void loop() {
     STATION_Utils::checkListenedStationsByTimeAndDelete();
 
     lastTx = millis() - lastTxTime;
+
+    
     if (gpsIsActive) {
         GPS_Utils::getData();
         bool gps_time_update = gps.time.isUpdated();
@@ -254,19 +278,8 @@ void loop() {
             MENU_Utils::showOnScreen();
             refreshDisplayTime = millis();
         }
-
-         quarterMinute = (gps.time.second() % 15);
-        if (quarterMinute > 0)
-            cycledFreq = false;
-        if (quarterMinute == 0)
-        {
-            if (cycledFreq == false)
-            {
-                cycledFreq = true;
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Switching Frequency Profile...");
-                LoRa_Utils::changeFreq();
-            }
-        }
+ 
+        
 
         SLEEP_Utils::checkIfGPSShouldSleep();
     } else {
