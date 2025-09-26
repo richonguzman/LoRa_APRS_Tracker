@@ -75,7 +75,7 @@ TinyGPSPlus                         gps;
     BluetoothSerial                 SerialBT;
 #endif
 
-String      versionDate             = "MaricopaExtentions";
+String      versionDate             = "MaricopaExtentions 23Sep25";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -119,10 +119,10 @@ uint32_t    lastGPSTime             = 0;
 
 APRSPacket                          lastReceivedPacket;
 
-uint32_t cycledFreqMillis           =   millis(); // Mark what system time the start of our cycle is.
-uint32_t   profileCycleOffset            = 0; //our calculated cycle start time 
+uint32_t    cycledFreqMillis        = millis(); // Mark what system time the start of our cycle is.
+uint32_t    profileCycleOffset      = 0; //our calculated cycle start time 
 bool        cycledFreq              = false;
-uint32_t profilecycleOffset                        = 0;
+uint32_t profilecycleOffset         = 0;
 logging::Logger                     logger;
 #define DEBUG
 

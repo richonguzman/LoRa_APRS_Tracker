@@ -1,0 +1,33 @@
+Brief outline of the Maricopa Extentions that are included in this branch.
+
+These extentions are additional network rules aimed at interoperability with 
+the existing LoRa network. Their goals are to extend the distance a node packet can be recieved. Additionally we partially mitigate 
+the infamous hiden transmitter problem.
+
+Assumtions are:
+
+- Transmitting over another stations is acceptable, if a station cannot be heard
+- The modulation speeds in LoRa are such that channel capacity is on a novel scale in amateur radio, and consists of a new paradigm
+- Each node has a list of several LoRa "profiles", where each profile defines a moduleation type and frequency.
+- Each modulation type is orthaganal to other types, thus multiple modulation types on a single channel does not automatically increate channel load
+
+These extentions work in tandum, each adding a level of complexity. Extentions can be implimented at any level.
+
+*Extention 1:*
+Mutlti-packet 
+Each node simply transmits a single packet for each one of these profiles every tranmission.
+
+*Extention 2:* 
+Rotate RX
+Each node roatates which profile it uses for recieving every 15 seconds. This allows for multi-region interoperability, where profiles 
+can be used for the desired mode of operation
+
+*Extention 3:*
+Offset regional RX 
+Each node that is synchronized to GPS delays the rotation time based on the node's Madenhead locator. This creates zones of 
+profiles, where for each node, farther away nodes are aligned to recieve higher sensitivity profiles.
+
+
+
+
+
