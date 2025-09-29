@@ -770,7 +770,7 @@ namespace MENU_Utils {
                     String fourthRowAlt = String(gps.altitude.meters(),0);
                     fourthRowAlt.trim();
                     for (int a = fourthRowAlt.length(); a < 4; a++) {
-                        fourthRowAlt = "0" + fourthRowAlt;
+                        fourthRowAlt = " " + fourthRowAlt;
                     }
                     String fourthRowSpeed = String(gps.speed.kmph(),0);
                     fourthRowSpeed.trim();
