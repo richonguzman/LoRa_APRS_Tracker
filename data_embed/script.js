@@ -187,18 +187,18 @@ function loadSettings(settings) {
                     value="${lora.frequency}">
                 <label for="lora.${index}.frequency">Frequency</label>
             </div>
-            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+            <div class="form-floating col-4 col-md-2 px-1 mb-2">
                 <input 
                     type="number" 
                     class="form-control form-control-sm" 
                     name="lora.${index}.spreadingFactor" 
                     id="lora.${index}.spreadingFactor" 
                     value="${lora.spreadingFactor}"
-                    min="9"
+                    min="7"
                     max="12">
-                <label for="lora.${index}.spreadingFactor">Spreading Factor</label>
+                <label for="lora.${index}.spreadingFactor">SF</label>
             </div>
-            <div class="form-floating col-6 col-md-3 px-1 mb-2">
+            <div class="form-floating col-4 col-md-2 px-1 mb-2">
                 <input 
                     type="number" 
                     class="form-control form-control-sm" 
@@ -206,9 +206,20 @@ function loadSettings(settings) {
                     id="lora.${index}.codingRate4" 
                     value="${lora.codingRate4}"
                     min="5"
-                    max="7">
-                <label for="lora.${index}.codingRate4">Coding Rate</label>
-            </div>            
+                    max="8">
+                <label for="lora.${index}.codingRate4">CR4</label>
+            </div>
+            <div class="form-floating col-4 col-md-2 px-1 mb-2">
+                <input 
+                    type="number" 
+                    class="form-control form-control-sm" 
+                    name="lora.${index}.signalBandwidth" 
+                    id="lora.${index}.signalBandwidth" 
+                    value="${lora.signalBandwidth}"
+                    min="62500"
+                    max="500000">
+                <label for="lora.${index}.signalBandwidth">BW</label>
+            </div>
         `;
         loraContainer.appendChild(loraElement);
     });
