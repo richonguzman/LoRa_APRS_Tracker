@@ -37,6 +37,8 @@ void Configuration::writeFile() {
     data["wifiAP"]["password"]                  = wifiAP.password;
 
     for (int i = 0; i < beacons.size(); i++) {
+        beacons[i].callsign.trim();
+        beacons[i].callsign.toUpperCase();
         data["beacons"][i]["callsign"]              = beacons[i].callsign;
         data["beacons"][i]["symbol"]                = beacons[i].symbol;
         data["beacons"][i]["overlay"]               = beacons[i].overlay;
