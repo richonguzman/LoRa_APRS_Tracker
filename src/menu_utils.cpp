@@ -378,9 +378,10 @@ namespace MENU_Utils {
 
             case 210:   // 2.Configuration ---> Change Frequency
                 switch (loraIndex) {
-                    case 0: freqChangeWarning = "      Eu --> PL"; break;
+                    case 0: freqChangeWarning = "      EU --> PL"; break;
                     case 1: freqChangeWarning = "      PL --> UK"; break;
-                    case 2: freqChangeWarning = "      UK --> Eu"; break;
+                    case 2: freqChangeWarning = "      UK --> US"; break;
+                    case 3: freqChangeWarning = "      US --> EU"; break;
                 }
                 displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
                 break;

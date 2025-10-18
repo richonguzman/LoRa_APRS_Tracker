@@ -105,6 +105,13 @@
 			"signalBandwidth": 125000,
 			"codingRate4": 5,
 			"power": 20
+		},
+		{
+			"frequency": 915000000,
+			"spreadingFactor": 12,
+			"signalBandwidth": 125000,
+			"codingRate4": 5,
+			"power": 20
 		}
 	],
 	"bluetooth": {

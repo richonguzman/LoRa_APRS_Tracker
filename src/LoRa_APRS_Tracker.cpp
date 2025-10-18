@@ -68,14 +68,15 @@ ____________________________________________________________________*/
 #include "touch_utils.h"
 #endif
 
+
+String      versionDate             = "2025-10-18";
+String      versionNumber           = "2.3.1";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
 #endif
-
-String      versionDate             = "2025-09-29";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
