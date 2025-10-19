@@ -237,7 +237,7 @@ bool Configuration::readFile() {
             !data["notification"].containsKey("messageRxBeep") ||
             !data["notification"].containsKey("stationBeep") ||
             !data["notification"].containsKey("lowBatteryBeep") ||
-            !data["notification"].containsKey("shutDownBee") ||
+            !data["notification"].containsKey("shutDownBeep") ||
             !data["notification"].containsKey("ledFlashlight") ||
             !data["notification"].containsKey("ledFlashlightPin")) needsRewrite = true;
         notification.ledTx              = data["notification"]["ledTx"] | false;
