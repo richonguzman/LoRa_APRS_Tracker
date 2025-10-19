@@ -249,14 +249,27 @@ namespace WEB_Utils {
             Config.ptt.postDelay                    = getParamIntSafe("ptt.postDelay", Config.ptt.postDelay);
         }
 
-        Config.writeFile();
+        bool saveSuccess = Config.writeFile();
 
-        AsyncWebServerResponse *response        = request->beginResponse(302, "text/html", "");
-        response->addHeader("Location", "/");
-        request->send(response);
-        displayToggle(false);
-        delay(500);
-        ESP.restart();
+        if (saveSuccess) {
+            Serial.println("Configuration saved successfully");
+            AsyncWebServerResponse *response = request->beginResponse(302, "text/html", "");
+            response->addHeader("Location", "/?success=1");
+            request->send(response);
+            
+            displayToggle(false);
+            delay(500);
+            ESP.restart();
+        } else {
+            Serial.println("Error saving configuration!");
+            String errorPage = "<!DOCTYPE html><html><head><title>Error</title></head><body>";
+            errorPage += "<h1>Configuration Error:</h1>";
+            errorPage += "<p>Couldn't save new configuration. Please try again.</p>";
+            errorPage += "<a href='/'>Back</a></body></html>";
+            
+            AsyncWebServerResponse *response = request->beginResponse(500, "text/html", errorPage);
+            request->send(response);
+        }
     }
 
     void handleAction(AsyncWebServerRequest *request) {
