@@ -290,7 +290,7 @@ void Configuration::init() {
         bluetooth.useKISS           = true;
     #endif
 
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < 4; j++) {
         LoraType loraType;
         switch (j) {
             case 0:
@@ -305,6 +305,11 @@ void Configuration::init() {
                 break;
             case 2:
                 loraType.frequency           = 439912500;
+                loraType.spreadingFactor     = 12;
+                loraType.codingRate4         = 5;
+                break;
+            case 3:
+                loraType.frequency           = 915000000;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
                 break;
