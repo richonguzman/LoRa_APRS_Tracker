@@ -166,6 +166,24 @@ function loadSettings(settings) {
     document.getElementById("disableGPS").checked                       = settings.other.disableGPS;
     document.getElementById("email").value                              = settings.other.email;
 
+    // DISPLAY
+    document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
+    document.getElementById("display.turn180").checked                  = settings.display.turn180;
+    document.getElementById("display.timeout").value                    = settings.display.timeout;
+    document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
+    DisplayEcoModeCheckbox.checked  = settings.display.ecoMode;
+    DisplayTimeout.disabled         = !DisplayEcoModeCheckbox.checked;
+
+    // BLUETOOTH
+    document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
+    document.getElementById("bluetooth.deviceName").value               = settings.bluetooth.deviceName;
+    document.getElementById("bluetooth.useBLE").checked                 = settings.bluetooth.useBLE;
+    document.getElementById("bluetooth.useKISS").checked                = settings.bluetooth.useKISS;
+    BluetoothActiveCheckbox.checked = settings.bluetooth.active;
+    BluetoothDeviceName.disabled    = !BluetoothActiveCheckbox.checked;
+    BluetoothUseBle.disabled        = !BluetoothActiveCheckbox.checked;
+    BluetoothUseKiss.disabled       = !BluetoothActiveCheckbox.checked;
+
     // LORA
     const loraContainer = document.getElementById("lora-settings");
     loraContainer.innerHTML = ""; // Clear previous content
@@ -224,15 +242,6 @@ function loadSettings(settings) {
         loraContainer.appendChild(loraElement);
     });
 
-    // DISPLAY
-    document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
-    document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
-    document.getElementById("display.timeout").value                    = settings.display.timeout;
-    document.getElementById("display.turn180").checked                  = settings.display.turn180;
-    /*if (settings.display.alwaysOn) {
-        timeoutInput.disabled = true;
-    }*/
-
     // BATTERY
     document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
     document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
@@ -240,14 +249,20 @@ function loadSettings(settings) {
     document.getElementById("battery.monitorVoltage").checked           = settings.battery.monitorVoltage;
     document.getElementById("battery.sleepVoltage").value               = settings.battery.sleepVoltage.toFixed(1);
 
-    // WINLINK
-    document.getElementById("winlink.password").value                   = settings.winlink.password;
-
     // TELEMETRY (WX Sensor)
     document.getElementById("telemetry.active").checked                  = settings.telemetry.active;
     document.getElementById("telemetry.sendTelemetry").checked           = settings.telemetry.sendTelemetry;
     document.getElementById("telemetry.temperatureCorrection").value     = settings.telemetry.temperatureCorrection.toFixed(1);
-    
+    TelemetryCheckbox.checked           = settings.telemetry.active;
+    TelemetrySendCheckbox.disabled      = !TelemetryCheckbox.checked;
+    TelemetryTempCorrection.disabled    = !TelemetryCheckbox.checked;
+
+    // WINLINK
+    document.getElementById("winlink.password").value                   = settings.winlink.password;
+
+    // WiFi AP
+    document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
+
     // NOTIFICATION
     document.getElementById("notification.ledTx").checked               = settings.notification.ledTx;
     document.getElementById("notification.ledTxPin").value              = settings.notification.ledTxPin;
@@ -265,23 +280,18 @@ function loadSettings(settings) {
     document.getElementById("notification.lowBatteryBeep").checked      = settings.notification.lowBatteryBeep;
     document.getElementById("notification.shutDownBeep").checked        = settings.notification.shutDownBeep;
 
-    // BLUETOOTH
-    document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
-    document.getElementById("bluetooth.deviceName").value               = settings.bluetooth.deviceName;
-    document.getElementById("bluetooth.useBLE").checked                 = settings.bluetooth.useBLE;
-    document.getElementById("bluetooth.useKISS").checked                = settings.bluetooth.useKISS;
-    
     //  PTT Trigger
     document.getElementById("ptt.active").checked                       = settings.pttTrigger.active;
-    document.getElementById("ptt.io_pin").value                         = settings.pttTrigger.io_pin;
+    document.getElementById("ptt.reverse").checked                      = settings.pttTrigger.reverse;
     document.getElementById("ptt.preDelay").value                       = settings.pttTrigger.preDelay;
     document.getElementById("ptt.postDelay").value                      = settings.pttTrigger.postDelay;
-    document.getElementById("ptt.reverse").checked                      = settings.pttTrigger.reverse;
+    document.getElementById("ptt.io_pin").value                         = settings.pttTrigger.io_pin;
+    pttTriggerCheckbox.checked  = settings.pttTrigger.active;
+    pttReverseCheckbox.disabled = !pttTriggerCheckbox.checked;
+    pttPreDelayInput.disabled   = !pttTriggerCheckbox.checked;
+    pttPostDelayInput.disabled  = !pttTriggerCheckbox.checked;
+    pttPinInput.disabled        = !pttTriggerCheckbox.checked;
 
-    // WiFi AP
-    document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
-
-    
     //refreshSpeedStandard();
     toggleFields();
 }
@@ -306,24 +316,6 @@ document.getElementById('reboot').addEventListener('click', function (e) {
 
 function toggleFields() {
     /*
-    // Display - timeout box enable
-    const ecoModeCheckbox       = document.querySelector('input[name="display.ecoMode"]');
-    const timeoutInput          = document.querySelector('input[name="display.timeout"]');
-    ecoModeCheckbox.addEventListener("change", function () {
-        timeoutInput.disabled           = !this.checked;
-    });
-
-    // pttTrigger boxes enable
-    const pttTriggerCheckbox    = document.querySelector('input[name="ptt.active"]');
-    const pttPinInput           = document.querySelector('input[name="ptt.io_pin"]');
-    const pttPreDelayInput      = document.querySelector('input[name="ptt.preDelay"]');
-    const pttPostDelayInput     = document.querySelector('input[name="ptt.postDelay"]');
-    pttTriggerCheckbox.addEventListener("change", function () {
-        pttPinInput.disabled            = !this.checked;
-        pttPreDelayInput.disabled       = !this.checked;
-        pttPostDelayInput.disabled      = !this.checked;
-    });
-
     // notifications boxes enable
     const ledTxCheckbox         = document.querySelector('input[name="notification.ledTx"]');
     const letTxPinInput         = document.querySelector('input[name="notification.ledTxPin"]');
@@ -353,24 +345,6 @@ function toggleFields() {
 }
 
 /*
-// Display - timeout box enable
-const ecoModeCheckbox               = document.querySelector('input[name="display.ecoMode"]');
-const timeoutInput                  = document.querySelector('input[name="display.timeout"]');
-ecoModeCheckbox.addEventListener("change", function () {
-    timeoutInput.disabled           = !this.checked;
-});
-
-// pttTrigger boxes enable
-const pttTriggerCheckbox            = document.querySelector('input[name="ptt.active"]');
-const pttPinInput                   = document.querySelector('input[name="ptt.io_pin"]');
-const pttPreDelayInput              = document.querySelector('input[name="ptt.preDelay"]');
-const pttPostDelayInput             = document.querySelector('input[name="ptt.postDelay"]');
-pttTriggerCheckbox.addEventListener("change", function () {
-    pttPinInput.disabled            = !this.checked;
-    pttPreDelayInput.disabled       = !this.checked;
-    pttPostDelayInput.disabled      = !this.checked;
-});
-
 // notifications boxes enable
 const ledTxCheckbox                 = document.querySelector('input[name="notification.ledTx"]');
 const letTxPinInput                 = document.querySelector('input[name="notification.ledTxPin"]');
@@ -398,6 +372,56 @@ buzzerActiveCheckbox.addEventListener("change", function () {
     buzzerPinVccInput.disabled      = !this.checked;
 });
 */
+
+
+
+
+// Display Switches
+const DisplayEcoModeCheckbox    = document.querySelector('input[name="display.ecoMode"]');
+const DisplayTimeout            = document.querySelector('input[name="display.timeout"]');
+DisplayEcoModeCheckbox.addEventListener("change", function () {
+    DisplayTimeout.disabled     = !this.checked;
+});
+
+// Bluetooth Switches
+const BluetoothActiveCheckbox   = document.querySelector('input[name="bluetooth.active"]');
+const BluetoothDeviceName       = document.querySelector('input[name="bluetooth.deviceName"]');
+const BluetoothUseBle           = document.querySelector('input[name="bluetooth.useBLE"]');
+const BluetoothUseKiss          = document.querySelector('input[name="bluetooth.useKISS"]');
+BluetoothActiveCheckbox.addEventListener("change", function () {
+    BluetoothDeviceName.disabled    = !this.checked;
+    BluetoothUseBle.disabled        = !this.checked;
+    BluetoothUseKiss.disabled       = !this.checked;
+});
+
+// Battery Switches
+
+// Telemetry Switches
+const TelemetryCheckbox         = document.querySelector('input[name="telemetry.active"]');
+const TelemetrySendCheckbox     = document.querySelector('input[name="telemetry.sendTelemetry"]');
+const TelemetryTempCorrection   = document.querySelector('input[name="telemetry.temperatureCorrection"]');
+TelemetryCheckbox.addEventListener("change", function () {
+    TelemetrySendCheckbox.disabled      = !this.checked;
+    TelemetryTempCorrection.disabled    = !this.checked;
+});
+
+// Notifications Switches
+
+// PTT Switches
+const pttTriggerCheckbox    = document.querySelector('input[name="ptt.active"]');
+const pttReverseCheckbox    = document.querySelector('input[name="ptt.reverse"]');
+const pttPreDelayInput      = document.querySelector('input[name="ptt.preDelay"]');
+const pttPostDelayInput     = document.querySelector('input[name="ptt.postDelay"]');
+const pttPinInput           = document.querySelector('input[name="ptt.io_pin"]');
+pttTriggerCheckbox.addEventListener("change", function () {
+    pttReverseCheckbox.disabled = !this.checked;
+    pttPreDelayInput.disabled   = !this.checked;
+    pttPostDelayInput.disabled  = !this.checked;
+    pttPinInput.disabled        = !this.checked;
+});
+
+
+
 
 const form = document.querySelector("form");
 
@@ -446,58 +470,3 @@ form.addEventListener("submit", async (event) => {
 
 
 fetchSettings();
-
-function loadReceivedPackets(packets) {
-    if (packets) {
-        document.querySelector('#received-packets tbody').innerHTML = '';
-
-        const container = document.querySelector("#received-packets tbody");
-
-        container.innerHTML = '';
-
-        const date = new Date();
-
-        packets.forEach((packet) => {
-            const element = document.createElement("tr");
-
-            date.setTime(packet.millis);
-
-            const p = date.toUTCString().split(' ')
-        
-            element.innerHTML = `
-                        <td>${p[p.length-2]}</td>
-                        <td>${packet.packet}</td>
-                        <td>${packet.RSSI}</td>
-                        <td>${packet.SNR}</td>
-                    `;
-
-            container.appendChild(element);
-        })
-    }
-
-    setTimeout(fetchReceivedPackets, 15000);
-}
-
-function fetchReceivedPackets() {
-    fetch("/received-packets.json")
-    .then((response) => response.json())
-    .then((packets) => {
-        loadReceivedPackets(packets);
-    })
-    .catch((err) => {
-        console.error(err);
-
-        console.error(`Failed to load received packets`);
-    });
-}
-
-document.querySelector('a[href="/received-packets"]').addEventListener('click', function (e) {
-    e.preventDefault();
-
-    document.getElementById('received-packets').classList.remove('d-none');
-    document.getElementById('configuration').classList.add('d-none');
-    
-    document.querySelector('button[type=submit]').remove();
-
-    fetchReceivedPackets();
-})

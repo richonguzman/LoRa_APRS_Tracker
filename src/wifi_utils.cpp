@@ -38,6 +38,9 @@ namespace WIFI_Utils {
     }
 
     void checkIfWiFiAP() {
+        //
+        Config.wifiAP.active = true;
+        //
         if (Config.wifiAP.active || Config.beacons[0].callsign == "NOCALL-7"){
             displayShow(" LoRa APRS", "    ** WEB-CONF **","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","");
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");

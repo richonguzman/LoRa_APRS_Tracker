@@ -50,10 +50,27 @@ void Configuration::writeFile() {
         data["beacons"][i]["profileLabel"]          = beacons[i].profileLabel;
     }
 
-    data["display"]["showSymbol"]               = display.showSymbol;
     data["display"]["ecoMode"]                  = display.ecoMode;
     data["display"]["timeout"]                  = display.timeout;
     data["display"]["turn180"]                  = display.turn180;
+    data["display"]["showSymbol"]               = display.showSymbol;
+
+    data["bluetooth"]["active"]                 = bluetooth.active;
+    data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
+    #ifdef HAS_BT_CLASSIC
+        data["bluetooth"]["useBLE"]             = bluetooth.useBLE;
+    #else
+        data["bluetooth"]["useBLE"]             = true; // fixed as BLE
+    #endif
+    data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
+
+    for (int i = 0; i < loraTypes.size(); i++) {
+        data["lora"][i]["frequency"]                = loraTypes[i].frequency;
+        data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
+        data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
+        data["lora"][i]["codingRate4"]              = loraTypes[i].codingRate4;
+        data["lora"][i]["power"]                    = loraTypes[i].power;
+    }
 
     data["battery"]["sendVoltage"]              = battery.sendVoltage;
     data["battery"]["voltageAsTelemetry"]       = battery.voltageAsTelemetry;
@@ -61,11 +78,11 @@ void Configuration::writeFile() {
     data["battery"]["monitorVoltage"]           = battery.monitorVoltage;
     data["battery"]["sleepVoltage"]             = battery.sleepVoltage;
 
-    data["winlink"]["password"]                 = winlink.password;
-
     data["telemetry"]["active"]                 = telemetry.active;
     data["telemetry"]["sendTelemetry"]          = telemetry.sendTelemetry;
     data["telemetry"]["temperatureCorrection"]  = telemetry.temperatureCorrection;
+
+    data["winlink"]["password"]                 = winlink.password;
 
     data["notification"]["ledTx"]               = notification.ledTx;
     data["notification"]["ledTxPin"]            = notification.ledTxPin;
@@ -82,29 +99,12 @@ void Configuration::writeFile() {
     data["notification"]["stationBeep"]         = notification.stationBeep;
     data["notification"]["lowBatteryBeep"]      = notification.lowBatteryBeep;
     data["notification"]["shutDownBeep"]        = notification.shutDownBeep;
-    
-    for (int i = 0; i < loraTypes.size(); i++) {
-        data["lora"][i]["frequency"]                = loraTypes[i].frequency;
-        data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
-        data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
-        data["lora"][i]["codingRate4"]              = loraTypes[i].codingRate4;
-        data["lora"][i]["power"]                    = loraTypes[i].power;
-    }
 
     data["pttTrigger"]["active"]                = ptt.active;
-    data["pttTrigger"]["io_pin"]                = ptt.io_pin;
+    data["pttTrigger"]["reverse"]               = ptt.reverse;
     data["pttTrigger"]["preDelay"]              = ptt.preDelay;
     data["pttTrigger"]["postDelay"]             = ptt.postDelay;
-    data["pttTrigger"]["reverse"]               = ptt.reverse;
-
-    data["bluetooth"]["active"]                 = bluetooth.active;
-    data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
-    #ifdef HAS_BT_CLASSIC
-        data["bluetooth"]["useBLE"]             = bluetooth.useBLE;
-    #else
-        data["bluetooth"]["useBLE"]             = true; // fixed as BLE        
-    #endif
-    data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
+    data["pttTrigger"]["io_pin"]                = ptt.io_pin;
 
     data["other"]["simplifiedTrackerMode"]      = simplifiedTrackerMode;
     data["other"]["sendCommentAfterXBeacons"]   = sendCommentAfterXBeacons;
@@ -116,7 +116,6 @@ void Configuration::writeFile() {
     data["other"]["disableGPS"]                 = disableGPS;
     data["other"]["acceptOwnFrameFromTNC"]      = acceptOwnFrameFromTNC;
     data["other"]["email"]                      = email;
-
 
     serializeJson(data, configFile);
     configFile.close();
@@ -155,10 +154,32 @@ bool Configuration::readFile() {
             beacons.push_back(bcn);
         }
 
-        display.showSymbol              = data["display"]["showSymbol"] | true;
         display.ecoMode                 = data["display"]["ecoMode"] | false;
         display.timeout                 = data["display"]["timeout"] | 4;
         display.turn180                 = data["display"]["turn180"] | false;
+        display.showSymbol              = data["display"]["showSymbol"] | true;
+
+        bluetooth.active                = data["bluetooth"]["active"] | false;
+        bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
+        #ifdef HAS_BT_CLASSIC
+            bluetooth.useBLE            = data["bluetooth"]["useBLE"] | false;
+            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | false;
+        #else
+            bluetooth.useBLE            = true;    // fixed as BLE
+            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | true;    // true=KISS,  false=TNC2
+        #endif
+
+        JsonArray LoraTypesArray = data["lora"];
+        for (int j = 0; j < LoraTypesArray.size(); j++) {
+            LoraType loraType;
+
+            loraType.frequency          = LoraTypesArray[j]["frequency"] | 433775000;
+            loraType.spreadingFactor    = LoraTypesArray[j]["spreadingFactor"] | 12;
+            loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
+            loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
+            loraType.power              = LoraTypesArray[j]["power"] | 20;
+            loraTypes.push_back(loraType);
+        }
 
         battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
         battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
@@ -166,12 +187,12 @@ bool Configuration::readFile() {
         battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
         battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
 
-        winlink.password                = data["winlink"]["password"] | "NOPASS";
-
         telemetry.active                = data["telemetry"]["active"] | false;
         telemetry.sendTelemetry         = data["telemetry"]["sendTelemetry"] | false;
         telemetry.temperatureCorrection = data["telemetry"]["temperatureCorrection"] | 0.0;
-        
+
+        winlink.password                = data["winlink"]["password"] | "NOPASS";
+
         notification.ledTx              = data["notification"]["ledTx"] | false;
         notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
         notification.ledMessage         = data["notification"]["ledMessage"] | false;
@@ -188,33 +209,11 @@ bool Configuration::readFile() {
         notification.lowBatteryBeep     = data["notification"]["lowBatteryBeep"] | false;
         notification.shutDownBeep       = data["notification"]["shutDownBeep"] | false;
 
-        JsonArray LoraTypesArray = data["lora"];
-        for (int j = 0; j < LoraTypesArray.size(); j++) {
-            LoraType loraType;
-
-            loraType.frequency          = LoraTypesArray[j]["frequency"] | 433775000;
-            loraType.spreadingFactor    = LoraTypesArray[j]["spreadingFactor"] | 12;
-            loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
-            loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
-            loraType.power              = LoraTypesArray[j]["power"] | 20;
-            loraTypes.push_back(loraType);
-        }
-
         ptt.active                      = data["pttTrigger"]["active"] | false;
-        ptt.io_pin                      = data["pttTrigger"]["io_pin"] | 4;
+        ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
         ptt.preDelay                    = data["pttTrigger"]["preDelay"] | 0;
         ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
-        ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
-
-        bluetooth.active                = data["bluetooth"]["active"] | false;
-        bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
-        #ifdef HAS_BT_CLASSIC
-            bluetooth.useBLE            = data["bluetooth"]["useBLE"] | false;
-            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | false;
-        #else
-            bluetooth.useBLE            = true;    // fixed as BLE
-            bluetooth.useKISS           = data["bluetooth"]["useKISS"] | true;    // true=KISS,  false=TNC2            
-        #endif
+        ptt.io_pin                      = data["pttTrigger"]["io_pin"] | 4;
 
         simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
@@ -275,39 +274,21 @@ void Configuration::init() {
         beacon.profileLabel         = "";
         beacons.push_back(beacon);
     }
-
-    display.showSymbol              = true;
+    
     display.ecoMode                 = false;
     display.timeout                 = 4;
     display.turn180                 = false;
+    display.showSymbol              = true;
 
-    battery.sendVoltage             = false;
-    battery.voltageAsTelemetry      = false;
-    battery.sendVoltageAlways       = false;
-    battery.monitorVoltage          = false;
-    battery.sleepVoltage            = 2.9;
-
-    winlink.password                = "NOPASS";
-
-    telemetry.active                 = false;
-    telemetry.sendTelemetry          = false;
-    telemetry.temperatureCorrection  = 0.0;
-
-    notification.ledTx              = false;
-    notification.ledTxPin           = 13;
-    notification.ledMessage         = false;
-    notification.ledMessagePin      = 2;
-    notification.ledFlashlight      = false;
-    notification.ledFlashlightPin   = 14;
-    notification.buzzerActive       = false;
-    notification.buzzerPinTone      = 33;
-    notification.buzzerPinVcc       = 25;
-    notification.bootUpBeep         = false;
-    notification.txBeep             = false;
-    notification.messageRxBeep      = false;
-    notification.stationBeep        = false;
-    notification.lowBatteryBeep     = false;
-    notification.shutDownBeep       = false;
+    bluetooth.active                = false;
+    bluetooth.deviceName            = "LoRaTracker";
+    #ifdef HAS_BT_CLASSIC
+        bluetooth.useBLE            = false;
+        bluetooth.useKISS           = false;
+    #else
+        bluetooth.useBLE            = true;    // fixed as BLE
+        bluetooth.useKISS           = true;
+    #endif
 
     for (int j = 0; j < 3; j++) {
         LoraType loraType;
@@ -333,22 +314,40 @@ void Configuration::init() {
         loraTypes.push_back(loraType);
     }
 
+    battery.sendVoltage             = false;
+    battery.voltageAsTelemetry      = false;
+    battery.sendVoltageAlways       = false;
+    battery.monitorVoltage          = false;
+    battery.sleepVoltage            = 2.9;
+
+    telemetry.active                 = false;
+    telemetry.sendTelemetry          = false;
+    telemetry.temperatureCorrection  = 0.0;
+
+    winlink.password                = "NOPASS";
+
+    notification.ledTx              = false;
+    notification.ledTxPin           = 13;
+    notification.ledMessage         = false;
+    notification.ledMessagePin      = 2;
+    notification.ledFlashlight      = false;
+    notification.ledFlashlightPin   = 14;
+    notification.buzzerActive       = false;
+    notification.buzzerPinTone      = 33;
+    notification.buzzerPinVcc       = 25;
+    notification.bootUpBeep         = false;
+    notification.txBeep             = false;
+    notification.messageRxBeep      = false;
+    notification.stationBeep        = false;
+    notification.lowBatteryBeep     = false;
+    notification.shutDownBeep       = false;
+
     ptt.active                      = false;
-    ptt.io_pin                      = 4;
+    ptt.reverse                     = false;
     ptt.preDelay                    = 0;
     ptt.postDelay                   = 0;
-    ptt.reverse                     = false;
+    ptt.io_pin                      = 4;
 
-    bluetooth.active                = false;
-    bluetooth.deviceName            = "LoRaTracker";
-    #ifdef HAS_BT_CLASSIC
-        bluetooth.useBLE            = false;
-        bluetooth.useKISS           = false;
-    #else
-        bluetooth.useBLE            = true;    // fixed as BLE
-        bluetooth.useKISS           = true;
-    #endif
-    
     simplifiedTrackerMode           = false;
     sendCommentAfterXBeacons        = 10;
     path                            = "WIDE1-1";
