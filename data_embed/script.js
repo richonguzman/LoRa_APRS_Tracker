@@ -246,14 +246,14 @@ function loadSettings(settings) {
     document.getElementById("battery.sendVoltage").checked              = settings.battery.sendVoltage;
     document.getElementById("battery.voltageAsTelemetry").checked       = settings.battery.voltageAsTelemetry;
     document.getElementById("battery.sendVoltageAlways").checked        = settings.battery.sendVoltageAlways;
+    BatterySendVoltageCheckbox.checked  = settings.battery.sendVoltage;
+    BatteryVoltageAsTelemetry.disabled  = !BatterySendVoltageCheckbox.checked;
+    BatteryForceSendVoltage.disabled    = !BatterySendVoltageCheckbox.checked;
+
     document.getElementById("battery.monitorVoltage").checked           = settings.battery.monitorVoltage;
     document.getElementById("battery.sleepVoltage").value               = settings.battery.sleepVoltage.toFixed(1);
-
-
-
-
-
-    
+    BatteryMonitorVoltageCheckbox.checked   = settings.battery.monitorVoltage;
+    BatteryMonitorSleepVoltage.disabled     = !BatteryMonitorVoltageCheckbox.checked;
 
     // TELEMETRY (WX Sensor)
     document.getElementById("telemetry.active").checked                  = settings.telemetry.active;
@@ -354,6 +354,19 @@ BluetoothActiveCheckbox.addEventListener("change", function () {
 });
 
 // Battery Switches
+const BatterySendVoltageCheckbox    = document.querySelector('input[name="battery.sendVoltage"]');
+const BatteryVoltageAsTelemetry     = document.querySelector('input[name="battery.voltageAsTelemetry"]');
+const BatteryForceSendVoltage       = document.querySelector('input[name="battery.sendVoltageAlways"]');
+BatterySendVoltageCheckbox.addEventListener("change", function () {
+    BatteryVoltageAsTelemetry.disabled  = !this.checked;
+    BatteryForceSendVoltage.disabled    = !this.checked;
+});
+
+const BatteryMonitorVoltageCheckbox = document.querySelector('input[name="battery.monitorVoltage"]');
+const BatteryMonitorSleepVoltage    = document.querySelector('input[name="battery.sleepVoltage"]');
+BatteryMonitorVoltageCheckbox.addEventListener("change", function () {
+    BatteryMonitorSleepVoltage.disabled = !this.checked;
+});
 
 // Telemetry Switches
 const TelemetryCheckbox         = document.querySelector('input[name="telemetry.active"]');

@@ -125,6 +125,22 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <label
+                                            for="path"
+                                            class="form-label"
+                                            >Path</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="text"
+                                                name="path"
+                                                id="path"
+                                                class="form-control"
+                                                value="WIDE1-1"                                                
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
                                             for="sendCommentAfterXBeacons"
                                             class="form-label"
                                             >Send Comment After X Beacons</label
@@ -143,22 +159,6 @@
                                             <span class="input-group-text"
                                                 >GPS Beacons</span
                                             >
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label
-                                            for="path"
-                                            class="form-label"
-                                            >Path</label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="text"
-                                                name="path"
-                                                id="path"
-                                                class="form-control"
-                                                value="WIDE1-1"                                                
-                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -209,6 +209,46 @@
                                     </div>
                                 </div>
                                 <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="email"
+                                            class="form-label"
+                                            >Email<small> (to send GPS position)</small> </label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="text"
+                                                name="email"
+                                                id="email"
+                                                class="form-control"
+                                                value=""
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="rememberStationTime"
+                                            class="form-label"
+                                            >Remember Station Time</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="rememberStationTime"
+                                                id="rememberStationTime"
+                                                class="form-control"
+                                                placeholder="30"
+                                                value="30"
+                                                step="5"
+                                                min="15"
+                                            />
+                                            <span class="input-group-text"
+                                                >minutes</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
@@ -239,24 +279,6 @@
                                             >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-12">
-                                        <label
-                                            for="email"
-                                            class="form-label"
-                                            >Email<small> (to send GPS position)</small> </label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="text"
-                                                name="email"
-                                                id="email"
-                                                class="form-control"
-                                                value=""
-                                            />
-                                        </div>
-                                    </div>
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
@@ -268,34 +290,10 @@
                                             <label
                                                 for="simplifiedTrackerMode"
                                                 class="form-label"
-                                                >Simplified Tracker Mode<small> (This disables Buttons, Menu, Msg and only sends GPS Beacon)</small></label
+                                                >Simplified Tracker Mode<small> (Disables Buttons + Menu and only sends GPS Beacon)</small></label
                                             >
                                         </div>  
-                                    </div>
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-6">
-                                        <label
-                                            for="rememberStationTime"
-                                            class="form-label"
-                                            >Remember Station Time</label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="number"
-                                                name="rememberStationTime"
-                                                id="rememberStationTime"
-                                                class="form-control"
-                                                placeholder="30"
-                                                value="30"
-                                                step="5"
-                                                min="15"
-                                            />
-                                            <span class="input-group-text"
-                                                >minutes</span
-                                            >
-                                        </div>
-                                    </div>
+                                    </div>                                    
                                 </div>
                             </div>
                         </div>
@@ -539,7 +537,7 @@
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -550,11 +548,11 @@
                                             <label
                                                 for="battery.sendVoltage"
                                                 class="form-label"
-                                                >Send Battery Voltage in GPS Beacon</label
+                                                >Send Voltage in GPS Beacon</label
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -565,10 +563,12 @@
                                             <label
                                                 for="battery.voltageAsTelemetry"
                                                 class="form-label"
-                                                >Send Voltage as Encoded Telemetry</label
+                                                >Send as Encoded Telemetry</label
                                             >
                                         </div>
                                     </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
@@ -584,7 +584,9 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12 mt-3">
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -603,7 +605,7 @@
                                         <label
                                             for="battery.sleepVoltage"
                                             class="form-label"
-                                            >Voltage readings to power-off/sleep to protect Battery</label
+                                            >Voltage power-off/sleep</label
                                         >                                    
                                         <div class="input-group">
                                             <input
