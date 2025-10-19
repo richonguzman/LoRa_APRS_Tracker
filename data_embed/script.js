@@ -249,6 +249,12 @@ function loadSettings(settings) {
     document.getElementById("battery.monitorVoltage").checked           = settings.battery.monitorVoltage;
     document.getElementById("battery.sleepVoltage").value               = settings.battery.sleepVoltage.toFixed(1);
 
+
+
+
+
+    
+
     // TELEMETRY (WX Sensor)
     document.getElementById("telemetry.active").checked                  = settings.telemetry.active;
     document.getElementById("telemetry.sendTelemetry").checked           = settings.telemetry.sendTelemetry;
@@ -266,10 +272,14 @@ function loadSettings(settings) {
     // NOTIFICATION
     document.getElementById("notification.ledTx").checked               = settings.notification.ledTx;
     document.getElementById("notification.ledTxPin").value              = settings.notification.ledTxPin;
+    NotificationLedTxCheckbox.checked   = settings.notification.ledTx;
+    NotificationLedTxPin.disabled       = !NotificationLedTxCheckbox.checked;
+
     document.getElementById("notification.ledMessage").checked          = settings.notification.ledMessage;
     document.getElementById("notification.ledMessagePin").value         = settings.notification.ledMessagePin;
-    document.getElementById("notification.ledFlashlight").checked       = settings.notification.ledFlashlight;
-    document.getElementById("notification.ledFlashlightPin").value      = settings.notification.ledFlashlightPin;
+    NotificationLedMessageCheckbox.checked  = settings.notification.ledMessage;
+    NotificationLedMessagePin.disabled      = !NotificationLedMessageCheckbox.checked;
+    
     document.getElementById("notification.buzzerActive").checked        = settings.notification.buzzerActive;
     document.getElementById("notification.buzzerPinTone").value         = settings.notification.buzzerPinTone;
     document.getElementById("notification.buzzerPinVcc").value          = settings.notification.buzzerPinVcc;
@@ -279,7 +289,21 @@ function loadSettings(settings) {
     document.getElementById("notification.stationBeep").checked         = settings.notification.stationBeep;
     document.getElementById("notification.lowBatteryBeep").checked      = settings.notification.lowBatteryBeep;
     document.getElementById("notification.shutDownBeep").checked        = settings.notification.shutDownBeep;
+    NotificationBuzzerCheckbox.checked          = settings.notification.buzzerActive;
+    NotificationBuzzerTonePin.disabled          = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerVccPin.disabled           = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerBootUpBeep.disabled       = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerTxBeep.disabled           = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerMessageBeep.disabled      = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerStationBeep.disabled      = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerLowBatteryBeep.disabled   = !NotificationBuzzerCheckbox.checked;
+    NotificationBuzzerShutDownBeep.disabled     = !NotificationBuzzerCheckbox.checked;
 
+    document.getElementById("notification.ledFlashlight").checked       = settings.notification.ledFlashlight;
+    document.getElementById("notification.ledFlashlightPin").value      = settings.notification.ledFlashlightPin;
+    NotificationLedFlashlightCheckbox.checked   = settings.notification.ledFlashlight;
+    NotificationLedFlashlightPin.disabled       = !NotificationLedFlashlightCheckbox.checked;
+    
     //  PTT Trigger
     document.getElementById("ptt.active").checked                       = settings.pttTrigger.active;
     document.getElementById("ptt.reverse").checked                      = settings.pttTrigger.reverse;
@@ -292,8 +316,6 @@ function loadSettings(settings) {
     pttPostDelayInput.disabled  = !pttTriggerCheckbox.checked;
     pttPinInput.disabled        = !pttTriggerCheckbox.checked;
 
-    //refreshSpeedStandard();
-    toggleFields();
 }
 
 function showToast(message) {
@@ -311,69 +333,6 @@ document.getElementById('reboot').addEventListener('click', function (e) {
 
     showToast("Your device will be rebooted in a while");
 });
-
-//const bmeCheckbox = document.querySelector("input[name='bme.active']");
-
-function toggleFields() {
-    /*
-    // notifications boxes enable
-    const ledTxCheckbox         = document.querySelector('input[name="notification.ledTx"]');
-    const letTxPinInput         = document.querySelector('input[name="notification.ledTxPin"]');
-    ledTxCheckbox.addEventListener("change", function () {
-        letTxPinInput.disabled          = !this.checked;
-    });
-
-    const ledMessageCheckbox    = document.querySelector('input[name="notification.ledMessage"]');
-    const ledMessagePinInput    = document.querySelector('input[name="notification.ledMessagePin"]');
-    ledMessageCheckbox.addEventListener("change", function () {
-        ledMessagePinInput.disabled     = !this.checked;
-    });
-
-    const ledFlashlightCheckbox = document.querySelector('input[name="notification.ledFlashlight"]');
-    const ledFlashlightPinInput = document.querySelector('input[name="notification.ledFlashlightPin"]');
-    ledFlashlightCheckbox.addEventListener("change", function () {
-        ledFlashlightPinInput.disabled  = !this.checked;
-    });
-
-    const buzzerActiveCheckbox  = document.querySelector('input[name="notification.buzzerActive"]');
-    const buzzerPinToneInput    = document.querySelector('input[name="notification.buzzerPinTone"]');
-    const buzzerPinVccInput     = document.querySelector('input[name="notification.buzzerPinVcc"]');
-    buzzerActiveCheckbox.addEventListener("change", function () {
-        buzzerPinToneInput.disabled     = !this.checked;
-        buzzerPinVccInput.disabled      = !this.checked;
-    });*/
-}
-
-/*
-// notifications boxes enable
-const ledTxCheckbox                 = document.querySelector('input[name="notification.ledTx"]');
-const letTxPinInput                 = document.querySelector('input[name="notification.ledTxPin"]');
-ledTxCheckbox.addEventListener("change", function () {
-    letTxPinInput.disabled          = !this.checked;
-});
-
-const ledMessageCheckbox            = document.querySelector('input[name="notification.ledMessage"]');
-const ledMessagePinInput            = document.querySelector('input[name="notification.ledMessagePin"]');
-ledMessageCheckbox.addEventListener("change", function () {
-    ledMessagePinInput.disabled     = !this.checked;
-});
-
-const ledFlashlightCheckbox         = document.querySelector('input[name="notification.ledFlashlight"]');
-const ledFlashlightPinInput         = document.querySelector('input[name="notification.ledFlashlightPin"]');
-ledFlashlightCheckbox.addEventListener("change", function () {
-    ledFlashlightPinInput.disabled  = !this.checked;
-});
-
-const buzzerActiveCheckbox          = document.querySelector('input[name="notification.buzzerActive"]');
-const buzzerPinToneInput            = document.querySelector('input[name="notification.buzzerPinTone"]');
-const buzzerPinVccInput             = document.querySelector('input[name="notification.buzzerPinVcc"]');
-buzzerActiveCheckbox.addEventListener("change", function () {
-    buzzerPinToneInput.disabled     = !this.checked;
-    buzzerPinVccInput.disabled      = !this.checked;
-});
-*/
-
-
 
 
 // Display Switches
@@ -406,6 +365,43 @@ TelemetryCheckbox.addEventListener("change", function () {
 });
 
 // Notifications Switches
+const NotificationLedTxCheckbox         = document.querySelector('input[name="notification.ledTx"]');
+const NotificationLedTxPin              = document.querySelector('input[name="notification.ledTxPin"]');
+NotificationLedTxCheckbox.addEventListener("change", function () {
+    NotificationLedTxPin.disabled       = !this.checked;
+});
+
+const NotificationLedMessageCheckbox    = document.querySelector('input[name="notification.ledMessage"]');
+const NotificationLedMessagePin         = document.querySelector('input[name="notification.ledMessagePin"]');
+NotificationLedMessageCheckbox.addEventListener("change", function () {
+    NotificationLedMessagePin.disabled  = !this.checked;
+});
+
+const NotificationBuzzerCheckbox        = document.querySelector('input[name="notification.buzzerActive"]');
+const NotificationBuzzerTonePin         = document.querySelector('input[name="notification.buzzerPinTone"]');
+const NotificationBuzzerVccPin          = document.querySelector('input[name="notification.buzzerPinVcc"]');
+const NotificationBuzzerBootUpBeep      = document.querySelector('input[name="notification.bootUpBeep"]');
+const NotificationBuzzerTxBeep          = document.querySelector('input[name="notification.txBeep"]');
+const NotificationBuzzerMessageBeep     = document.querySelector('input[name="notification.messageRxBeep"]');
+const NotificationBuzzerStationBeep     = document.querySelector('input[name="notification.stationBeep"]');
+const NotificationBuzzerLowBatteryBeep  = document.querySelector('input[name="notification.lowBatteryBeep"]');
+const NotificationBuzzerShutDownBeep    = document.querySelector('input[name="notification.shutDownBeep"]');
+NotificationBuzzerCheckbox.addEventListener("change", function () {
+    NotificationBuzzerTonePin.disabled          = !this.checked;
+    NotificationBuzzerVccPin.disabled           = !this.checked;
+    NotificationBuzzerBootUpBeep.disabled       = !this.checked;
+    NotificationBuzzerTxBeep.disabled           = !this.checked;
+    NotificationBuzzerMessageBeep.disabled      = !this.checked;
+    NotificationBuzzerStationBeep.disabled      = !this.checked;
+    NotificationBuzzerLowBatteryBeep.disabled   = !this.checked;
+    NotificationBuzzerShutDownBeep.disabled     = !this.checked;
+});
+
+const NotificationLedFlashlightCheckbox = document.querySelector('input[name="notification.ledFlashlight"]');
+const NotificationLedFlashlightPin      = document.querySelector('input[name="notification.ledFlashlightPin"]');
+NotificationLedFlashlightCheckbox.addEventListener("change", function () {
+    NotificationLedFlashlightPin.disabled  = !this.checked;
+});
 
 // PTT Switches
 const pttTriggerCheckbox    = document.querySelector('input[name="ptt.active"]');

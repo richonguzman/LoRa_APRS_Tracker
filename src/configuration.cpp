@@ -88,8 +88,6 @@ void Configuration::writeFile() {
     data["notification"]["ledTxPin"]            = notification.ledTxPin;
     data["notification"]["ledMessage"]          = notification.ledMessage;
     data["notification"]["ledMessagePin"]       = notification.ledMessagePin;
-    data["notification"]["ledFlashlight"]       = notification.ledFlashlight;
-    data["notification"]["ledFlashlightPin"]    = notification.ledFlashlightPin;
     data["notification"]["buzzerActive"]        = notification.buzzerActive;
     data["notification"]["buzzerPinTone"]       = notification.buzzerPinTone;
     data["notification"]["buzzerPinVcc"]        = notification.buzzerPinVcc;
@@ -99,6 +97,8 @@ void Configuration::writeFile() {
     data["notification"]["stationBeep"]         = notification.stationBeep;
     data["notification"]["lowBatteryBeep"]      = notification.lowBatteryBeep;
     data["notification"]["shutDownBeep"]        = notification.shutDownBeep;
+    data["notification"]["ledFlashlight"]       = notification.ledFlashlight;
+    data["notification"]["ledFlashlightPin"]    = notification.ledFlashlightPin;
 
     data["pttTrigger"]["active"]                = ptt.active;
     data["pttTrigger"]["reverse"]               = ptt.reverse;
@@ -197,8 +197,6 @@ bool Configuration::readFile() {
         notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
         notification.ledMessage         = data["notification"]["ledMessage"] | false;
         notification.ledMessagePin      = data["notification"]["ledMessagePin"] | 2;
-        notification.ledFlashlight      = data["notification"]["ledFlashlight"] | false;
-        notification.ledFlashlightPin   = data["notification"]["ledFlashlightPin"] | 14;
         notification.buzzerActive       = data["notification"]["buzzerActive"] | false;
         notification.buzzerPinTone      = data["notification"]["buzzerPinTone"] | 33;
         notification.buzzerPinVcc       = data["notification"]["buzzerPinVcc"] | 25;
@@ -208,6 +206,8 @@ bool Configuration::readFile() {
         notification.stationBeep        = data["notification"]["stationBeep"] | false;
         notification.lowBatteryBeep     = data["notification"]["lowBatteryBeep"] | false;
         notification.shutDownBeep       = data["notification"]["shutDownBeep"] | false;
+        notification.ledFlashlight      = data["notification"]["ledFlashlight"] | false;
+        notification.ledFlashlightPin   = data["notification"]["ledFlashlightPin"] | 14;
 
         ptt.active                      = data["pttTrigger"]["active"] | false;
         ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
@@ -330,8 +330,6 @@ void Configuration::init() {
     notification.ledTxPin           = 13;
     notification.ledMessage         = false;
     notification.ledMessagePin      = 2;
-    notification.ledFlashlight      = false;
-    notification.ledFlashlightPin   = 14;
     notification.buzzerActive       = false;
     notification.buzzerPinTone      = 33;
     notification.buzzerPinVcc       = 25;
@@ -341,6 +339,8 @@ void Configuration::init() {
     notification.stationBeep        = false;
     notification.lowBatteryBeep     = false;
     notification.shutDownBeep       = false;
+    notification.ledFlashlight      = false;
+    notification.ledFlashlightPin   = 14;
 
     ptt.active                      = false;
     ptt.reverse                     = false;
