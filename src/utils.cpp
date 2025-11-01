@@ -48,7 +48,7 @@ uint8_t     touchModuleAddress  = 0x00;
 
 
 namespace Utils {
-  
+
     static char locator[11];    // letterize and getMaidenheadLocator functions are Copyright (c) 2021 Mateusz Salwach - MIT License
 
     static char letterize(int x) {

@@ -216,7 +216,7 @@ namespace MENU_Utils {
                     #endif
                 } else {
                     displayShow("WRITE MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
-                }     
+                }
                 break;
             case 111:
                 if (messageText.length() <= 67) {
