@@ -298,7 +298,7 @@ namespace MSG_Utils {
                         break;
                     }
                 }
-            }               
+            }
             if (!alreadyInBuffer) {
                 outputMessagesBuffer.push_back(station + "," + textMessage + "{" + getAckRequestNumber());
             }
@@ -362,7 +362,7 @@ namespace MSG_Utils {
                         outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                         if (winlinkStatus > 0 && winlinkStatus < 5) {   // if not complete Winlink Challenge Process it will reset Login process
                             winlinkStatus = 0;
-                        }                     
+                        }
                     }
                     break;
             }
@@ -542,7 +542,7 @@ namespace MSG_Utils {
 
                                 if (lastReceivedPacket.payload.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
-                                }                            
+                                }
                             }
                         }
                     } else {
@@ -553,7 +553,7 @@ namespace MSG_Utils {
                             NOTIFICATION_Utils::stationHeardBeep();
                         }
                     }
-                }                
+                }
             }
         }   
     }

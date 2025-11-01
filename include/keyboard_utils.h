@@ -30,9 +30,9 @@ namespace KEYBOARD_Utils {
     
     void processPressedKey(char key);
     void read();
-    
+
     void setup();
-  
+
 }
 
 #endif

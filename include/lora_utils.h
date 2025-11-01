@@ -28,7 +28,6 @@ struct ReceivedLoRaPacket {
     int     freqError;
 };
 
-
 namespace LoRa_Utils {
 
     void setFlag();

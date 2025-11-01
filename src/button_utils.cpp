@@ -31,9 +31,8 @@
     extern uint32_t         displayTime;
     extern uint32_t         menuTime;
 
-
     namespace BUTTON_Utils {
-        
+
         OneButton userButton = OneButton(BUTTON_PIN, true, true);
 
         #ifdef RPC_Electronics_1W_LoRa_GPS

@@ -156,8 +156,8 @@ namespace KEYBOARD_Utils {
                 if (!gpsIsActive) SLEEP_Utils::gpsWakeUp();
             } else {
                 displayToggle(true);
-                displayTime = millis();   
-                displayState = true;  
+                displayTime = millis();
+                displayState = true;
             }
         }
         if (menuDisplay >= 1 && menuDisplay <= 6) {
@@ -611,7 +611,7 @@ namespace KEYBOARD_Utils {
                         menuDisplay = 13;
                     #else
                         menuDisplay /= 10;
-                    #endif                    
+                    #endif
                 }
                 messageCallsign = "";
                 messageText = "";

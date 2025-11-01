@@ -21,7 +21,6 @@
 
 #include <Arduino.h>
 
-
 // COLORS                   https://rgbcolorpicker.com/565
 
 uint16_t redColor           = 0xc8a2;

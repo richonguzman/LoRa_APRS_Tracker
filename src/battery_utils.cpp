@@ -152,6 +152,5 @@ namespace BATTERY_Utils {
             }
         #endif
     }
-    
 
 }

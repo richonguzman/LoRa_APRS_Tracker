@@ -198,9 +198,6 @@ namespace LoRa_Utils {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }
-        /*#ifdef HAS_TFT
-            cleanTFT();
-        #endif*/
     }
 
     void wakeRadio() {

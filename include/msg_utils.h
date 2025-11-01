@@ -46,7 +46,7 @@ namespace MSG_Utils {
     void    clean15SegBuffer();
     bool    check15SegBuffer(const String& station, const String& textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
-    
+
 }
 
 #endif

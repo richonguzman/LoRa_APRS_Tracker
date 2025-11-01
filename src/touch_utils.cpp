@@ -68,12 +68,12 @@
             {125, 205,   0,  28, "Menu",    0, enterMenuFromTouch},     // Button Menu  //drawButton(125, 210, 80, 28, "Menu", 0);
             {210, 305,   0,  28, "Exit",    2, exitFromTouch}           // Button Exit  //drawButton(210, 210, 95, 28, "Exit", 2);
         };
-        
+
 
         bool touchButtonPressed(int touchX, int touchY, int Xmin, int Xmax, int Ymin, int Ymax) {
             return (touchX >= (Xmin - 5) && touchX <= (Xmax + 5) && touchY >= (Ymin - 5) && touchY <= (Ymax + 5));
         }
-        
+
         void checkLiveButtons(uint16_t x, uint16_t y) {
             for (int i = 0; i < sizeof(touchButtons_0) / sizeof(touchButtons_0[0]); i++) {
                 if (touchButtonPressed(x, y, touchButtons_0[i].Xmin, touchButtons_0[i].Xmax, touchButtons_0[i].Ymin, touchButtons_0[i].Ymax)) {
@@ -115,7 +115,7 @@
                     }
                 }
             }
-        }  
+        }
 
     }
 

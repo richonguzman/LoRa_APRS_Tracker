@@ -25,7 +25,6 @@
 
 extern logging::Logger logger;
 
-
 bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
@@ -165,7 +164,7 @@ bool Configuration::readFile() {
             bcn.micE                    = BeaconsArray[i]["micE"] | "";
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
             bcn.profileLabel            = BeaconsArray[i]["profileLabel"] | "";
-            
+
             beacons.push_back(bcn);
         }
 
@@ -321,7 +320,7 @@ void Configuration::setDefaultValues() {
         beacon.profileLabel         = "";
         beacons.push_back(beacon);
     }
-    
+
     display.ecoMode                 = false;
     display.timeout                 = 4;
     display.turn180                 = false;

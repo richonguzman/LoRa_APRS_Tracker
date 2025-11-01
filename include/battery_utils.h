@@ -21,7 +21,6 @@
 
 #include <Arduino.h>
 
-
 namespace BATTERY_Utils {
 
     String  getPercentVoltageBattery(float voltage);

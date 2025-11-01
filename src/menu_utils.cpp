@@ -279,7 +279,7 @@ namespace MENU_Utils {
                                 displayShow("WRITE MSG>", "    - APRSThursday -", "MSG -> " + messageText, "<Back    (0" + String(messageText.length()) + ")   Enter>", "", "");
                             } else {
                                 displayShow("WRITE MSG>", "    - APRSThursday -", "MSG -> " + messageText, "<Back    (" + String(messageText.length()) + ")   Enter>", "", "");
-                            }                            
+                            }
                         #endif
                     #else
                         if (messageText.length() < 10) {
@@ -287,7 +287,7 @@ namespace MENU_Utils {
                         } else {
                             displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                         }
-                    #endif                    
+                    #endif
                 } else {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
@@ -297,7 +297,7 @@ namespace MENU_Utils {
                         #endif
                     #else
                         displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
-                    #endif                    
+                    #endif
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
@@ -325,7 +325,7 @@ namespace MENU_Utils {
                         } else {
                             displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                         }
-                    #endif                    
+                    #endif
                 } else {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
@@ -345,7 +345,7 @@ namespace MENU_Utils {
                 displayShow(" APRS Thu.", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
-//////////            
+//////////
             case 20:    // 2.Configuration ---> Callsign
                 displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
@@ -549,7 +549,7 @@ namespace MENU_Utils {
                     #else
                         displayShow("WLNK MAIL>", "", mailText, "", "", "           Next=Down");
                     #endif
-                    
+
                 }
                 break;
             case 50110:    // WINLINK: Downloaded Mails //
@@ -639,7 +639,7 @@ namespace MENU_Utils {
                     #endif
                 #else
                     displayShow("WLNK MAIL>", "--- Write Subject ---", "-> " + winlinkSubject, "", "", "<Back          Enter>");
-                #endif                
+                #endif
                 break;
             case 5083:    // WINLINK: WRITE MAIL: Body //
                 if (winlinkBody.length() <= 67) {
@@ -661,7 +661,7 @@ namespace MENU_Utils {
                         #endif
                     #else
                         displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
-                    #endif                    
+                    #endif
                 }
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //

@@ -25,7 +25,6 @@
 #include <Adafruit_BME680.h>
 #include <Arduino.h>
 
- 
 namespace WX_Utils {
 
     void    setup();

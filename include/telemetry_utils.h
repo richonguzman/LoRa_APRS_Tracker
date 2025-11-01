@@ -21,13 +21,12 @@
 
 #include <Arduino.h>
 
-
 namespace TELEMETRY_Utils {
 
     void    sendEquationsUnitsParameters();
     String  generateEncodedTelemetryBytes(float value, bool counterBytes, byte telemetryType);
     String  generateEncodedTelemetry();
-    
+
 }
 
 #endif

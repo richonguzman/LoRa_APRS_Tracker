@@ -32,7 +32,7 @@
 
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
-    
+
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
         #define smallSizeFont   1
@@ -135,7 +135,7 @@ extern logging::Logger logger;
         sprite.fillRect(xPos, yPos, wide, 2, lightColor);               // Línea superior
         sprite.fillRect(xPos, yPos, 2, height, lightColor);             // Línea izquierda
         sprite.fillRect(xPos + wide - 2, yPos, 2, height, darkColor);   // Línea derecha
-        
+
         sprite.setTextSize(2);
         sprite.setTextColor(TFT_WHITE, baseColor);
 
@@ -228,7 +228,7 @@ extern logging::Logger logger;
         }
     }
 
-#endif   
+#endif
 
 void displaySetup() {
     delay(500);

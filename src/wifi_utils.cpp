@@ -22,7 +22,6 @@
 #include "web_utils.h"
 #include "display.h"
 
-
 extern      Configuration       Config;
 extern      logging::Logger     logger;
 

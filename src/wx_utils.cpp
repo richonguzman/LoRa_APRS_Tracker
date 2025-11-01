@@ -19,7 +19,7 @@
 #include <TinyGPS++.h>
 #include <logger.h>
 #ifdef LIGHTTRACKER_PLUS_1_0
-#include "Adafruit_SHTC3.h"
+    #include "Adafruit_SHTC3.h"
 #endif
 #include "telemetry_utils.h"
 #include "configuration.h"
@@ -55,7 +55,7 @@ Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 #endif
 
 
-namespace WX_Utils {    
+namespace WX_Utils {
 
     void setup() {
         if (Config.telemetry.active) {
