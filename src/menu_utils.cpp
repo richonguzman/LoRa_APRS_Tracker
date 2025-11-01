@@ -679,7 +679,7 @@ namespace MENU_Utils {
                 displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", lastLine);
                 break;
             case 61:    // 6. Extras ---> Digipeater
-                displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS) + Comment", lastLine);
+                displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
                 displayShow(" EXTRAS>", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", lastLine);
@@ -745,6 +745,7 @@ namespace MENU_Utils {
                             case 0: thirdRowMainMenu += "Eu]"; break;
                             case 1: thirdRowMainMenu += "PL]"; break;
                             case 2: thirdRowMainMenu += "UK]"; break;
+                            case 3: thirdRowMainMenu += "US]"; break;
                         }
                     }
                     

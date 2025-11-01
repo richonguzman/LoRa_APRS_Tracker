@@ -138,11 +138,9 @@ namespace Utils {
     }
 
     void checkFlashlight() {
-        if (flashlight && !digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, HIGH);
-        } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, LOW);
-        }       
+        bool desiredState       = flashlight ? HIGH : LOW;
+        uint8_t flashlightPin   = Config.notification.ledFlashlightPin;
+        if (desiredState != digitalRead(flashlightPin)) digitalWrite(flashlightPin, desiredState);
     }
 
     void i2cScannerForPeripherals() {

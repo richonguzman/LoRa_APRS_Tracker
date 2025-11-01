@@ -539,7 +539,7 @@ namespace KEYBOARD_Utils {
             } else {
                 displayShow("  EXTRAS", "", "     Flashlight", "NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
-        } 
+        }
 
         else if (menuDisplay == 9000) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
