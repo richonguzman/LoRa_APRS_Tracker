@@ -19,9 +19,18 @@
 #ifndef CONFIGURATION_H_
 #define CONFIGURATION_H_
 
+// 首先包含平台兼容性头文件，确保所有宏冲突都得到解决
+#include "platform_compat.h"
+
 #include <Arduino.h>
 #include <vector>
+
+// 根据平台条件包含文件系统库
+#ifdef PLATFORM_ESP32
 #include <FS.h>
+#else
+// NRF52840平台不需要文件系统库
+#endif
 
 class WiFiAP {
 public:
@@ -147,6 +156,7 @@ public:
     Configuration();
     bool validateConfigFile(const String& currentBeaconCallsign);
     bool validateMicE(const String& currentBeaconMicE);
+    bool validateCallsign();
 
 private:
     bool readFile();

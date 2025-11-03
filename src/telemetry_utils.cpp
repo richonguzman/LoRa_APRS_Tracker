@@ -16,6 +16,10 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// 解决Arduino min/max宏与C++标准库的冲突
+#undef min
+#undef max
+
 #include <APRSPacketLib.h>
 #include <Arduino.h>
 #include <vector>
@@ -24,7 +28,9 @@
 #include "station_utils.h"
 #include "battery_utils.h"
 #include "lora_utils.h"
+#ifndef NRF52840_PLATFORM
 #include "wx_utils.h"
+#endif
 #include "display.h"
 
 

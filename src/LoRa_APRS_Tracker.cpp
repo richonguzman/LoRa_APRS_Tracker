@@ -37,31 +37,52 @@
              (donations : http://paypal.me/richonguzman)
 ____________________________________________________________________*/
 
-#include <BluetoothSerial.h>
+// 首先包含平台兼容性头文件，确保所有宏冲突都得到解决
+#include "platform_compat.h"
+
+// 其他包含将由platform_compat.h处理平台差异
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
-#include <logger.h>
-#include <WiFi.h>
+// 注意：logger.h和WiFi.h的包含现在由platform_compat.h处理
 #include "smartbeacon_utils.h"
+
+// 仅在非NRF52840平台上包含蓝牙相关头文件
+#ifndef PLATFORM_NRF52840
 #include "bluetooth_utils.h"
+#include "ble_utils.h"
+#endif
+
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
 #include "configuration.h"
 #include "battery_utils.h"
+
+// 仅在非NRF52840平台上包含station_utils.h（因为它依赖SPIFFS）
+#ifndef PLATFORM_NRF52840
 #include "station_utils.h"
+#endif
+
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "menu_utils.h"
 #include "lora_utils.h"
+
+// 仅在非NRF52840平台上包含WiFi相关头文件
+#ifndef PLATFORM_NRF52840
 #include "wifi_utils.h"
 #include "msg_utils.h"
-#include "gps_utils.h"
 #include "web_utils.h"
-#include "ble_utils.h"
+#endif
+
+// 仅在非NRF52840平台上包含wx_utils.h（因为它依赖Adafruit_BME280）
+#ifndef PLATFORM_NRF52840
 #include "wx_utils.h"
+#endif
+
+#include "gps_utils.h"
 #include "display.h"
 #include "utils.h"
 #ifdef HAS_TOUCHSCREEN
@@ -69,10 +90,22 @@ ____________________________________________________________________*/
 #endif
 
 Configuration                       Config;
+
+// 在NRF52840平台上使用Serial而不是HardwareSerial(1)
+#ifdef PLATFORM_NRF52840
+#define gpsSerial Serial
+#else
 HardwareSerial                      gpsSerial(1);
+#endif
+
 TinyGPSPlus                         gps;
+
+// 仅在非NRF52840平台上定义蓝牙相关变量和包含蓝牙库
+#ifndef PLATFORM_NRF52840
 #ifdef HAS_BT_CLASSIC
+    #include <BluetoothSerial.h>
     BluetoothSerial                 SerialBT;
+#endif
 #endif
 
 String      versionDate             = "2025-09-29";
@@ -95,8 +128,11 @@ uint32_t    refreshDisplayTime      = millis();
 
 bool        sendUpdate              = true;
 
+// 仅在非NRF52840平台上定义蓝牙相关变量
+#ifndef PLATFORM_NRF52840
 bool        bluetoothActive         = Config.bluetooth.active;
 bool        bluetoothConnected      = false;
+#endif
 
 uint32_t    lastTx                  = 0.0;
 uint32_t    txInterval              = 60000L;
@@ -126,30 +162,43 @@ void setup() {
     Serial.begin(115200);
 
     #ifndef DEBUG
-        logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
+        logger.setDebugLevel(LOG_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();
     displaySetup();
     POWER_Utils::externalPinSetup();
 
+    // 仅在非NRF52840平台上执行STATION_Utils相关代码
+    #ifndef PLATFORM_NRF52840
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
+    #endif
+    
     startupScreen(loraIndex, versionDate);
 
+    // 仅在非NRF52840平台上执行WiFi和消息相关代码
+    #ifndef PLATFORM_NRF52840
     WIFI_Utils::checkIfWiFiAP();
-
     MSG_Utils::loadNumMessages();
+    #endif
+    
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
     Utils::i2cScannerForPeripherals();
+    
+    // 仅在非NRF52840平台上执行WX_Utils相关代码
+    #ifndef PLATFORM_NRF52840
     WX_Utils::setup();
-
+    
     WiFi.mode(WIFI_OFF);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
+    logger.log(LOG_LEVEL_DEBUG, "Main", "WiFi controller stopped");
+    #endif
 
+    // 仅在非NRF52840平台上执行蓝牙相关代码
+    #ifndef PLATFORM_NRF52840
     if (bluetoothActive) {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::setup();
@@ -159,6 +208,7 @@ void setup() {
             #endif
         }
     }
+    #endif
 
     #ifdef BUTTON_PIN
         BUTTON_Utils::setup();
@@ -172,8 +222,8 @@ void setup() {
     #endif
 
     POWER_Utils::lowerCpuFrequency();
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+    logger.log(LOG_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+    logger.log(LOG_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
 }
 
@@ -206,10 +256,13 @@ void loop() {
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
+    // 仅在非NRF52840平台上执行消息处理代码
+    #ifndef PLATFORM_NRF52840
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();
-
+    
+    // 仅在非NRF52840平台上执行蓝牙相关代码
     if (bluetoothActive && bluetoothConnected) {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::sendToPhone(packet.text.substring(3));
@@ -223,8 +276,14 @@ void loop() {
     }
     
     MSG_Utils::ledNotification();
+    #endif
+    
     Utils::checkFlashlight();
+    
+    // 仅在非NRF52840平台上执行STATION_Utils相关代码
+    #ifndef PLATFORM_NRF52840
     STATION_Utils::checkListenedStationsByTimeAndDelete();
+    #endif
 
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {
@@ -240,10 +299,16 @@ void loop() {
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) GPS_Utils::calculateHeadingDelta(currentSpeed);
+            // 仅在非NRF52840平台上执行STATION_Utils相关代码
+            #ifndef PLATFORM_NRF52840
             STATION_Utils::checkStandingUpdateTime();
+            #endif
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();
+        // 仅在非NRF52840平台上执行STATION_Utils相关代码
+        #ifndef PLATFORM_NRF52840
         if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon();
+        #endif
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {

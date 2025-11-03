@@ -170,7 +170,7 @@ static const uint8_t AREF = PIN_AREF;
 // #define AQ_SET_PIN 10
 
     //  OTHER
-    #define BUTTON_PIN          38 // The middle button GPIO on the T-Beam
+    // #define BUTTON_PIN          38 // The middle button GPIO on the T-Beam - 注释掉，使用摇杆中心按钮
 
     #define HAS_BT_CLASSIC
 	    #define BATTERY_PIN         4

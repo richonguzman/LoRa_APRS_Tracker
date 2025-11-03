@@ -16,79 +16,186 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "notification_utils.h"
-#include "configuration.h"
+#include <Arduino.h>
+#include "platform_compat.h"
+#include <logger.h>
 
-uint8_t channel                 = 0;
-uint8_t resolution              = 8; 
-uint8_t pauseDuration           = 20;
+// 简单的Configuration类前向声明
+class Configuration {
+public:
+    struct Notification {
+        bool buzzerActive;
+        int buzzerPinTone;
+        int buzzerPinVcc;
+        bool bootUpBeep;
+        bool txBeep;
+        bool messageRxBeep;
+        bool stationBeep;
+        bool lowBatteryBeep;
+        bool shutDownBeep;
+        bool ledTx;
+        int ledTxPin;
+    };
+    Notification notification;
+};
 
-int     startUpSound[]          = {440, 880, 440, 1760};
-uint8_t startUpSoundDuration[]  = {100, 100, 100, 200};
+// 全局配置对象外部声明
+extern Configuration Config;
 
-int     shutDownSound[]         = {1720, 880, 400};
-uint8_t shutDownSoundDuration[] = {60, 60, 200};
-
-extern Configuration    Config;
-extern bool             digipeaterActive;
-
+// 简单的NOTIFICATION_Utils命名空间，只包含最基本的功能
 namespace NOTIFICATION_Utils {
-
+    
+    // 为NRF52840平台提供一个简单的tone函数实现
+    void tone(int pin, unsigned int frequency, unsigned long duration = 0) {
+        #ifdef NRF52840_PLATFORM
+            // NRF52840平台使用简单的脉冲宽度调制模拟tone函数
+            unsigned long startTime = millis();
+            unsigned int period = 1000000 / frequency / 2; // 微秒
+            
+            if (duration == 0) {
+                // 无限播放，这里我们只播放一小段时间
+                for (unsigned int i = 0; i < 100; i++) {
+                    digitalWrite(pin, HIGH);
+                    delayMicroseconds(period);
+                    digitalWrite(pin, LOW);
+                    delayMicroseconds(period);
+                }
+            } else {
+                // 播放指定时长
+                while (millis() - startTime < duration) {
+                    digitalWrite(pin, HIGH);
+                    delayMicroseconds(period);
+                    digitalWrite(pin, LOW);
+                    delayMicroseconds(period);
+                }
+            }
+        #else
+            // 其他平台可以使用标准的tone函数
+            ::tone(pin, frequency, duration);
+        #endif
+    }
+    
+    // 为NRF52840平台提供一个简单的noTone函数实现
+    void noTone(int pin) {
+        #ifdef NRF52840_PLATFORM
+            // 简单地将引脚设置为低电平
+            digitalWrite(pin, LOW);
+        #else
+            // 其他平台可以使用标准的noTone函数
+            ::noTone(pin);
+        #endif
+    }
+    
+    // 简单的playTone函数，不使用ledc相关函数
     void playTone(int frequency, uint8_t duration) {
-        ledcSetup(channel, frequency, resolution);
-        ledcAttachPin(Config.notification.buzzerPinTone, 0);
-        ledcWrite(channel, 128);
-        delay(duration);
-        ledcWrite(channel, 0);
-        delay(pauseDuration);
+        Serial.print("Playing tone: ");
+        Serial.print(frequency);
+        Serial.print(" Hz for ");
+        Serial.print(duration);
+        Serial.println(" ms");
+        
+        if (Config.notification.buzzerActive) {
+            // 设置蜂鸣器VCC引脚（如果有）
+            if (Config.notification.buzzerPinVcc != -1) {
+                digitalWrite(Config.notification.buzzerPinVcc, HIGH);
+            }
+            
+            // 使用我们的tone函数
+            tone(Config.notification.buzzerPinTone, frequency, duration);
+            
+            // 短暂延迟
+            delay(duration);
+            
+            // 停止发声
+            noTone(Config.notification.buzzerPinTone);
+            
+            // 关闭蜂鸣器VCC引脚（如果有）
+            if (Config.notification.buzzerPinVcc != -1) {
+                digitalWrite(Config.notification.buzzerPinVcc, LOW);
+            }
+        }
     }
-
+    
+    // 简单的beaconTxBeep函数
     void beaconTxBeep() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        playTone(1320,100);
-        if (digipeaterActive) {
-            playTone(1560,100);
+        Serial.println("Beacon TX beep");
+        if (Config.notification.buzzerActive && Config.notification.txBeep) {
+            playTone(1000, 100);
         }
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
     }
-
-    void messageBeep() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        playTone(1100,100);
-        playTone(1100,100);
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
+    
+    // 简单的startUpBeep函数
+    void startUpBeep() {
+        Serial.println("Start-up beep");
+        if (Config.notification.buzzerActive && Config.notification.bootUpBeep) {
+            playTone(1000, 100);
+            delay(50);
+            playTone(1500, 100);
+        }
     }
-
-    void stationHeardBeep() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        playTone(1200,100);
-        playTone(600,100);
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
-    }
-
+    
+    // 简单的shutDownBeep函数
     void shutDownBeep() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        for (int i = 0; i < sizeof(shutDownSound) / sizeof(shutDownSound[0]); i++) {
-            playTone(shutDownSound[i], shutDownSoundDuration[i]);
+        Serial.println("Shut-down beep");
+        if (Config.notification.buzzerActive && Config.notification.shutDownBeep) {
+            playTone(1500, 100);
+            delay(50);
+            playTone(1000, 100);
         }
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
     }
-
-    void lowBatteryBeep() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        playTone(1550,100);
-        playTone(650,100);
-        playTone(1550,100);
-        playTone(650,100);
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
+    
+    // 简单的stationBeep函数
+    void stationBeep() {
+        Serial.println("Station beep");
+        if (Config.notification.buzzerActive && Config.notification.stationBeep) {
+            playTone(800, 100);
+        }
     }
-
+    
+    // 简单的start函数
     void start() {
-        digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        for (int i = 0; i < sizeof(startUpSound) / sizeof(startUpSound[0]); i++) {
-            playTone(startUpSound[i], startUpSoundDuration[i]);
+        Serial.println("Initializing notifications");
+        
+        // 初始化LED引脚
+        if (Config.notification.ledTx) {
+            pinMode(Config.notification.ledTxPin, OUTPUT);
+            digitalWrite(Config.notification.ledTxPin, LOW);
         }
-        digitalWrite(Config.notification.buzzerPinVcc, LOW);
+        
+        // 初始化蜂鸣器引脚
+        if (Config.notification.buzzerActive) {
+            pinMode(Config.notification.buzzerPinTone, OUTPUT);
+            digitalWrite(Config.notification.buzzerPinTone, LOW);
+            
+            if (Config.notification.buzzerPinVcc != -1) {
+                pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+                digitalWrite(Config.notification.buzzerPinVcc, LOW);
+            }
+        }
+        
+        // 播放启动提示音
+        startUpBeep();
     }
-
-}
+    
+    // 简单的stop函数
+    void stop() {
+        Serial.println("Stopping notifications");
+        
+        // 播放关闭提示音
+        shutDownBeep();
+        
+        // 关闭LED
+        if (Config.notification.ledTx) {
+            digitalWrite(Config.notification.ledTxPin, LOW);
+        }
+        
+        // 关闭蜂鸣器
+        if (Config.notification.buzzerActive) {
+            digitalWrite(Config.notification.buzzerPinTone, LOW);
+            
+            if (Config.notification.buzzerPinVcc != -1) {
+                digitalWrite(Config.notification.buzzerPinVcc, LOW);
+            }
+        }
+    }
+} // namespace NOTIFICATION_Utils

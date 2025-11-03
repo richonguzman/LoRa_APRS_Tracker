@@ -64,7 +64,7 @@ namespace WINLINK_Utils {
     }
 
     void login() {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Start Login");
+        logger.log(LOG_LEVEL_INFO, "Winlink","---> Start Login");
         displayShow(" WINLINK", "" , "Login Initiation ...", "", "" , "<Back");
         if (winlinkStatus == 5) {
             menuDisplay = 5000;

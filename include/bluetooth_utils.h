@@ -19,16 +19,19 @@
 #ifndef BLUETOOTH_UTILS_H
 #define BLUETOOTH_UTILS_H
 
+#ifndef PLATFORM_NRF52840
 #include <BluetoothSerial.h>
+#endif
 
 namespace BLUETOOTH_Utils {
 
     void setup();
+    #ifndef PLATFORM_NRF52840
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
     void getData(const uint8_t *buffer, size_t size);
+    #endif
     void sendToLoRa();
     void sendToPhone(const String& packet);
-  
-}
+};
 
-#endif
+#endif /* BLUETOOTH_UTILS_H */

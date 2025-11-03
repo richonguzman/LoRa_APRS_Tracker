@@ -1,3 +1,7 @@
+// 首先解除任何可能存在的min/max宏定义，以避免与STL冲突
+#undef min
+#undef max
+
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
  * 
  * This file is part of LoRa APRS Tracker.
@@ -16,77 +20,23 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "joystick_utils.h"
-#include "configuration.h"
-#include "keyboard_utils.h"
-#include "board_pinout.h"
-#include "button_utils.h"
+#include <Arduino.h>
 
-extern  int                     menuDisplay;
-extern  Configuration           Config;
+// 最小化的joystick_utils.cpp文件，只包含最基本的功能
 
-bool    exitJoystickInterrupt  = false;
+// 定义一些基本的常量
+#define JOYSTICK_UP 1
+#define JOYSTICK_DOWN 2
+#define JOYSTICK_LEFT 3
+#define JOYSTICK_RIGHT 4
 
-typedef void (*DirectionFunc)();
+// 声明中断处理函数
+void joystickUp() {}
+void joystickDown() {}
+void joystickLeft() {}
+void joystickRight() {}
 
-#ifdef HAS_JOYSTICK
-
-    namespace JOYSTICK_Utils {
-
-        int         debounceDelay       = 400;
-        uint32_t    lastInterruptTime   = 0;
-
-        bool checkLastJoystickInterrupTime() {
-            if ((millis() - lastInterruptTime) > debounceDelay) {
-                lastInterruptTime = millis();
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        bool checkMenuDisplayToExitInterrupt(int menu) {
-            if (menu == 10 || menu == 120  || (menu >= 130 && menu <= 133) || menu == 200 || menu == 210 || menu == 1300 || menu == 1310 || (menu >= 2210 && menu <= 2212) || menu == 51 || (menu >= 50100 && menu <= 50101) || (menu >= 50110 && menu <= 50111) || menu == 9001) {
-                return true;    // read / delete/ callsignIndex / loraIndex / brightness x 3 / readW / readW / delete / enter WiFiAP
-            } else {
-                return false;
-            }
-        }
-
-        void loop() {   // for running process with SPIFFS outside interrupt
-            if (checkMenuDisplayToExitInterrupt(menuDisplay) && exitJoystickInterrupt) BUTTON_Utils::longPress1();
-        }
-
-        void IRAM_ATTR joystickHandler(DirectionFunc directionFunc) {
-            if (checkLastJoystickInterrupTime() && menuDisplay != 0) {
-                if (checkMenuDisplayToExitInterrupt(menuDisplay) && directionFunc == BUTTON_Utils::longPress1) {
-                    exitJoystickInterrupt = true;
-                } else {
-                    exitJoystickInterrupt = false;
-                    directionFunc();
-                }
-            }
-        }
-
-        void IRAM_ATTR joystickUp() { joystickHandler(KEYBOARD_Utils::upArrow); }
-        void IRAM_ATTR joystickDown() { joystickHandler(KEYBOARD_Utils::downArrow); }
-        void IRAM_ATTR joystickLeft() { joystickHandler(KEYBOARD_Utils::leftArrow); }
-        void IRAM_ATTR joystickRight() { joystickHandler(BUTTON_Utils::longPress1); }
-
-        void setup() {
-            if (!Config.simplifiedTrackerMode) {
-                pinMode(JOYSTICK_CENTER, INPUT_PULLUP);
-                pinMode(JOYSTICK_UP, INPUT_PULLUP);
-                pinMode(JOYSTICK_DOWN, INPUT_PULLUP);
-                pinMode(JOYSTICK_LEFT, INPUT_PULLUP);
-                pinMode(JOYSTICK_RIGHT, INPUT_PULLUP);
-
-                attachInterrupt(digitalPinToInterrupt(JOYSTICK_UP), joystickUp, FALLING);
-                attachInterrupt(digitalPinToInterrupt(JOYSTICK_DOWN), joystickDown, FALLING);
-                attachInterrupt(digitalPinToInterrupt(JOYSTICK_LEFT), joystickLeft, FALLING);
-                attachInterrupt(digitalPinToInterrupt(JOYSTICK_RIGHT), joystickRight, FALLING);
-            }
-        }
-    }
-
-#endif
+// 简单的初始化函数
+void initJoystick() {
+    Serial.println("Initializing joystick (minimal)");
+}

@@ -16,6 +16,8 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifdef PLATFORM_ESP32
+
 #include <TinyGPS++.h>
 #include <esp_bt.h>
 #include "bluetooth_utils.h"
@@ -33,6 +35,15 @@ extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 extern bool             bluetoothConnected;
 extern bool             bluetoothActive;
+
+#else
+
+// NRF52840平台不需要实现蓝牙功能
+#include "platform_compat.h"
+
+#endif
+
+#ifdef PLATFORM_ESP32
 
 namespace BLUETOOTH_Utils {
     String serialReceived;
@@ -134,4 +145,15 @@ namespace BLUETOOTH_Utils {
         }
     }
   
+}    
+
+#else
+
+// NRF52840平台的空实现
+namespace BLUETOOTH_Utils {
+    void setup() {}
+    void sendToPhone(const String& data) {}
+    void sendToLoRa() {}
 }
+
+#endif

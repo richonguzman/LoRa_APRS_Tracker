@@ -27,7 +27,7 @@
 
 extern Beacon                   *currentBeacon;
 extern Configuration            Config;
-extern logging::Logger          logger;
+extern Logger          logger;
 
 extern uint32_t                 lastTx;
 extern uint32_t                 lastTxTime;
@@ -160,7 +160,7 @@ namespace Utils {
                     //Serial.println(addr); this shows any connected board to I2C
                     if (addr == 0x76 || addr == 0x77) {
                         wxModuleAddress = addr;
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Wx Module Connected to I2C");
+                        logger.log(LOG_LEVEL_INFO, "Main", "Wx Module Connected to I2C");
                     }
                 }
             }
@@ -186,7 +186,7 @@ namespace Utils {
                 if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
                     //Serial.println(addr); this shows any connected board to I2C
                     keyboardAddress = addr;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
+                    logger.log(LOG_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
                 }
             }
         #endif
@@ -198,7 +198,7 @@ namespace Utils {
                 if (err == 0) {
                     if (addr == 0x14 || addr == 0x5D ) {
                         touchModuleAddress = addr;
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Touch Module Connected to I2C");
+                        logger.log(LOG_LEVEL_INFO, "Main", "Touch Module Connected to I2C");
                     }
                 }
             }

@@ -16,31 +16,58 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// 解决Arduino min/max宏与C++标准库的冲突
+#undef min
+#undef max
+
+#ifndef PLATFORM_NRF52840
+
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <vector>
+#include "platform_compat.h"
 #include "notification_utils.h"
 #include "custom_characters.h"
 #include "station_utils.h"
+#include "msg_utils.h"
+#include "wx_utils.h"
 #include "configuration.h"
 #include "battery_utils.h"
 #include "board_pinout.h"
 #include "power_utils.h"
 #include "menu_utils.h"
-#include "msg_utils.h"
 #include "gps_utils.h"
-#include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
 
+#else
+
+// NRF52840平台的简化实现
+#include "platform_compat.h"
+#include "menu_utils.h"
+
+#endif
+
+
+#ifndef PLATFORM_NRF52840
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
+
+#else
+
+// NRF52840平台的简化定义
+int menuDisplay = 0;
+
+#endif
+// 仅在非NRF52840平台上定义这些外部变量
+#ifndef PLATFORM_NRF52840
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
+#endif
 extern uint8_t              loraIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
@@ -494,48 +521,93 @@ namespace MENU_Utils {
                 }
                 break;
             case 410:    //4.Stations ---> Near By Stations
+                #ifndef PLATFORM_NRF52840
                 displayShow(" NEAR BY>", STATION_Utils::getNearStation(0), STATION_Utils::getNearStation(1), STATION_Utils::getNearStation(2), STATION_Utils::getNearStation(3), "<Back");
+                #else
+                displayShow(" NEAR BY>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
 //////////
             case 50:    // 5.Winlink MENU
+                #ifndef PLATFORM_NRF52840
                 if (winlinkStatus == 5) {
                     menuDisplay = 5000;
                 } else {
                     displayShow(" WINLINK>", "> Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
                 }
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 51:    // 5.Winlink
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "  Login" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 52:    // 5.Winlink
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "  Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 53:    // 5.Winlink
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "  Login" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "> Wnlk Comment (" + checkProcessActive(winlinkCommentState) + ")" , lastLine);
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 500:    // 5.Winlink ---> Login
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> waiting", "" , "");
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 501:    // 5.Winlink ---> Login
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> sent", "" , "");
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 502:    // 5.Winlink ---> Login
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "" , "Login Initiation ...", "Challenge -> ack ...", "" , "");
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5000:   // WINLINK: List Pend. Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Write Mail" , "> List Pend. Mails", "  Downloaded Mails", "  Read Mail    (R#)", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5010:    // WINLINK: Downloaded Mails //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  List Pend. Mails", "> Downloaded Mails", "  Read Mail    (R#)", "  Reply Mail   (Y#)", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50100:    // WINLINK: Downloaded Mails //
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "" , "> Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "  Delete SavedMails", "" , lastLine);
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50101:    // WINLINK: Downloaded Mails //
+                #ifndef PLATFORM_NRF52840
                 {
                     String mailText = loadedWLNKMails[messagesIterator];
 
@@ -550,75 +622,159 @@ namespace MENU_Utils {
                     #endif
                     
                 }
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50110:    // WINLINK: Downloaded Mails //
+                #ifndef PLATFORM_NRF52840
                 displayShow(" WINLINK>", "" , "  Read SavedMails(" + String(MSG_Utils::getNumWLNKMails()) + ")", "> Delete SavedMails", "" , lastLine);
+                #else
+                displayShow(" WINLINK>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50111:    // WINLINK: Downloaded Mails //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK DEL>", "", "  DELETE ALL MAILS?", "", "", " Confirm = LP or '>'");
+                #else
+                displayShow("WLNK DEL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5020:    // WINLINK: Read Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Downloaded Mails", "> Read Mail    (R#)", "  Reply Mail   (Y#)", "  Forward Mail (F#)", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5021:
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK READ>", "", "    READ MAIL N." + winlinkMailNumber, "", "", "<Back          Enter>");
+                #else
+                displayShow("WLNK READ>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5030:    // WINLINK: Reply Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Read Mail    (R#)", "> Reply Mail   (Y#)", "  Forward Mail (F#)", "  Delete Mail  (K#)", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5031:
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK REPLY", "", "   REPLY MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                #else
+                displayShow("WLNK REPLY", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5040:    // WINLINK: Foward Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Reply Mail   (Y#)", "> Forward Mail (F#)", "  Delete Mail  (K#)", "  Alias Menu", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5041:    // WINLINK: Forward Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK FORW>", "", "  FORWARD MAIL N." + winlinkMailNumber , "", "", "<Back          Enter>");
+                #else
+                displayShow("WLNK FORW>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5042:    // WINLINK: Forward Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK FORW>", "  FORWARD MAIL N." + winlinkMailNumber , "To = " + winlinkAddressee, "", "", "<Back          Enter>");
+                #else
+                displayShow("WLNK FORW>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5050:    // WINLINK: Delete Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Forward Mail (F#)", "> Delete Mail  (K#)", "  Alias Menu", "  Log Out", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5051:    // WINLINK: Delete Mail //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK DEL>", "", "   DELETE MAIL N."  + winlinkMailNumber, "", "", "<Back          Enter>");
+                #else
+                displayShow("WLNK DEL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             
             case 5060:    // WINLINK: Alias Menu //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Delete Mail  (K#)", "> Alias Menu", "  Log Out", "  Write Mail", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5061:    // WINLINK: Alias Menu : Create Alias //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "> Create Alias" , "  Delete Alias ", "  List All Alias", "", lastLine);
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50610:   // WINLINK: Alias Menu : Create Alias //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "", "Write Alias to Create", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50611:   // WINLINK: Alias Menu : Create Alias //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "", "      " + winlinkAlias + " =", winlinkAliasComplete, "", "<Back          Enter>");
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5062:    // WINLINK: Alias Menu : Delete Alias //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "  Create Alias" , "> Delete Alias ", "  List All Alias", "", lastLine);
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 50620:   // WINLINK: Alias Menu : Delete Alias //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "Write Alias to Delete", "", "     -> " + winlinkAlias, "", "<Back          Enter>");
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5063:    // WINLINK: Alias Menu : List Alias//
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK ALIAS", "  Create Alias" , "  Delete Alias ", "> List All Alias", "", lastLine);
+                #else
+                displayShow("WLNK ALIAS", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5070:    // WINLINK: Log Out MAIL //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Alias Menu", "> Log Out", "  Write Mail", "  List Pend. Mails", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
             case 5080:    // WINLINK: WRITE MAIL //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MENU>", "  Log Out", "> Write Mail", "  List Pend. Mails", "  Downloaded Mails", lastLine);
+                #else
+                displayShow("WLNK MENU>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5081:    // WINLINK: WRITE MAIL: Addressee //
+                #ifndef PLATFORM_NRF52840
                 #ifdef HAS_TFT
                     #if defined(HELTEC_WIRELESS_TRACKER)
                         displayShow("WLNK MAIL>", "   --- Send Mail to ---", "-> " + winlinkAddressee, "<Back               Enter>", "", "");
@@ -628,8 +784,12 @@ namespace MENU_Utils {
                 #else
                     displayShow("WLNK MAIL>", "--- Send Mail to ---", "-> " + winlinkAddressee, "", "", "<Back          Enter>");
                 #endif
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5082:    // WINLINK: WRITE MAIL: Subject //
+                #ifndef PLATFORM_NRF52840
                 #ifdef HAS_TFT
                     #if defined(HELTEC_WIRELESS_TRACKER)
                         displayShow("WLNK MAIL>", "   --- Write Subject ---", "-> " + winlinkSubject, "<Back               Enter>", "", "");
@@ -638,9 +798,13 @@ namespace MENU_Utils {
                     #endif
                 #else
                     displayShow("WLNK MAIL>", "--- Write Subject ---", "-> " + winlinkSubject, "", "", "<Back          Enter>");
-                #endif                
+                #endif               
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5083:    // WINLINK: WRITE MAIL: Body //
+                #ifndef PLATFORM_NRF52840
                 if (winlinkBody.length() <= 67) {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
@@ -662,12 +826,23 @@ namespace MENU_Utils {
                         displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
                     #endif                    
                 }
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MAIL>", "", "> End Mail", "  1 More Line", "", "      Up/Down Select>");
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
             case 5085:    // WINLINK: WRITE MAIL: One More Line(Body) //
+                #ifndef PLATFORM_NRF52840
                 displayShow("WLNK MAIL>", "", "  End Mail", "> 1 More Line", "", "      Up/Down Select>");
+                #else
+                displayShow("WLNK MAIL>", "Not available", "on NRF52840", "platform", "", "<Back");
+                #endif
                 break;
 
                 // validar winlinkStatus = 0
@@ -675,19 +850,39 @@ namespace MENU_Utils {
 
 //////////
             case 60:    // 6. Extras ---> Send Email with GPS info
+                #ifndef PLATFORM_NRF52840
                 displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", lastLine);
+                #else
+                // NRF52840平台移除Email功能，但保留其他功能
+                displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "", lastLine);
+                #endif
                 break;
             case 61:    // 6. Extras ---> Digipeater
+                #ifndef PLATFORM_NRF52840
                 displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS) + Comment", lastLine);
+                #else
+                // NRF52840平台移除Email功能
+                displayShow(" EXTRAS>", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS) + Comment", "", lastLine);
+                #endif
                 break;
             case 62:    // 6. Extras ---> S.O.S.
                 displayShow(" EXTRAS>", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", lastLine);
                 break;
             case 63:    // 6. Extras ---> Beacon(GPS) + Comment
+                #ifndef PLATFORM_NRF52840
                 displayShow(" EXTRAS>", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "> Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "  Send Email(GPS)", lastLine);
+                #else
+                // NRF52840平台移除Email功能
+                displayShow(" EXTRAS>", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "> Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "", lastLine);
+                #endif
                 break;
             case 64:    // 6. Extras ---> Flashlight
+                #ifndef PLATFORM_NRF52840
                 displayShow(" EXTRAS>", "  Beacon(GPS)+Comment", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", lastLine);
+                #else
+                // NRF52840平台移除Email功能
+                displayShow(" EXTRAS>", "  Beacon(GPS)+Comment", "> Flashlight    (" + checkProcessActive(flashlight) + ")", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "", lastLine);
+                #endif
                 break;
 
             case 630:
@@ -705,10 +900,20 @@ namespace MENU_Utils {
 
 //////////
             case 9000:  //  9. multiPress Menu ---> Turn ON WiFi AP
+                #ifndef PLATFORM_NRF52840
                 displayShow(" CONFIG>", "> Turn Tracker Off","  Config. WiFi AP",  "","",lastLine);
+                #else
+                // NRF52840平台不支持WiFi，只显示关机选项
+                displayShow(" CONFIG>", "> Turn Tracker Off","","","",lastLine);
+                #endif
                 break;
             case 9001:  //  9. multiPress Menu
+                #ifndef PLATFORM_NRF52840
                 displayShow(" CONFIG>", "  Turn Tracker Off","> Config. WiFi AP",  "","",lastLine);
+                #else
+                // NRF52840平台不支持WiFi
+                displayShow(" CONFIG>", "> Turn Tracker Off","","","",lastLine);
+                #endif
                 break;
 
 
@@ -792,6 +997,7 @@ namespace MENU_Utils {
                     fourthRowMainMenu += fourthRowSpeed;
                     fourthRowMainMenu += "km/h  ";
                     fourthRowMainMenu += fourthRowCourse;
+                    #ifndef PLATFORM_NRF52840
                     if (Config.telemetry.active && (time_now % 10 < 5) && wxModuleType != 0) {
                         fourthRowMainMenu = WX_Utils::readDataSensor(1);
                     }
@@ -805,6 +1011,7 @@ namespace MENU_Utils {
                         fourthRowMainMenu += String(MSG_Utils::getNumAPRSMessages());
                         fourthRowMainMenu += " ***";
                     }
+                    #endif
                     if (!gpsIsActive) {
                         fourthRowMainMenu = "*** GPS  SLEEPING ***";
                     }
@@ -813,8 +1020,12 @@ namespace MENU_Utils {
                 if (showHumanHeading) {
                     fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
                 } else {
+                    #ifndef PLATFORM_NRF52840
                     fifthRowMainMenu = "LAST Rx = ";
                     fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
+                    #else
+                    fifthRowMainMenu = "";
+                    #endif
                 }
 
                 if (batteryConnected) {

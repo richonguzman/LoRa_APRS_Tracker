@@ -16,6 +16,8 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef PLATFORM_NRF52840
+
 #include <OneButton.h>
 #include "keyboard_utils.h"
 #include "configuration.h"
@@ -23,6 +25,16 @@
 #include "button_utils.h"
 #include "power_utils.h"
 #include "display.h"
+
+#else
+
+// NRF52840平台的简化实现
+#include "platform_compat.h"
+#include "button_utils.h"
+
+#endif
+
+#ifndef PLATFORM_NRF52840
 
 #ifdef BUTTON_PIN
 
@@ -109,5 +121,15 @@
         }
 
     }
+
+#endif
+
+#else
+
+// NRF52840平台的空实现
+namespace BUTTON_Utils {
+    void setup() {}
+    void loop() {}
+}
 
 #endif

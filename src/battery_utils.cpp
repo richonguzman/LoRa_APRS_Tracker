@@ -16,6 +16,8 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifdef PLATFORM_ESP32
+
 #include <Arduino.h>
 #include "configuration.h"
 #include "battery_utils.h"
@@ -23,6 +25,16 @@
 #include "power_utils.h"
 #include "display.h"
 
+#else
+
+// NRF52840平台的简化实现
+#include "platform_compat.h"
+#include "battery_utils.h"
+
+#endif
+
+
+#ifdef PLATFORM_ESP32
 
 #ifdef ADC_CTRL
     uint32_t    adcCtrlTime         = 0;
@@ -54,6 +66,39 @@ namespace BATTERY_Utils {
         int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
+
+#else
+
+// NRF52840平台的简化实现
+String      batteryVoltage          = "3.7";
+bool        batteryConnected       = true;
+String      batteryChargeDischargeCurrent = "0";
+
+namespace BATTERY_Utils {
+    
+    String getPercentVoltageBattery(float voltage) {
+        return "80"; // 默认80%电量
+    }
+
+    String getBatteryInfoVoltage() {
+        return batteryVoltage;
+    }
+
+    float readBatteryVoltage() {
+        return 3.7; // 默认3.7V
+    }
+
+    void obtainBatteryInfo() {
+        // NRF52840平台的简化实现
+    }
+    
+    void monitor() {
+        // NRF52840平台的简化实现
+    }
+
+}
+
+#endif
 
     String getBatteryInfoVoltage() {
         return batteryVoltage;
