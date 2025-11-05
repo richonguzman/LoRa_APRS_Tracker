@@ -21,7 +21,6 @@
 
 #include <Arduino.h>
 
-
 namespace WIFI_Utils {
 
     void startAutoAP();

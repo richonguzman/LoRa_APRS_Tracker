@@ -68,14 +68,15 @@ ____________________________________________________________________*/
 #include "touch_utils.h"
 #endif
 
+
+String      versionDate             = "2025-11-01";
+String      versionNumber           = "2.3.1";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
 #endif
-
-String      versionDate             = "MaricopaExtentions 23Sep25";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -211,10 +212,10 @@ void loop() {
         }
         miceActive = Config.validateMicE(currentBeacon->micE);
     }
-    
+
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();
-    
+
     BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
 
@@ -246,7 +247,7 @@ void loop() {
             #endif
         }
     }
-    
+
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedStationsByTimeAndDelete();

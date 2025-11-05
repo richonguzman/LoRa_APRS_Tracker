@@ -136,7 +136,7 @@ namespace STATION_Utils {
                     nearbyStations[a].distance    = distance;
                     shouldSortbyDistance        = true;
                 }
-                break;           
+                break;
             }
         }
     
@@ -293,7 +293,7 @@ namespace STATION_Utils {
         }
         fileIndex.close();
     }
-    
+
     void loadIndex(uint8_t type) {
         String filePath;
         switch (type) {
@@ -302,7 +302,7 @@ namespace STATION_Utils {
             case 2: filePath = "/brightness.txt"; break;
             default: return; // Invalid type, exit function
         }
-    
+
         if (!SPIFFS.exists(filePath)) {
             switch (type) {
                 case 0: myBeaconsIndex = 0; break;
@@ -334,7 +334,7 @@ namespace STATION_Utils {
                     logMessage = "Brightness:";
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
-            }        
+            }
             fileIndex.close();
         }
     }

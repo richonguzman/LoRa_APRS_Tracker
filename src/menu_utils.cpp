@@ -216,7 +216,7 @@ namespace MENU_Utils {
                     #endif
                 } else {
                     displayShow("WRITE MSG>", "", "No Keyboard Detected", "Can't write Message", "", "1P = Back");           
-                }     
+                }
                 break;
             case 111:
                 if (messageText.length() <= 67) {
@@ -279,7 +279,7 @@ namespace MENU_Utils {
                                 displayShow("WRITE MSG>", "    - APRSThursday -", "MSG -> " + messageText, "<Back    (0" + String(messageText.length()) + ")   Enter>", "", "");
                             } else {
                                 displayShow("WRITE MSG>", "    - APRSThursday -", "MSG -> " + messageText, "<Back    (" + String(messageText.length()) + ")   Enter>", "", "");
-                            }                            
+                            }
                         #endif
                     #else
                         if (messageText.length() < 10) {
@@ -287,7 +287,7 @@ namespace MENU_Utils {
                         } else {
                             displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                         }
-                    #endif                    
+                    #endif
                 } else {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
@@ -297,7 +297,7 @@ namespace MENU_Utils {
                         #endif
                     #else
                         displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
-                    #endif                    
+                    #endif
                 }
                 break;
             case 131:   // 1.Messages ---> APRSThursday ---> Delete: ALL
@@ -325,7 +325,7 @@ namespace MENU_Utils {
                         } else {
                             displayShow("WRITE MSG>", "  - APRSThursday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
                         }
-                    #endif                    
+                    #endif
                 } else {
                     #ifdef HAS_TFT
                         #if defined(HELTEC_WIRELESS_TRACKER)
@@ -345,7 +345,7 @@ namespace MENU_Utils {
                 displayShow(" APRS Thu.", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
 
-//////////            
+//////////
             case 20:    // 2.Configuration ---> Callsign
                 displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
@@ -378,9 +378,10 @@ namespace MENU_Utils {
 
             case 210:   // 2.Configuration ---> Change Frequency
                 switch (loraIndex) {
-                    case 0: freqChangeWarning = "      Eu --> PL"; break;
+                    case 0: freqChangeWarning = "      EU --> PL"; break;
                     case 1: freqChangeWarning = "      PL --> UK"; break;
-                    case 2: freqChangeWarning = "      UK --> Eu"; break;
+                    case 2: freqChangeWarning = "      UK --> US"; break;
+                    case 3: freqChangeWarning = "      US --> EU"; break;
                 }
                 displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
                 break;
@@ -548,7 +549,7 @@ namespace MENU_Utils {
                     #else
                         displayShow("WLNK MAIL>", "", mailText, "", "", "           Next=Down");
                     #endif
-                    
+
                 }
                 break;
             case 50110:    // WINLINK: Downloaded Mails //
@@ -638,7 +639,7 @@ namespace MENU_Utils {
                     #endif
                 #else
                     displayShow("WLNK MAIL>", "--- Write Subject ---", "-> " + winlinkSubject, "", "", "<Back          Enter>");
-                #endif                
+                #endif
                 break;
             case 5083:    // WINLINK: WRITE MAIL: Body //
                 if (winlinkBody.length() <= 67) {
@@ -660,7 +661,7 @@ namespace MENU_Utils {
                         #endif
                     #else
                         displayShow("WLNK MAIL>", "-- Body Too Long = " + String(winlinkBody.length()), "-> " + winlinkBody, "", "", "<Clear Body");
-                    #endif                    
+                    #endif
                 }
                 break;
             case 5084:    // WINLINK: WRITE MAIL: End Mail? //
@@ -678,7 +679,7 @@ namespace MENU_Utils {
                 displayShow(" EXTRAS>", "  Flashlight    (" + checkProcessActive(flashlight) + ")", "> Send Email(GPS)", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", lastLine);
                 break;
             case 61:    // 6. Extras ---> Digipeater
-                displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS) + Comment", lastLine);
+                displayShow(" EXTRAS>", "  Send Email(GPS)", "> Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "  S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", lastLine);
                 break;
             case 62:    // 6. Extras ---> S.O.S.
                 displayShow(" EXTRAS>", "  Digipeater    (" + checkProcessActive(digipeaterActive) + ")", "> S.O.S.        (" + checkProcessActive(sosActive) + ")", "  Beacon(GPS)+Comment", "  Flashlight    (" + checkProcessActive(flashlight) + ")", lastLine);
@@ -744,6 +745,7 @@ namespace MENU_Utils {
                             case 0: thirdRowMainMenu += "Eu]"; break;
                             case 1: thirdRowMainMenu += "PL]"; break;
                             case 2: thirdRowMainMenu += "UK]"; break;
+                            case 3: thirdRowMainMenu += "US]"; break;
                         }
                     }
                     
@@ -770,7 +772,7 @@ namespace MENU_Utils {
                     String fourthRowAlt = String(gps.altitude.meters(),0);
                     fourthRowAlt.trim();
                     for (int a = fourthRowAlt.length(); a < 4; a++) {
-                        fourthRowAlt = "0" + fourthRowAlt;
+                        fourthRowAlt = " " + fourthRowAlt;
                     }
                     String fourthRowSpeed = String(gps.speed.kmph(),0);
                     fourthRowSpeed.trim();

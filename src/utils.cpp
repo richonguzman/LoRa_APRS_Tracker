@@ -48,7 +48,7 @@ uint8_t     touchModuleAddress  = 0x00;
 
 
 namespace Utils {
-  
+
     static char locator[11];    // letterize and getMaidenheadLocator functions are Copyright (c) 2021 Mateusz Salwach - MIT License
 
     static char letterize(int x) {
@@ -138,11 +138,9 @@ namespace Utils {
     }
 
     void checkFlashlight() {
-        if (flashlight && !digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, HIGH);
-        } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, LOW);
-        }       
+        bool desiredState       = flashlight ? HIGH : LOW;
+        uint8_t flashlightPin   = Config.notification.ledFlashlightPin;
+        if (desiredState != digitalRead(flashlightPin)) digitalWrite(flashlightPin, desiredState);
     }
 
     void i2cScannerForPeripherals() {
@@ -204,5 +202,5 @@ namespace Utils {
             }
         #endif
     }
-  
+
 }

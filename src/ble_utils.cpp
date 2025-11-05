@@ -99,13 +99,12 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     }
 };
 
-
 namespace BLE_Utils {
 
     void stop() {
         BLEDevice::deinit();
     }
-  
+
     void setup() {
         String BLEid = Config.bluetooth.deviceName;
         BLEDevice::init(BLEid.c_str()); 

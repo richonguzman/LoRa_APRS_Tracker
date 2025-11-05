@@ -134,7 +134,7 @@ namespace TELEMETRY_Utils {
                 case 3: tempValue = (value * 8); break;         // Pressure
                 default: tempValue = value; break;
             }
-        }        
+        }
 
         int firstByte   = tempValue / 91;
         tempValue       -= firstByte * 91;

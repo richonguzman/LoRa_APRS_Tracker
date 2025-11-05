@@ -101,6 +101,34 @@ namespace WEB_Utils {
     void handleWriteConfiguration(AsyncWebServerRequest *request) {
         Serial.println("Got new config from www");
 
+        auto getParamStringSafe = [&](const String& name, const String& defaultValue = "") -> String {
+            if (request->hasParam(name, true)) {
+                return request->getParam(name, true)->value();
+            }
+            return defaultValue;
+        };
+
+        auto getParamIntSafe = [&](const String& name, int defaultValue = 0) -> int {
+            if (request->hasParam(name, true)) {
+                return request->getParam(name, true)->value().toInt();
+            }
+            return defaultValue;
+        };
+
+        auto getParamFloatSafe = [&](const String& name, float defaultValue = 0.0) -> float {
+            if (request->hasParam(name, true)) {
+                return request->getParam(name, true)->value().toFloat();
+            }
+            return defaultValue;
+        };
+
+        /*auto getParamDoubleSafe = [&](const String& name, double defaultValue = 0.0) -> double {
+            if (request->hasParam(name, true)) {
+                return request->getParam(name, true)->value().toDouble();
+            }
+            return defaultValue;
+        };*/
+
         //  Beacons
         for (int i = 0; i < 3; i++) {
             Config.beacons[i].callsign              = request->getParam("beacons." + String(i) + ".callsign", true)->value();
@@ -136,92 +164,112 @@ namespace WEB_Utils {
         }
         
         //  Station Config
-        Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
-        Config.sendCommentAfterXBeacons         = request->getParam("sendCommentAfterXBeacons", true)->value().toInt();
-        Config.path                             = request->getParam("path", true)->value();
-        Config.nonSmartBeaconRate               = request->getParam("nonSmartBeaconRate", true)->value().toInt();
-        Config.rememberStationTime              = request->getParam("rememberStationTime", true)->value().toInt();
-        Config.standingUpdateTime               = request->getParam("standingUpdateTime", true)->value().toInt();
+        Config.path                             = getParamStringSafe("path", Config.path);
+        Config.sendCommentAfterXBeacons         = getParamIntSafe("sendCommentAfterXBeacons", Config.sendCommentAfterXBeacons);
+        Config.nonSmartBeaconRate               = getParamIntSafe("nonSmartBeaconRate", Config.nonSmartBeaconRate);
+        Config.standingUpdateTime               = getParamIntSafe("standingUpdateTime", Config.standingUpdateTime);
+        Config.email                            = getParamStringSafe("email", Config.email);
+        Config.rememberStationTime              = getParamIntSafe("rememberStationTime", Config.rememberStationTime);
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
-        Config.disableGPS                       = request->hasParam("disableGPS", true);
-        Config.email                            = request->getParam("email", true)->value();
+        Config.disableGPS                       = request->hasParam("disableGPS", true);        
+        Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
 
         //  Display
-        Config.display.showSymbol               = request->hasParam("display.showSymbol", true);
-        if (request->hasParam("display.ecoMode", true)) {
-            Config.display.ecoMode = true;
-            if (request->hasParam("display.timeout", true)) {
-                Config.display.timeout = request->getParam("display.timeout", true)->value().toInt();
-            }
-        } else {
-            Config.display.ecoMode = false;
+        Config.display.ecoMode                 = request->hasParam("display.alwaysOn", true);
+        if (!Config.display.ecoMode) {
+            Config.display.timeout              = getParamIntSafe("display.timeout", Config.display.timeout);
         }
         Config.display.turn180                  = request->hasParam("display.turn180", true);
-
-        //  Battery
-        Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
-        Config.battery.voltageAsTelemetry       = request->hasParam("battery.voltageAsTelemetry", true);
-        Config.battery.sendVoltageAlways        = request->hasParam("battery.sendVoltageAlways", true);
-        Config.battery.monitorVoltage           = request->hasParam("battery.monitorVoltage", true);
-        Config.battery.sleepVoltage             = request->getParam("battery.sleepVoltage", true)->value().toFloat();
-
-        //  Winlink
-        Config.winlink.password                 = request->getParam("winlink.password", true)->value();
-        
-        //  Telemetry
-        Config.telemetry.active                 = request->hasParam("telemetry.active", true);
-        Config.telemetry.sendTelemetry          = request->hasParam("telemetry.sendTelemetry", true);
-        Config.telemetry.temperatureCorrection  = request->getParam("telemetry.temperatureCorrection", true)->value().toFloat();
-
-        //  Notification
-        Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
-        Config.notification.ledTxPin            = request->getParam("notification.ledTxPin", true)->value().toInt();
-        Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
-        Config.notification.ledMessagePin       = request->getParam("notification.ledMessagePin", true)->value().toInt();
-        Config.notification.ledFlashlight       = request->hasParam("notification.ledFlashlight", true);
-        Config.notification.ledFlashlightPin    = request->getParam("notification.ledFlashlightPin", true)->value().toInt();
-        Config.notification.buzzerActive        = request->hasParam("notification.buzzerActive", true);
-        Config.notification.buzzerPinTone       = request->getParam("notification.buzzerPinTone", true)->value().toInt();
-        Config.notification.buzzerPinVcc        = request->getParam("notification.buzzerPinVcc", true)->value().toInt();
-        Config.notification.bootUpBeep          = request->hasParam("notification.bootUpBeep", true);
-        Config.notification.txBeep              = request->hasParam("notification.txBeep", true);
-        Config.notification.messageRxBeep       = request->hasParam("notification.messageRxBeep", true);
-        Config.notification.stationBeep         = request->hasParam("notification.stationBeep", true);
-        Config.notification.lowBatteryBeep      = request->hasParam("notification.lowBatteryBeep", true);
-        Config.notification.shutDownBeep        = request->hasParam("notification.shutDownBeep", true);
-
-        // LORA
-        for (int i = 0; i < 3; i++) {
-            Config.loraTypes[i].frequency       = request->getParam("lora." + String(i) + ".frequency", true)->value().toDouble();
-            Config.loraTypes[i].spreadingFactor = request->getParam("lora." + String(i) + ".spreadingFactor", true)->value().toInt();
-            Config.loraTypes[i].codingRate4     = request->getParam("lora." + String(i) + ".codingRate4", true)->value().toInt();
-        }
+        Config.display.showSymbol               = request->hasParam("display.showSymbol", true);
 
         //  Bluetooth
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
-        Config.bluetooth.deviceName             = request->getParam("bluetooth.deviceName", true)->value();
-        Config.bluetooth.useBLE                 = request->hasParam("bluetooth.useBLE", true);
-        Config.bluetooth.useKISS                = request->hasParam("bluetooth.useKISS", true);
+        if (Config.bluetooth.active) {
+            Config.bluetooth.deviceName             = getParamStringSafe("bluetooth.deviceName", Config.bluetooth.deviceName);
+            Config.bluetooth.useBLE                 = request->hasParam("bluetooth.useBLE", true);
+            Config.bluetooth.useKISS                = request->hasParam("bluetooth.useKISS", true);
+        }
+
+        // LORA
+        for (int i = 0; i < 4; i++) {
+            Config.loraTypes[i].frequency       = request->getParam("lora." + String(i) + ".frequency", true)->value().toDouble();
+            Config.loraTypes[i].spreadingFactor = request->getParam("lora." + String(i) + ".spreadingFactor", true)->value().toInt();
+            Config.loraTypes[i].codingRate4     = request->getParam("lora." + String(i) + ".codingRate4", true)->value().toInt();
+            Config.loraTypes[i].signalBandwidth = request->getParam("lora." + String(i) + ".signalBandwidth", true)->value().toInt();
+        }
+
+        //  Battery
+        Config.battery.sendVoltage              = request->hasParam("battery.sendVoltage", true);
+        if (Config.battery.sendVoltage) {
+            Config.battery.voltageAsTelemetry   = request->hasParam("battery.voltageAsTelemetry", true);
+            Config.battery.sendVoltageAlways    = request->hasParam("battery.sendVoltageAlways", true);
+        }
+        Config.battery.monitorVoltage           = request->hasParam("battery.monitorVoltage", true);
+        if (Config.battery.monitorVoltage) Config.battery.sleepVoltage = getParamFloatSafe("battery.sleepVoltage", Config.battery.sleepVoltage);
+
+        //  Telemetry
+        Config.telemetry.active                 = request->hasParam("telemetry.active", true);
+        if (Config.telemetry.active) {
+            Config.telemetry.sendTelemetry          = request->hasParam("telemetry.sendTelemetry", true);
+            Config.telemetry.temperatureCorrection  = getParamFloatSafe("telemetry.temperatureCorrection", Config.telemetry.temperatureCorrection);
+        }
+
+        //  Winlink
+        Config.winlink.password                 = getParamStringSafe("winlink.password", Config.winlink.password);
+
+        //  WiFi AP
+        Config.wifiAP.password                  = getParamStringSafe("wifiAP.password", Config.wifiAP.password);
+        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
+
+        //  Notification
+        Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
+        if (Config.notification.ledTx) Config.notification.ledTxPin = getParamIntSafe("notification.ledTxPin", Config.notification.ledTxPin);
+        Config.notification.ledMessage          = request->hasParam("notification.ledMessage", true);
+        if (Config.notification.ledMessage) Config.notification.ledMessagePin = getParamIntSafe("notification.ledMessagePin", Config.notification.ledMessagePin);
+        Config.notification.buzzerActive        = request->hasParam("notification.buzzerActive", true);
+        if (Config.notification.buzzerActive) {
+            Config.notification.buzzerPinTone   = getParamIntSafe("notification.buzzerPinTone", Config.notification.buzzerPinTone);
+            Config.notification.buzzerPinVcc    = getParamIntSafe("notification.buzzerPinVcc", Config.notification.buzzerPinVcc);
+            Config.notification.bootUpBeep      = request->hasParam("notification.bootUpBeep", true);
+            Config.notification.txBeep          = request->hasParam("notification.txBeep", true);
+            Config.notification.messageRxBeep   = request->hasParam("notification.messageRxBeep", true);
+            Config.notification.stationBeep     = request->hasParam("notification.stationBeep", true);
+            Config.notification.lowBatteryBeep  = request->hasParam("notification.lowBatteryBeep", true);
+            Config.notification.shutDownBeep    = request->hasParam("notification.shutDownBeep", true);
+        }
+        Config.notification.ledFlashlight           = request->hasParam("notification.ledFlashlight", true);
+        if (Config.notification.ledFlashlight) Config.notification.ledFlashlightPin = getParamIntSafe("notification.ledFlashlightPin", Config.notification.ledFlashlightPin);
 
         //  PTT Trigger
         Config.ptt.active                       = request->hasParam("ptt.active", true);
-        Config.ptt.io_pin                       = request->getParam("ptt.io_pin", true)->value().toInt();
-        Config.ptt.preDelay                     = request->getParam("ptt.preDelay", true)->value().toInt();
-        Config.ptt.postDelay                    = request->getParam("ptt.postDelay", true)->value().toInt();
-        Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
+        if (Config.ptt.active) {
+            Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
+            Config.ptt.io_pin                       = getParamIntSafe("ptt.io_pin", Config.ptt.io_pin);
+            Config.ptt.preDelay                     = getParamIntSafe("ptt.preDelay", Config.ptt.preDelay);
+            Config.ptt.postDelay                    = getParamIntSafe("ptt.postDelay", Config.ptt.postDelay);
+        }
 
-        //  WiFi AP
-        Config.wifiAP.password                  = request->getParam("wifiAP.password", true)->value();
-        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.        
+        bool saveSuccess = Config.writeFile();
 
-        Config.writeFile();
-
-        AsyncWebServerResponse *response        = request->beginResponse(302, "text/html", "");
-        response->addHeader("Location", "/");
-        request->send(response);
-        displayToggle(false);
-        delay(500);
-        ESP.restart();
+        if (saveSuccess) {
+            Serial.println("Configuration saved successfully");
+            AsyncWebServerResponse *response = request->beginResponse(302, "text/html", "");
+            response->addHeader("Location", "/?success=1");
+            request->send(response);
+            
+            displayToggle(false);
+            delay(500);
+            ESP.restart();
+        } else {
+            Serial.println("Error saving configuration!");
+            String errorPage = "<!DOCTYPE html><html><head><title>Error</title></head><body>";
+            errorPage += "<h1>Configuration Error:</h1>";
+            errorPage += "<p>Couldn't save new configuration. Please try again.</p>";
+            errorPage += "<a href='/'>Back</a></body></html>";
+            
+            AsyncWebServerResponse *response = request->beginResponse(500, "text/html", errorPage);
+            request->send(response);
+        }
     }
 
     void handleAction(AsyncWebServerRequest *request) {

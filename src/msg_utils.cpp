@@ -298,7 +298,7 @@ namespace MSG_Utils {
                         break;
                     }
                 }
-            }               
+            }
             if (!alreadyInBuffer) {
                 outputMessagesBuffer.push_back(station + "," + textMessage + "{" + getAckRequestNumber());
             }
@@ -362,7 +362,7 @@ namespace MSG_Utils {
                         outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                         if (winlinkStatus > 0 && winlinkStatus < 5) {   // if not complete Winlink Challenge Process it will reset Login process
                             winlinkStatus = 0;
-                        }                     
+                        }
                     }
                     break;
             }
@@ -412,7 +412,7 @@ namespace MSG_Utils {
         if (packet.text.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
             //Serial.println(packet.text); // only for debug
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
-            if (lastReceivedPacket.sender!=currentBeacon->callsign) {
+            if (lastReceivedPacket.sender != currentBeacon->callsign) {
 
                 if (lastReceivedPacket.payload.indexOf("\x3c\xff\x01") != -1) {
                     lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
@@ -542,7 +542,7 @@ namespace MSG_Utils {
 
                                 if (lastReceivedPacket.payload.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
-                                }                            
+                                }
                             }
                         }
                     } else {
@@ -553,7 +553,7 @@ namespace MSG_Utils {
                             NOTIFICATION_Utils::stationHeardBeep();
                         }
                     }
-                }                
+                }
             }
         }   
     }

@@ -32,7 +32,7 @@
 
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
-    
+
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
         #define smallSizeFont   1
@@ -135,7 +135,7 @@ extern logging::Logger logger;
         sprite.fillRect(xPos, yPos, wide, 2, lightColor);               // Línea superior
         sprite.fillRect(xPos, yPos, 2, height, lightColor);             // Línea izquierda
         sprite.fillRect(xPos + wide - 2, yPos, 2, height, darkColor);   // Línea derecha
-        
+
         sprite.setTextSize(2);
         sprite.setTextColor(TFT_WHITE, baseColor);
 
@@ -228,7 +228,7 @@ extern logging::Logger logger;
         }
     }
 
-#endif   
+#endif
 
 void displaySetup() {
     delay(500);
@@ -554,9 +554,10 @@ void displayShow(const String& header, const String& line1, const String& line2,
 void startupScreen(uint8_t index, const String& version) {
     String workingFreq = "    LoRa Freq [";
     switch (index) {
-        case 0: workingFreq += "Eu]"; break;
+        case 0: workingFreq += "EU]"; break;
         case 1: workingFreq += "PL]"; break;
         case 2: workingFreq += "UK]"; break;
+        case 3: workingFreq += "US]"; break;
     }
     displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");

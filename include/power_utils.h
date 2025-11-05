@@ -55,7 +55,7 @@ namespace POWER_Utils {
 
     void lowerCpuFrequency();
     void shutdown();
-  
+
 }
 
 #endif

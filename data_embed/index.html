@@ -123,23 +123,22 @@
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
+                                    <div class="col-6">
+                                        <label
+                                            for="path"
+                                            class="form-label"
+                                            >Path</label
+                                        >
+                                        <div class="input-group">
                                             <input
-                                                type="checkbox"
-                                                name="simplifiedTrackerMode"
-                                                id="simplifiedTrackerMode"
-                                                class="form-check-input"
+                                                type="text"
+                                                name="path"
+                                                id="path"
+                                                class="form-control"
+                                                value="WIDE1-1"                                                
                                             />
-                                            <label
-                                                for="simplifiedTrackerMode"
-                                                class="form-label"
-                                                >Simplified Tracker Mode<small> (Only GPS Beacon Tx/No User Menu)</small></label
-                                            >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row mt-3">
                                     <div class="col-6">
                                         <label
                                             for="sendCommentAfterXBeacons"
@@ -160,22 +159,6 @@
                                             <span class="input-group-text"
                                                 >GPS Beacons</span
                                             >
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label
-                                            for="path"
-                                            class="form-label"
-                                            >Path</label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="text"
-                                                name="path"
-                                                id="path"
-                                                class="form-control"
-                                                value="WIDE1-1"                                                
-                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -226,6 +209,46 @@
                                     </div>
                                 </div>
                                 <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="email"
+                                            class="form-label"
+                                            >Email<small> (to send GPS position)</small> </label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="text"
+                                                name="email"
+                                                id="email"
+                                                class="form-control"
+                                                value=""
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="rememberStationTime"
+                                            class="form-label"
+                                            >Remember Station Time</label
+                                        >
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="rememberStationTime"
+                                                id="rememberStationTime"
+                                                class="form-control"
+                                                placeholder="30"
+                                                value="30"
+                                                step="5"
+                                                min="15"
+                                            />
+                                            <span class="input-group-text"
+                                                >minutes</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input
@@ -256,22 +279,21 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12 mt-3">
-                                        <label
-                                            for="email"
-                                            class="form-label"
-                                            >Email<small> (to send GPS position)</small> </label
-                                        >
-                                        <div class="input-group">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
                                             <input
-                                                type="text"
-                                                name="email"
-                                                id="email"
-                                                class="form-control"
-                                                value=""
+                                                type="checkbox"
+                                                name="simplifiedTrackerMode"
+                                                id="simplifiedTrackerMode"
+                                                class="form-check-input"
                                             />
-                                        </div>
-                                    </div>
+                                            <label
+                                                for="simplifiedTrackerMode"
+                                                class="form-label"
+                                                >Simplified Tracker Mode<small> (Disables Buttons + Menu and only sends GPS Beacon)</small></label
+                                            >
+                                        </div>  
+                                    </div>                                    
                                 </div>
                             </div>
                         </div>
@@ -294,25 +316,10 @@
                                     </svg>
                                     Display
                                 </h5>
-                                <small>OLED screen configuration.</small>
+                                <small>Screen configuration.</small>
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="row">
-                                    <div class="col-6">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="display.showSymbol"
-                                                id="display.showSymbol"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="display.showSymbol"
-                                                class="form-label"
-                                                >Show Symbol Drawing</label
-                                            >
-                                        </div>
-                                    </div>
                                     <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
@@ -324,40 +331,32 @@
                                             <label
                                                 for="display.ecoMode"
                                                 class="form-label"
-                                                >EcoMode On</label
+                                                >Enable Display EcoMode</label
                                             >
                                         </div>
                                     </div>
-                                    
-                                </div>
-                                <div class="row mt-2">
                                     <div class="col-6">
-                                        <label
-                                            for="rememberStationTime"
-                                            class="form-label"
-                                            >Remember Station Time</label
-                                        >
-                                        <div class="input-group">
+                                        <div class="form-check form-switch">
                                             <input
-                                                type="number"
-                                                name="rememberStationTime"
-                                                id="rememberStationTime"
-                                                class="form-control"
-                                                placeholder="30"
-                                                value="30"
-                                                step="5"
-                                                min="15"
+                                                type="checkbox"
+                                                name="display.turn180"
+                                                id="display.turn180"
+                                                class="form-check-input"
                                             />
-                                            <span class="input-group-text"
-                                                >minutes</span
+                                            <label
+                                                for="display.turn180"
+                                                class="form-label"
+                                                >Turn 180º</label
                                             >
                                         </div>
                                     </div>
+                                </div>
+                                <div class="row mt-1">
                                     <div class="col-6">
                                         <label
                                             for="display.timeout"
                                             class="form-label"
-                                            >Display Timeout</label
+                                            >Display Timeout (for EcoMode)</label
                                         >
                                         <div class="input-group">
                                             <input
@@ -373,17 +372,105 @@
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="form-check form-switch mt-3">
+                                        <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="display.turn180"
-                                                id="display.turn180"
+                                                name="display.showSymbol"
+                                                id="display.showSymbol"
                                                 class="form-check-input"
                                             />
                                             <label
-                                                for="display.turn180"
+                                                for="display.showSymbol"
                                                 class="form-label"
-                                                >Turn 180º</label
+                                                >Show Symbol Drawing on Screen</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <div class="row my-5 d-flex align-items-top">   
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
+                                        class="bi bi-file-earmark-text-fill"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1z"
+                                        />
+                                    </svg>
+                                    BlueTooth
+                                </h5>
+                                <small
+                                    >BT Classic or BLE Configuration.</small
+                                >
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bluetooth.active"
+                                                id="bluetooth.active"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bluetooth.active"
+                                                class="form-label"
+                                                >Enable Bluetooth</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label 
+                                            for="bluetooth.deviceName" 
+                                            class="form-label"
+                                            >Bluetooth Device Name</label>
+                                        <input
+                                            name="bluetooth.deviceName"
+                                            id="bluetooth.deviceName"
+                                            class="form-control"
+                                            placeholder="LoRaTracker"
+                                            value="LoRaTracker"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bluetooth.useBLE"
+                                                id="bluetooth.useBLE"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bluetooth.useBLE"
+                                                class="form-label"
+                                                >Enable: BLE  / Disable: BT Classic</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bluetooth.useKISS"
+                                                id="bluetooth.useKISS"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bluetooth.useKISS"
+                                                class="form-label"
+                                                >Enable: KISS / Disable: TNC2</label
                                             >
                                         </div>
                                     </div>
@@ -426,6 +513,129 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
+                                        class="bi bi-database-fill"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            d="M3.904 1.777C4.978 1.289 6.427 1 8 1s3.022.289 4.096.777C13.125 2.245 14 2.993 14 4s-.875 1.755-1.904 2.223C11.022 6.711 9.573 7 8 7s-3.022-.289-4.096-.777C2.875 5.755 2 5.007 2 4s.875-1.755 1.904-2.223"
+                                        />
+                                        <path
+                                            d="M2 6.161V7c0 1.007.875 1.755 1.904 2.223C4.978 9.71 6.427 10 8 10s3.022-.289 4.096-.777C13.125 8.755 14 8.007 14 7v-.839c-.457.432-1.004.751-1.49.972C11.278 7.693 9.682 8 8 8s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                        />
+                                        <path
+                                            d="M2 9.161V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13s3.022-.289 4.096-.777C13.125 11.755 14 11.007 14 10v-.839c-.457.432-1.004.751-1.49.972-1.232.56-2.828.867-4.51.867s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                        />
+                                        <path
+                                            d="M2 12.161V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16s3.022-.289 4.096-.777C13.125 14.755 14 14.007 14 13v-.839c-.457.432-1.004.751-1.49.972-1.232.56-2.828.867-4.51.867s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                        />
+                                    </svg>
+                                    BATTERY
+                                </h5>
+                                <small
+                                    >BATTERY Information on GPS Beacon Configuration</small
+                                >
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="battery.sendVoltage"
+                                                id="battery.sendVoltage"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="battery.sendVoltage"
+                                                class="form-label"
+                                                >Send Voltage in GPS Beacon</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="battery.voltageAsTelemetry"
+                                                id="battery.voltageAsTelemetry"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="battery.voltageAsTelemetry"
+                                                class="form-label"
+                                                >Send as Encoded Telemetry</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="battery.sendVoltageAlways"
+                                                id="battery.sendVoltageAlways"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="battery.sendVoltageAlways"
+                                                class="form-label"
+                                                >Force Sending Voltage Info on every GPS Beacon</label
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="battery.monitorVoltage"
+                                                id="battery.monitorVoltage"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="battery.monitorVoltage"
+                                                class="form-label"
+                                                >Monitor Battery Voltage and power-off/sleep if low</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="battery.sleepVoltage"
+                                            class="form-label"
+                                            >Voltage power-off/sleep</label
+                                        >                                    
+                                        <div class="input-group">
+                                            <input
+                                                type="number"
+                                                name="battery.sleepVoltage"
+                                                id="battery.sleepVoltage"
+                                                class="form-control"
+                                                value="2.9"
+                                                step="0.1"
+                                                min="2.5"
+                                                max="3.7"
+                                            />
+                                            <span class="input-group-text"
+                                                >Volts</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
                                         class="bi bi-broadcast-pin"
                                         viewBox="0 0 16 16"
                                     >
@@ -450,14 +660,14 @@
                                             <label
                                                 for="telemetry.active"
                                                 class="form-label"
-                                                ><b>Activate Sensor</b>
+                                                >Activate Sensor
                                                 <small
-                                                    >(Requires a BME280/BMP280/BME680/SHTC3 sensor)</small
+                                                    >(Requires BME280/BMP280/BME680/SHTC3 sensor)</small
                                                 ></label
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -468,11 +678,11 @@
                                             <label
                                                 for="telemetry.sendTelemetry"
                                                 class="form-label"
-                                                >Send Telemetry over LoRa APRS
+                                                >Send Telemetry via LoRa APRS
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="col-6 mt-3">
+                                    <div class="col-6">
                                         <label for="telemetry.temperatureCorrection" class="form-label"
                                             >Temperature Correction</label
                                         >
@@ -505,73 +715,42 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
-                                        class="bi bi-file-earmark-text-fill"
+                                        class="bi bi-router-fill"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
-                                            d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M4.5 9a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 1 0-1h4a.5.5 0 0 1 0 1z"
+                                            d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707"
+                                        />
+                                        <path
+                                            d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"
+                                        />
+                                        <path
+                                            d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86zM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0"
+                                        />
+                                        <path
+                                            d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
                                         />
                                     </svg>
-                                    BlueTooth
+                                    Winlink
                                 </h5>
                                 <small
-                                    >BT Classic or BLE Configuration.</small
+                                    >Add your password to access Winlink.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
-                                <div class="form-check form-switch">
-                                    <input
-                                        type="checkbox"
-                                        name="bluetooth.active"
-                                        id="bluetooth.active"
-                                        class="form-check-input"
-                                    />
-                                    <label
-                                        for="bluetooth.active"
-                                        class="form-label"
-                                        >Enable Bluetooth</label
-                                    >
-                                </div>
-                                <div class="col-12">
+                                <div class="col-6">
                                     <label 
-                                        for="bluetooth.deviceName" 
+                                        for="winlink.password" 
                                         class="form-label"
-                                        >Bluetooth Device Name</label>
+                                        >Password</label>
                                     <input
-                                        name="bluetooth.deviceName"
-                                        id="bluetooth.deviceName"
+                                        type="password"
+                                        name="winlink.password"
+                                        id="winlink.password"
                                         class="form-control"
-                                        placeholder="LoRaTracker"
-                                        value="LoRaTracker"
+                                        placeholder="ABCDEF"
+                                        value="ABCDEF"
                                     />
-                                </div>
-                                <div class="col-12 mt-3">
-                                    <div class="form-check form-switch">
-                                        <input
-                                            type="checkbox"
-                                            name="bluetooth.useBLE"
-                                            id="bluetooth.useBLE"
-                                            class="form-check-input"
-                                        />
-                                        <label
-                                            for="bluetooth.useBLE"
-                                            class="form-label"
-                                            >Enable: use BLE  / Disable: use BT Classic</label
-                                        >
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input
-                                            type="checkbox"
-                                            name="bluetooth.useKISS"
-                                            id="bluetooth.useKISS"
-                                            class="form-check-input"
-                                        />
-                                        <label
-                                            for="bluetooth.useKISS"
-                                            class="form-label"
-                                            >Enable: use KISS / Disable: use TNC2</label
-                                        >
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -585,112 +764,42 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
-                                        class="bi bi-database-fill"
+                                        class="bi bi-router-fill"
                                         viewBox="0 0 16 16"
                                     >
                                         <path
-                                            d="M3.904 1.777C4.978 1.289 6.427 1 8 1s3.022.289 4.096.777C13.125 2.245 14 2.993 14 4s-.875 1.755-1.904 2.223C11.022 6.711 9.573 7 8 7s-3.022-.289-4.096-.777C2.875 5.755 2 5.007 2 4s.875-1.755 1.904-2.223"
+                                            d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707"
                                         />
                                         <path
-                                            d="M2 6.161V7c0 1.007.875 1.755 1.904 2.223C4.978 9.71 6.427 10 8 10s3.022-.289 4.096-.777C13.125 8.755 14 8.007 14 7v-.839c-.457.432-1.004.751-1.49.972C11.278 7.693 9.682 8 8 8s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                            d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"
                                         />
                                         <path
-                                            d="M2 9.161V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13s3.022-.289 4.096-.777C13.125 11.755 14 11.007 14 10v-.839c-.457.432-1.004.751-1.49.972-1.232.56-2.828.867-4.51.867s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                            d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86zM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0"
                                         />
                                         <path
-                                            d="M2 12.161V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16s3.022-.289 4.096-.777C13.125 14.755 14 14.007 14 13v-.839c-.457.432-1.004.751-1.49.972-1.232.56-2.828.867-4.51.867s-3.278-.307-4.51-.867c-.486-.22-1.033-.54-1.49-.972"
+                                            d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
                                         />
                                     </svg>
-                                    BATTERY
+                                    WiFi AP
                                 </h5>
                                 <small
-                                    >BATTERY Information on GPS Beacon Configuration</small
+                                    >Add your password to access WiFi AP.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.sendVoltage"
-                                                id="battery.sendVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.sendVoltage"
-                                                class="form-label"
-                                                >Send Battery Voltage in GPS Beacon</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.voltageAsTelemetry"
-                                                id="battery.voltageAsTelemetry"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.voltageAsTelemetry"
-                                                class="form-label"
-                                                >Send Voltage as Encoded Telemetry</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.sendVoltageAlways"
-                                                id="battery.sendVoltageAlways"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.sendVoltageAlways"
-                                                class="form-label"
-                                                >Force Sending Voltage Info on every GPS Beacon</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-12 mt-3">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
-                                                name="battery.monitorVoltage"
-                                                id="battery.monitorVoltage"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="battery.monitorVoltage"
-                                                class="form-label"
-                                                >Monitor Battery Voltage and power-off/sleep if low</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label
-                                            for="battery.sleepVoltage"
-                                            class="form-label"
-                                            >Voltage readings to power-off/sleep to protect Battery</label
-                                        >                                    
-                                        <div class="input-group">
-                                            <input
-                                                type="number"
-                                                name="battery.sleepVoltage"
-                                                id="battery.sleepVoltage"
-                                                class="form-control"
-                                                value="2.9"
-                                                step="0.1"
-                                                min="2.5"
-                                                max="3.7"
-                                            />
-                                            <span class="input-group-text"
-                                                >Volts</span
-                                            >
-                                        </div>
-                                    </div>
+                                <div class="col-6">
+                                    <label 
+                                        for="wifiAP.password" 
+                                        class="form-label"
+                                        >Password</label>
+                                    <input
+                                        type="password"
+                                        name="wifiAP.password"
+                                        id="wifiAP.password"
+                                        class="form-control"
+                                        placeholder="1234567890"
+                                        value="1234567890"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -750,7 +859,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mt-3">
+                                <div class="row mt-1">
                                     <div class="col-6">
                                         <label
                                             for="notification.ledTxPin"
@@ -822,7 +931,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mt-3">                                    
+                                <div class="row mt-1">                                    
                                     <div class="col-6">
                                         <label
                                             for="notification.buzzerPinTone"
@@ -880,7 +989,7 @@
                                     
                                 </div>
                                 <div class="row mt-3">
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -895,7 +1004,7 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -910,7 +1019,7 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -925,7 +1034,7 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -940,7 +1049,7 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -955,7 +1064,7 @@
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -998,7 +1107,7 @@
                             </div>
                             <div class="col-9 mt-2">
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-6">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -1009,33 +1118,27 @@
                                             <label
                                                 for="ptt.active"
                                                 class="form-label"
-                                                >PTT Active</label
+                                                >Enable PTT Trigger</label
                                             >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row">
                                     <div class="col-6">
-                                        <label
-                                            for="ptt.io_pin"
-                                            class="form-label"
-                                            >Pin used for external Amp trigger</label
-                                        >                                    
-                                        <div class="input-group">
+                                        <div class="form-check form-switch">
                                             <input
-                                                type="number"
-                                                name="ptt.io_pin"
-                                                id="ptt.io_pin"
-                                                class="form-control"
-                                                value="4"
+                                                type="checkbox"
+                                                name="ptt.reverse"
+                                                id="ptt.reverse"
+                                                class="form-check-input"
                                             />
-                                            <span class="input-group-text"
-                                                >Pin</span
+                                            <label
+                                                for="ptt.reverse"
+                                                class="form-label"
+                                                >PTT in Reverse Mode</label
                                             >
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mt-3">
+                                <div class="row mt-1">
                                     <div class="col-6">
                                         <label
                                             for="ptt.preDelay"
@@ -1059,8 +1162,6 @@
                                             >
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row mt-3">
                                     <div class="col-6">
                                         <label
                                             for="ptt.postDelay"
@@ -1085,120 +1186,26 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-12 mt-3">
-                                        <div class="form-check form-switch">
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="ptt.io_pin"
+                                            class="form-label"
+                                            >Pin used for external Amp trigger</label
+                                        >                                    
+                                        <div class="input-group">
                                             <input
-                                                type="checkbox"
-                                                name="ptt.reverse"
-                                                id="ptt.reverse"
-                                                class="form-check-input"
+                                                type="number"
+                                                name="ptt.io_pin"
+                                                id="ptt.io_pin"
+                                                class="form-control"
+                                                value="4"
                                             />
-                                            <label
-                                                for="ptt.reverse"
-                                                class="form-label"
-                                                >PTT in Reverse Mode</label
+                                            <span class="input-group-text"
+                                                >Pin</span
                                             >
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                        <hr>
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
-                                        class="bi bi-router-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707"
-                                        />
-                                        <path
-                                            d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"
-                                        />
-                                        <path
-                                            d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86zM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0"
-                                        />
-                                        <path
-                                            d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
-                                        />
-                                    </svg>
-                                    Winlink
-                                </h5>
-                                <small
-                                    >Add your password to access Winlink.</small
-                                >
-                            </div>
-                            <div class="col-lg-9 col-sm-12">
-                                <div class="col-12">
-                                    <label 
-                                        for="winlink.password" 
-                                        class="form-label"
-                                        >Password</label>
-                                    <input
-                                        type="password"
-                                        name="winlink.password"
-                                        id="winlink.password"
-                                        class="form-control"
-                                        placeholder="ABCDEF"
-                                        value="ABCDEF"
-                                    />
-                                </div>
-                            </div>                            
-                        </div>
-                        <hr>
-
-                        <div class="row my-5 d-flex align-items-top">
-                            <div class="col-lg-3 col-sm-12">
-                                <h5>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        fill="currentColor"
-                                        class="bi bi-router-fill"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <path
-                                            d="M5.525 3.025a3.5 3.5 0 0 1 4.95 0 .5.5 0 1 0 .707-.707 4.5 4.5 0 0 0-6.364 0 .5.5 0 0 0 .707.707"
-                                        />
-                                        <path
-                                            d="M6.94 4.44a1.5 1.5 0 0 1 2.12 0 .5.5 0 0 0 .708-.708 2.5 2.5 0 0 0-3.536 0 .5.5 0 0 0 .707.707Z"
-                                        />
-                                        <path
-                                            d="M2.974 2.342a.5.5 0 1 0-.948.316L3.806 8H1.5A1.5 1.5 0 0 0 0 9.5v2A1.5 1.5 0 0 0 1.5 13H2a.5.5 0 0 0 .5.5h2A.5.5 0 0 0 5 13h6a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5h.5a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 14.5 8h-2.306l1.78-5.342a.5.5 0 1 0-.948-.316L11.14 8H4.86zM2.5 11a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m4.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2.5.5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m1.5-.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0"
-                                        />
-                                        <path
-                                            d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
-                                        />
-                                    </svg>
-                                    WiFi AP
-                                </h5>
-                                <small
-                                    >Add your password to access WiFi AP.</small
-                                >
-                            </div>
-                            <div class="col-lg-9 col-sm-12">
-                                <div class="col-12">
-                                    <label 
-                                        for="wifiAP.password" 
-                                        class="form-label"
-                                        >Password</label>
-                                    <input
-                                        type="password"
-                                        name="wifiAP.password"
-                                        id="wifiAP.password"
-                                        class="form-control"
-                                        placeholder="1234567890"
-                                        value="1234567890"
-                                    />
                                 </div>
                             </div>
                         </div>

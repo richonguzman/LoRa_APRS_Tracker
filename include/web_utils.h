@@ -25,7 +25,6 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 
-
 namespace WEB_Utils {
 
     void handleNotFound(AsyncWebServerRequest *request);

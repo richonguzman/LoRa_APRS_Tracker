@@ -32,14 +32,13 @@ struct SmartBeaconValues {
     int     turnSlope;
 };
 
-
 namespace SMARTBEACON_Utils {
 
     void checkSettings(byte index);
     void checkInterval(int speed);
     void checkFixedBeaconTime();
     void checkState();
-    
+
 }
 
 #endif

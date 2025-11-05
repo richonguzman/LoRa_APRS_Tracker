@@ -21,7 +21,6 @@
 
 #include <Arduino.h>
 
-
 struct TouchButton {
     int Xmin;
     int Xmax;
@@ -31,7 +30,6 @@ struct TouchButton {
     int color;
     void (*action)();   // Pointer to a function for button press action
 };
-
 
 namespace TOUCH_Utils {
 

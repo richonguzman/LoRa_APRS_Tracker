@@ -74,5 +74,5 @@ namespace SMARTBEACON_Utils {
         if (wxRequestStatus && (millis() - wxRequestTime) > 20000) wxRequestStatus = false;
         smartBeaconActive = (winlinkStatus == 0 && !wxRequestStatus) ? currentBeacon->smartBeaconActive : false;
     }
-    
+
 }
