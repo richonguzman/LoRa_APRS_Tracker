@@ -68,6 +68,8 @@ extern bool             winlinkCommentState;
 extern bool             gpsIsActive;
 extern bool             sendStartTelemetry;
 extern uint8_t          keyboardAddress;
+extern String           msgTo;
+extern String           msgText;
 
 extern std::vector<String>  outputMessagesBuffer;
 
@@ -164,9 +166,9 @@ namespace KEYBOARD_Utils {
             menuDisplay++;
             if (menuDisplay > 6) menuDisplay = 1;
         }
-        else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay++;
-            if (menuDisplay > 13) menuDisplay = 10;
+            if (menuDisplay > 14) menuDisplay = 10;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay++;
             if (menuDisplay > 133) menuDisplay = 130;
@@ -181,7 +183,14 @@ namespace KEYBOARD_Utils {
             }
         } else if (menuDisplay == 110) {
             menuDisplay = 11;
-        }
+        } else if (menuDisplay == 140) {
+            messagesIterator++;
+            if (messagesIterator == MSG_Utils::getNumSavedMessages()) {
+                messagesIterator = 0;
+            } else {
+                menuDisplay = 140;
+            }
+        } 
         
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
         menuDisplay++;
@@ -324,7 +333,7 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 14) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -355,6 +364,23 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 13;
+            #endif
+        } else if (menuDisplay == 14) {
+            MSG_Utils::loadMessagesFromMemory(2);
+            if (MSG_Utils::warnNoSavedMessages()) {
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 11;
+                #else
+                    menuDisplay = 14;
+                #endif
+            } else {
+                menuDisplay = 140;
+            }
+        } else if (menuDisplay == 140) {
+            MSG_Utils::addToOutputBuffer(0, msgTo, msgText);
+            menuDisplay = 14;
             #ifdef HAS_JOYSTICK
                 menuDisplay = 13;
             #endif

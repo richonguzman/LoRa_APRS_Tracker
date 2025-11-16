@@ -477,5 +477,51 @@ form.addEventListener("submit", async (event) => {
     setTimeout(checkConnection, 2000);
 });
 
+const saveBtn = document.getElementById('save-sms-btn');
+
+saveBtn.addEventListener('click', async function () {
+    const toField = document.getElementById('sms_destinatario');
+    const msgField = document.getElementById('sms_mensaje');
+
+    const destination = toField.value.trim();
+    const messageText = msgField.value.trim();
+
+    if (!destination || !messageText) {
+        alert("Destination and message cannot be empty.");
+        return;
+    }
+
+    if (messageText.length > 67) {
+        alert("APRS message cannot exceed 67 characters.");
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append("destination", destination);
+    params.append("message", messageText);
+
+    try {
+        const resp = await fetch('/saveMessageAPRS', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+
+        if (!resp.ok) {
+            alert("Server error: " + resp.status);
+            return;
+        }
+
+        alert("Message to " + destination + " has been saved!. Click on 'Save Configuration' to reboot and disable AP mode'");
+        toField.value = "";
+        msgField.value = "";
+
+    } catch (err) {
+        alert("Network error: " + err.message);
+    }
+
+});
 
 fetchSettings();
