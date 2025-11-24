@@ -29,7 +29,7 @@ bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
 
-    StaticJsonDocument<2800> data;
+    StaticJsonDocument<3200> data;
     File configFile = SPIFFS.open("/tracker_conf.json", "w");
 
     if (!configFile) {
@@ -139,7 +139,7 @@ bool Configuration::readFile() {
 
     if (configFile) {
         bool needsRewrite = false;
-        StaticJsonDocument<2800> data;
+        StaticJsonDocument<3200> data;
 
         DeserializationError error = deserializeJson(data, configFile);
         if (error) {
@@ -161,12 +161,11 @@ bool Configuration::readFile() {
             bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
             bcn.micE                    = BeaconsArray[i]["micE"] | "";
             bcn.comment                 = BeaconsArray[i]["comment"] | "";
+            bcn.status                  = BeaconsArray[i]["status"] | "";
             bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
             bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
             bcn.profileLabel            = BeaconsArray[i]["profileLabel"] | "";
-            bcn.status                  = BeaconsArray[i]["status"] | "";
-
             beacons.push_back(bcn);
         }
 

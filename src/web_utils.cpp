@@ -131,13 +131,13 @@ namespace WEB_Utils {
 
         //  Beacons
         for (int i = 0; i < 3; i++) {
-            Config.beacons[i].callsign              = request->getParam("beacons." + String(i) + ".callsign", true)->value();
-            Config.beacons[i].symbol                = request->getParam("beacons." + String(i) + ".symbol", true)->value();
-            Config.beacons[i].overlay               = request->getParam("beacons." + String(i) + ".overlay", true)->value();
-            Config.beacons[i].micE                  = request->getParam("beacons." + String(i) + ".micE", true)->value();
-            Config.beacons[i].comment               = request->getParam("beacons." + String(i) + ".comment", true)->value();
-            Config.beacons[i].profileLabel          = request->getParam("beacons." + String(i) + ".profileLabel", true)->value();
-            Config.beacons[i].status                = request->getParam("beacons." + String(i) + ".status", true)->value();
+            Config.beacons[i].callsign      = request->getParam("beacons." + String(i) + ".callsign", true)->value();
+            Config.beacons[i].symbol        = request->getParam("beacons." + String(i) + ".symbol", true)->value();
+            Config.beacons[i].overlay       = request->getParam("beacons." + String(i) + ".overlay", true)->value();
+            Config.beacons[i].micE          = request->getParam("beacons." + String(i) + ".micE", true)->value();
+            Config.beacons[i].comment       = request->getParam("beacons." + String(i) + ".comment", true)->value();
+            Config.beacons[i].status        = request->getParam("beacons." + String(i) + ".status", true)->value();
+            Config.beacons[i].profileLabel  = request->getParam("beacons." + String(i) + ".profileLabel", true)->value();
 
             String paramGpsEcoMode = "beacons." + String(i) + ".gpsEcoMode";
             if (request->hasParam(paramGpsEcoMode, true)) {
@@ -176,7 +176,7 @@ namespace WEB_Utils {
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
 
         //  Display
-        Config.display.ecoMode                 = request->hasParam("display.alwaysOn", true);
+        Config.display.ecoMode                  = request->hasParam("display.alwaysOn", true);
         if (!Config.display.ecoMode) {
             Config.display.timeout              = getParamIntSafe("display.timeout", Config.display.timeout);
         }
@@ -186,9 +186,9 @@ namespace WEB_Utils {
         //  Bluetooth
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
         if (Config.bluetooth.active) {
-            Config.bluetooth.deviceName             = getParamStringSafe("bluetooth.deviceName", Config.bluetooth.deviceName);
-            Config.bluetooth.useBLE                 = request->hasParam("bluetooth.useBLE", true);
-            Config.bluetooth.useKISS                = request->hasParam("bluetooth.useKISS", true);
+            Config.bluetooth.deviceName         = getParamStringSafe("bluetooth.deviceName", Config.bluetooth.deviceName);
+            Config.bluetooth.useBLE             = request->hasParam("bluetooth.useBLE", true);
+            Config.bluetooth.useKISS            = request->hasParam("bluetooth.useKISS", true);
         }
 
         // LORA
@@ -244,10 +244,10 @@ namespace WEB_Utils {
         //  PTT Trigger
         Config.ptt.active                       = request->hasParam("ptt.active", true);
         if (Config.ptt.active) {
-            Config.ptt.reverse                      = request->hasParam("ptt.reverse", true);
-            Config.ptt.io_pin                       = getParamIntSafe("ptt.io_pin", Config.ptt.io_pin);
-            Config.ptt.preDelay                     = getParamIntSafe("ptt.preDelay", Config.ptt.preDelay);
-            Config.ptt.postDelay                    = getParamIntSafe("ptt.postDelay", Config.ptt.postDelay);
+            Config.ptt.reverse                  = request->hasParam("ptt.reverse", true);
+            Config.ptt.io_pin                   = getParamIntSafe("ptt.io_pin", Config.ptt.io_pin);
+            Config.ptt.preDelay                 = getParamIntSafe("ptt.preDelay", Config.ptt.preDelay);
+            Config.ptt.postDelay                = getParamIntSafe("ptt.postDelay", Config.ptt.postDelay);
         }
 
         bool saveSuccess = Config.writeFile();

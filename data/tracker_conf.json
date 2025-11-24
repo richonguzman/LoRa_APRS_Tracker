@@ -7,10 +7,10 @@
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
-			"profileLabel": "",
-			"status": ""
+			"profileLabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -19,10 +19,10 @@
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
-			"profileLabel": "",
-			"status": ""
+			"profileLabel": ""
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -31,10 +31,10 @@
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
-			"profileLabel": "",
-			"status": ""
+			"profileLabel": ""
 		}
 	],
 	"display": {
