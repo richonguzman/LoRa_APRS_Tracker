@@ -69,8 +69,8 @@ ____________________________________________________________________*/
 #endif
 
 
-String      versionDate             = "2025-11-01";
-String      versionNumber           = "2.3.1";
+String      versionDate             = "2025-11-24";
+String      versionNumber           = "2.3.2";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
@@ -88,7 +88,7 @@ LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 int         menuDisplay             = 100;
 uint32_t    menuTime                = millis();
 
-bool        statusState             = true;
+bool        statusUpdate            = true;
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
 uint32_t    displayTime             = millis();
@@ -180,7 +180,7 @@ void setup() {
 
 void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
-    if (statusState) {
+    if (statusUpdate) {
         if (Config.validateConfigFile(currentBeacon->callsign)) {
             KEYBOARD_Utils::rightArrow();
             currentBeacon = &Config.beacons[myBeaconsIndex];

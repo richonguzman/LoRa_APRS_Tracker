@@ -151,6 +151,15 @@ function loadSettings(settings) {
                      value="${beacons.profileLabel}">
                  <label for="beacons.${index}.profileLabel">Profile Label</label>
              </div>
+             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
+                 <input 
+                     type="text" 
+                     class="form-control form-control-sm" 
+                     name="beacons.${index}.status" 
+                     id="beacons.${index}.status" 
+                     value="${beacons.status}">
+                 <label for="beacons.${index}.status">Status</label>
+             </div>
         `;
         beaconContainer.appendChild(beaconElement);
     });

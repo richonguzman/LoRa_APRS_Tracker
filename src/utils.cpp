@@ -39,7 +39,7 @@ extern int                      menuDisplay;
 extern String                   versionDate;
 extern bool                     flashlight;
 
-extern bool                     statusState;
+extern bool                     statusUpdate;
 
 uint32_t    statusTime          = millis();
 uint8_t     wxModuleAddress     = 0x00;
@@ -110,13 +110,17 @@ namespace Utils {
     }
 
     void checkStatus() {
-        if (statusState) {
-            uint32_t currentTime = millis();
-            uint32_t statusTx = currentTime - statusTime;
-            lastTx = currentTime - lastTxTime;
-            if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
-                LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, "https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate));
-                statusState = false;
+        if (statusUpdate) {
+            if (currentBeacon->status == "") {
+                statusUpdate = false;
+            } else {
+                uint32_t currentTime = millis();
+                uint32_t statusTx = currentTime - statusTime;
+                lastTx = currentTime - lastTxTime;
+                if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
+                    LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->status));
+                    statusUpdate = false;
+                }
             }
         }
     }

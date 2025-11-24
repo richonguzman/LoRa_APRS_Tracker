@@ -47,12 +47,13 @@ bool Configuration::writeFile() {
             data["beacons"][i]["callsign"]              = beacons[i].callsign;
             data["beacons"][i]["symbol"]                = beacons[i].symbol;
             data["beacons"][i]["overlay"]               = beacons[i].overlay;
+            data["beacons"][i]["micE"]                  = beacons[i].micE;
             data["beacons"][i]["comment"]               = beacons[i].comment;
             data["beacons"][i]["smartBeaconActive"]     = beacons[i].smartBeaconActive;
             data["beacons"][i]["smartBeaconSetting"]    = beacons[i].smartBeaconSetting;
-            data["beacons"][i]["micE"]                  = beacons[i].micE;
             data["beacons"][i]["gpsEcoMode"]            = beacons[i].gpsEcoMode;
             data["beacons"][i]["profileLabel"]          = beacons[i].profileLabel;
+            data["beacons"][i]["status"]                = beacons[i].status;
         }
 
         data["display"]["ecoMode"]                  = display.ecoMode;
@@ -158,12 +159,13 @@ bool Configuration::readFile() {
             bcn.callsign.toUpperCase();
             bcn.symbol                  = BeaconsArray[i]["symbol"] | "[";
             bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
+            bcn.micE                    = BeaconsArray[i]["micE"] | "";
             bcn.comment                 = BeaconsArray[i]["comment"] | "";
             bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
             bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
-            bcn.micE                    = BeaconsArray[i]["micE"] | "";
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
             bcn.profileLabel            = BeaconsArray[i]["profileLabel"] | "";
+            bcn.status                  = BeaconsArray[i]["status"] | "";
 
             beacons.push_back(bcn);
         }
@@ -312,12 +314,13 @@ void Configuration::setDefaultValues() {
         beacon.callsign             = "NOCALL-7";
         beacon.symbol               = "[";
         beacon.overlay              = "/";
+        beacon.micE                 = "";
         beacon.comment              = "";
         beacon.smartBeaconActive    = true;
         beacon.smartBeaconSetting   = 0;
-        beacon.micE                 = "";
         beacon.gpsEcoMode           = false;
         beacon.profileLabel         = "";
+        beacon.status               = "";
         beacons.push_back(beacon);
     }
 

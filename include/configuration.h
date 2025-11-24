@@ -34,12 +34,13 @@ public:
     String  callsign;
     String  symbol;
     String  overlay;
+    String  micE;
     String  comment;
     bool    smartBeaconActive;
     byte    smartBeaconSetting;
-    String  micE;
     bool    gpsEcoMode;
     String  profileLabel;
+    String  status;
 };
 
 class Display {

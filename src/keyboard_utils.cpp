@@ -47,7 +47,7 @@ extern bool             displayState;
 extern uint32_t         displayTime;
 extern bool             displayEcoMode;
 extern uint8_t          screenBrightness;
-extern bool             statusState;
+extern bool             statusUpdate;
 extern uint32_t         statusTime;
 extern int              messagesIterator;
 extern bool             messageLed;
@@ -302,7 +302,7 @@ namespace KEYBOARD_Utils {
             }
             displayToggle(true);
             displayTime = millis();
-            statusState  = true;
+            statusUpdate  = true;
             statusTime = millis();
             winlinkCommentState = false;
             
