@@ -29,7 +29,7 @@ bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
 
-    StaticJsonDocument<3200> data;
+    StaticJsonDocument<3584> data;
     File configFile = SPIFFS.open("/tracker_conf.json", "w");
 
     if (!configFile) {
@@ -139,7 +139,7 @@ bool Configuration::readFile() {
 
     if (configFile) {
         bool needsRewrite = false;
-        StaticJsonDocument<3200> data;
+        StaticJsonDocument<3584> data;
 
         DeserializationError error = deserializeJson(data, configFile);
         if (error) {
