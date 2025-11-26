@@ -181,11 +181,13 @@ void setup() {
 void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
     if (statusUpdate) {
-        if (Config.validateConfigFile(currentBeacon->callsign)) {
+        if (APRSPacketLib::checkNocall(currentBeacon->callsign)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your callsigns in WebConfig");
+            displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
             KEYBOARD_Utils::rightArrow();
             currentBeacon = &Config.beacons[myBeaconsIndex];
         }
-        miceActive = Config.validateMicE(currentBeacon->micE);
+        miceActive = APRSPacketLib::validateMicE(currentBeacon->micE);
     }
 
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);

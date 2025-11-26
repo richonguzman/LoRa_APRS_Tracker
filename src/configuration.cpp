@@ -415,28 +415,6 @@ void Configuration::setDefaultValues() {
     Serial.println("New Data Created... All is Written!");
 }
 
-bool Configuration::validateConfigFile(const String& currentBeaconCallsign) {
-    if (currentBeaconCallsign.indexOf("NOCALL") != -1) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change all your callsigns in WebConfig");
-        displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool Configuration::validateMicE(const String& currentBeaconMicE) {
-    String miceMessageTypes[] = {"111", "110", "101", "100", "011", "010", "001" , "000"};
-    int arraySize = sizeof(miceMessageTypes) / sizeof(miceMessageTypes[0]);
-    bool validType = false;
-    for (int i = 0; i < arraySize; i++) {
-        if (currentBeaconMicE == miceMessageTypes[i]) {
-            validType = true;
-        }
-    }
-    return validType;
-}
-
 Configuration::Configuration() {
     if (!SPIFFS.begin(false)) {
         Serial.println("SPIFFS Mount Failed");

@@ -146,8 +146,6 @@ public:
     void setDefaultValues();
     bool writeFile();
     Configuration();
-    bool validateConfigFile(const String& currentBeaconCallsign);
-    bool validateMicE(const String& currentBeaconMicE);
 
 private:
     bool readFile();
