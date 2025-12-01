@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2025-12-01 APRSPacketLib update.
 - 2025-11-26 Custom Status Selection.
 - 2025-08-11 New improved Battery Monitor for Heltec Boards. Thanks Tilen S54B.
 - 2025-08-10 RPC Electronics 1W LoRa GPS with 1W SX1268 added. APRSPacketLib Library Updated.
