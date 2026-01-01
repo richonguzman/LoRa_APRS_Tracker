@@ -24,7 +24,7 @@
 #include "display.h"
 #include "logger.h"
 
-#define BLE_CHUNK_SIZE  256
+#define BLE_CHUNK_SIZE  512
 
 
 // APPLE - APRS.fi app
@@ -75,18 +75,21 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             for (int i = 0; i < receivedData.length(); i++) {
                 char character = receivedData[i];
 
-                if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;
-                kissSerialBuffer += receivedData[i];
+                if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;  // Si el buffer está vacío, solo empezar con FEND
                 
-                if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
+                kissSerialBuffer += character;
+                
+                if (kissSerialBuffer.length() > BLE_CHUNK_SIZE) {                                   // Protección contra overflow
+                    kissSerialBuffer = "";
+                    continue;
+                }
+                
+                if (kissSerialBuffer.length() > 3 && character == (char)KissChar::FEND) {           // Detectar frame completo
                     bool isDataFrame = false;
-
                     BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
 
-                    if (isDataFrame) {
-                        shouldSendBLEtoLoRa = true;
-                        kissSerialBuffer = "";
-                    }
+                    if (isDataFrame) shouldSendBLEtoLoRa = true;
+                    kissSerialBuffer = "";
                 }
             }
         } else {                            // TNC2
