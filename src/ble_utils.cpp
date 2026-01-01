@@ -71,7 +71,6 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             std::string receivedData = pCharacteristic->getValue();
-            delay(100);
             for (int i = 0; i < receivedData.length(); i++) {
                 char character = receivedData[i];
 
@@ -87,7 +86,6 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 if (kissSerialBuffer.length() > 3 && character == (char)KissChar::FEND) {           // Detectar frame completo
                     bool isDataFrame = false;
                     BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
-
                     if (isDataFrame) shouldSendBLEtoLoRa = true;
                     kissSerialBuffer = "";
                 }
