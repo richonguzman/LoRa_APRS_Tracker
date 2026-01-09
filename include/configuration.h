@@ -141,7 +141,6 @@ public:
     int     standingUpdateTime;
     bool    sendAltitude;
     bool    disableGPS;
-    bool    acceptOwnFrameFromTNC;
 
     void setDefaultValues();
     bool writeFile();

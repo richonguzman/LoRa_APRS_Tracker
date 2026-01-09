@@ -120,7 +120,6 @@ bool Configuration::writeFile() {
         data["other"]["standingUpdateTime"]         = standingUpdateTime;
         data["other"]["sendAltitude"]               = sendAltitude;
         data["other"]["disableGPS"]                 = disableGPS;
-        data["other"]["acceptOwnFrameFromTNC"]      = acceptOwnFrameFromTNC;
         data["other"]["email"]                      = email;
 
         serializeJson(data, configFile);
@@ -275,7 +274,6 @@ bool Configuration::readFile() {
             !data["other"].containsKey("standingUpdateTime") ||
             !data["other"].containsKey("sendAltitude") ||
             !data["other"].containsKey("disableGPS") ||
-            !data["other"].containsKey("acceptOwnFrameFromTNC") ||
             !data["other"].containsKey("email")) needsRewrite = true;
         simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
@@ -285,7 +283,6 @@ bool Configuration::readFile() {
         standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
-        acceptOwnFrameFromTNC           = data["other"]["acceptOwnFrameFromTNC"] | false;
         email                           = data["other"]["email"] | "";
 
         configFile.close();
@@ -409,7 +406,6 @@ void Configuration::setDefaultValues() {
     standingUpdateTime              = 15;
     sendAltitude                    = true;
     disableGPS                      = false;
-    acceptOwnFrameFromTNC           = false;
     email                           = "";
 
     Serial.println("New Data Created... All is Written!");
