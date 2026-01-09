@@ -162,14 +162,14 @@ namespace BLE_Utils {
     void sendToLoRa() {
         if (!shouldSendBLEtoLoRa) return;
 
-        if (!Config.acceptOwnFrameFromTNC && BLEToLoRaPacket.indexOf("::") == -1) {
-            String sender = BLEToLoRaPacket.substring(0, BLEToLoRaPacket.indexOf(">"));
-            if (sender == currentBeacon->callsign) {
-                BLEToLoRaPacket = "";
-                shouldSendBLEtoLoRa = false;
-                return;
-            }
-        }
+        // if (!Config.acceptOwnFrameFromTNC && BLEToLoRaPacket.indexOf("::") == -1) {
+        //     String sender = BLEToLoRaPacket.substring(0, BLEToLoRaPacket.indexOf(">"));
+        //     if (sender == currentBeacon->callsign) {
+        //         BLEToLoRaPacket = "";
+        //         shouldSendBLEtoLoRa = false;
+        //         return;
+        //     }
+        // }
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
         displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
