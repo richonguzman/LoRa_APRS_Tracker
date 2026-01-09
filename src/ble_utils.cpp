@@ -72,20 +72,43 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             std::string receivedData = pCharacteristic->getValue();
             delay(100);
-            for (int i = 0; i < receivedData.length(); i++) {
-                char character = receivedData[i];
 
-                if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;
-                kissSerialBuffer += receivedData[i];
-                
-                if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
+            for (char const &c : receivedData) {
+                kissSerialBuffer += c;
+            }
+
+            while (true) {
+                int fend_pos = -1;
+                if (kissSerialBuffer.charAt(0) == (char)KissChar::FEND) {
+                    for (int i = 1; i < kissSerialBuffer.length(); i++) {
+                        if (kissSerialBuffer.charAt(i) == (char)KissChar::FEND) {
+                            fend_pos = i;
+                            break;
+                        }
+                    }
+                } else {
+                    int garbage_end = kissSerialBuffer.indexOf((char)KissChar::FEND);
+                    if (garbage_end != -1) {
+                        kissSerialBuffer.remove(0, garbage_end);
+                    } else {
+                        break;
+                    }
+                    continue;
+                }
+
+                if (fend_pos == -1) {
+                    break;
+                }
+
+                String frame = kissSerialBuffer.substring(0, fend_pos + 1);
+                kissSerialBuffer.remove(0, fend_pos + 1);
+
+                if (frame.length() > 2) {
                     bool isDataFrame = false;
-
-                    BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
+                    BLEToLoRaPacket = KISS_Utils::decodeKISS(frame, isDataFrame);
 
                     if (isDataFrame) {
                         shouldSendBLEtoLoRa = true;
-                        kissSerialBuffer = "";
                     }
                 }
             }
