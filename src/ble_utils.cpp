@@ -81,11 +81,11 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 return;
             }
 
-            int max_iterations = 10;                                                        // infinite loop protection
-            while (max_iterations-- > 0) {
+            int maxIterations = 10;                                                        // infinite loop protection
+            while (maxIterations-- > 0) {
 
                 if (kissSerialBuffer.length() == 0) break;                                  // empty buffer protection
-                
+
                 int fendIndex = -1;
                 if (kissSerialBuffer.charAt(0) == (char)KissChar::FEND) {                   // starts with FEND???
                     for (int i = 1; i < kissSerialBuffer.length(); i++) {                   // look for next FEND
@@ -112,7 +112,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 String frame = kissSerialBuffer.substring(0, fendIndex + 1);                // extract full frame (With FEND at start and end)
                 kissSerialBuffer.remove(0, fendIndex + 1);
                 
-                if (frame.length() > 3) {
+                if (frame.length() >= 4) {                                                  // FEND | CMD | DATA | FEND
                     bool isDataFrame    = false;
                     BLEToLoRaPacket     = KISS_Utils::decodeKISS(frame, isDataFrame);
                     if (isDataFrame) shouldSendBLEtoLoRa = true;
