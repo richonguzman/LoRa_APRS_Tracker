@@ -24,6 +24,7 @@
 #include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
+#include "station_utils.h"
 
 extern logging::Logger  logger;
 extern Configuration    Config;
@@ -33,6 +34,12 @@ extern int              loraIndexSize;
 
 bool operationDone   = true;
 bool transmitFlag    = true;
+
+// Flags pour les changements de configuration à appliquer hors ISR
+bool pendingFrequencyChange = false;
+int pendingLoraIndex = -1;
+bool pendingDataRateChange = false;
+int pendingDataRate = -1;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -59,6 +66,38 @@ namespace LoRa_Utils {
 
     void setFlag(void) {
         operationDone = true;
+    }
+
+    void requestFrequencyChange(int newLoraIndex) {
+        // Fonction sûre à appeler depuis ISR - positionne juste un flag
+        pendingLoraIndex = newLoraIndex;
+        pendingFrequencyChange = true;
+    }
+
+    void requestDataRateChange(int newDataRate) {
+        // Fonction sûre à appeler depuis ISR - positionne juste un flag
+        pendingDataRate = newDataRate;
+        pendingDataRateChange = true;
+    }
+
+    void processPendingChanges() {
+        // À appeler depuis la boucle principale (loop), pas depuis ISR
+        if (pendingFrequencyChange) {
+            pendingFrequencyChange = false;
+            if (pendingLoraIndex != loraIndex && pendingLoraIndex >= 0 && pendingLoraIndex < loraIndexSize) {
+                loraIndex = pendingLoraIndex;
+                applyLoraConfig();
+                STATION_Utils::saveIndex(1, loraIndex);
+            }
+        }
+
+        if (pendingDataRateChange) {
+            pendingDataRateChange = false;
+            if (pendingDataRate > 0) {
+                setDataRate(pendingDataRate);
+                STATION_Utils::saveIndex(1, loraIndex);
+            }
+        }
     }
 
     int calculateDataRate(int sf, int cr, int bw) {
@@ -128,7 +167,11 @@ namespace LoRa_Utils {
     void changeDataRate() {
         int currentDataRate = Config.loraTypes[loraIndex].dataRate;
         int nextDataRate = getNextDataRate(currentDataRate);
-        DataRateConfig config = getDataRateConfig(nextDataRate);
+        setDataRate(nextDataRate);
+    }
+
+    void setDataRate(int dataRate) {
+        DataRateConfig config = getDataRateConfig(dataRate);
 
         // Mise à jour de la configuration
         Config.loraTypes[loraIndex].dataRate = config.dataRate;
@@ -137,19 +180,38 @@ namespace LoRa_Utils {
         Config.loraTypes[loraIndex].signalBandwidth = config.signalBandwidth;
 
         currentLoRaType = &Config.loraTypes[loraIndex];
-        displayShow("LoRa", "Data Rate", String(nextDataRate) + " bps", 1000);
+
+        // Reconfigurer la radio avec les nouveaux paramètres
+        radio.setSpreadingFactor(config.spreadingFactor);
+        radio.setCodingRate(config.codingRate4);
+        float signalBandwidth = config.signalBandwidth / 1000;
+        radio.setBandwidth(signalBandwidth);
+
+        displayShow("LoRa", "Data Rate", String(dataRate) + " bps", 1000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Data Rate changed to %d bps (SF%d, CR4/%d)",
-                   nextDataRate, config.spreadingFactor, config.codingRate4);
+                   dataRate, config.spreadingFactor, config.codingRate4);
         Config.writeFile();
     }
 
-    void changeFreq() {
-        if(loraIndex >= (loraIndexSize - 1)) {
-            loraIndex = 0;
-        } else {
-            loraIndex++;
+    void applyLoraConfig() {
+        // Apply current loraIndex configuration to radio
+        // Safety check: ensure loraIndex is valid
+        if (loraIndex < 0 || loraIndex >= loraIndexSize) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid loraIndex: %d (max: %d)", loraIndex, loraIndexSize);
+            loraIndex = 0;  // Reset to safe default
         }
+
         currentLoRaType = &Config.loraTypes[loraIndex];
+
+        // Validate frequency and bandwidth values
+        if (currentLoRaType->frequency < 100000000 || currentLoRaType->frequency > 1000000000) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid frequency value: %ld", currentLoRaType->frequency);
+            return;
+        }
+        if (currentLoRaType->signalBandwidth < 1000 || currentLoRaType->signalBandwidth > 1000000) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid bandwidth value: %ld", currentLoRaType->signalBandwidth);
+            return;
+        }
 
         float freq = (float)currentLoRaType->frequency/1000000;
         radio.setFrequency(freq);
@@ -158,7 +220,7 @@ namespace LoRa_Utils {
         radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         #if (defined(HAS_SX1268) || defined(HAS_SX1262)) && !defined(HAS_1W_LORA)
-            radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+            radio.setOutputPower(currentLoRaType->power + 2);
         #endif
         #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
@@ -182,6 +244,16 @@ namespace LoRa_Utils {
         
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
         displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+    }
+
+    void changeFreq() {
+        // Cycle to next frequency
+        if(loraIndex >= (loraIndexSize - 1)) {
+            loraIndex = 0;
+        } else {
+            loraIndex++;
+        }
+        applyLoraConfig();
     }
 
     void setup() {

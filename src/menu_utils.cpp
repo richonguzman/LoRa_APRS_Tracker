@@ -380,39 +380,36 @@ namespace MENU_Utils {
                 displayShow(" CALLSIGN>", "","  Confirm Change?","","","<Back         Select>");
                 break;
 
-            case 210:   // 2.Configuration ---> Change Frequency
-                {
-                    int currentIndex = loraIndex;
-                    int nextIndex = (loraIndex >= 3) ? 0 : loraIndex + 1;
-
-                    float currentFreq = Config.loraTypes[currentIndex].frequency / 1000000.0;
-                    int currentRate = Config.loraTypes[currentIndex].dataRate;
-
-                    float nextFreq = Config.loraTypes[nextIndex].frequency / 1000000.0;
-                    int nextRate = Config.loraTypes[nextIndex].dataRate;
-
-                    freqChangeWarning = String(currentFreq, 3) + "@" + String(currentRate) + "bps";
-                    freqChangeWarning += " -> ";
-                    freqChangeWarning += String(nextFreq, 3) + "@" + String(nextRate) + "bps";
-                }
-                displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
+            case 2100:   // 2.Configuration ---> Change Frequency: EU
+                displayShow("FREQUENCY", "", "> EU  433.775@300bps", "  PL  434.855@1200bps", "  UK  439.913@300bps", lastLine);
+                break;
+            case 2101:   // 2.Configuration ---> Change Frequency: PL
+                displayShow("FREQUENCY", "", "  EU  433.775@300bps", "> PL  434.855@1200bps", "  UK  439.913@300bps", lastLine);
+                break;
+            case 2102:   // 2.Configuration ---> Change Frequency: UK
+                displayShow("FREQUENCY", "", "  PL  434.855@1200bps", "> UK  439.913@300bps", "  US  915.000@300bps", lastLine);
+                break;
+            case 2103:   // 2.Configuration ---> Change Frequency: US
+                displayShow("FREQUENCY", "", "  UK  439.913@300bps", "> US  915.000@300bps", "  EU  433.775@300bps", lastLine);
                 break;
 
-            case 2150:   // 2.Configuration ---> Change Speed
-                {
-                    float currentFreq = Config.loraTypes[loraIndex].frequency / 1000000.0;
-                    int currentRate = Config.loraTypes[loraIndex].dataRate;
-                    int nextRate = LoRa_Utils::getNextDataRate(currentRate);
-                    DataRateConfig nextConfig = LoRa_Utils::getDataRateConfig(nextRate);
-
-                    String speedChangeWarning = String(currentFreq, 3) + " MHz";
-                    speedChangeWarning += "\n";
-                    speedChangeWarning += String(currentRate) + "bps (SF" + String(Config.loraTypes[loraIndex].spreadingFactor) + ",CR4/" + String(Config.loraTypes[loraIndex].codingRate4) + ")";
-                    speedChangeWarning += " -> ";
-                    speedChangeWarning += String(nextRate) + "bps (SF" + String(nextConfig.spreadingFactor) + ",CR4/" + String(nextConfig.codingRate4) + ")";
-
-                    displayShow("LORA SPEED>", "","   Confirm Change?", speedChangeWarning, "", "<Back         Select>");
-                }
+            case 21500:   // 2.Configuration ---> Change Speed: 300 bps
+                displayShow("DATA RATE", "", "> 300bps  (SF12,CR5)", "  244bps  (SF12,CR6)", "  209bps  (SF12,CR7)", lastLine);
+                break;
+            case 21501:   // 2.Configuration ---> Change Speed: 244 bps
+                displayShow("DATA RATE", "", "  300bps  (SF12,CR5)", "> 244bps  (SF12,CR6)", "  209bps  (SF12,CR7)", lastLine);
+                break;
+            case 21502:   // 2.Configuration ---> Change Speed: 209 bps
+                displayShow("DATA RATE", "", "  244bps  (SF12,CR6)", "> 209bps  (SF12,CR7)", "  183bps  (SF12,CR8)", lastLine);
+                break;
+            case 21503:   // 2.Configuration ---> Change Speed: 183 bps
+                displayShow("DATA RATE", "", "  209bps  (SF12,CR7)", "> 183bps  (SF12,CR8)", "  610bps  (SF10,CR8)", lastLine);
+                break;
+            case 21504:   // 2.Configuration ---> Change Speed: 610 bps
+                displayShow("DATA RATE", "", "  183bps  (SF12,CR8)", "> 610bps  (SF10,CR8)", "  1200bps (SF9,CR7)", lastLine);
+                break;
+            case 21505:   // 2.Configuration ---> Change Speed: 1200 bps
+                displayShow("DATA RATE", "", "  610bps  (SF10,CR8)", "> 1200bps (SF9,CR7)", "  300bps  (SF12,CR5)", lastLine);
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode

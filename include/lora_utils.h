@@ -35,12 +35,23 @@ struct DataRateConfig {
     long signalBandwidth;
 };
 
+// Flags externes pour les changements de configuration pendants
+extern bool pendingFrequencyChange;
+extern int pendingLoraIndex;
+extern bool pendingDataRateChange;
+extern int pendingDataRate;
+
 namespace LoRa_Utils {
 
     void setFlag();
+    void requestFrequencyChange(int newLoraIndex);
+    void requestDataRateChange(int newDataRate);
+    void processPendingChanges();
     int calculateDataRate(int sf, int cr, int bw);
     void changeFreq();
+    void applyLoraConfig();
     void changeDataRate();
+    void setDataRate(int dataRate);
     DataRateConfig getDataRateConfig(int dataRate);
     int getNextDataRate(int currentDataRate);
     void setup();

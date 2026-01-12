@@ -207,6 +207,9 @@ void loop() {
         TOUCH_Utils::loop();
     #endif
 
+    // Traiter les changements de configuration LoRa pendants (depuis ISR)
+    LoRa_Utils::processPendingChanges();
+
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
     MSG_Utils::checkReceivedMessage(packet);

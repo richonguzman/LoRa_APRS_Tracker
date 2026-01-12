@@ -97,7 +97,7 @@ namespace KEYBOARD_Utils {
             if (menuDisplay < 130) menuDisplay = 133;
         }
 
-        else if (menuDisplay >= 20 && menuDisplay <= 27) {
+        else if ((menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215) {
             if (menuDisplay == 22) {
                 menuDisplay = 215;
             } else if (menuDisplay == 215) {
@@ -109,9 +109,15 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) menuDisplay = 221;
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay--;
+            if (menuDisplay < 2100) menuDisplay = 2103;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
             menuDisplay--;
             if (menuDisplay < 2210) menuDisplay = 2212;
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay--;
+            if (menuDisplay < 21500) menuDisplay = 21505;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
@@ -189,7 +195,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 11;
         }
         
-        else if (menuDisplay >= 20 && menuDisplay <= 27) {
+        else if ((menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215) {
             if (menuDisplay == 21) {
                 menuDisplay = 215;
             } else if (menuDisplay == 215) {
@@ -201,9 +207,15 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) menuDisplay = 220;
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay++;
+            if (menuDisplay > 2103) menuDisplay = 2100;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
             menuDisplay++;
             if (menuDisplay > 2212) menuDisplay = 2210;
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay++;
+            if (menuDisplay > 21505) menuDisplay = 21500;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
             if (menuDisplay > 241) menuDisplay = 240;
@@ -275,6 +287,10 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay = 21;  // Back from frequency selection
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay = 215;  // Back from speed selection
         } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
@@ -336,7 +352,11 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215 || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if (menuDisplay == 21) {
+            menuDisplay = 2100;  // Enter Frequency selection menu
+        } else if (menuDisplay == 215) {
+            menuDisplay = 21500;  // Enter Speed selection menu
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -372,12 +392,18 @@ namespace KEYBOARD_Utils {
             #endif
         }
 
-        else if (menuDisplay == 210) {
-            LoRa_Utils::changeFreq();
-            STATION_Utils::saveIndex(1, loraIndex);
+        else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            // Request frequency change (safe depuis ISR)
+            int newLoraIndex = menuDisplay - 2100;  // 2100=0(EU), 2101=1(PL), 2102=2(UK), 2103=3(US)
+            if (newLoraIndex != loraIndex) {
+                LoRa_Utils::requestFrequencyChange(newLoraIndex);
+            }
             menuDisplay = 21;
-        } else if (menuDisplay == 2150) {
-            LoRa_Utils::changeDataRate();
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            // Request data rate change (safe depuis ISR)
+            const int dataRates[] = {300, 244, 209, 183, 610, 1200};
+            int index = menuDisplay - 21500;
+            LoRa_Utils::requestDataRateChange(dataRates[index]);
             menuDisplay = 215;
         } else if (menuDisplay == 220) {
             displayEcoMode = !displayEcoMode;
