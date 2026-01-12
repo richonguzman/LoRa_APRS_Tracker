@@ -18,9 +18,13 @@
 
 #include <ArduinoJson.h>
 #include "configuration.h"
+#include "msg_utils.h"
 #include "web_utils.h"
 #include "display.h"
 #include "utils.h"
+#include "logger.h"
+
+extern logging::Logger      logger;
 
 extern Configuration               Config;
 
@@ -314,6 +318,40 @@ namespace WEB_Utils {
         request->send(response);
     }
 
+    void handleSaveMessageAPRS(AsyncWebServerRequest *request) {
+        if (request->method() != HTTP_POST) {
+            request->send(405, "text/plain", "Method Not Allowed");
+            return;
+        }
+
+        String destination = request->hasParam("destination", true) ? request->getParam("destination", true)->value() : "";
+        String messageText = request->hasParam("message", true) ? request->getParam("message", true)->value() : "";
+
+        if (destination.length() == 0 || messageText.length() == 0) {
+            request->send(400, "text/plain", "Destination or message is empty");
+            return;
+        }
+
+       bool saveSuccess = MSG_Utils::writeFileMessages(destination, messageText);
+
+        if (saveSuccess) {
+            Serial.println("Message saved successfully");
+            request->send(200, "text/plain", "Message saved successfully");
+            
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of APRS Messages : %s",messageText);
+
+        } else {
+            Serial.println("Error saving messages!");
+            String errorPage = "<!DOCTYPE html><html><head><title>Error</title></head><body>";
+            errorPage += "<h1>Message Error:</h1>";
+            errorPage += "<p>Couldn't save new message. Please try again.</p>";
+            errorPage += "<a href='/'>Back</a></body></html>";
+            
+            AsyncWebServerResponse *response = request->beginResponse(500, "text/html", errorPage);
+            request->send(response);
+        }
+    }
+
     void setup() {
         server.on("/", HTTP_GET, handleHome);
         server.on("/status", HTTP_GET, handleStatus);
@@ -326,6 +364,7 @@ namespace WEB_Utils {
         server.on("/bootstrap.css", HTTP_GET, handleBootstrapStyle);
         server.on("/bootstrap.js", HTTP_GET, handleBootstrapScript);
         server.on("/favicon.png", HTTP_GET, handleFavicon);
+        server.on("/saveMessageAPRS", HTTP_POST, handleSaveMessageAPRS);
 
         server.onNotFound(handleNotFound);
 

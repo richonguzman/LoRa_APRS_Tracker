@@ -31,9 +31,11 @@ struct Packet15SegBuffer {
 namespace MSG_Utils {
 
     bool    warnNoAPRSMessages();
+    bool    warnNoSavedMessages();
     bool    warnNoWLNKMails();
     const String getLastHeardTracker();
     int     getNumAPRSMessages();
+    int     getNumSavedMessages();
     int     getNumWLNKMails();
     void    loadNumMessages();
     void    loadMessagesFromMemory(uint8_t typeOfMessage);
@@ -46,6 +48,7 @@ namespace MSG_Utils {
     void    clean15SegBuffer();
     bool    check15SegBuffer(const String& station, const String& textMessage);
     void    checkReceivedMessage(ReceivedLoRaPacket packetReceived);
+    bool    writeFileMessages(const String& destination, const String& textMessage);
 
 }
 

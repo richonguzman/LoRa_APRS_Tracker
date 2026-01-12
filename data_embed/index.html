@@ -28,6 +28,11 @@
                                     Configuration
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#aprs-messages">
+                                    Write Messages
+                                </a>
+                            </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Backup</a>
                                 <div class="dropdown-menu">
@@ -1210,7 +1215,34 @@
                             </div>
                         </div>
                         <hr>
+                        <div class="row my-4" id="aprs-messages">
+                            <div class="col-12">
+                                <h5>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
+                                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v.217l-8 4.8-8-4.8V4z"/>
+                                        <path d="M0 6.383V12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6.383l-7.555 4.533a1 1 0 0 1-1.11 0L0 6.383z"/>
+                                    </svg>
+                                    Write Messages
+                                </h5>
 
+                                <div class="row mt-3">
+                                    <div class="col-md-5 col-sm-12 mb-2">
+                                        <label for="sms_destinatario" class="form-label">To: (callsign)</label>
+                                        <input type="text" class="form-control" id="sms_destinatario" name="sms.destinatario" placeholder="Ej: EA1ABC" maxlength="12" />
+                                    </div>
+
+                                    <div class="col-md-5 col-sm-12 mb-2">
+                                        <label for="sms_mensaje" class="form-label">Message (máx. 67 characters)</label>
+                                        <input type="text" class="form-control" id="sms_mensaje" name="sms.mensaje" placeholder="APRS message content" maxlength="67" />
+                                    </div>
+
+                                    <div class="col-md-2 col-sm-12 d-flex align-items-end mb-2">
+                                        <button type="button" id="save-sms-btn" class="btn btn-primary w-100">Save Message</button>
+                                    </div>
+                                </div>
+                                <hr>
+                            </div>
+                        </div>
                     </div>
                 </main>
                 <footer

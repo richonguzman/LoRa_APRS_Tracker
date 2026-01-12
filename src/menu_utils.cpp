@@ -39,6 +39,7 @@ extern Beacon               *currentBeacon;
 extern Configuration        Config;
 extern TinyGPSPlus          gps;
 extern std::vector<String>  loadedAPRSMessages;
+extern std::vector<String>  loadedSavedMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
 extern uint8_t              loraIndex;
@@ -73,6 +74,8 @@ extern bool                 gpsIsActive;
 
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
+String      msgTo;
+String      msgText;
 
 #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
     String topHeader1   = "";
@@ -201,7 +204,7 @@ namespace MENU_Utils {
                 }
                 break;
             case 11:    // 1.Messages ---> Messages Write
-                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "> Write", "  Delete", "  APRSThursday", "  Saved Messages" , lastLine);
                 break;
             case 110:   // 1.Messages ---> Messages Write ---> Write
                 if (keyDetected || keyboardConnected) {
@@ -254,13 +257,13 @@ namespace MENU_Utils {
                 }
                 break;
             case 12:    // 1.Messages ---> Messages Delete
-                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "> Delete", "  APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "> Delete", "  APRSThursday", "  Saved Messages", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", lastLine);
                 break;
             case 120:   // 1.Messages ---> Messages Delete ---> Delete: ALL
                 displayShow("DELETE MSG", "", "  DELETE APRS MSG?", "", "", " Confirm = LP or '>'");
                 break;
             case 13:    // 1.Messages ---> APRSThursday
-                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
+                displayShow(" MESSAGES>", "> APRSThursday", "  Saved Messages", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", lastLine);
                 break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 displayShow(" APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
@@ -344,7 +347,29 @@ namespace MENU_Utils {
             case 133:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 displayShow(" APRS Thu.", "  Check In", "  Join", "  Unsubscribe", "> KeepSubscribed+12h", lastLine);
                 break;
+            case 14:   // 1.Messages ---> Saved Messages
+                displayShow(" MESSAGES>", "> Saved Messages", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", lastLine);
+                break;
+            case 140:   // 1.Messages ---> Saved Messages ---> Send Message saved
+                {
+                    MSG_Utils::loadMessagesFromMemory(2);
 
+                    msgTo    = loadedSavedMessages[messagesIterator].substring(0, loadedSavedMessages[messagesIterator].indexOf(","));
+                    msgText  = loadedSavedMessages[messagesIterator].substring(loadedSavedMessages[messagesIterator].indexOf(",") + 1);
+
+                    if (msgText.length() > 40) msgText = msgText.substring(0, 50) + "...";
+
+                    #ifdef HAS_TFT
+                        #if defined(HELTEC_WIRELESS_TRACKER)
+                            displayShow("SENT MSG>", "From --> " + msgSender, msgText,"                 Next=Down", "", "");
+                        #else   // T-Deck
+                            displayShow("SENT MSG>", "From --> " + msgSender, msgText,"             Next=Down", "", "");
+                        #endif
+                    #else
+                        displayShow("SEND MSG>", "To:" + msgTo, msgText, "", "", "1P=Next 2P=Back LP=Send");
+                    #endif
+                }
+                break;
 //////////
             case 20:    // 2.Configuration ---> Callsign
                 displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
