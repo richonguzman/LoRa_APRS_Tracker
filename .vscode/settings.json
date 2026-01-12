@@ -1,4 +1,5 @@
 {
     "editor.tabSize": 4,
-    "editor.formatOnSave": false
+    "editor.formatOnSave": false,
+    "idf.pythonInstallPath": "/home/fab2/.pyenv/shims/python"
 }
