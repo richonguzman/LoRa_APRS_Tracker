@@ -122,12 +122,12 @@ namespace WEB_Utils {
             return defaultValue;
         };
 
-        /*auto getParamDoubleSafe = [&](const String& name, double defaultValue = 0.0) -> double {
+        auto getParamDoubleSafe = [&](const String& name, double defaultValue = 0.0) -> double {
             if (request->hasParam(name, true)) {
                 return request->getParam(name, true)->value().toDouble();
             }
             return defaultValue;
-        };*/
+        };
 
         //  Beacons
         for (int i = 0; i < 3; i++) {
@@ -193,10 +193,10 @@ namespace WEB_Utils {
 
         // LORA
         for (int i = 0; i < 4; i++) {
-            Config.loraTypes[i].frequency       = request->getParam("lora." + String(i) + ".frequency", true)->value().toDouble();
-            Config.loraTypes[i].spreadingFactor = request->getParam("lora." + String(i) + ".spreadingFactor", true)->value().toInt();
-            Config.loraTypes[i].codingRate4     = request->getParam("lora." + String(i) + ".codingRate4", true)->value().toInt();
-            Config.loraTypes[i].signalBandwidth = request->getParam("lora." + String(i) + ".signalBandwidth", true)->value().toInt();
+            Config.loraTypes[i].frequency       = getParamDoubleSafe("lora." + String(i) + ".frequency", Config.loraTypes[i].frequency);
+            Config.loraTypes[i].spreadingFactor = getParamIntSafe("lora." + String(i) + ".spreadingFactor", Config.loraTypes[i].spreadingFactor);
+            Config.loraTypes[i].codingRate4     = getParamIntSafe("lora." + String(i) + ".codingRate4", Config.loraTypes[i].codingRate4);
+            Config.loraTypes[i].signalBandwidth = getParamIntSafe("lora." + String(i) + ".signalBandwidth", Config.loraTypes[i].signalBandwidth);
         }
 
         //  Battery
