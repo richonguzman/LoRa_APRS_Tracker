@@ -76,6 +76,7 @@ bool Configuration::writeFile() {
             data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
             data["lora"][i]["codingRate4"]              = loraTypes[i].codingRate4;
             data["lora"][i]["power"]                    = loraTypes[i].power;
+            data["lora"][i]["dataRate"]                 = loraTypes[i].dataRate;
         }
 
         data["battery"]["sendVoltage"]              = battery.sendVoltage;
@@ -200,6 +201,7 @@ bool Configuration::readFile() {
             loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
             loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
             loraType.power              = LoraTypesArray[j]["power"] | 20;
+            loraType.dataRate           = LoraTypesArray[j]["dataRate"] | 300;
             loraTypes.push_back(loraType);
         }
 
@@ -338,25 +340,29 @@ void Configuration::setDefaultValues() {
     for (int j = 0; j < 4; j++) {
         LoraType loraType;
         switch (j) {
-            case 0:
+            case 0:  // EU
                 loraType.frequency           = 433775000;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
-            case 1:
+            case 1:  // PL
                 loraType.frequency           = 434855000;
                 loraType.spreadingFactor     = 9;
                 loraType.codingRate4         = 7;
+                loraType.dataRate            = 1200;   // SF9, CR4/7
                 break;
-            case 2:
+            case 2:  // UK
                 loraType.frequency           = 439912500;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
-            case 3:
+            case 3:  // US
                 loraType.frequency           = 915000000;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
         }
         loraType.signalBandwidth    = 125000;

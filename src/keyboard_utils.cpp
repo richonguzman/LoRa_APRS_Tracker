@@ -98,8 +98,14 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
-            menuDisplay--;
-            if (menuDisplay < 20) menuDisplay = 27;
+            if (menuDisplay == 22) {
+                menuDisplay = 215;
+            } else if (menuDisplay == 215) {
+                menuDisplay = 21;
+            } else {
+                menuDisplay--;
+                if (menuDisplay < 20) menuDisplay = 27;
+            }
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) menuDisplay = 221;
@@ -184,8 +190,14 @@ namespace KEYBOARD_Utils {
         }
         
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
-        menuDisplay++;
-        if (menuDisplay > 27) menuDisplay = 20;
+            if (menuDisplay == 21) {
+                menuDisplay = 215;
+            } else if (menuDisplay == 215) {
+                menuDisplay = 22;
+            } else {
+                menuDisplay++;
+                if (menuDisplay > 27) menuDisplay = 20;
+            }
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) menuDisplay = 220;
@@ -324,7 +336,7 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215 || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -364,6 +376,9 @@ namespace KEYBOARD_Utils {
             LoRa_Utils::changeFreq();
             STATION_Utils::saveIndex(1, loraIndex);
             menuDisplay = 21;
+        } else if (menuDisplay == 2150) {
+            LoRa_Utils::changeDataRate();
+            menuDisplay = 215;
         } else if (menuDisplay == 220) {
             displayEcoMode = !displayEcoMode;
             displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);

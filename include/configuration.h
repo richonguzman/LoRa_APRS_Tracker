@@ -98,6 +98,7 @@ public:
     long    signalBandwidth;
     int     codingRate4;
     int     power;
+    int     dataRate;
 };
 
 class PTT {

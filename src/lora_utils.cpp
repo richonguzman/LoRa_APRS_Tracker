@@ -91,6 +91,58 @@ namespace LoRa_Utils {
         return 0;
     }
 
+    DataRateConfig getDataRateConfig(int dataRate) {
+        // Mapping des 6 vitesses vers leurs paramètres LoRa
+        const DataRateConfig configs[] = {
+            {300,  12, 5, 125000},  // SF12, CR4/5
+            {244,  12, 6, 125000},  // SF12, CR4/6
+            {209,  12, 7, 125000},  // SF12, CR4/7
+            {183,  12, 8, 125000},  // SF12, CR4/8
+            {610,  10, 8, 125000},  // SF10, CR4/8
+            {1200,  9, 7, 125000}   // SF9, CR4/7
+        };
+
+        for (int i = 0; i < 6; i++) {
+            if (configs[i].dataRate == dataRate) {
+                return configs[i];
+            }
+        }
+
+        // Valeur par défaut si non trouvé
+        return configs[0];  // 300 bps
+    }
+
+    int getNextDataRate(int currentDataRate) {
+        // Les 6 vitesses disponibles
+        const int dataRates[] = {300, 244, 209, 183, 610, 1200};
+
+        for (int i = 0; i < 6; i++) {
+            if (dataRates[i] == currentDataRate) {
+                return dataRates[(i + 1) % 6];  // Cycle à travers les 6 options
+            }
+        }
+
+        return 300;  // Valeur par défaut
+    }
+
+    void changeDataRate() {
+        int currentDataRate = Config.loraTypes[loraIndex].dataRate;
+        int nextDataRate = getNextDataRate(currentDataRate);
+        DataRateConfig config = getDataRateConfig(nextDataRate);
+
+        // Mise à jour de la configuration
+        Config.loraTypes[loraIndex].dataRate = config.dataRate;
+        Config.loraTypes[loraIndex].spreadingFactor = config.spreadingFactor;
+        Config.loraTypes[loraIndex].codingRate4 = config.codingRate4;
+        Config.loraTypes[loraIndex].signalBandwidth = config.signalBandwidth;
+
+        currentLoRaType = &Config.loraTypes[loraIndex];
+        displayShow("LoRa", "Data Rate", String(nextDataRate) + " bps", 1000);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Data Rate changed to %d bps (SF%d, CR4/%d)",
+                   nextDataRate, config.spreadingFactor, config.codingRate4);
+        Config.writeFile();
+    }
+
     void changeFreq() {
         if(loraIndex >= (loraIndexSize - 1)) {
             loraIndex = 0;

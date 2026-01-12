@@ -28,11 +28,21 @@ struct ReceivedLoRaPacket {
     int     freqError;
 };
 
+struct DataRateConfig {
+    int dataRate;
+    int spreadingFactor;
+    int codingRate4;
+    long signalBandwidth;
+};
+
 namespace LoRa_Utils {
 
     void setFlag();
     int calculateDataRate(int sf, int cr, int bw);
     void changeFreq();
+    void changeDataRate();
+    DataRateConfig getDataRateConfig(int dataRate);
+    int getNextDataRate(int currentDataRate);
     void setup();
     void sendNewPacket(const String& newPacket);
     void wakeRadio();

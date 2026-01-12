@@ -197,6 +197,7 @@ namespace WEB_Utils {
             Config.loraTypes[i].spreadingFactor = getParamIntSafe("lora." + String(i) + ".spreadingFactor", Config.loraTypes[i].spreadingFactor);
             Config.loraTypes[i].codingRate4     = getParamIntSafe("lora." + String(i) + ".codingRate4", Config.loraTypes[i].codingRate4);
             Config.loraTypes[i].signalBandwidth = getParamIntSafe("lora." + String(i) + ".signalBandwidth", Config.loraTypes[i].signalBandwidth);
+            Config.loraTypes[i].dataRate        = getParamIntSafe("lora." + String(i) + ".dataRate", Config.loraTypes[i].dataRate);
         }
 
         //  Battery

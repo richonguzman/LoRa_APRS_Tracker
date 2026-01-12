@@ -351,10 +351,13 @@ namespace MENU_Utils {
                 displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                displayShow(" CONFIG>", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                displayShow(" CONFIG>", "  Change Callsign ", "> Change Frequency", "  Change Speed", "  Display",lastLine);
+                break;
+            case 215:   // 2.Configuration ---> Change Speed
+                displayShow(" CONFIG>", "  Change Frequency", "> Change Speed", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                displayShow(" CONFIG>", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                displayShow(" CONFIG>", "  Change Speed", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
                 displayShow(" CONFIG>", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
@@ -383,24 +386,33 @@ namespace MENU_Utils {
                     int nextIndex = (loraIndex >= 3) ? 0 : loraIndex + 1;
 
                     float currentFreq = Config.loraTypes[currentIndex].frequency / 1000000.0;
-                    int currentRate = LoRa_Utils::calculateDataRate(
-                        Config.loraTypes[currentIndex].spreadingFactor,
-                        Config.loraTypes[currentIndex].codingRate4,
-                        Config.loraTypes[currentIndex].signalBandwidth
-                    );
+                    int currentRate = Config.loraTypes[currentIndex].dataRate;
 
                     float nextFreq = Config.loraTypes[nextIndex].frequency / 1000000.0;
-                    int nextRate = LoRa_Utils::calculateDataRate(
-                        Config.loraTypes[nextIndex].spreadingFactor,
-                        Config.loraTypes[nextIndex].codingRate4,
-                        Config.loraTypes[nextIndex].signalBandwidth
-                    );
+                    int nextRate = Config.loraTypes[nextIndex].dataRate;
 
                     freqChangeWarning = String(currentFreq, 3) + "@" + String(currentRate) + "bps";
                     freqChangeWarning += " -> ";
                     freqChangeWarning += String(nextFreq, 3) + "@" + String(nextRate) + "bps";
                 }
                 displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
+                break;
+
+            case 2150:   // 2.Configuration ---> Change Speed
+                {
+                    float currentFreq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+                    int currentRate = Config.loraTypes[loraIndex].dataRate;
+                    int nextRate = LoRa_Utils::getNextDataRate(currentRate);
+                    DataRateConfig nextConfig = LoRa_Utils::getDataRateConfig(nextRate);
+
+                    String speedChangeWarning = String(currentFreq, 3) + " MHz";
+                    speedChangeWarning += "\n";
+                    speedChangeWarning += String(currentRate) + "bps (SF" + String(Config.loraTypes[loraIndex].spreadingFactor) + ",CR4/" + String(Config.loraTypes[loraIndex].codingRate4) + ")";
+                    speedChangeWarning += " -> ";
+                    speedChangeWarning += String(nextRate) + "bps (SF" + String(nextConfig.spreadingFactor) + ",CR4/" + String(nextConfig.codingRate4) + ")";
+
+                    displayShow("LORA SPEED>", "","   Confirm Change?", speedChangeWarning, "", "<Back         Select>");
+                }
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
@@ -760,11 +772,7 @@ namespace MENU_Utils {
                         thirdRowMainMenu += " ";
 
                         float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
-                        int rate = LoRa_Utils::calculateDataRate(
-                            Config.loraTypes[loraIndex].spreadingFactor,
-                            Config.loraTypes[loraIndex].codingRate4,
-                            Config.loraTypes[loraIndex].signalBandwidth
-                        );
+                        int rate = Config.loraTypes[loraIndex].dataRate;
                         thirdRowMainMenu += String(freq, 3) + "@" + String(rate);
                     }
                     
