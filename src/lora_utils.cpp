@@ -62,12 +62,33 @@ namespace LoRa_Utils {
     }
 
     int calculateDataRate(int sf, int cr, int bw) {
-        // Approximate LoRa data rate formula: DR = SF × (BW / 2^SF) × (4 / (4 + CR))
-        // Returns data rate in bps
-        float symbolRate = (float)bw / (1 << sf);  // BW / 2^SF
-        float codingRateFactor = 4.0 / (4.0 + cr);
-        float dataRate = sf * symbolRate * codingRateFactor;
-        return (int)dataRate;
+        // Simplified lookup table for BW=125kHz (most common)
+        // Based on actual LoRa specifications
+        if (bw == 125000) {
+            // Lookup table: [SF][CR-5] (CR stored as 5,6,7,8)
+            const int dataRates[13][4] = {
+                {0, 0, 0, 0},      // SF 0 (unused)
+                {0, 0, 0, 0},      // SF 1 (unused)
+                {0, 0, 0, 0},      // SF 2 (unused)
+                {0, 0, 0, 0},      // SF 3 (unused)
+                {0, 0, 0, 0},      // SF 4 (unused)
+                {0, 0, 0, 0},      // SF 5 (unused)
+                {0, 0, 0, 0},      // SF 6 (unused)
+                {5470, 4440, 3810, 3330},   // SF 7
+                {3125, 2540, 2180, 1910},   // SF 8
+                {1760, 1430, 1200, 1070},   // SF 9
+                {980, 800, 680, 610},       // SF 10
+                {540, 440, 380, 330},       // SF 11
+                {300, 244, 209, 183}        // SF 12
+            };
+
+            if (sf >= 7 && sf <= 12 && cr >= 5 && cr <= 8) {
+                return dataRates[sf][cr - 5];
+            }
+        }
+
+        // Fallback for other bandwidths or invalid values
+        return 0;
     }
 
     void changeFreq() {
