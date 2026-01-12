@@ -61,6 +61,15 @@ namespace LoRa_Utils {
         operationDone = true;
     }
 
+    int calculateDataRate(int sf, int cr, int bw) {
+        // Approximate LoRa data rate formula: DR = SF × (BW / 2^SF) × (4 / (4 + CR))
+        // Returns data rate in bps
+        float symbolRate = (float)bw / (1 << sf);  // BW / 2^SF
+        float codingRateFactor = 4.0 / (4.0 + cr);
+        float dataRate = sf * symbolRate * codingRateFactor;
+        return (int)dataRate;
+    }
+
     void changeFreq() {
         if(loraIndex >= (loraIndexSize - 1)) {
             loraIndex = 0;

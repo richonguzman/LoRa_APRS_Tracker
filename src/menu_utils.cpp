@@ -30,6 +30,7 @@
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "wx_utils.h"
+#include "lora_utils.h"
 #include "display.h"
 #include "utils.h"
 
@@ -377,11 +378,27 @@ namespace MENU_Utils {
                 break;
 
             case 210:   // 2.Configuration ---> Change Frequency
-                switch (loraIndex) {
-                    case 0: freqChangeWarning = "      EU --> PL"; break;
-                    case 1: freqChangeWarning = "      PL --> UK"; break;
-                    case 2: freqChangeWarning = "      UK --> US"; break;
-                    case 3: freqChangeWarning = "      US --> EU"; break;
+                {
+                    int currentIndex = loraIndex;
+                    int nextIndex = (loraIndex >= 3) ? 0 : loraIndex + 1;
+
+                    float currentFreq = Config.loraTypes[currentIndex].frequency / 1000000.0;
+                    int currentRate = LoRa_Utils::calculateDataRate(
+                        Config.loraTypes[currentIndex].spreadingFactor,
+                        Config.loraTypes[currentIndex].codingRate4,
+                        Config.loraTypes[currentIndex].signalBandwidth
+                    );
+
+                    float nextFreq = Config.loraTypes[nextIndex].frequency / 1000000.0;
+                    int nextRate = LoRa_Utils::calculateDataRate(
+                        Config.loraTypes[nextIndex].spreadingFactor,
+                        Config.loraTypes[nextIndex].codingRate4,
+                        Config.loraTypes[nextIndex].signalBandwidth
+                    );
+
+                    freqChangeWarning = String(currentFreq, 3) + "@" + String(currentRate) + "bps";
+                    freqChangeWarning += " -> ";
+                    freqChangeWarning += String(nextFreq, 3) + "@" + String(nextRate) + "bps";
                 }
                 displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
                 break;
@@ -740,13 +757,15 @@ namespace MENU_Utils {
                         thirdRowMainMenu += String(gps.location.lng(), 4);
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
-                        thirdRowMainMenu += " LoRa[";
-                        switch (loraIndex) {
-                            case 0: thirdRowMainMenu += "Eu]"; break;
-                            case 1: thirdRowMainMenu += "PL]"; break;
-                            case 2: thirdRowMainMenu += "UK]"; break;
-                            case 3: thirdRowMainMenu += "US]"; break;
-                        }
+                        thirdRowMainMenu += " ";
+
+                        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+                        int rate = LoRa_Utils::calculateDataRate(
+                            Config.loraTypes[loraIndex].spreadingFactor,
+                            Config.loraTypes[loraIndex].codingRate4,
+                            Config.loraTypes[loraIndex].signalBandwidth
+                        );
+                        thirdRowMainMenu += String(freq, 3) + "@" + String(rate);
                     }
                     
                     for (int i = thirdRowMainMenu.length(); i < 18; i++) {

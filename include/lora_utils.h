@@ -31,6 +31,7 @@ struct ReceivedLoRaPacket {
 namespace LoRa_Utils {
 
     void setFlag();
+    int calculateDataRate(int sf, int cr, int bw);
     void changeFreq();
     void setup();
     void sendNewPacket(const String& newPacket);
