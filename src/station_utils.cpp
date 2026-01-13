@@ -211,30 +211,31 @@ namespace STATION_Utils {
         
         if (!shouldSleepLowVoltage) {
             String comment = (winlinkCommentState ? "winlink" : currentBeacon->comment);
+            if (comment == "") comment = "LoRa APRS Tracker";
             int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
 
             if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
                 #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                     String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(HAS_AXP192)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += batteryVoltage;
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "mA)";
                     #elif defined(HAS_AXP2101)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += String(batteryVoltage.toFloat(),2);
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "%)";
                     #endif
                 #elif defined(BATTERY_PIN)
-                    comment += " Bat=";
+                    comment += " Batt=";
                     comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V";
+                    comment += "V (";
                     comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
-                    comment += "%";
+                    comment += "%)";
                 #endif
             }
 
@@ -242,9 +243,9 @@ namespace STATION_Utils {
             if (Config.lora.sendInfo) {
                 comment += " ";
                 comment += String(Config.loraTypes[loraIndex].frequency / 1000000.0, 3);
-                comment += " MHz ";
+                comment += "MHz ";
                 comment += String(Config.loraTypes[loraIndex].dataRate);
-                comment += " bps";
+                comment += "bps";
             }
 
             if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
