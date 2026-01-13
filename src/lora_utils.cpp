@@ -85,19 +85,21 @@ namespace LoRa_Utils {
         if (pendingFrequencyChange) {
             pendingFrequencyChange = false;
             if (pendingLoraIndex >= 0 && pendingLoraIndex < loraIndexSize) {
+                String loraCountryFreq;
+                switch (pendingLoraIndex) {
+                    case 0: loraCountryFreq = "EU/WORLD"; break;
+                    case 1: loraCountryFreq = "POLAND"; break;
+                    case 2: loraCountryFreq = "UK"; break;
+                    case 3: loraCountryFreq = "US"; break;
+                }
+
                 if (pendingLoraIndex != loraIndex) {
                     loraIndex = pendingLoraIndex;
+                    displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
                     applyLoraConfig();
                     STATION_Utils::saveIndex(1, loraIndex);
                 } else {
                     // Already on this frequency, just show confirmation
-                    String loraCountryFreq;
-                    switch (loraIndex) {
-                        case 0: loraCountryFreq = "EU/WORLD"; break;
-                        case 1: loraCountryFreq = "POLAND"; break;
-                        case 2: loraCountryFreq = "UK"; break;
-                        case 3: loraCountryFreq = "US"; break;
-                    }
                     displayShow("LORA FREQ>", "", "ALREADY ON: " + loraCountryFreq, "", "", "", 2000);
                 }
             }
@@ -106,6 +108,7 @@ namespace LoRa_Utils {
         if (pendingDataRateChange) {
             pendingDataRateChange = false;
             if (pendingDataRate > 0) {
+                displayShow("DATA RATE>", "", "CHANGED TO: " + String(pendingDataRate) + " bps", "", "", "", 2000);
                 setDataRate(pendingDataRate);
                 STATION_Utils::saveIndex(1, loraIndex);
             }
@@ -199,7 +202,6 @@ namespace LoRa_Utils {
         float signalBandwidth = config.signalBandwidth / 1000;
         radio.setBandwidth(signalBandwidth);
 
-        displayShow("LoRa", "Data Rate", String(dataRate) + " bps", 1000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Data Rate changed to %d bps (SF%d, CR4/%d)",
                    dataRate, config.spreadingFactor, config.codingRate4);
         Config.writeFile();
@@ -255,7 +257,6 @@ namespace LoRa_Utils {
         currentLoRainfo += String(currentLoRaType->codingRate4);
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
-        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
     }
 
     void changeFreq() {
