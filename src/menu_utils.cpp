@@ -381,16 +381,16 @@ namespace MENU_Utils {
                 break;
 
             case 2100:   // 2.Configuration ---> Change Frequency: EU
-                displayShow("FREQUENCY", "", "> EU  433.775@300bps", "  PL  434.855@1200bps", "  UK  439.913@300bps", lastLine);
+                displayShow("FREQUENCY", "", "> EU  433.775 MHz", "  PL  434.855 MHz", "  UK  439.913 MHz", lastLine);
                 break;
             case 2101:   // 2.Configuration ---> Change Frequency: PL
-                displayShow("FREQUENCY", "", "  EU  433.775@300bps", "> PL  434.855@1200bps", "  UK  439.913@300bps", lastLine);
+                displayShow("FREQUENCY", "", "  EU  433.775 MHz", "> PL  434.855 MHz", "  UK  439.913 MHz", lastLine);
                 break;
             case 2102:   // 2.Configuration ---> Change Frequency: UK
-                displayShow("FREQUENCY", "", "  PL  434.855@1200bps", "> UK  439.913@300bps", "  US  915.000@300bps", lastLine);
+                displayShow("FREQUENCY", "", "  PL  434.855 MHz", "> UK  439.913 MHz", "  US  915.000 MHz", lastLine);
                 break;
             case 2103:   // 2.Configuration ---> Change Frequency: US
-                displayShow("FREQUENCY", "", "  UK  439.913@300bps", "> US  915.000@300bps", "  EU  433.775@300bps", lastLine);
+                displayShow("FREQUENCY", "", "  UK  439.913 MHz", "> US  915.000 MHz", "  EU  433.775 MHz", lastLine);
                 break;
 
             case 21500:   // 2.Configuration ---> Change Speed: 300 bps

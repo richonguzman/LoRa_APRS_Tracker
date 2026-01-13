@@ -84,10 +84,22 @@ namespace LoRa_Utils {
         // À appeler depuis la boucle principale (loop), pas depuis ISR
         if (pendingFrequencyChange) {
             pendingFrequencyChange = false;
-            if (pendingLoraIndex != loraIndex && pendingLoraIndex >= 0 && pendingLoraIndex < loraIndexSize) {
-                loraIndex = pendingLoraIndex;
-                applyLoraConfig();
-                STATION_Utils::saveIndex(1, loraIndex);
+            if (pendingLoraIndex >= 0 && pendingLoraIndex < loraIndexSize) {
+                if (pendingLoraIndex != loraIndex) {
+                    loraIndex = pendingLoraIndex;
+                    applyLoraConfig();
+                    STATION_Utils::saveIndex(1, loraIndex);
+                } else {
+                    // Already on this frequency, just show confirmation
+                    String loraCountryFreq;
+                    switch (loraIndex) {
+                        case 0: loraCountryFreq = "EU/WORLD"; break;
+                        case 1: loraCountryFreq = "POLAND"; break;
+                        case 2: loraCountryFreq = "UK"; break;
+                        case 3: loraCountryFreq = "US"; break;
+                    }
+                    displayShow("LORA FREQ>", "", "ALREADY ON: " + loraCountryFreq, "", "", "", 2000);
+                }
             }
         }
 

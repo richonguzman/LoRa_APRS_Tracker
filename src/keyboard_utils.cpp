@@ -393,32 +393,16 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
-            // Request frequency change (safe depuis ISR)
+            // Request frequency change (safe from ISR) - menuDisplay change handled in processPendingChanges()
             int newLoraIndex = menuDisplay - 2100;  // 2100=0(EU), 2101=1(PL), 2102=2(UK), 2103=3(US)
-            String freqName;
-            switch (newLoraIndex) {
-                case 0: freqName = "EU 433.775 MHz"; break;
-                case 1: freqName = "PL 434.855 MHz"; break;
-                case 2: freqName = "UK 439.913 MHz"; break;
-                case 3: freqName = "US 915.000 MHz"; break;
-            }
-            if (newLoraIndex != loraIndex) {
-                LoRa_Utils::requestFrequencyChange(newLoraIndex);
-                displayShow("FREQUENCY", "Selected:", freqName, 1500);
-            } else {
-                displayShow("FREQUENCY", "Already on:", freqName, 1000);
-            }
-            menuDisplay = 21;
+            LoRa_Utils::requestFrequencyChange(newLoraIndex);  // Always request, even if same
         } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
-            // Request data rate change (safe depuis ISR)
+            // Request data rate change (safe from ISR) - menuDisplay change handled in processPendingChanges()
             const int dataRates[] = {300, 244, 209, 183, 610, 1200};
             int index = menuDisplay - 21500;
             LoRa_Utils::requestDataRateChange(dataRates[index]);
-            displayShow("DATA RATE", "Selected:", String(dataRates[index]) + " bps", 1500);
-            menuDisplay = 215;
         } else if (menuDisplay == 220) {
             displayEcoMode = !displayEcoMode;
-            displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
             menuDisplay = 2210;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
