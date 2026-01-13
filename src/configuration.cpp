@@ -85,6 +85,8 @@ bool Configuration::writeFile() {
         data["battery"]["monitorVoltage"]           = battery.monitorVoltage;
         data["battery"]["sleepVoltage"]             = battery.sleepVoltage;
 
+        data["loraConfig"]["sendInfo"]              = lora.sendInfo;
+
         data["telemetry"]["active"]                 = telemetry.active;
         data["telemetry"]["sendTelemetry"]          = telemetry.sendTelemetry;
         data["telemetry"]["temperatureCorrection"]  = telemetry.temperatureCorrection;
@@ -215,6 +217,9 @@ bool Configuration::readFile() {
         battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
         battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
         battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
+
+        if (!data["loraConfig"].containsKey("sendInfo")) needsRewrite = true;
+        lora.sendInfo                   = data["loraConfig"]["sendInfo"] | true;
 
         if (!data["telemetry"].containsKey("active") ||
             !data["telemetry"].containsKey("sendTelemetry") ||
@@ -375,6 +380,8 @@ void Configuration::setDefaultValues() {
     battery.sendVoltageAlways       = false;
     battery.monitorVoltage          = false;
     battery.sleepVoltage            = 2.9;
+
+    lora.sendInfo                   = true;
 
     telemetry.active                 = false;
     telemetry.sendTelemetry          = false;

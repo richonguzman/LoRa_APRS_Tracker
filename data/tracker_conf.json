@@ -50,6 +50,9 @@
 		"monitorVoltage": false,
 		"sleepVoltage": 2.9
 	},
+	"loraConfig": {
+		"sendInfo": true
+	},
 	"other": {
 		"simplifiedTrackerMode": false,
 		"sendCommentAfterXBeacons": 10,

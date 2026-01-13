@@ -101,6 +101,11 @@ public:
     int     dataRate;
 };
 
+class Lora {
+public:
+    bool    sendInfo;
+};
+
 class PTT {
 public:
     bool    active;
@@ -123,13 +128,14 @@ class Configuration {
 public:
 
     WiFiAP                  wifiAP;
-    std::vector<Beacon>     beacons;  
+    std::vector<Beacon>     beacons;
     Display                 display;
     Battery                 battery;
     Winlink                 winlink;
     Telemetry               telemetry;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
+    Lora                    lora;
     PTT                     ptt;
     BLUETOOTH               bluetooth;
     

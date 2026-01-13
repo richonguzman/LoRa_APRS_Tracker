@@ -238,6 +238,15 @@ namespace STATION_Utils {
                 #endif
             }
 
+            // Add LoRa frequency and data rate info
+            if (Config.lora.sendInfo) {
+                comment += " ";
+                comment += String(Config.loraTypes[loraIndex].frequency / 1000000.0, 3);
+                comment += " MHz ";
+                comment += String(Config.loraTypes[loraIndex].dataRate);
+                comment += " bps";
+            }
+
             if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
                 updateCounter++;
                 if (updateCounter >= sendCommentAfterXBeacons) {
