@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -19,48 +19,142 @@
 #include <logger.h>
 #include <WiFi.h>
 #include "configuration.h"
+#include "wifi_utils.h"
 #include "web_utils.h"
 #include "display.h"
 
-extern      Configuration       Config;
-extern      logging::Logger     logger;
+extern Configuration        Config;
+extern logging::Logger      logger;
 
-uint32_t    noClientsTime        = 0;
+bool        WiFiConnected           = false;
+bool        WiFiStationMode         = false;
+uint32_t    noClientsTime           = 0;
+uint32_t    previousWiFiMillis      = 0;
+uint32_t    lastWiFiDebug           = 0;
 
 
 namespace WIFI_Utils {
 
-    void startAutoAP() {
-        WiFi.mode(WIFI_MODE_NULL);
-        WiFi.mode(WIFI_AP);
-        WiFi.softAP("LoRaTracker-AP", Config.wifiAP.password);
-    }
-
-    void checkIfWiFiAP() {
-        if (Config.wifiAP.active || Config.beacons[0].callsign == "NOCALL-7"){
-            displayShow(" LoRa APRS", "    ** WEB-CONF **","", "WiFiAP:LoRaTracker-AP", "IP    :   192.168.4.1","");
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
-            startAutoAP();
-            WEB_Utils::setup();
-            while (true) {
-                if (WiFi.softAPgetStationNum() > 0) {
-                    noClientsTime = 0;
-                } else {
-                    if (noClientsTime == 0) {
-                        noClientsTime = millis();
-                    } else if ((millis() - noClientsTime) > 2 * 60 * 1000) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
-                        displayShow("", "", "  STOPPING WiFi AP", 2000);
-                        Config.wifiAP.active = false;
-                        Config.writeFile();
-                        WiFi.softAPdisconnect(true);
-                        ESP.restart();
-                    }
-                }
+    void checkWiFi() {
+        if (WiFiConnected) {
+            if (millis() - lastWiFiDebug >= 10000) {
+                Serial.printf("[WiFi] status=%d RSSI=%d\n", WiFi.status(), WiFi.RSSI());
+                lastWiFiDebug = millis();
             }
-        } else {
-            WiFi.mode(WIFI_OFF);
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
+            if ((WiFi.status() != WL_CONNECTED) && ((millis() - previousWiFiMillis) >= 30000)) {
+                Serial.println("[WiFi] Connection lost, reconnecting...");
+                WiFi.disconnect();
+                WiFi.begin(Config.wifiAPs[0].ssid.c_str(), Config.wifiAPs[0].password.c_str());
+                previousWiFiMillis = millis();
+            }
         }
     }
+
+    void startBlockingWebConfig() {
+        String apName = "LoRaTracker-AP";
+        if (Config.beacons.size() > 0 && Config.beacons[0].callsign != "NOCALL-7") {
+            apName = Config.beacons[0].callsign + "-AP";
+        }
+
+        displayShow(" LoRa APRS", "    ** WEB-CONF **", "", "WiFiAP: " + apName, "IP    : 192.168.4.1", "", 0);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
+
+        WiFi.mode(WIFI_MODE_NULL);
+        WiFi.mode(WIFI_AP);
+        WiFi.softAP(apName.c_str(), Config.wifiAutoAP.password);
+
+        WEB_Utils::setup();
+
+        while (true) {
+            if (WiFi.softAPgetStationNum() > 0) {
+                noClientsTime = 0;
+            } else {
+                if (noClientsTime == 0) {
+                    noClientsTime = millis();
+                } else if ((millis() - noClientsTime) > Config.wifiAutoAP.timeout * 60 * 1000) {
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
+                    displayShow("", "", "  STOPPING WiFi AP", "", "", "", 2000);
+                    Config.wifiAutoAP.active = false;
+                    Config.writeFile();
+                    WiFi.softAPdisconnect(true);
+                    ESP.restart();
+                }
+            }
+        }
+    }
+
+    void startStationMode() {
+        WiFiStationMode = true;
+        WiFi_AP network = Config.wifiAPs[0];
+
+        String hostName = "Tracker-";
+        if (Config.beacons.size() > 0) {
+            hostName += Config.beacons[0].callsign;
+        }
+        WiFi.setHostname(hostName.c_str());
+        WiFi.mode(WIFI_STA);
+        WiFi.disconnect();
+        delay(500);
+
+        unsigned long start = millis();
+        Serial.print("\nConnecting to WiFi '");
+        Serial.print(network.ssid);
+        Serial.print("' ");
+        WiFi.begin(network.ssid.c_str(), network.password.c_str());
+
+        while (WiFi.status() != WL_CONNECTED) {
+            delay(500);
+            Serial.print('.');
+            delay(500);
+            if ((millis() - start) > 15000) {
+                break;
+            }
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+            WiFiConnected = true;
+            WiFi.setSleep(false);
+            Serial.print("\nConnected as ");
+            Serial.print(WiFi.localIP());
+            Serial.print(" / MAC Address: ");
+            Serial.println(WiFi.macAddress());
+            WEB_Utils::setup();
+        } else {
+            WiFiConnected = false;
+            Serial.println("\nNot connected to WiFi!");
+            displayShow("", " WiFi Not Connected", "", "", "", "", 1000);
+            WiFi.mode(WIFI_OFF);
+        }
+    }
+
+    void setup() {
+        btStop();
+
+        // Mode web-conf bloquant si activé, callsign NOCALL, ou pas de réseau WiFi configuré
+        if (Config.wifiAutoAP.active ||
+            Config.beacons[0].callsign == "NOCALL-7" ||
+            Config.wifiAPs.size() == 0 ||
+            Config.wifiAPs[0].ssid == "") {
+            startBlockingWebConfig();
+            // Ne revient jamais ici - reboot après config
+        }
+
+        // Mode Station: connexion au réseau WiFi configuré
+        startStationMode();
+    }
+
+    bool isConnected() {
+        return WiFiConnected;
+    }
+
+    String getStatusLine() {
+        if (!WiFiStationMode) {
+            return "";
+        }
+        if (WiFiConnected) {
+            return "WiFi< " + WiFi.localIP().toString();
+        }
+        return "WiFi< No connection";
+    }
+
 }

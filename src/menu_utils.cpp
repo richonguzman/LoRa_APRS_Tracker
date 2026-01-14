@@ -20,6 +20,7 @@
 #include <TinyGPS++.h>
 #include <vector>
 #include "notification_utils.h"
+#include "wifi_utils.h"
 #include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
@@ -432,11 +433,14 @@ namespace MENU_Utils {
             case 230:
                 if (bluetoothActive) {
                     bluetoothActive = false;
-                    displayShow("BLUETOOTH>", "", " Bluetooth --> OFF", 1000);
+                    Config.bluetooth.active = false;
+                    displayShow("BLUETOOTH>", "", " Bluetooth --> OFF", " (WiFi on reboot)", "", "", 1500);
                 } else {
                     bluetoothActive = true;
-                    displayShow("BLUETOOTH>", "", " Bluetooth --> ON", 1000);
+                    Config.bluetooth.active = true;
+                    displayShow("BLUETOOTH>", "", " Bluetooth --> ON", " (no WiFi on reboot)", "", "", 1500);
                 }
+                Config.writeFile();
                 menuDisplay = 23;
                 break;
 
@@ -836,7 +840,10 @@ namespace MENU_Utils {
                     }
                 }
 
-                if (showHumanHeading) {
+                String wifiStatus = WIFI_Utils::getStatusLine();
+                if (wifiStatus.length() > 0) {
+                    fifthRowMainMenu = wifiStatus;
+                } else if (showHumanHeading) {
                     fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
                 } else {
                     fifthRowMainMenu = "LAST Rx = ";

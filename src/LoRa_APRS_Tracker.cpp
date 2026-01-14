@@ -134,23 +134,14 @@ void setup() {
     displaySetup();
     POWER_Utils::externalPinSetup();
 
+    POWER_Utils::lowerCpuFrequency();
+
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
     startupScreen(loraIndex, versionDate);
 
-    WIFI_Utils::checkIfWiFiAP();
-
-    MSG_Utils::loadNumMessages();
-    GPS_Utils::setup();
-    currentLoRaType = &Config.loraTypes[loraIndex];
-    LoRa_Utils::setup();
-    Utils::i2cScannerForPeripherals();
-    WX_Utils::setup();
-
-    WiFi.mode(WIFI_OFF);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
-
+    // BLE prioritaire: si BLE actif, pas de WiFi
     if (bluetoothActive) {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::setup();
@@ -159,7 +150,16 @@ void setup() {
                 BLUETOOTH_Utils::setup();
             #endif
         }
+    } else {
+        WIFI_Utils::setup();
     }
+
+    MSG_Utils::loadNumMessages();
+    GPS_Utils::setup();
+    currentLoRaType = &Config.loraTypes[loraIndex];
+    LoRa_Utils::setup();
+    Utils::i2cScannerForPeripherals();
+    WX_Utils::setup();
 
     #ifdef BUTTON_PIN
         BUTTON_Utils::setup();
@@ -172,7 +172,6 @@ void setup() {
         TOUCH_Utils::setup();
     #endif
 
-    POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
@@ -195,6 +194,7 @@ void loop() {
 
     BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
+    WIFI_Utils::checkWiFi();
 
     #ifdef BUTTON_PIN
         BUTTON_Utils::loop();
@@ -268,4 +268,5 @@ void loop() {
             refreshDisplayTime = millis();
         }
     }
+    yield();
 }

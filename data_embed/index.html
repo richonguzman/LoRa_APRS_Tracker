@@ -764,6 +764,61 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
+                                        class="bi bi-wifi"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path d="M15.384 6.115a.485.485 0 0 0-.047-.736A12.44 12.44 0 0 0 8 3C5.259 3 2.723 3.882.663 5.379a.485.485 0 0 0-.048.736.52.52 0 0 0 .668.05A11.45 11.45 0 0 1 8 4c2.507 0 4.827.802 6.716 2.164.205.148.49.13.668-.049"/>
+                                        <path d="M13.229 8.271a.482.482 0 0 0-.063-.745A9.46 9.46 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.576 1.336c.206.132.48.108.653-.065"/>
+                                        <path d="M11.046 10.454a.5.5 0 0 0-.075-.753A6.47 6.47 0 0 0 8 9a6.47 6.47 0 0 0-2.971.701.5.5 0 0 0-.075.752.5.5 0 0 0 .621.086A5.48 5.48 0 0 1 8 10c.94 0 1.83.236 2.426.539a.5.5 0 0 0 .62-.085"/>
+                                        <path d="M9.06 12.44a.5.5 0 0 0-.078-.75 3.6 3.6 0 0 0-1.964-.544c-.718 0-1.38.212-1.964.544a.5.5 0 0 0 .617.869A2.6 2.6 0 0 1 8 12c.51 0 .99.14 1.383.369a.5.5 0 0 0 .617-.129.5.5 0 0 0 .06-.2m-1.06 1.06a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                                    </svg>
+                                    WiFi Network
+                                </h5>
+                                <small
+                                    >Configure WiFi network to connect to.</small
+                                >
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.0.ssid"
+                                            class="form-label"
+                                            >SSID</label>
+                                        <input
+                                            type="text"
+                                            name="wifi.AP.0.ssid"
+                                            id="wifi.AP.0.ssid"
+                                            class="form-control"
+                                            placeholder="Your WiFi network"
+                                        />
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.0.password"
+                                            class="form-label"
+                                            >Password</label>
+                                        <input
+                                            type="password"
+                                            name="wifi.AP.0.password"
+                                            id="wifi.AP.0.password"
+                                            class="form-control"
+                                            placeholder="WiFi password"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
                                         class="bi bi-router-fill"
                                         viewBox="0 0 16 16"
                                     >
@@ -780,22 +835,22 @@
                                             d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
                                         />
                                     </svg>
-                                    WiFi AP
+                                    WiFi AP (Fallback)
                                 </h5>
                                 <small
-                                    >Add your password to access WiFi AP.</small
+                                    >Password for fallback Access Point.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="col-6">
-                                    <label 
-                                        for="wifiAP.password" 
+                                    <label
+                                        for="wifi.autoAP.password"
                                         class="form-label"
                                         >Password</label>
                                     <input
                                         type="password"
-                                        name="wifiAP.password"
-                                        id="wifiAP.password"
+                                        name="wifi.autoAP.password"
+                                        id="wifi.autoAP.password"
                                         class="form-control"
                                         placeholder="1234567890"
                                         value="1234567890"

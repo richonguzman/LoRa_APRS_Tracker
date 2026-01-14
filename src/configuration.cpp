@@ -38,8 +38,13 @@ bool Configuration::writeFile() {
     }
     try {
 
-        data["wifiAP"]["active"]                    = wifiAP.active;
-        data["wifiAP"]["password"]                  = wifiAP.password;
+        for (int i = 0; i < wifiAPs.size(); i++) {
+            data["wifi"]["AP"][i]["ssid"]           = wifiAPs[i].ssid;
+            data["wifi"]["AP"][i]["password"]       = wifiAPs[i].password;
+        }
+        data["wifi"]["autoAP"]["active"]            = wifiAutoAP.active;
+        data["wifi"]["autoAP"]["password"]          = wifiAutoAP.password;
+        data["wifi"]["autoAP"]["timeout"]           = wifiAutoAP.timeout;
 
         for (int i = 0; i < beacons.size(); i++) {
             beacons[i].callsign.trim();
@@ -148,10 +153,16 @@ bool Configuration::readFile() {
             Serial.println("Failed to read file, using default configuration");
         }
 
-        if (!data["wifiAP"].containsKey("active") ||
-            !data["wifiAP"].containsKey("password")) needsRewrite = true;
-        wifiAP.active               = data["wifiAP"]["active"] | true;
-        wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
+        JsonArray WifiAPArray = data["wifi"]["AP"];
+        for (int i = 0; i < WifiAPArray.size(); i++) {
+            WiFi_AP wifiap;
+            wifiap.ssid             = WifiAPArray[i]["ssid"] | "";
+            wifiap.password         = WifiAPArray[i]["password"] | "";
+            wifiAPs.push_back(wifiap);
+        }
+        wifiAutoAP.active           = data["wifi"]["autoAP"]["active"] | false;
+        wifiAutoAP.password         = data["wifi"]["autoAP"]["password"] | "1234567890";
+        wifiAutoAP.timeout          = data["wifi"]["autoAP"]["timeout"] | 10;
 
         JsonArray BeaconsArray = data["beacons"];
         for (int i = 0; i < BeaconsArray.size(); i++) {
@@ -309,8 +320,13 @@ bool Configuration::readFile() {
 }
 
 void Configuration::setDefaultValues() {
-    wifiAP.active                   = true;
-    wifiAP.password                 = "1234567890";
+    WiFi_AP defaultWifi;
+    defaultWifi.ssid                = "";
+    defaultWifi.password            = "";
+    wifiAPs.push_back(defaultWifi);
+    wifiAutoAP.active               = false;
+    wifiAutoAP.password             = "1234567890";
+    wifiAutoAP.timeout              = 10;
 
     for (int i = 0; i < 3; i++) {
         Beacon beacon;

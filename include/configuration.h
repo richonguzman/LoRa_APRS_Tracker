@@ -23,10 +23,17 @@
 #include <vector>
 #include <FS.h>
 
-class WiFiAP {
+class WiFi_AP {
+public:
+    String  ssid;
+    String  password;
+};
+
+class WiFi_Auto_AP {
 public:
     bool    active;
     String  password;
+    int     timeout;
 };
 
 class Beacon {
@@ -127,7 +134,8 @@ public:
 class Configuration {
 public:
 
-    WiFiAP                  wifiAP;
+    std::vector<WiFi_AP>    wifiAPs;
+    WiFi_Auto_AP            wifiAutoAP;
     std::vector<Beacon>     beacons;
     Display                 display;
     Battery                 battery;

@@ -586,7 +586,7 @@ namespace KEYBOARD_Utils {
             POWER_Utils::shutdown();
         } else if (menuDisplay == 9001) {
             displayShow("", "", "  STARTING WiFi AP", 2000);
-            Config.wifiAP.active = true;
+            Config.wifiAutoAP.active = true;
             Config.writeFile();
             ESP.restart();
         }

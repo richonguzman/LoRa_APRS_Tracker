@@ -276,8 +276,14 @@ function loadSettings(settings) {
     // WINLINK
     document.getElementById("winlink.password").value                   = settings.winlink.password;
 
-    // WiFi AP
-    document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
+    // WiFi Network
+    if (settings.wifi && settings.wifi.AP && settings.wifi.AP[0]) {
+        document.getElementById("wifi.AP.0.ssid").value                 = settings.wifi.AP[0].ssid || "";
+        document.getElementById("wifi.AP.0.password").value             = settings.wifi.AP[0].password || "";
+    }
+
+    // WiFi Auto AP
+    document.getElementById("wifi.autoAP.password").value               = settings.wifi.autoAP.password;
 
     // NOTIFICATION
     document.getElementById("notification.ledTx").checked               = settings.notification.ledTx;

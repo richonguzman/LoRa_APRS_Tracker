@@ -64,7 +64,7 @@ namespace WEB_Utils {
     }
 
     void handleHome(AsyncWebServerRequest *request) {
-
+        Serial.printf("[WebServer] GET / from %s\n", request->client()->remoteIP().toString().c_str());
         AsyncWebServerResponse *response = request->beginResponse(200, "text/html", (const uint8_t*)web_index_html, web_index_html_len);
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
@@ -219,9 +219,17 @@ namespace WEB_Utils {
         //  Winlink
         Config.winlink.password                 = getParamStringSafe("winlink.password", Config.winlink.password);
 
-        //  WiFi AP
-        Config.wifiAP.password                  = getParamStringSafe("wifiAP.password", Config.wifiAP.password);
-        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
+        //  WiFi Network
+        if (Config.wifiAPs.size() == 0) {
+            WiFi_AP wifiap;
+            Config.wifiAPs.push_back(wifiap);
+        }
+        Config.wifiAPs[0].ssid                  = getParamStringSafe("wifi.AP.0.ssid", Config.wifiAPs[0].ssid);
+        Config.wifiAPs[0].password              = getParamStringSafe("wifi.AP.0.password", Config.wifiAPs[0].password);
+
+        //  WiFi Auto AP
+        Config.wifiAutoAP.password              = getParamStringSafe("wifi.autoAP.password", Config.wifiAutoAP.password);
+        Config.wifiAutoAP.active                = false;    // Exit web-conf mode after validation
 
         //  Notification
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
@@ -330,7 +338,12 @@ namespace WEB_Utils {
 
         server.onNotFound(handleNotFound);
 
+        server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            Serial.printf("[WebServer] Body: %s %s (%d bytes)\n", request->methodToString(), request->url().c_str(), total);
+        });
+
         server.begin();
+        Serial.println("[WebServer] Started on port 80");
     }
 
 }
