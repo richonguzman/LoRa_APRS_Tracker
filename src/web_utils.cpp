@@ -228,12 +228,14 @@ namespace WEB_Utils {
         Config.winlink.password                 = getParamStringSafe("winlink.password", Config.winlink.password);
 
         //  WiFi Network
-        if (Config.wifiAPs.size() == 0) {
+        while (Config.wifiAPs.size() < 2) {
             WiFi_AP wifiap;
             Config.wifiAPs.push_back(wifiap);
         }
         Config.wifiAPs[0].ssid                  = getParamStringSafe("wifi.AP.0.ssid", Config.wifiAPs[0].ssid);
         Config.wifiAPs[0].password              = getParamStringSafe("wifi.AP.0.password", Config.wifiAPs[0].password);
+        Config.wifiAPs[1].ssid                  = getParamStringSafe("wifi.AP.1.ssid", Config.wifiAPs[1].ssid);
+        Config.wifiAPs[1].password              = getParamStringSafe("wifi.AP.1.password", Config.wifiAPs[1].password);
 
         //  WiFi Auto AP
         Config.wifiAutoAP.password              = getParamStringSafe("wifi.autoAP.password", Config.wifiAutoAP.password);

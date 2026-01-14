@@ -35,6 +35,9 @@ uint32_t    lastWiFiDebug           = 0;
 
 namespace WIFI_Utils {
 
+    // Forward declaration
+    bool tryConnectToNetwork(const WiFi_AP& network);
+
     void checkWiFi() {
         if (WiFiConnected) {
             if (millis() - lastWiFiDebug >= 10000) {
@@ -44,7 +47,16 @@ namespace WIFI_Utils {
             if ((WiFi.status() != WL_CONNECTED) && ((millis() - previousWiFiMillis) >= 30000)) {
                 Serial.println("[WiFi] Connection lost, reconnecting...");
                 WiFi.disconnect();
-                WiFi.begin(Config.wifiAPs[0].ssid.c_str(), Config.wifiAPs[0].password.c_str());
+                // Try each configured network
+                for (size_t i = 0; i < Config.wifiAPs.size(); i++) {
+                    if (Config.wifiAPs[i].ssid != "" && tryConnectToNetwork(Config.wifiAPs[i])) {
+                        WiFiConnected = true;
+                        break;
+                    }
+                }
+                if (WiFi.status() != WL_CONNECTED) {
+                    WiFiConnected = false;
+                }
                 previousWiFiMillis = millis();
             }
         }
@@ -83,18 +95,8 @@ namespace WIFI_Utils {
         }
     }
 
-    void startStationMode() {
-        WiFiStationMode = true;
-        WiFi_AP network = Config.wifiAPs[0];
-
-        String hostName = "Tracker-";
-        if (Config.beacons.size() > 0) {
-            hostName += Config.beacons[0].callsign;
-        }
-        WiFi.setHostname(hostName.c_str());
-        WiFi.mode(WIFI_STA);
-        WiFi.disconnect();
-        delay(500);
+    bool tryConnectToNetwork(const WiFi_AP& network) {
+        if (network.ssid == "") return false;
 
         unsigned long start = millis();
         Serial.print("\nConnecting to WiFi '");
@@ -111,7 +113,30 @@ namespace WIFI_Utils {
             }
         }
 
-        if (WiFi.status() == WL_CONNECTED) {
+        return WiFi.status() == WL_CONNECTED;
+    }
+
+    void startStationMode() {
+        WiFiStationMode = true;
+
+        String hostName = "Tracker-";
+        if (Config.beacons.size() > 0) {
+            hostName += Config.beacons[0].callsign;
+        }
+        WiFi.setHostname(hostName.c_str());
+        WiFi.mode(WIFI_STA);
+        WiFi.disconnect();
+        delay(500);
+
+        // Try each configured network
+        bool connected = false;
+        for (size_t i = 0; i < Config.wifiAPs.size() && !connected; i++) {
+            if (Config.wifiAPs[i].ssid != "") {
+                connected = tryConnectToNetwork(Config.wifiAPs[i]);
+            }
+        }
+
+        if (connected) {
             WiFiConnected = true;
             WiFi.setSleep(false);
             Serial.print("\nConnected as ");

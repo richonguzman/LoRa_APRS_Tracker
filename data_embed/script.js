@@ -291,6 +291,10 @@ function loadSettings(settings) {
         document.getElementById("wifi.AP.0.ssid").value                 = settings.wifi.AP[0].ssid || "";
         document.getElementById("wifi.AP.0.password").value             = settings.wifi.AP[0].password || "";
     }
+    if (settings.wifi && settings.wifi.AP && settings.wifi.AP[1]) {
+        document.getElementById("wifi.AP.1.ssid").value                 = settings.wifi.AP[1].ssid || "";
+        document.getElementById("wifi.AP.1.password").value             = settings.wifi.AP[1].password || "";
+    }
 
     // WiFi Auto AP
     document.getElementById("wifi.autoAP.password").value               = settings.wifi.autoAP.password;
