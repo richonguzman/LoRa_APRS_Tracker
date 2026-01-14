@@ -144,12 +144,12 @@ function loadSettings(settings) {
                 </select>
             </div>
             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
-                 <input 
-                     type="text" 
-                     class="form-control form-control-sm" 
-                     name="beacons.${index}.status" 
-                     id="beacons.${index}.status" 
-                     value="${beacons.status}">
+                 <input
+                     type="text"
+                     class="form-control form-control-sm"
+                     name="beacons.${index}.status"
+                     id="beacons.${index}.status"
+                     value="${beacons.status || ''}">
                  <label for="beacons.${index}.status">Status</label>
              </div>
             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
@@ -158,7 +158,7 @@ function loadSettings(settings) {
                      class="form-control form-control-sm" 
                      name="beacons.${index}.profileLabel" 
                      id="beacons.${index}.profileLabel" 
-                     value="${beacons.profileLabel}">
+                     value="${beacons.profileLabel || ''}">
                  <label for="beacons.${index}.profileLabel">Profile Label</label>
              </div>
         `;
