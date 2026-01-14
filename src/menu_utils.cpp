@@ -842,7 +842,13 @@ namespace MENU_Utils {
 
                 String wifiStatus = WIFI_Utils::getStatusLine();
                 if (wifiStatus.length() > 0) {
-                    fifthRowMainMenu = wifiStatus;
+                    // Sync with GPS/locator alternation: GPS coords -> Last RX, Locator -> WiFi
+                    if (time_now % 10 < 5) {
+                        fifthRowMainMenu = "LAST Rx = ";
+                        fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
+                    } else {
+                        fifthRowMainMenu = wifiStatus;
+                    }
                 } else if (showHumanHeading) {
                     fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
                 } else {
@@ -909,12 +915,38 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected";
                 }
-                displayShow(firstRowMainMenu,
-                            secondRowMainMenu,
-                            thirdRowMainMenu,
-                            fourthRowMainMenu,
-                            fifthRowMainMenu,
-                            sixthRowMainMenu);
+                #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+                    // T-Deck: header already shows callsign, date/time, GPS coords, satellites
+                    // Main area shows: locator/freq, altitude/speed/course, Last RX, WiFi, battery, near station
+                    String locatorFreqRow;
+                    if (!disableGPS) {
+                        locatorFreqRow = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        locatorFreqRow += " ";
+                        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+                        int rate = Config.loraTypes[loraIndex].dataRate;
+                        locatorFreqRow += String(freq, 3) + "@" + String(rate);
+                    }
+                    String lastRxRow = "LAST Rx = ";
+                    lastRxRow += MSG_Utils::getLastHeardTracker();
+                    String nearStationRow = STATION_Utils::getNearStation(0);
+                    if (nearStationRow.length() > 0) {
+                        nearStationRow = "Near: " + nearStationRow;
+                    }
+                    String wifiRow = WIFI_Utils::getStatusLine();
+                    displayShow(locatorFreqRow,
+                                fourthRowMainMenu,
+                                lastRxRow,
+                                nearStationRow,
+                                wifiRow,
+                                sixthRowMainMenu);
+                #else
+                    displayShow(firstRowMainMenu,
+                                secondRowMainMenu,
+                                thirdRowMainMenu,
+                                fourthRowMainMenu,
+                                fifthRowMainMenu,
+                                sixthRowMainMenu);
+                #endif
                 break;
         }
     }

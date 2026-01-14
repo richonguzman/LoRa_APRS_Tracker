@@ -27,6 +27,7 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
+#include "aprs_is_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
 #include "display.h"
@@ -262,6 +263,11 @@ namespace STATION_Utils {
 
         displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
+
+        // Upload to APRS-IS if connected
+        if (APRS_IS_Utils::isConnected()) {
+            APRS_IS_Utils::upload(packet);
+        }
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 

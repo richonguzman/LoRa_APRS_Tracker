@@ -75,6 +75,11 @@ bool Configuration::writeFile() {
         #endif
         data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
 
+        data["aprs_is"]["active"]                   = aprs_is.active;
+        data["aprs_is"]["server"]                   = aprs_is.server;
+        data["aprs_is"]["port"]                     = aprs_is.port;
+        data["aprs_is"]["passcode"]                 = aprs_is.passcode;
+
         for (int i = 0; i < loraTypes.size(); i++) {
             data["lora"][i]["frequency"]                = loraTypes[i].frequency;
             data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
@@ -204,6 +209,15 @@ bool Configuration::readFile() {
             bluetooth.useBLE            = true;    // fixed as BLE
             bluetooth.useKISS           = data["bluetooth"]["useKISS"] | true;    // true=KISS,  false=TNC2
         #endif
+
+        if (!data["aprs_is"].containsKey("active") ||
+            !data["aprs_is"].containsKey("server") ||
+            !data["aprs_is"].containsKey("port") ||
+            !data["aprs_is"].containsKey("passcode")) needsRewrite = true;
+        aprs_is.active                  = data["aprs_is"]["active"] | false;
+        aprs_is.server                  = data["aprs_is"]["server"] | "euro.aprs2.net";
+        aprs_is.port                    = data["aprs_is"]["port"] | 14580;
+        aprs_is.passcode                = data["aprs_is"]["passcode"] | "-1";
 
         JsonArray LoraTypesArray = data["lora"];
         for (int j = 0; j < LoraTypesArray.size(); j++) {
@@ -357,6 +371,11 @@ void Configuration::setDefaultValues() {
         bluetooth.useBLE            = true;    // fixed as BLE
         bluetooth.useKISS           = true;
     #endif
+
+    aprs_is.active                  = false;
+    aprs_is.server                  = "euro.aprs2.net";
+    aprs_is.port                    = 14580;
+    aprs_is.passcode                = "-1";
 
     for (int j = 0; j < 4; j++) {
         LoraType loraType;

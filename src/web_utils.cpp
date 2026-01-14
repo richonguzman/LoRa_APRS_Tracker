@@ -191,6 +191,14 @@ namespace WEB_Utils {
             Config.bluetooth.useKISS            = request->hasParam("bluetooth.useKISS", true);
         }
 
+        //  APRS-IS
+        Config.aprs_is.active                   = request->hasParam("aprs_is.active", true);
+        if (Config.aprs_is.active) {
+            Config.aprs_is.server               = getParamStringSafe("aprs_is.server", Config.aprs_is.server);
+            Config.aprs_is.port                 = getParamIntSafe("aprs_is.port", Config.aprs_is.port);
+            Config.aprs_is.passcode             = getParamStringSafe("aprs_is.passcode", Config.aprs_is.passcode);
+        }
+
         // LORA
         for (int i = 0; i < 4; i++) {
             Config.loraTypes[i].frequency       = getParamDoubleSafe("lora." + String(i) + ".frequency", Config.loraTypes[i].frequency);

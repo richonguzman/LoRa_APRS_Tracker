@@ -130,6 +130,14 @@ public:
     bool    useKISS;
 };
 
+class APRS_IS {
+public:
+    bool    active;
+    String  server;
+    int     port;
+    String  passcode;
+};
+
 
 class Configuration {
 public:
@@ -146,7 +154,8 @@ public:
     Lora                    lora;
     PTT                     ptt;
     BLUETOOTH               bluetooth;
-    
+    APRS_IS                 aprs_is;
+
     bool    simplifiedTrackerMode;
     int     sendCommentAfterXBeacons;
     String  path;

@@ -194,6 +194,16 @@ function loadSettings(settings) {
     BluetoothUseBle.disabled        = !BluetoothActiveCheckbox.checked;
     BluetoothUseKiss.disabled       = !BluetoothActiveCheckbox.checked;
 
+    // APRS-IS
+    document.getElementById("aprs_is.active").checked                   = settings.aprs_is.active;
+    document.getElementById("aprs_is.server").value                     = settings.aprs_is.server;
+    document.getElementById("aprs_is.port").value                       = settings.aprs_is.port;
+    document.getElementById("aprs_is.passcode").value                   = settings.aprs_is.passcode;
+    AprsIsActiveCheckbox.checked    = settings.aprs_is.active;
+    AprsIsServer.disabled           = !AprsIsActiveCheckbox.checked;
+    AprsIsPort.disabled             = !AprsIsActiveCheckbox.checked;
+    AprsIsPasscode.disabled         = !AprsIsActiveCheckbox.checked;
+
     // LORA
     const loraContainer = document.getElementById("lora-settings");
     loraContainer.innerHTML = ""; // Clear previous content
@@ -367,6 +377,17 @@ BluetoothActiveCheckbox.addEventListener("change", function () {
     BluetoothDeviceName.disabled    = !this.checked;
     BluetoothUseBle.disabled        = !this.checked;
     BluetoothUseKiss.disabled       = !this.checked;
+});
+
+// APRS-IS Switches
+const AprsIsActiveCheckbox      = document.querySelector('input[name="aprs_is.active"]');
+const AprsIsServer              = document.querySelector('input[name="aprs_is.server"]');
+const AprsIsPort                = document.querySelector('input[name="aprs_is.port"]');
+const AprsIsPasscode            = document.querySelector('input[name="aprs_is.passcode"]');
+AprsIsActiveCheckbox.addEventListener("change", function () {
+    AprsIsServer.disabled           = !this.checked;
+    AprsIsPort.disabled             = !this.checked;
+    AprsIsPasscode.disabled         = !this.checked;
 });
 
 // Battery Switches

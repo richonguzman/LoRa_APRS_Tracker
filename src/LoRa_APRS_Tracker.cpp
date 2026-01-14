@@ -59,6 +59,7 @@ ____________________________________________________________________*/
 #include "wifi_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
+#include "aprs_is_utils.h"
 #include "web_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
@@ -195,6 +196,7 @@ void loop() {
     BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
     WIFI_Utils::checkWiFi();
+    APRS_IS_Utils::checkConnection();
 
     #ifdef BUTTON_PIN
         BUTTON_Utils::loop();
