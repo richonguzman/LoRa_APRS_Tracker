@@ -45,8 +45,9 @@ namespace WIFI_Utils {
     void checkWiFi() {
         // Eco mode: WiFi is off, waiting for periodic retry
         if (WiFiEcoMode && WiFiStationMode) {
-            if ((millis() - lastWiFiRetry) >= WIFI_RETRY_INTERVAL) {
-                Serial.println("[WiFi] Eco mode: retrying connection...");
+            uint32_t elapsed = millis() - lastWiFiRetry;
+            if (elapsed >= WIFI_RETRY_INTERVAL) {
+                Serial.printf("[WiFi] Eco mode: retrying after %u ms\n", elapsed);
                 WiFiEcoMode = false;
                 startStationMode();
                 lastWiFiRetry = millis();
@@ -61,6 +62,7 @@ namespace WIFI_Utils {
             }
             if ((WiFi.status() != WL_CONNECTED) && ((millis() - previousWiFiMillis) >= 30000)) {
                 Serial.println("[WiFi] Connection lost, reconnecting...");
+                WiFi.disconnect();
                 // Try each configured network
                 bool reconnected = false;
                 for (size_t i = 0; i < Config.wifiAPs.size(); i++) {
@@ -78,9 +80,11 @@ namespace WIFI_Utils {
                     WiFiEcoMode = true;
                     lastWiFiRetry = millis();
                     Serial.println("[WiFi] Entering eco mode, retry in 30 min");
-                    WiFi.disconnect(true);  // Disconnect and clear credentials
-                    delay(100);             // Let WiFi stack settle
-                    WiFi.mode(WIFI_OFF);
+                    // Proper WiFi shutdown sequence using ESP-IDF API
+                    esp_wifi_disconnect();
+                    delay(100);
+                    esp_wifi_stop();
+                    delay(100);
                 }
                 previousWiFiMillis = millis();
             }
@@ -123,10 +127,6 @@ namespace WIFI_Utils {
     bool tryConnectToNetwork(const WiFi_AP& network) {
         if (network.ssid == "") return false;
 
-        // Ensure clean state before trying to connect
-        WiFi.disconnect(true);
-        delay(100);
-
         unsigned long start = millis();
         Serial.print("\nConnecting to WiFi '");
         Serial.print(network.ssid);
@@ -138,8 +138,8 @@ namespace WIFI_Utils {
             Serial.print('.');
             delay(500);
             if ((millis() - start) > 15000) {
-                // Timeout - disconnect to clean up connecting state
-                WiFi.disconnect(true);
+                // Timeout - properly stop this connection attempt
+                esp_wifi_disconnect();
                 delay(100);
                 break;
             }
@@ -155,10 +155,13 @@ namespace WIFI_Utils {
         if (Config.beacons.size() > 0) {
             hostName += Config.beacons[0].callsign;
         }
-        WiFi.setHostname(hostName.c_str());
+
+        // Force clean WiFi restart (needed after esp_wifi_stop in eco mode)
+        WiFi.mode(WIFI_OFF);
+        delay(100);
         WiFi.mode(WIFI_STA);
-        WiFi.disconnect();
-        delay(500);
+        WiFi.setHostname(hostName.c_str());
+        delay(100);
 
         // Try each configured network
         bool connected = false;
@@ -183,8 +186,9 @@ namespace WIFI_Utils {
             WiFiEcoMode = true;
             lastWiFiRetry = millis();
             Serial.println("\nNot connected to WiFi! Entering eco mode, retry in 30 min");
-            displayShow("", " WiFi Eco Mode", " Retry in 30 min", "", "", "", 1000);
-            WiFi.mode(WIFI_OFF);
+            displayShow("", " WiFi Eco Mode", "  Retry in 30 min", "", "", "", 1000);
+            // Proper WiFi shutdown
+            esp_wifi_stop();
         }
     }
 
