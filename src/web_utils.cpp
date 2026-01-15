@@ -335,6 +335,13 @@ namespace WEB_Utils {
     }
 
     void setup() {
+        static bool initialized = false;
+        if (initialized) {
+            Serial.println("[WebServer] Already initialized, skipping");
+            return;
+        }
+        initialized = true;
+
         server.on("/", HTTP_GET, handleHome);
         server.on("/status", HTTP_GET, handleStatus);
         //server.on("/received-packets.json", HTTP_GET, handleReceivedPackets);

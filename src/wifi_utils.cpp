@@ -29,9 +29,12 @@ extern logging::Logger      logger;
 
 bool        WiFiConnected           = false;
 bool        WiFiStationMode         = false;
+bool        WiFiEcoMode             = false;    // WiFi sleeping, waiting for retry
 uint32_t    noClientsTime           = 0;
 uint32_t    previousWiFiMillis      = 0;
 uint32_t    lastWiFiDebug           = 0;
+uint32_t    lastWiFiRetry           = 0;
+const uint32_t WIFI_RETRY_INTERVAL  = 30 * 60 * 1000;  // 30 minutes
 
 
 namespace WIFI_Utils {
@@ -40,6 +43,17 @@ namespace WIFI_Utils {
     bool tryConnectToNetwork(const WiFi_AP& network);
 
     void checkWiFi() {
+        // Eco mode: WiFi is off, waiting for periodic retry
+        if (WiFiEcoMode && WiFiStationMode) {
+            if ((millis() - lastWiFiRetry) >= WIFI_RETRY_INTERVAL) {
+                Serial.println("[WiFi] Eco mode: retrying connection...");
+                WiFiEcoMode = false;
+                startStationMode();
+                lastWiFiRetry = millis();
+            }
+            return;
+        }
+
         if (WiFiConnected) {
             if (millis() - lastWiFiDebug >= 10000) {
                 Serial.printf("[WiFi] status=%d RSSI=%d\n", WiFi.status(), WiFi.RSSI());
@@ -47,16 +61,26 @@ namespace WIFI_Utils {
             }
             if ((WiFi.status() != WL_CONNECTED) && ((millis() - previousWiFiMillis) >= 30000)) {
                 Serial.println("[WiFi] Connection lost, reconnecting...");
-                WiFi.disconnect();
                 // Try each configured network
+                bool reconnected = false;
                 for (size_t i = 0; i < Config.wifiAPs.size(); i++) {
                     if (Config.wifiAPs[i].ssid != "" && tryConnectToNetwork(Config.wifiAPs[i])) {
-                        WiFiConnected = true;
+                        reconnected = true;
                         break;
                     }
                 }
-                if (WiFi.status() != WL_CONNECTED) {
+                if (reconnected) {
+                    WiFiConnected = true;
+                    WiFiEcoMode = false;
+                } else {
+                    // Enter eco mode: turn off WiFi and retry later
                     WiFiConnected = false;
+                    WiFiEcoMode = true;
+                    lastWiFiRetry = millis();
+                    Serial.println("[WiFi] Entering eco mode, retry in 30 min");
+                    WiFi.disconnect(true);  // Disconnect and clear credentials
+                    delay(100);             // Let WiFi stack settle
+                    WiFi.mode(WIFI_OFF);
                 }
                 previousWiFiMillis = millis();
             }
@@ -99,6 +123,10 @@ namespace WIFI_Utils {
     bool tryConnectToNetwork(const WiFi_AP& network) {
         if (network.ssid == "") return false;
 
+        // Ensure clean state before trying to connect
+        WiFi.disconnect(true);
+        delay(100);
+
         unsigned long start = millis();
         Serial.print("\nConnecting to WiFi '");
         Serial.print(network.ssid);
@@ -110,6 +138,9 @@ namespace WIFI_Utils {
             Serial.print('.');
             delay(500);
             if ((millis() - start) > 15000) {
+                // Timeout - disconnect to clean up connecting state
+                WiFi.disconnect(true);
+                delay(100);
                 break;
             }
         }
@@ -139,6 +170,7 @@ namespace WIFI_Utils {
 
         if (connected) {
             WiFiConnected = true;
+            WiFiEcoMode = false;
             // Enable modem sleep for WiFi/BLE coexistence (required for coex to work)
             esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
             Serial.print("\nConnected as ");
@@ -148,8 +180,10 @@ namespace WIFI_Utils {
             WEB_Utils::setup();
         } else {
             WiFiConnected = false;
-            Serial.println("\nNot connected to WiFi!");
-            displayShow("", " WiFi Not Connected", "", "", "", "", 1000);
+            WiFiEcoMode = true;
+            lastWiFiRetry = millis();
+            Serial.println("\nNot connected to WiFi! Entering eco mode, retry in 30 min");
+            displayShow("", " WiFi Eco Mode", " Retry in 30 min", "", "", "", 1000);
             WiFi.mode(WIFI_OFF);
         }
     }
@@ -181,6 +215,9 @@ namespace WIFI_Utils {
         }
         if (WiFiConnected) {
             return "WiFi< " + WiFi.localIP().toString();
+        }
+        if (WiFiEcoMode) {
+            return "WiFi< Eco (sleep)";
         }
         return "WiFi< No connection";
     }
