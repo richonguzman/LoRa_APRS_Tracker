@@ -149,13 +149,39 @@ extern logging::Logger logger;
     }
 
     void draw_T_DECK_Top() {
-        sprite.fillSprite(TFT_BLACK); 
+        sprite.fillSprite(TFT_BLACK);
         sprite.fillRect(0, 0, 320, 38, redColor);
         sprite.setTextFont(0);
         sprite.setTextSize(bigSizeFont);
         sprite.setTextColor(TFT_WHITE, redColor);
         sprite.drawString(topHeader1, 3, 5);
-        
+
+        // Draw APRS symbol after callsign in red bar
+        if (Config.display.showSymbol) {
+            int symbolIndex = -1;
+            for (int i = 0; i < symbolArraySize; i++) {
+                if (currentBeacon->symbol == symbolArray[i]) {
+                    symbolIndex = i;
+                    break;
+                }
+            }
+            if (symbolIndex >= 0) {
+                // Draw symbol scaled 2x, positioned to the right near date/time
+                int symbolX = 190;  // Right side, before date/time
+                const uint8_t *bitMap = symbolsAPRS[symbolIndex];
+                // Draw 2x scaled symbol
+                for (int y = 0; y < SYMBOL_HEIGHT; y++) {
+                    for (int x = 0; x < SYMBOL_WIDTH; x++) {
+                        int byteIndex = (y * ((SYMBOL_WIDTH + 7) / 8)) + (x / 8);
+                        int bitIndex = 7 - (x % 8);
+                        if (bitMap[byteIndex] & (1 << bitIndex)) {
+                            sprite.fillRect(symbolX + x * 2, 3 + y * 2, 2, 2, TFT_WHITE);
+                        }
+                    }
+                }
+            }
+        }
+
         sprite.setTextSize(smallSizeFont);
         sprite.setTextColor(TFT_WHITE, redColor);
         sprite.drawString(topHeader1_1, 258, 5);
@@ -472,28 +498,31 @@ void displayShow(const String& header, const String& line1, const String& line2,
                 }
             }
         #endif
-            if (menuDisplay == 0 && Config.display.showSymbol) {
-                int symbol = 100;
-                for (int i = 0; i < symbolArraySize; i++) {
-                    if (currentBeacon->symbol == symbolArray[i]) {
-                        symbol = i;
-                        break;
+            #if !defined(TTGO_T_DECK_GPS) && !defined(TTGO_T_DECK_PLUS)
+                // T-Deck: symbol is drawn in header, skip here
+                if (menuDisplay == 0 && Config.display.showSymbol) {
+                    int symbol = 100;
+                    for (int i = 0; i < symbolArraySize; i++) {
+                        if (currentBeacon->symbol == symbolArray[i]) {
+                            symbol = i;
+                            break;
+                        }
+                    }
+
+                    symbolAvailable = symbol != 100;
+
+                    /*  Symbol alternate every 5s
+                    *   If bluetooth is disconnected or if we are in the first part of the clock, then we show the APRS symbol
+                    *   Otherwise, we are in the second part of the clock, then we show BT connected */
+
+                    const auto time_now = now();
+                    if (!bluetoothConnected || time_now % 10 < 5) {
+                        if (symbolAvailable) drawSymbol(symbol, false);
+                    } else if (bluetoothConnected) {    // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
+                        drawSymbol(symbol, true);
                     }
                 }
-
-                symbolAvailable = symbol != 100;
-
-                /*  Symbol alternate every 5s
-                *   If bluetooth is disconnected or if we are in the first part of the clock, then we show the APRS symbol
-                *   Otherwise, we are in the second part of the clock, then we show BT connected */
-            
-                const auto time_now = now();
-                if (!bluetoothConnected || time_now % 10 < 5) {
-                    if (symbolAvailable) drawSymbol(symbol, false);
-                } else if (bluetoothConnected) {    // TODO In this case, the text symbol stay displayed due to symbolAvailable false in menu_utils
-                    drawSymbol(symbol, true);
-                }
-            }
+            #endif
         sprite.pushSprite(0,0);
     #else
         const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};

@@ -38,8 +38,13 @@ bool Configuration::writeFile() {
     }
     try {
 
-        data["wifiAP"]["active"]                    = wifiAP.active;
-        data["wifiAP"]["password"]                  = wifiAP.password;
+        for (int i = 0; i < wifiAPs.size(); i++) {
+            data["wifi"]["AP"][i]["ssid"]           = wifiAPs[i].ssid;
+            data["wifi"]["AP"][i]["password"]       = wifiAPs[i].password;
+        }
+        data["wifi"]["autoAP"]["active"]            = wifiAutoAP.active;
+        data["wifi"]["autoAP"]["password"]          = wifiAutoAP.password;
+        data["wifi"]["autoAP"]["timeout"]           = wifiAutoAP.timeout;
 
         for (int i = 0; i < beacons.size(); i++) {
             beacons[i].callsign.trim();
@@ -70,12 +75,18 @@ bool Configuration::writeFile() {
         #endif
         data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
 
+        data["aprs_is"]["active"]                   = aprs_is.active;
+        data["aprs_is"]["server"]                   = aprs_is.server;
+        data["aprs_is"]["port"]                     = aprs_is.port;
+        data["aprs_is"]["passcode"]                 = aprs_is.passcode;
+
         for (int i = 0; i < loraTypes.size(); i++) {
             data["lora"][i]["frequency"]                = loraTypes[i].frequency;
             data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
             data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
             data["lora"][i]["codingRate4"]              = loraTypes[i].codingRate4;
             data["lora"][i]["power"]                    = loraTypes[i].power;
+            data["lora"][i]["dataRate"]                 = loraTypes[i].dataRate;
         }
 
         data["battery"]["sendVoltage"]              = battery.sendVoltage;
@@ -83,6 +94,8 @@ bool Configuration::writeFile() {
         data["battery"]["sendVoltageAlways"]        = battery.sendVoltageAlways;
         data["battery"]["monitorVoltage"]           = battery.monitorVoltage;
         data["battery"]["sleepVoltage"]             = battery.sleepVoltage;
+
+        data["loraConfig"]["sendInfo"]              = lora.sendInfo;
 
         data["telemetry"]["active"]                 = telemetry.active;
         data["telemetry"]["sendTelemetry"]          = telemetry.sendTelemetry;
@@ -97,6 +110,7 @@ bool Configuration::writeFile() {
         data["notification"]["buzzerActive"]        = notification.buzzerActive;
         data["notification"]["buzzerPinTone"]       = notification.buzzerPinTone;
         data["notification"]["buzzerPinVcc"]        = notification.buzzerPinVcc;
+        data["notification"]["volume"]              = notification.volume;
         data["notification"]["bootUpBeep"]          = notification.bootUpBeep;
         data["notification"]["txBeep"]              = notification.txBeep;
         data["notification"]["messageRxBeep"]       = notification.messageRxBeep;
@@ -145,10 +159,16 @@ bool Configuration::readFile() {
             Serial.println("Failed to read file, using default configuration");
         }
 
-        if (!data["wifiAP"].containsKey("active") ||
-            !data["wifiAP"].containsKey("password")) needsRewrite = true;
-        wifiAP.active               = data["wifiAP"]["active"] | true;
-        wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
+        JsonArray WifiAPArray = data["wifi"]["AP"];
+        for (int i = 0; i < WifiAPArray.size(); i++) {
+            WiFi_AP wifiap;
+            wifiap.ssid             = WifiAPArray[i]["ssid"] | "";
+            wifiap.password         = WifiAPArray[i]["password"] | "";
+            wifiAPs.push_back(wifiap);
+        }
+        wifiAutoAP.active           = data["wifi"]["autoAP"]["active"] | false;
+        wifiAutoAP.password         = data["wifi"]["autoAP"]["password"] | "1234567890";
+        wifiAutoAP.timeout          = data["wifi"]["autoAP"]["timeout"] | 10;
 
         JsonArray BeaconsArray = data["beacons"];
         for (int i = 0; i < BeaconsArray.size(); i++) {
@@ -191,6 +211,15 @@ bool Configuration::readFile() {
             bluetooth.useKISS           = data["bluetooth"]["useKISS"] | true;    // true=KISS,  false=TNC2
         #endif
 
+        if (!data["aprs_is"].containsKey("active") ||
+            !data["aprs_is"].containsKey("server") ||
+            !data["aprs_is"].containsKey("port") ||
+            !data["aprs_is"].containsKey("passcode")) needsRewrite = true;
+        aprs_is.active                  = data["aprs_is"]["active"] | false;
+        aprs_is.server                  = data["aprs_is"]["server"] | "euro.aprs2.net";
+        aprs_is.port                    = data["aprs_is"]["port"] | 14580;
+        aprs_is.passcode                = data["aprs_is"]["passcode"] | "-1";
+
         JsonArray LoraTypesArray = data["lora"];
         for (int j = 0; j < LoraTypesArray.size(); j++) {
             LoraType loraType;
@@ -200,6 +229,7 @@ bool Configuration::readFile() {
             loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
             loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
             loraType.power              = LoraTypesArray[j]["power"] | 20;
+            loraType.dataRate           = LoraTypesArray[j]["dataRate"] | 300;
             loraTypes.push_back(loraType);
         }
 
@@ -213,6 +243,9 @@ bool Configuration::readFile() {
         battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
         battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
         battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
+
+        if (!data["loraConfig"].containsKey("sendInfo")) needsRewrite = true;
+        lora.sendInfo                   = data["loraConfig"]["sendInfo"] | true;
 
         if (!data["telemetry"].containsKey("active") ||
             !data["telemetry"].containsKey("sendTelemetry") ||
@@ -231,6 +264,7 @@ bool Configuration::readFile() {
             !data["notification"].containsKey("buzzerActive") ||
             !data["notification"].containsKey("buzzerPinTone") ||
             !data["notification"].containsKey("buzzerPinVcc") ||
+            !data["notification"].containsKey("volume") ||
             !data["notification"].containsKey("bootUpBeep") ||
             !data["notification"].containsKey("txBeep") ||
             !data["notification"].containsKey("messageRxBeep") ||
@@ -246,6 +280,7 @@ bool Configuration::readFile() {
         notification.buzzerActive       = data["notification"]["buzzerActive"] | false;
         notification.buzzerPinTone      = data["notification"]["buzzerPinTone"] | 33;
         notification.buzzerPinVcc       = data["notification"]["buzzerPinVcc"] | 25;
+        notification.volume             = data["notification"]["volume"] | 50;
         notification.bootUpBeep         = data["notification"]["bootUpBeep"] | false;
         notification.txBeep             = data["notification"]["txBeep"] | false;
         notification.messageRxBeep      = data["notification"]["messageRxBeep"] | false;
@@ -302,8 +337,13 @@ bool Configuration::readFile() {
 }
 
 void Configuration::setDefaultValues() {
-    wifiAP.active                   = true;
-    wifiAP.password                 = "1234567890";
+    WiFi_AP defaultWifi;
+    defaultWifi.ssid                = "";
+    defaultWifi.password            = "";
+    wifiAPs.push_back(defaultWifi);
+    wifiAutoAP.active               = false;
+    wifiAutoAP.password             = "1234567890";
+    wifiAutoAP.timeout              = 10;
 
     for (int i = 0; i < 3; i++) {
         Beacon beacon;
@@ -335,28 +375,37 @@ void Configuration::setDefaultValues() {
         bluetooth.useKISS           = true;
     #endif
 
+    aprs_is.active                  = false;
+    aprs_is.server                  = "euro.aprs2.net";
+    aprs_is.port                    = 14580;
+    aprs_is.passcode                = "-1";
+
     for (int j = 0; j < 4; j++) {
         LoraType loraType;
         switch (j) {
-            case 0:
+            case 0:  // EU
                 loraType.frequency           = 433775000;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
-            case 1:
+            case 1:  // PL
                 loraType.frequency           = 434855000;
                 loraType.spreadingFactor     = 9;
                 loraType.codingRate4         = 7;
+                loraType.dataRate            = 1200;   // SF9, CR4/7
                 break;
-            case 2:
+            case 2:  // UK
                 loraType.frequency           = 439912500;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
-            case 3:
+            case 3:  // US
                 loraType.frequency           = 915000000;
                 loraType.spreadingFactor     = 12;
                 loraType.codingRate4         = 5;
+                loraType.dataRate            = 300;    // SF12, CR4/5
                 break;
         }
         loraType.signalBandwidth    = 125000;
@@ -369,6 +418,8 @@ void Configuration::setDefaultValues() {
     battery.sendVoltageAlways       = false;
     battery.monitorVoltage          = false;
     battery.sleepVoltage            = 2.9;
+
+    lora.sendInfo                   = true;
 
     telemetry.active                 = false;
     telemetry.sendTelemetry          = false;
@@ -383,6 +434,7 @@ void Configuration::setDefaultValues() {
     notification.buzzerActive       = false;
     notification.buzzerPinTone      = 33;
     notification.buzzerPinVcc       = 25;
+    notification.volume             = 50;
     notification.bootUpBeep         = false;
     notification.txBeep             = false;
     notification.messageRxBeep      = false;

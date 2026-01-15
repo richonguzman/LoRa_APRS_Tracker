@@ -111,13 +111,17 @@ namespace Utils {
 
     void checkStatus() {
         if (statusUpdate) {
-            if (currentBeacon->status == "") {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Utils", "checkStatus: status='%s' length=%d", currentBeacon->status.c_str(), currentBeacon->status.length());
+
+            if (currentBeacon->status == "" || currentBeacon->status == "undefined") {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Utils", "Status is empty or undefined, blocking transmission");
                 statusUpdate = false;
             } else {
                 uint32_t currentTime = millis();
                 uint32_t statusTx = currentTime - statusTime;
                 lastTx = currentTime - lastTxTime;
                 if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Utils", "Sending status packet: '%s'", currentBeacon->status.c_str());
                     LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->status));
                     statusUpdate = false;
                 }
