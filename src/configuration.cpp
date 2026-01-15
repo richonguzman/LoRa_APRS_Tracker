@@ -110,6 +110,7 @@ bool Configuration::writeFile() {
         data["notification"]["buzzerActive"]        = notification.buzzerActive;
         data["notification"]["buzzerPinTone"]       = notification.buzzerPinTone;
         data["notification"]["buzzerPinVcc"]        = notification.buzzerPinVcc;
+        data["notification"]["volume"]              = notification.volume;
         data["notification"]["bootUpBeep"]          = notification.bootUpBeep;
         data["notification"]["txBeep"]              = notification.txBeep;
         data["notification"]["messageRxBeep"]       = notification.messageRxBeep;
@@ -263,6 +264,7 @@ bool Configuration::readFile() {
             !data["notification"].containsKey("buzzerActive") ||
             !data["notification"].containsKey("buzzerPinTone") ||
             !data["notification"].containsKey("buzzerPinVcc") ||
+            !data["notification"].containsKey("volume") ||
             !data["notification"].containsKey("bootUpBeep") ||
             !data["notification"].containsKey("txBeep") ||
             !data["notification"].containsKey("messageRxBeep") ||
@@ -278,6 +280,7 @@ bool Configuration::readFile() {
         notification.buzzerActive       = data["notification"]["buzzerActive"] | false;
         notification.buzzerPinTone      = data["notification"]["buzzerPinTone"] | 33;
         notification.buzzerPinVcc       = data["notification"]["buzzerPinVcc"] | 25;
+        notification.volume             = data["notification"]["volume"] | 50;
         notification.bootUpBeep         = data["notification"]["bootUpBeep"] | false;
         notification.txBeep             = data["notification"]["txBeep"] | false;
         notification.messageRxBeep      = data["notification"]["messageRxBeep"] | false;
@@ -431,6 +434,7 @@ void Configuration::setDefaultValues() {
     notification.buzzerActive       = false;
     notification.buzzerPinTone      = 33;
     notification.buzzerPinVcc       = 25;
+    notification.volume             = 50;
     notification.bootUpBeep         = false;
     notification.txBeep             = false;
     notification.messageRxBeep      = false;

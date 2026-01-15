@@ -451,8 +451,57 @@ namespace MENU_Utils {
                 displayShow(" STATUS>", "", "  Write","> Select","",lastLine);
                 break;
 
-            case 250:    // 2.Configuration ---> Notifications
-                displayShow(" NOTIFIC>", "> Turn Off Sound/Led","","","",lastLine);
+            case 250:    // 2.Configuration ---> Notifications ---> Turn Off
+                displayShow(" NOTIFIC>", "> Turn Off Sound/Led","  Volume (" + String(Config.notification.volume) + "%)","","",lastLine);
+                break;
+            case 251:    // 2.Configuration ---> Notifications ---> Volume
+                displayShow(" NOTIFIC>", "  Turn Off Sound/Led","> Volume (" + String(Config.notification.volume) + "%)","","",lastLine);
+                break;
+            case 2510:   // 2.Configuration ---> Notifications ---> Volume: 0%
+                displayShow("  VOLUME>", "> 0%   (Mute)", "  25%", "  50%","  75%",lastLine);
+                break;
+            case 2511:   // 2.Configuration ---> Notifications ---> Volume: 25%
+                displayShow("  VOLUME>", "  0%   (Mute)", "> 25%", "  50%","  75%",lastLine);
+                break;
+            case 2512:   // 2.Configuration ---> Notifications ---> Volume: 50%
+                displayShow("  VOLUME>", "  25%", "> 50%", "  75%","  100%",lastLine);
+                break;
+            case 2513:   // 2.Configuration ---> Notifications ---> Volume: 75%
+                displayShow("  VOLUME>", "  50%", "> 75%", "  100%","  0%   (Mute)",lastLine);
+                break;
+            case 2514:   // 2.Configuration ---> Notifications ---> Volume: 100%
+                displayShow("  VOLUME>", "  75%", "> 100%", "  0%   (Mute)","  25%",lastLine);
+                break;
+
+            case 2500:  // 2.Configuration ---> Notifications ---> Toggle Sound (action)
+                if (Config.notification.buzzerActive) {
+                    Config.notification.buzzerActive = false;
+                    displayShow(" NOTIFIC", "", "Sound --> OFF", "", "", "", 1500);
+                } else {
+                    Config.notification.buzzerActive = true;
+                    displayShow(" NOTIFIC", "", "Sound --> ON", "", "", "", 1500);
+                    NOTIFICATION_Utils::beaconTxBeep();  // Test beep to confirm
+                }
+                Config.writeFile();
+                menuDisplay = 25;
+                break;
+
+            case 25100: // Volume 0%
+            case 25101: // Volume 25%
+            case 25102: // Volume 50%
+            case 25103: // Volume 75%
+            case 25104: // Volume 100%
+                {
+                    const int volumeLevels[] = {0, 25, 50, 75, 100};
+                    int index = menuDisplay - 25100;
+                    Config.notification.volume = volumeLevels[index];
+                    displayShow("  VOLUME", "", "Volume --> " + String(Config.notification.volume) + "%", "", "", "", 1500);
+                    if (Config.notification.volume > 0) {
+                        NOTIFICATION_Utils::beaconTxBeep();  // Test beep at new volume
+                    }
+                    Config.writeFile();
+                    menuDisplay = 251;
+                }
                 break;
 
             case 260:   // 2.Configuration ---> Reboot
