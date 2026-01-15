@@ -1154,7 +1154,25 @@
                                             <span class="input-group-text">Pin</span>
                                         </div>
                                     </div>
-                                    
+
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <label
+                                            for="notification.volume"
+                                            class="form-label"
+                                            >Volume: <span id="volumeValue">50</span>%</label>
+                                        <input
+                                            type="range"
+                                            name="notification.volume"
+                                            id="notification.volume"
+                                            class="form-range"
+                                            min="0"
+                                            max="100"
+                                            value="50"
+                                            oninput="document.getElementById('volumeValue').textContent = this.value"
+                                        />
+                                    </div>
                                 </div>
                                 <div class="row mt-3">
                                     <div class="col-6">

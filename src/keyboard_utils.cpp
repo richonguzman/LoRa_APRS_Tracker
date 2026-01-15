@@ -121,6 +121,12 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
+        } else if (menuDisplay >= 250 && menuDisplay <= 251) {
+            menuDisplay--;
+            if (menuDisplay < 250) menuDisplay = 251;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay--;
+            if (menuDisplay < 2510) menuDisplay = 2514;
         }
         
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
@@ -219,6 +225,12 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
             if (menuDisplay > 241) menuDisplay = 240;
+        } else if (menuDisplay >= 250 && menuDisplay <= 251) {
+            menuDisplay++;
+            if (menuDisplay > 251) menuDisplay = 250;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay++;
+            if (menuDisplay > 2514) menuDisplay = 2510;
         }
 
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
@@ -291,7 +303,7 @@ namespace KEYBOARD_Utils {
             menuDisplay = 21;  // Back from frequency selection
         } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
             menuDisplay = 215;  // Back from speed selection
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=2510 && menuDisplay<=2514) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -447,7 +459,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 241) {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
-            displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            menuDisplay = 2500;  // Trigger action in menu_utils
+        } else if (menuDisplay == 251) {
+            menuDisplay = 2510;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay = 25100 + (menuDisplay - 2510);  // Trigger action in menu_utils (25100-25104)
         } else if (menuDisplay == 270) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                 displayShow("", "", "    POWER OFF ...", 2000);

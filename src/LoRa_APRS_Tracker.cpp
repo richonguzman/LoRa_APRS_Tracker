@@ -142,7 +142,13 @@ void setup() {
     STATION_Utils::nearStationInit();
     startupScreen(loraIndex, versionDate);
 
-    // BLE prioritaire: si BLE actif, pas de WiFi
+    // WiFi/BLE coexistence: WiFi first, then BLE
+    // Start WiFi if configured (modem sleep enabled for coexistence)
+    if (Config.wifiAPs.size() > 0 && Config.wifiAPs[0].ssid != "") {
+        WIFI_Utils::setup();
+    }
+
+    // Then start BLE if active
     if (bluetoothActive) {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::setup();
@@ -151,8 +157,6 @@ void setup() {
                 BLUETOOTH_Utils::setup();
             #endif
         }
-    } else {
-        WIFI_Utils::setup();
     }
 
     MSG_Utils::loadNumMessages();

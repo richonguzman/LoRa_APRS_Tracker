@@ -90,6 +90,7 @@ public:
     bool    buzzerActive;
     int     buzzerPinTone;
     int     buzzerPinVcc;
+    int     volume;         // 0-100%
     bool    bootUpBeep;
     bool    txBeep;
     bool    messageRxBeep;

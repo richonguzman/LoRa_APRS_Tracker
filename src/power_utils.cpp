@@ -225,14 +225,21 @@ namespace POWER_Utils {
     }
 
     void externalPinSetup() {
-        if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
-            pinMode(Config.notification.buzzerPinTone, OUTPUT);
-            pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-            if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
-        } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
-            while (1);
-        }
+        #ifdef HAS_I2S
+            // T-Deck Plus uses I2S speaker, no GPIO buzzer pins needed
+            if (Config.notification.buzzerActive && Config.notification.bootUpBeep) {
+                NOTIFICATION_Utils::start();
+            }
+        #else
+            if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
+                pinMode(Config.notification.buzzerPinTone, OUTPUT);
+                pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+                if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
+            } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
+                while (1);
+            }
+        #endif
 
         if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
             pinMode(Config.notification.ledTxPin, OUTPUT);

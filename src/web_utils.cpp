@@ -250,6 +250,7 @@ namespace WEB_Utils {
         if (Config.notification.buzzerActive) {
             Config.notification.buzzerPinTone   = getParamIntSafe("notification.buzzerPinTone", Config.notification.buzzerPinTone);
             Config.notification.buzzerPinVcc    = getParamIntSafe("notification.buzzerPinVcc", Config.notification.buzzerPinVcc);
+            Config.notification.volume          = getParamIntSafe("notification.volume", Config.notification.volume);
             Config.notification.bootUpBeep      = request->hasParam("notification.bootUpBeep", true);
             Config.notification.txBeep          = request->hasParam("notification.txBeep", true);
             Config.notification.messageRxBeep   = request->hasParam("notification.messageRxBeep", true);

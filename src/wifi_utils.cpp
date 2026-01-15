@@ -18,6 +18,7 @@
 
 #include <logger.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include "configuration.h"
 #include "wifi_utils.h"
 #include "web_utils.h"
@@ -138,7 +139,8 @@ namespace WIFI_Utils {
 
         if (connected) {
             WiFiConnected = true;
-            WiFi.setSleep(false);
+            // Enable modem sleep for WiFi/BLE coexistence (required for coex to work)
+            esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
             Serial.print("\nConnected as ");
             Serial.print(WiFi.localIP());
             Serial.print(" / MAC Address: ");
@@ -153,7 +155,8 @@ namespace WIFI_Utils {
     }
 
     void setup() {
-        btStop();
+        // btStop() removed for WiFi/BLE coexistence
+        // Modem sleep (WIFI_PS_MIN_MODEM) is enabled after connection
 
         // Mode web-conf bloquant si activé, callsign NOCALL, ou pas de réseau WiFi configuré
         if (Config.wifiAutoAP.active ||

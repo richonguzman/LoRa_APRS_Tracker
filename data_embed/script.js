@@ -313,6 +313,8 @@ function loadSettings(settings) {
     document.getElementById("notification.buzzerActive").checked        = settings.notification.buzzerActive;
     document.getElementById("notification.buzzerPinTone").value         = settings.notification.buzzerPinTone;
     document.getElementById("notification.buzzerPinVcc").value          = settings.notification.buzzerPinVcc;
+    document.getElementById("notification.volume").value                = settings.notification.volume || 50;
+    document.getElementById("volumeValue").textContent                  = settings.notification.volume || 50;
     document.getElementById("notification.bootUpBeep").checked          = settings.notification.bootUpBeep;
     document.getElementById("notification.txBeep").checked              = settings.notification.txBeep;
     document.getElementById("notification.messageRxBeep").checked       = settings.notification.messageRxBeep;

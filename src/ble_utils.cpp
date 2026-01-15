@@ -17,6 +17,7 @@
  */
 
 #include <NimBLEDevice.h>
+#include <esp_wifi.h>
 #include "configuration.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
@@ -135,8 +136,12 @@ namespace BLE_Utils {
     }
 
     void setup() {
+        // Ensure WiFi modem sleep is enabled for WiFi/BLE coexistence
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+
         String BLEid = Config.bluetooth.deviceName;
-        BLEDevice::init(BLEid.c_str()); 
+        BLEDevice::init(BLEid.c_str());
+        BLEDevice::setPower(ESP_PWR_LVL_P3);  // Moderate power for coexistence
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
