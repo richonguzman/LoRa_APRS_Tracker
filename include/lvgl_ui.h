@@ -15,9 +15,10 @@ namespace LVGL_UI {
     void updateGPS(double lat, double lng, double alt, double speed, int sats);
     void updateBattery(int percent, float voltage);
     void updateLoRa(const char* lastRx, int rssi);
+    void refreshLoRaInfo();  // Refresh freq/speed display after settings change
     void updateWiFi(bool connected, int rssi);
     void updateCallsign(const char* callsign);
-    void updateTime(int hour, int minute, int second);
+    void updateTime(int day, int month, int hour, int minute);
     void showMessage(const char* from, const char* message);
     void showTxPacket(const char* packet);  // Display TX packet on screen
 }

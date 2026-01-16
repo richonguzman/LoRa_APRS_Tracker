@@ -25,6 +25,9 @@
 #include "lora_utils.h"
 #include "display.h"
 #include "station_utils.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 extern logging::Logger  logger;
 extern Configuration    Config;
@@ -95,12 +98,18 @@ namespace LoRa_Utils {
 
                 if (pendingLoraIndex != loraIndex) {
                     loraIndex = pendingLoraIndex;
-                    displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+                    #ifndef USE_LVGL_UI
+                        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+                    #else
+                        LVGL_UI::refreshLoRaInfo();
+                    #endif
                     applyLoraConfig();
                     STATION_Utils::saveIndex(1, loraIndex);
                 } else {
                     // Already on this frequency, just show confirmation
-                    displayShow("LORA FREQ>", "", "ALREADY ON: " + loraCountryFreq, "", "", "", 2000);
+                    #ifndef USE_LVGL_UI
+                        displayShow("LORA FREQ>", "", "ALREADY ON: " + loraCountryFreq, "", "", "", 2000);
+                    #endif
                 }
             }
         }
@@ -108,9 +117,14 @@ namespace LoRa_Utils {
         if (pendingDataRateChange) {
             pendingDataRateChange = false;
             if (pendingDataRate > 0) {
-                displayShow("DATA RATE>", "", "CHANGED TO: " + String(pendingDataRate) + " bps", "", "", "", 2000);
+                #ifndef USE_LVGL_UI
+                    displayShow("DATA RATE>", "", "CHANGED TO: " + String(pendingDataRate) + " bps", "", "", "", 2000);
+                #endif
                 setDataRate(pendingDataRate);
                 STATION_Utils::saveIndex(1, loraIndex);
+                #ifdef USE_LVGL_UI
+                    LVGL_UI::refreshLoRaInfo();
+                #endif
             }
         }
     }
