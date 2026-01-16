@@ -91,6 +91,15 @@ bool Configuration::writeFile() {
             data["lora"][i]["dataRate"]                 = loraTypes[i].dataRate;
         }
 
+        // Board-specific frequency limits for web config validation
+        #if defined(LORA_FREQ_MIN) && defined(LORA_FREQ_MAX)
+            data["loraFreqMin"]                         = LORA_FREQ_MIN;
+            data["loraFreqMax"]                         = LORA_FREQ_MAX;
+        #else
+            data["loraFreqMin"]                         = 100000000;
+            data["loraFreqMax"]                         = 1000000000;
+        #endif
+
         data["battery"]["sendVoltage"]              = battery.sendVoltage;
         data["battery"]["voltageAsTelemetry"]       = battery.voltageAsTelemetry;
         data["battery"]["sendVoltageAlways"]        = battery.sendVoltageAlways;

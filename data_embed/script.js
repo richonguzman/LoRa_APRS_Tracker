@@ -212,6 +212,12 @@ function loadSettings(settings) {
     const loraContainer = document.getElementById("lora-settings");
     loraContainer.innerHTML = ""; // Clear previous content
 
+    // Frequency limits from board configuration
+    const loraFreqMin = settings.loraFreqMin || 100000000;
+    const loraFreqMax = settings.loraFreqMax || 1000000000;
+    const freqMinMHz = (loraFreqMin / 1000000).toFixed(0);
+    const freqMaxMHz = (loraFreqMax / 1000000).toFixed(0);
+
     settings.lora.forEach((lora, index) => {
         const loraElement = document.createElement("div");
         loraElement.classList.add("row", "lora", "border-bottom", "py-2");
@@ -221,13 +227,16 @@ function loadSettings(settings) {
                 <strong>${index + 1})</strong> <!-- Adding numbering here -->
             </div>
             <div class="form-floating col-6 col-md-3 px-1 mb-2">
-                <input 
-                    type="number" 
-                    class="form-control form-control-sm" 
-                    name="lora.${index}.frequency" 
-                    id="lora.${index}.frequency" 
-                    value="${lora.frequency}">
-                <label for="lora.${index}.frequency">Frequency</label>
+                <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    name="lora.${index}.frequency"
+                    id="lora.${index}.frequency"
+                    value="${lora.frequency}"
+                    min="${loraFreqMin}"
+                    max="${loraFreqMax}"
+                    title="${freqMinMHz}-${freqMaxMHz} MHz">
+                <label for="lora.${index}.frequency">Freq (${freqMinMHz}-${freqMaxMHz})</label>
             </div>
             <div class="form-floating col-4 col-md-2 px-1 mb-2">
                 <input 
