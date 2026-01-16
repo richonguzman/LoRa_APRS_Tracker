@@ -17,15 +17,23 @@
 #include "board_pinout.h"
 #include "configuration.h"
 #include "battery_utils.h"
+#include "lora_utils.h"
+#include "station_utils.h"
+#include "msg_utils.h"
 
 // External data sources
 extern Configuration Config;
-extern int myBeaconsIndex;
+extern uint8_t myBeaconsIndex;
+extern int myBeaconsSize;
 extern TinyGPSPlus gps;
 extern bool WiFiConnected;
 extern String batteryVoltage;
 extern APRSPacket lastReceivedPacket;
 extern bool sendUpdate;  // Set to true to trigger beacon transmission
+extern uint8_t loraIndex;
+extern int loraIndexSize;
+extern bool displayEcoMode;
+extern uint8_t screenBrightness;
 
 // Display dimensions
 #define SCREEN_WIDTH  320
@@ -70,6 +78,18 @@ static lv_obj_t* label_time = nullptr;
 
 // UI Elements - Setup screen
 static lv_obj_t* screen_setup = nullptr;
+
+// UI Elements - Frequency selection screen
+static lv_obj_t* screen_freq = nullptr;
+
+// UI Elements - Callsign selection screen
+static lv_obj_t* screen_callsign = nullptr;
+
+// UI Elements - Display settings screen
+static lv_obj_t* screen_display = nullptr;
+
+// UI Elements - Messages screen
+static lv_obj_t* screen_msg = nullptr;
 
 // LVGL tick tracking
 static uint32_t last_tick = 0;
@@ -116,6 +136,10 @@ static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
 
 // Forward declarations
 static void create_setup_screen();
+static void create_freq_screen();
+static void create_callsign_screen();
+static void create_display_screen();
+static void create_msg_screen();
 
 // Button event callbacks
 static void btn_beacon_clicked(lv_event_t* e) {
@@ -134,6 +158,19 @@ static void btn_setup_clicked(lv_event_t* e) {
 static void btn_back_clicked(lv_event_t* e) {
     Serial.println("[LVGL] BACK button pressed");
     lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
+}
+
+static void btn_back_to_setup_clicked(lv_event_t* e) {
+    Serial.println("[LVGL] BACK to SETUP button pressed");
+    lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
+}
+
+static void btn_msg_clicked(lv_event_t* e) {
+    Serial.println("[LVGL] MSG button pressed");
+    if (!screen_msg) {
+        create_msg_screen();
+    }
+    lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
 }
 
 // Create the main dashboard screen
@@ -226,6 +263,7 @@ static void create_dashboard() {
     lv_obj_t* btn_msg = lv_btn_create(btn_bar);
     lv_obj_set_size(btn_msg, 90, 30);
     lv_obj_set_style_bg_color(btn_msg, lv_color_hex(0x00d4ff), 0);
+    lv_obj_add_event_cb(btn_msg, btn_msg_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_msg = lv_label_create(btn_msg);
     lv_label_set_text(lbl_msg, "MSG");
     lv_obj_center(lbl_msg);
@@ -248,12 +286,18 @@ static void create_dashboard() {
 // Setup menu item callbacks
 static void setup_item_callsign(lv_event_t* e) {
     Serial.println("[LVGL] Setup: Callsign selected");
-    // TODO: Show callsign selection
+    if (!screen_callsign) {
+        create_callsign_screen();
+    }
+    lv_scr_load_anim(screen_callsign, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
 }
 
 static void setup_item_frequency(lv_event_t* e) {
     Serial.println("[LVGL] Setup: Frequency selected");
-    // TODO: Show frequency selection
+    if (!screen_freq) {
+        create_freq_screen();
+    }
+    lv_scr_load_anim(screen_freq, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
 }
 
 static void setup_item_speed(lv_event_t* e) {
@@ -263,7 +307,10 @@ static void setup_item_speed(lv_event_t* e) {
 
 static void setup_item_display(lv_event_t* e) {
     Serial.println("[LVGL] Setup: Display selected");
-    // TODO: Show display settings
+    if (!screen_display) {
+        create_display_screen();
+    }
+    lv_scr_load_anim(screen_display, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
 }
 
 static void setup_item_reboot(lv_event_t* e) {
@@ -328,6 +375,403 @@ static void create_setup_screen() {
     lv_obj_add_event_cb(btn, setup_item_reboot, LV_EVENT_CLICKED, NULL);
 
     Serial.println("[LVGL] Setup screen created");
+}
+
+// Frequency item selection callbacks - each calls requestFrequencyChange with its index
+static void freq_item_clicked(lv_event_t* e) {
+    int index = (int)(intptr_t)lv_event_get_user_data(e);
+    Serial.printf("[LVGL] Frequency %d selected\n", index);
+    LoRa_Utils::requestFrequencyChange(index);
+    // Go back to setup screen
+    lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
+}
+
+// Create the frequency selection screen
+static void create_freq_screen() {
+    screen_freq = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_freq, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_freq);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_to_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, "LoRa Frequency");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Frequency list
+    lv_obj_t* list = lv_list_create(screen_freq);
+    lv_obj_set_size(list, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(list, 5, 40);
+    lv_obj_set_style_bg_color(list, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(list, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(list, 8, 0);
+
+    // Add frequency options from Config
+    for (int i = 0; i < loraIndexSize && i < (int)Config.loraTypes.size(); i++) {
+        char buf[64];
+        float freq = Config.loraTypes[i].frequency / 1000000.0;
+        int rate = Config.loraTypes[i].dataRate;
+
+        // Get region name
+        const char* region;
+        switch (i) {
+            case 0: region = "EU/WORLD"; break;
+            case 1: region = "POLAND"; break;
+            case 2: region = "UK"; break;
+            case 3: region = "US"; break;
+            default: region = "CUSTOM"; break;
+        }
+
+        snprintf(buf, sizeof(buf), "%s - %.3f MHz (%d bps)", region, freq, rate);
+
+        lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_WIFI, buf);
+        lv_obj_add_event_cb(btn, freq_item_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+
+        // Highlight current selection
+        if (i == loraIndex) {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
+        }
+    }
+
+    Serial.println("[LVGL] Frequency screen created");
+}
+
+// Callsign item selection callbacks
+static void callsign_item_clicked(lv_event_t* e) {
+    int index = (int)(intptr_t)lv_event_get_user_data(e);
+    Serial.printf("[LVGL] Callsign %d selected\n", index);
+    myBeaconsIndex = index;
+    STATION_Utils::saveIndex(0, myBeaconsIndex);
+    // Update the callsign label on main screen
+    lv_label_set_text(label_callsign, Config.beacons[myBeaconsIndex].callsign.c_str());
+    // Go back to setup screen
+    lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
+}
+
+// Create the callsign selection screen
+static void create_callsign_screen() {
+    screen_callsign = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_callsign, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_callsign);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_to_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, "Callsign");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Callsign list
+    lv_obj_t* list = lv_list_create(screen_callsign);
+    lv_obj_set_size(list, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(list, 5, 40);
+    lv_obj_set_style_bg_color(list, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(list, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(list, 8, 0);
+
+    // Add callsign options from Config
+    for (int i = 0; i < myBeaconsSize && i < (int)Config.beacons.size(); i++) {
+        String label = Config.beacons[i].callsign;
+        if (Config.beacons[i].profileLabel.length() > 0) {
+            label += " (" + Config.beacons[i].profileLabel + ")";
+        }
+
+        lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_CALL, label.c_str());
+        lv_obj_add_event_cb(btn, callsign_item_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+
+        // Highlight current selection
+        if (i == myBeaconsIndex) {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
+        }
+    }
+
+    Serial.println("[LVGL] Callsign screen created");
+}
+
+// Display settings callbacks
+static lv_obj_t* eco_switch = nullptr;
+static lv_obj_t* brightness_label = nullptr;
+
+static const char* getBrightnessText() {
+    if (screenBrightness >= 200) return "Max";
+    else if (screenBrightness <= 100) return "Low";
+    else return "Mid";
+}
+
+static void eco_switch_changed(lv_event_t* e) {
+    lv_obj_t* sw = lv_event_get_target(e);
+    displayEcoMode = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    Serial.printf("[LVGL] ECO Mode: %s\n", displayEcoMode ? "ON" : "OFF");
+}
+
+static void brightness_down_clicked(lv_event_t* e) {
+    if (screenBrightness >= 200) {
+        screenBrightness = 150;  // Max -> Mid
+    } else if (screenBrightness > 100) {
+        screenBrightness = 70;   // Mid -> Low
+    }
+    // Low stays at Low
+
+    #ifdef TFT_BL
+        analogWrite(TFT_BL, screenBrightness);
+    #endif
+    STATION_Utils::saveIndex(2, screenBrightness);
+
+    if (brightness_label) {
+        lv_label_set_text(brightness_label, getBrightnessText());
+    }
+    Serial.printf("[LVGL] Brightness: %d (%s)\n", screenBrightness, getBrightnessText());
+}
+
+static void brightness_up_clicked(lv_event_t* e) {
+    if (screenBrightness <= 100) {
+        screenBrightness = 150;  // Low -> Mid
+    } else if (screenBrightness < 200) {
+        screenBrightness = 255;  // Mid -> Max
+    }
+    // Max stays at Max
+
+    #ifdef TFT_BL
+        analogWrite(TFT_BL, screenBrightness);
+    #endif
+    STATION_Utils::saveIndex(2, screenBrightness);
+
+    if (brightness_label) {
+        lv_label_set_text(brightness_label, getBrightnessText());
+    }
+    Serial.printf("[LVGL] Brightness: %d (%s)\n", screenBrightness, getBrightnessText());
+}
+
+// Create the display settings screen
+static void create_display_screen() {
+    screen_display = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_display, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_display);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0xffd700), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_to_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, "Display");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Content area
+    lv_obj_t* content = lv_obj_create(screen_display);
+    lv_obj_set_size(content, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(content, 5, 40);
+    lv_obj_set_style_bg_color(content, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(content, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(content, 8, 0);
+    lv_obj_set_style_pad_all(content, 15, 0);
+
+    // ECO Mode row
+    lv_obj_t* eco_row = lv_obj_create(content);
+    lv_obj_set_size(eco_row, lv_pct(100), 50);
+    lv_obj_set_pos(eco_row, 0, 0);
+    lv_obj_set_style_bg_opa(eco_row, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(eco_row, 0, 0);
+    lv_obj_set_style_pad_all(eco_row, 0, 0);
+
+    lv_obj_t* eco_label = lv_label_create(eco_row);
+    lv_label_set_text(eco_label, "ECO Mode");
+    lv_obj_set_style_text_color(eco_label, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(eco_label, &lv_font_montserrat_18, 0);
+    lv_obj_align(eco_label, LV_ALIGN_LEFT_MID, 0, 0);
+
+    eco_switch = lv_switch_create(eco_row);
+    lv_obj_set_size(eco_switch, 60, 30);
+    lv_obj_align(eco_switch, LV_ALIGN_RIGHT_MID, 0, 0);
+    if (displayEcoMode) {
+        lv_obj_add_state(eco_switch, LV_STATE_CHECKED);
+    }
+    lv_obj_add_event_cb(eco_switch, eco_switch_changed, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // Brightness row
+    lv_obj_t* bright_row = lv_obj_create(content);
+    lv_obj_set_size(bright_row, lv_pct(100), 50);
+    lv_obj_set_pos(bright_row, 0, 60);
+    lv_obj_set_style_bg_opa(bright_row, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(bright_row, 0, 0);
+    lv_obj_set_style_pad_all(bright_row, 0, 0);
+
+    lv_obj_t* bright_title = lv_label_create(bright_row);
+    lv_label_set_text(bright_title, "Brightness");
+    lv_obj_set_style_text_color(bright_title, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(bright_title, &lv_font_montserrat_18, 0);
+    lv_obj_align(bright_title, LV_ALIGN_LEFT_MID, 0, 0);
+
+    // Brightness controls container
+    lv_obj_t* bright_ctrl = lv_obj_create(bright_row);
+    lv_obj_set_size(bright_ctrl, 120, 40);
+    lv_obj_align(bright_ctrl, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_style_bg_opa(bright_ctrl, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(bright_ctrl, 0, 0);
+    lv_obj_set_style_pad_all(bright_ctrl, 0, 0);
+    lv_obj_set_flex_flow(bright_ctrl, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(bright_ctrl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Minus button
+    lv_obj_t* btn_minus = lv_btn_create(bright_ctrl);
+    lv_obj_set_size(btn_minus, 35, 35);
+    lv_obj_set_style_bg_color(btn_minus, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_minus, brightness_down_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_minus = lv_label_create(btn_minus);
+    lv_label_set_text(lbl_minus, "-");
+    lv_obj_center(lbl_minus);
+
+    // Value label
+    brightness_label = lv_label_create(bright_ctrl);
+    lv_label_set_text(brightness_label, getBrightnessText());
+    lv_obj_set_style_text_color(brightness_label, lv_color_hex(0xffd700), 0);
+    lv_obj_set_style_text_font(brightness_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_pad_hor(brightness_label, 10, 0);
+
+    // Plus button
+    lv_obj_t* btn_plus = lv_btn_create(bright_ctrl);
+    lv_obj_set_size(btn_plus, 35, 35);
+    lv_obj_set_style_bg_color(btn_plus, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_plus, brightness_up_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_plus = lv_label_create(btn_plus);
+    lv_label_set_text(lbl_plus, "+");
+    lv_obj_center(lbl_plus);
+
+    Serial.println("[LVGL] Display settings screen created");
+}
+
+// Create the messages screen
+static void create_msg_screen() {
+    screen_msg = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_msg, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_msg);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, "Messages");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Content area
+    lv_obj_t* content = lv_obj_create(screen_msg);
+    lv_obj_set_size(content, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(content, 5, 40);
+    lv_obj_set_style_bg_color(content, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(content, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(content, 8, 0);
+    lv_obj_set_style_pad_all(content, 15, 0);
+
+    // APRS Messages info
+    char aprs_buf[64];
+    int numAprs = MSG_Utils::getNumAPRSMessages();
+    snprintf(aprs_buf, sizeof(aprs_buf), "APRS Messages: %d", numAprs);
+
+    lv_obj_t* aprs_label = lv_label_create(content);
+    lv_label_set_text(aprs_label, aprs_buf);
+    lv_obj_set_style_text_color(aprs_label, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_text_font(aprs_label, &lv_font_montserrat_18, 0);
+    lv_obj_set_pos(aprs_label, 0, 10);
+
+    // Winlink Messages info
+    char wlnk_buf[64];
+    int numWlnk = MSG_Utils::getNumWLNKMails();
+    snprintf(wlnk_buf, sizeof(wlnk_buf), "Winlink Mails: %d", numWlnk);
+
+    lv_obj_t* wlnk_label = lv_label_create(content);
+    lv_label_set_text(wlnk_label, wlnk_buf);
+    lv_obj_set_style_text_color(wlnk_label, lv_color_hex(0xc792ea), 0);
+    lv_obj_set_style_text_font(wlnk_label, &lv_font_montserrat_18, 0);
+    lv_obj_set_pos(wlnk_label, 0, 50);
+
+    // Last heard tracker
+    String lastHeard = MSG_Utils::getLastHeardTracker();
+    char heard_buf[96];
+    snprintf(heard_buf, sizeof(heard_buf), "Last Heard: %s", lastHeard.length() > 0 ? lastHeard.c_str() : "---");
+
+    lv_obj_t* heard_label = lv_label_create(content);
+    lv_label_set_text(heard_label, heard_buf);
+    lv_obj_set_style_text_color(heard_label, lv_color_hex(0xff6b6b), 0);
+    lv_obj_set_style_text_font(heard_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(heard_label, 0, 100);
+
+    // Info text
+    lv_obj_t* info_label = lv_label_create(content);
+    lv_label_set_text(info_label, "Use keyboard to write messages");
+    lv_obj_set_style_text_color(info_label, lv_color_hex(0x888888), 0);
+    lv_obj_set_style_text_font(info_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(info_label, 0, 140);
+
+    Serial.println("[LVGL] Messages screen created");
 }
 
 namespace LVGL_UI {
