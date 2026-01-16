@@ -189,6 +189,10 @@ function loadSettings(settings) {
     document.getElementById("bluetooth.deviceName").value               = settings.bluetooth.deviceName;
     document.getElementById("bluetooth.useBLE").checked                 = settings.bluetooth.useBLE;
     document.getElementById("bluetooth.useKISS").checked                = settings.bluetooth.useKISS;
+    // Hide BLE/BT Classic option if board doesn't support BT Classic
+    if (!settings.bluetooth.hasBTClassic) {
+        document.getElementById("btClassicOption").style.display = "none";
+    }
     BluetoothActiveCheckbox.checked = settings.bluetooth.active;
     BluetoothDeviceName.disabled    = !BluetoothActiveCheckbox.checked;
     BluetoothUseBle.disabled        = !BluetoothActiveCheckbox.checked;

@@ -70,8 +70,10 @@ bool Configuration::writeFile() {
         data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
         #ifdef HAS_BT_CLASSIC
             data["bluetooth"]["useBLE"]             = bluetooth.useBLE;
+            data["bluetooth"]["hasBTClassic"]       = true;
         #else
             data["bluetooth"]["useBLE"]             = true; // fixed as BLE
+            data["bluetooth"]["hasBTClassic"]       = false;
         #endif
         data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
 
