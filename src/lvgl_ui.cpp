@@ -20,6 +20,7 @@
 #include "lora_utils.h"
 #include "station_utils.h"
 #include "msg_utils.h"
+#include "notification_utils.h"
 #include "custom_characters.h"
 
 // APRS symbol mapping (same as display.cpp)
@@ -191,7 +192,7 @@ static void drawAPRSSymbol(const char* symbolChar) {
     if (symbolIndex < 0) return;  // Symbol not found
 
     const uint8_t* bitMap = symbolsAPRS[symbolIndex];
-    lv_color_t green = lv_color_hex(0x00ff88);  // Same green as callsign
+    lv_color_t white = lv_color_hex(0xffffff);  // White like callsign
 
     // Draw bitmap 1:1
     for (int y = 0; y < SYMBOL_HEIGHT; y++) {
@@ -199,7 +200,7 @@ static void drawAPRSSymbol(const char* symbolChar) {
             int byteIndex = (y * ((SYMBOL_WIDTH + 7) / 8)) + (x / 8);
             int bitIndex = 7 - (x % 8);
             if (bitMap[byteIndex] & (1 << bitIndex)) {
-                lv_canvas_set_px_color(aprs_symbol_canvas, x, y, green);
+                lv_canvas_set_px_color(aprs_symbol_canvas, x, y, white);
             }
         }
     }
@@ -258,7 +259,7 @@ static void create_dashboard() {
     // Callsign label (left)
     label_callsign = lv_label_create(status_bar);
     lv_label_set_text(label_callsign, "NOCALL");
-    lv_obj_set_style_text_color(label_callsign, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_text_color(label_callsign, lv_color_hex(0xffffff), 0);  // White
     lv_obj_set_style_text_font(label_callsign, &lv_font_montserrat_14, 0);
 
     // APRS symbol canvas (center) - bitmap symbol scaled 2x
@@ -274,7 +275,7 @@ static void create_dashboard() {
 
     // Date/Time label (right)
     label_time = lv_label_create(status_bar);
-    lv_label_set_text(label_time, "--/-- --:--");
+    lv_label_set_text(label_time, "--/--/---- --:--:-- UTC");
     lv_obj_set_style_text_color(label_time, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(label_time, &lv_font_montserrat_14, 0);
 
@@ -308,7 +309,7 @@ static void create_dashboard() {
     // WiFi info
     label_wifi = lv_label_create(content);
     lv_label_set_text(label_wifi, "WiFi: ---");
-    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xc792ea), 0);
+    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00d4ff), 0);  // Cyan like GPS
     lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_14, 0);
     lv_obj_set_pos(label_wifi, 0, 80);
 
@@ -909,7 +910,7 @@ static void create_display_screen() {
     lv_obj_align(brightness_slider, LV_ALIGN_TOP_MID, 0, 30);
     lv_slider_set_range(brightness_slider, BRIGHT_MIN, BRIGHT_MAX);
     lv_slider_set_value(brightness_slider, screenBrightness, LV_ANIM_OFF);
-    lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x222244), LV_PART_MAIN);  // Dark blue track
+    lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x444466), LV_PART_MAIN);  // Visible track
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x00d4ff), LV_PART_INDICATOR);  // Cyan filled
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0xffffff), LV_PART_KNOB);  // White knob
     lv_obj_add_event_cb(brightness_slider, brightness_slider_changed, LV_EVENT_VALUE_CHANGED, NULL);
@@ -937,6 +938,13 @@ static void volume_slider_changed(lv_event_t* e) {
         char buf[8];
         snprintf(buf, sizeof(buf), "%d%%", Config.notification.volume);
         lv_label_set_text(volume_label, buf);
+    }
+}
+
+static void volume_slider_released(lv_event_t* e) {
+    // Play confirmation beep at selected volume
+    if (Config.notification.buzzerActive) {
+        NOTIFICATION_Utils::playTone(1000, 100);
     }
 }
 
@@ -1046,10 +1054,11 @@ static void create_sound_screen() {
     lv_obj_align(volume_slider, LV_ALIGN_BOTTOM_MID, 0, -5);
     lv_slider_set_range(volume_slider, 0, 100);
     lv_slider_set_value(volume_slider, Config.notification.volume, LV_ANIM_OFF);
-    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0x222244), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0xff6b6b), LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0xffffff), LV_PART_KNOB);
+    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0x444466), LV_PART_MAIN);  // Visible track
+    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0xff6b6b), LV_PART_INDICATOR);  // Red filled
+    lv_obj_set_style_bg_color(volume_slider, lv_color_hex(0xffffff), LV_PART_KNOB);  // White knob
     lv_obj_add_event_cb(volume_slider, volume_slider_changed, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(volume_slider, volume_slider_released, LV_EVENT_RELEASED, NULL);
 
     // TX Beep row
     lv_obj_t* tx_row = lv_obj_create(content);
@@ -1319,7 +1328,7 @@ namespace LVGL_UI {
 
             // Update date/time from GPS
             if (gps.time.isValid() && gps.date.isValid()) {
-                updateTime(gps.date.day(), gps.date.month(), gps.time.hour(), gps.time.minute());
+                updateTime(gps.date.day(), gps.date.month(), gps.date.year(), gps.time.hour(), gps.time.minute(), gps.time.second());
             }
 
             // Update battery
@@ -1393,13 +1402,13 @@ namespace LVGL_UI {
             if (connected) {
                 char buf[48];
                 String ip = WiFi.localIP().toString();
-                snprintf(buf, sizeof(buf), "WiFi: %s (%ddBm)", ip.c_str(), rssi);
+                snprintf(buf, sizeof(buf), "WiFi: %s (%d dBm)", ip.c_str(), rssi);
                 lv_label_set_text(label_wifi, buf);
-                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00ff88), 0);
             } else {
                 lv_label_set_text(label_wifi, "WiFi: ---");
-                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xc792ea), 0);
             }
+            // Always cyan like GPS
+            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00d4ff), 0);
         }
     }
 
@@ -1413,10 +1422,10 @@ namespace LVGL_UI {
         }
     }
 
-    void updateTime(int day, int month, int hour, int minute) {
+    void updateTime(int day, int month, int year, int hour, int minute, int second) {
         if (label_time) {
-            char buf[16];
-            snprintf(buf, sizeof(buf), "%02d/%02d %02d:%02d", day, month, hour, minute);
+            char buf[28];
+            snprintf(buf, sizeof(buf), "%02d/%02d/%04d %02d:%02d:%02d UTC", day, month, year, hour, minute, second);
             lv_label_set_text(label_time, buf);
         }
     }

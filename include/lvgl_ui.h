@@ -18,7 +18,7 @@ namespace LVGL_UI {
     void refreshLoRaInfo();  // Refresh freq/speed display after settings change
     void updateWiFi(bool connected, int rssi);
     void updateCallsign(const char* callsign);
-    void updateTime(int day, int month, int hour, int minute);
+    void updateTime(int day, int month, int year, int hour, int minute, int second);
     void showMessage(const char* from, const char* message);
     void showTxPacket(const char* packet);  // Display TX packet on screen
 }
