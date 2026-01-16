@@ -77,15 +77,32 @@ namespace WEB_Utils {
     }
 
     void handleReadConfiguration(AsyncWebServerRequest *request) {
-
         File file = SPIFFS.open("/tracker_conf.json");
-        
+
         String fileContent;
         while(file.available()){
             fileContent += String((char)file.read());
         }
+        file.close();
 
-        request->send(200, "application/json", fileContent);
+        // Add board-specific frequency limits dynamically
+        StaticJsonDocument<4096> doc;
+        DeserializationError error = deserializeJson(doc, fileContent);
+        if (!error) {
+            #if defined(LORA_FREQ_MIN) && defined(LORA_FREQ_MAX)
+                doc["loraFreqMin"] = LORA_FREQ_MIN;
+                doc["loraFreqMax"] = LORA_FREQ_MAX;
+            #else
+                doc["loraFreqMin"] = 100000000;
+                doc["loraFreqMax"] = 1000000000;
+            #endif
+
+            String output;
+            serializeJson(doc, output);
+            request->send(200, "application/json", output);
+        } else {
+            request->send(200, "application/json", fileContent);
+        }
     }
 
     void handleReceivedPackets(AsyncWebServerRequest *request) {

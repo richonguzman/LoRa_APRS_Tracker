@@ -218,13 +218,21 @@ function loadSettings(settings) {
     const freqMinMHz = (loraFreqMin / 1000000).toFixed(0);
     const freqMaxMHz = (loraFreqMax / 1000000).toFixed(0);
 
+    // Filter and renumber LoRa configs to only show valid frequencies for this board
+    let displayIndex = 0;
     settings.lora.forEach((lora, index) => {
+        // Skip frequencies outside the valid range for this board
+        if (lora.frequency < loraFreqMin || lora.frequency > loraFreqMax) {
+            return;
+        }
+        displayIndex++;
+
         const loraElement = document.createElement("div");
         loraElement.classList.add("row", "lora", "border-bottom", "py-2");
 
         loraElement.innerHTML = `
             <div class="col-1 px-1 mb-2 d-flex align-items-center">
-                <strong>${index + 1})</strong> <!-- Adding numbering here -->
+                <strong>${displayIndex})</strong>
             </div>
             <div class="form-floating col-6 col-md-3 px-1 mb-2">
                 <input
