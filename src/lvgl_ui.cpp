@@ -7,11 +7,22 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
+#include <TinyGPS++.h>
+#include <WiFi.h>
 #define TOUCH_MODULES_GT911
 #include <TouchLib.h>
 #include <Wire.h>
 #include "lvgl_ui.h"
 #include "board_pinout.h"
+#include "configuration.h"
+#include "battery_utils.h"
+
+// External data sources
+extern Configuration Config;
+extern int myBeaconsIndex;
+extern TinyGPSPlus gps;
+extern bool WiFiConnected;
+extern String batteryVoltage;
 
 // Display dimensions
 #define SCREEN_WIDTH  320
@@ -57,9 +68,15 @@ static lv_obj_t* label_time = nullptr;
 static uint32_t last_tick = 0;
 
 // Display flush callback
+static bool first_flush = true;
 static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
+
+    if (first_flush) {
+        Serial.printf("[LVGL] First flush: %dx%d at (%d,%d)\n", w, h, area->x1, area->y1);
+        first_flush = false;
+    }
 
     tft.startWrite();
     tft.setAddrWindow(area->x1, area->y1, w, h);
@@ -196,6 +213,16 @@ namespace LVGL_UI {
     void setup() {
         Serial.println("[LVGL] Initializing...");
 
+        // Ensure backlight is on
+        #ifdef BOARD_BL_PIN
+            pinMode(BOARD_BL_PIN, OUTPUT);
+            digitalWrite(BOARD_BL_PIN, HIGH);
+        #endif
+
+        // Re-init TFT for LVGL
+        tft.init();
+        tft.setRotation(1);  // Landscape, keyboard at bottom
+
         // Initialize LVGL
         lv_init();
 
@@ -230,45 +257,73 @@ namespace LVGL_UI {
         disp_drv.full_refresh = (buf2 != nullptr) ? 1 : 0;  // Full refresh if double buffered
         lv_disp_drv_register(&disp_drv);
 
-        // Initialize touch controller using detected I2C address
-        #ifdef HAS_TOUCHSCREEN
-            if (touchModuleAddress == 0x14) {
-                touch = new TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
-            } else if (touchModuleAddress == 0x5d) {
-                touch = new TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
-            }
-
-            if (touch && touch->init()) {
-                Serial.println("[LVGL] Touch initialized");
-
-                // Initialize touch input driver
-                lv_indev_drv_init(&indev_drv);
-                indev_drv.type = LV_INDEV_TYPE_POINTER;
-                indev_drv.read_cb = touch_read_cb;
-                lv_indev_drv_register(&indev_drv);
-            } else {
-                Serial.println("[LVGL] Touch init failed or not found");
-                if (touch) {
-                    delete touch;
-                    touch = nullptr;
-                }
-            }
-        #endif
+        // Touch disabled for now - causing I2C errors
+        // TODO: Fix touch initialization
+        Serial.println("[LVGL] Touch DISABLED (debugging I2C errors)");
 
         // Create the UI
         create_dashboard();
 
-        Serial.println("[LVGL] UI Ready!");
+        // Force initial refresh
+        lv_obj_invalidate(lv_scr_act());
+        lv_refr_now(NULL);
+        Serial.println("[LVGL] Forced initial refresh");
+
+        Serial.println("[LVGL] UI Ready");
     }
+
+    static uint32_t last_data_update = 0;
+    static String last_callsign = "";
 
     void loop() {
         // Update LVGL tick
         uint32_t now = millis();
-        lv_tick_inc(now - last_tick);
+        uint32_t elapsed = now - last_tick;
+        lv_tick_inc(elapsed);
         last_tick = now;
 
         // Handle LVGL tasks
         lv_timer_handler();
+
+        // Update data every second
+        if (now - last_data_update >= 1000) {
+            last_data_update = now;
+
+            // Update callsign if changed
+            Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
+            if (currentBeacon->callsign != last_callsign) {
+                last_callsign = currentBeacon->callsign;
+                updateCallsign(last_callsign.c_str());
+            }
+
+            // Update GPS data
+            if (gps.location.isValid()) {
+                updateGPS(
+                    gps.location.lat(),
+                    gps.location.lng(),
+                    gps.altitude.meters(),
+                    gps.speed.kmph(),
+                    gps.satellites.value()
+                );
+            }
+
+            // Update time from GPS
+            if (gps.time.isValid()) {
+                updateTime(gps.time.hour(), gps.time.minute(), gps.time.second());
+            }
+
+            // Update battery
+            if (batteryVoltage.length() > 0) {
+                float voltage = batteryVoltage.toFloat();
+                int percent = (int)(((voltage - 3.0) / (4.2 - 3.0)) * 100);
+                if (percent > 100) percent = 100;
+                if (percent < 0) percent = 0;
+                updateBattery(percent, voltage);
+            }
+
+            // Update WiFi status
+            updateWiFi(WiFiConnected, WiFiConnected ? WiFi.RSSI() : 0);
+        }
     }
 
     void updateGPS(double lat, double lng, double alt, double speed, int sats) {
@@ -322,6 +377,20 @@ namespace LVGL_UI {
 
     void showMessage(const char* from, const char* message) {
         // TODO: Implement message popup
+    }
+
+    void updateCallsign(const char* callsign) {
+        if (label_callsign) {
+            lv_label_set_text(label_callsign, callsign);
+        }
+    }
+
+    void updateTime(int hour, int minute, int second) {
+        if (label_time) {
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%02d:%02d:%02d", hour, minute, second);
+            lv_label_set_text(label_time, buf);
+        }
     }
 
 }

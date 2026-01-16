@@ -16,6 +16,8 @@ namespace LVGL_UI {
     void updateBattery(int percent, float voltage);
     void updateLoRa(const char* lastRx, int rssi);
     void updateWiFi(bool connected, int rssi);
+    void updateCallsign(const char* callsign);
+    void updateTime(int hour, int minute, int second);
     void showMessage(const char* from, const char* message);
 }
 

@@ -143,7 +143,9 @@ void setup() {
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
-    startupScreen(loraIndex, versionDate);
+    #ifndef USE_LVGL_UI
+        startupScreen(loraIndex, versionDate);
+    #endif
 
     // WiFi/BLE coexistence: WiFi first, then BLE
     // Start WiFi if configured (modem sleep enabled for coexistence)
@@ -177,11 +179,13 @@ void setup() {
     #endif
     KEYBOARD_Utils::setup();
     #ifdef HAS_TOUCHSCREEN
-        TOUCH_Utils::setup();
+        #ifndef USE_LVGL_UI
+            TOUCH_Utils::setup();  // Only use old touch when LVGL not active
+        #endif
     #endif
 
     #ifdef USE_LVGL_UI
-        LVGL_UI::setup();
+        LVGL_UI::setup();  // LVGL handles its own touch
     #endif
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
@@ -224,7 +228,9 @@ void loop() {
         JOYSTICK_Utils::loop();
     #endif
     #ifdef HAS_TOUCHSCREEN
-        TOUCH_Utils::loop();
+        #ifndef USE_LVGL_UI
+            TOUCH_Utils::loop();
+        #endif
     #endif
 
     // Traiter les changements de configuration LoRa pendants (depuis ISR)
@@ -274,7 +280,9 @@ void loop() {
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
             GPS_Utils::checkStartUpFrames();
-            MENU_Utils::showOnScreen();
+            #ifndef USE_LVGL_UI
+                MENU_Utils::showOnScreen();
+            #endif
             refreshDisplayTime = millis();
         }
         SLEEP_Utils::checkIfGPSShouldSleep();
@@ -284,7 +292,9 @@ void loop() {
         }
         STATION_Utils::checkStandingUpdateTime();
         if (millis() - refreshDisplayTime >= 1000) {
-            MENU_Utils::showOnScreen();
+            #ifndef USE_LVGL_UI
+                MENU_Utils::showOnScreen();
+            #endif
             refreshDisplayTime = millis();
         }
     }
