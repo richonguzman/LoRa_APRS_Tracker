@@ -19,6 +19,7 @@ namespace LVGL_UI {
     void updateCallsign(const char* callsign);
     void updateTime(int hour, int minute, int second);
     void showMessage(const char* from, const char* message);
+    void showTxPacket(const char* packet);  // Display TX packet on screen
 }
 
 #endif // USE_LVGL_UI

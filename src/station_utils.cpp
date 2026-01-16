@@ -32,6 +32,9 @@
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -261,7 +264,11 @@ namespace STATION_Utils {
             packet += "**LowVoltagePowerOff**";
         }
 
-        displayShow("<<< TX >>>", "", packet, 100);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::showTxPacket(packet.c_str());
+        #else
+            displayShow("<<< TX >>>", "", packet, 100);
+        #endif
         LoRa_Utils::sendNewPacket(packet);
 
         // Upload to APRS-IS if connected

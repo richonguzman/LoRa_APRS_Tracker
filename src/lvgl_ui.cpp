@@ -8,6 +8,7 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <TinyGPS++.h>
+#include <APRSPacketLib.h>
 #include <WiFi.h>
 #define TOUCH_MODULES_GT911
 #include <TouchLib.h>
@@ -23,6 +24,8 @@ extern int myBeaconsIndex;
 extern TinyGPSPlus gps;
 extern bool WiFiConnected;
 extern String batteryVoltage;
+extern APRSPacket lastReceivedPacket;
+extern bool sendUpdate;  // Set to true to trigger beacon transmission
 
 // Display dimensions
 #define SCREEN_WIDTH  320
@@ -37,8 +40,9 @@ extern TFT_eSPI tft;
 // External touch module address (found by I2C scan in utils.cpp)
 extern uint8_t touchModuleAddress;
 
-// Touch controller
-static TouchLib* touch = nullptr;
+// Touch controller - static instance, initialized in setup()
+static TouchLib touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
+static bool touchInitialized = false;
 
 // Touch calibration (same as touch_utils.cpp)
 static const int16_t xCalibratedMin = 5;
@@ -87,18 +91,30 @@ static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t*
 }
 
 // Touch read callback
+static uint32_t lastTouchDebug = 0;
 static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
-    if (touch && touch->read()) {
-        TP_Point t = touch->getPoint(0);
-        // X and Y are inverted because TFT screen is rotated
+    if (touchInitialized && touch.read()) {
+        TP_Point t = touch.getPoint(0);
+        // X and Y are swapped and Y is inverted because TFT screen is rotated
         uint16_t x = map(t.y, xCalibratedMin, xCalibratedMax, 0, SCREEN_WIDTH);
-        uint16_t y = map(t.x, yCalibratedMin, yCalibratedMax, 0, SCREEN_HEIGHT);
+        uint16_t y = SCREEN_HEIGHT - map(t.x, yCalibratedMin, yCalibratedMax, 0, SCREEN_HEIGHT);
         data->state = LV_INDEV_STATE_PR;
         data->point.x = x;
         data->point.y = y;
+        // Debug: print touch coordinates
+        if (millis() - lastTouchDebug > 500) {
+            Serial.printf("[LVGL Touch] x=%d y=%d (raw: %d,%d)\n", x, y, t.x, t.y);
+            lastTouchDebug = millis();
+        }
     } else {
         data->state = LV_INDEV_STATE_REL;
     }
+}
+
+// Button event callbacks
+static void btn_beacon_clicked(lv_event_t* e) {
+    sendUpdate = true;
+    Serial.println("[LVGL] BEACON button pressed - sending beacon");
 }
 
 // Create the main dashboard screen
@@ -181,6 +197,7 @@ static void create_dashboard() {
     lv_obj_t* btn_beacon = lv_btn_create(btn_bar);
     lv_obj_set_size(btn_beacon, 90, 30);
     lv_obj_set_style_bg_color(btn_beacon, lv_color_hex(0x00ff88), 0);
+    lv_obj_add_event_cb(btn_beacon, btn_beacon_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_beacon = lv_label_create(btn_beacon);
     lv_label_set_text(lbl_beacon, "BEACON");
     lv_obj_center(lbl_beacon);
@@ -257,9 +274,26 @@ namespace LVGL_UI {
         disp_drv.full_refresh = (buf2 != nullptr) ? 1 : 0;  // Full refresh if double buffered
         lv_disp_drv_register(&disp_drv);
 
-        // Touch disabled for now - causing I2C errors
-        // TODO: Fix touch initialization
-        Serial.println("[LVGL] Touch DISABLED (debugging I2C errors)");
+        // Initialize touch input
+        if (touchModuleAddress != 0x00) {
+            Serial.printf("[LVGL] Touch module found at 0x%02X\n", touchModuleAddress);
+            if (touchModuleAddress == 0x14) {
+                touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+            } else if (touchModuleAddress == 0x5D) {
+                touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+            }
+            touch.init();
+            touchInitialized = true;
+
+            // Register LVGL input device
+            lv_indev_drv_init(&indev_drv);
+            indev_drv.type = LV_INDEV_TYPE_POINTER;
+            indev_drv.read_cb = touch_read_cb;
+            lv_indev_drv_register(&indev_drv);
+            Serial.println("[LVGL] Touch input registered");
+        } else {
+            Serial.println("[LVGL] No touch module detected");
+        }
 
         // Create the UI
         create_dashboard();
@@ -323,6 +357,11 @@ namespace LVGL_UI {
 
             // Update WiFi status
             updateWiFi(WiFiConnected, WiFiConnected ? WiFi.RSSI() : 0);
+
+            // Update LoRa (last received packet)
+            if (lastReceivedPacket.sender.length() > 0) {
+                updateLoRa(lastReceivedPacket.sender.c_str(), lastReceivedPacket.rssi);
+            }
         }
     }
 
@@ -391,6 +430,51 @@ namespace LVGL_UI {
             snprintf(buf, sizeof(buf), "%02d:%02d:%02d", hour, minute, second);
             lv_label_set_text(label_time, buf);
         }
+    }
+
+    // TX msgbox
+    static lv_obj_t* tx_msgbox = nullptr;
+    static lv_timer_t* tx_popup_timer = nullptr;
+
+    static void hide_tx_popup(lv_timer_t* timer) {
+        if (tx_msgbox) {
+            lv_msgbox_close(tx_msgbox);
+            tx_msgbox = nullptr;
+        }
+        tx_popup_timer = nullptr;
+    }
+
+    void showTxPacket(const char* packet) {
+        Serial.printf("[LVGL] showTxPacket called: %s\n", packet);
+
+        // Close existing msgbox if any
+        if (tx_msgbox) {
+            lv_msgbox_close(tx_msgbox);
+            tx_msgbox = nullptr;
+        }
+        if (tx_popup_timer) {
+            lv_timer_del(tx_popup_timer);
+            tx_popup_timer = nullptr;
+        }
+
+        // Create message box on active screen
+        tx_msgbox = lv_msgbox_create(lv_scr_act(), "<<< TX >>>", packet, NULL, false);
+        lv_obj_set_size(tx_msgbox, 280, 120);
+        lv_obj_set_style_bg_color(tx_msgbox, lv_color_hex(0x002200), 0);
+        lv_obj_set_style_bg_opa(tx_msgbox, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_color(tx_msgbox, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_border_width(tx_msgbox, 3, 0);
+        lv_obj_set_style_text_color(tx_msgbox, lv_color_hex(0x00ff88), 0);
+        lv_obj_center(tx_msgbox);
+
+        // Force immediate refresh
+        lv_refr_now(NULL);
+
+        // Auto-close after 3 seconds
+        tx_popup_timer = lv_timer_create(hide_tx_popup, 3000, NULL);
+        lv_timer_set_repeat_count(tx_popup_timer, 1);
+
+        Serial.println("[LVGL] TX msgbox created and refreshed");
     }
 
 }
