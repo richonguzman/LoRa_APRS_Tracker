@@ -806,12 +806,12 @@ namespace MENU_Utils {
                     }
                 }
 
+                const auto time_now = now();
                 if (disableGPS) {
                     secondRowMainMenu = "";
                     thirdRowMainMenu = "    LoRa APRS TNC";
                     fourthRowMainMenu = "";
                 } else {
-                    const auto time_now = now();
                     secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
                         thirdRowMainMenu = String(gps.location.lat(), 4);
