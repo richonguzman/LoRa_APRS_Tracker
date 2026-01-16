@@ -68,6 +68,9 @@ ____________________________________________________________________*/
 #ifdef HAS_TOUCHSCREEN
 #include "touch_utils.h"
 #endif
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 
 String      versionDate             = "2026-01-12";
@@ -177,6 +180,10 @@ void setup() {
         TOUCH_Utils::setup();
     #endif
 
+    #ifdef USE_LVGL_UI
+        LVGL_UI::setup();
+    #endif
+
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
 
     // Memory stats
@@ -281,5 +288,10 @@ void loop() {
             refreshDisplayTime = millis();
         }
     }
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::loop();
+    #endif
+
     yield();
 }

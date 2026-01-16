@@ -1,0 +1,329 @@
+/* LVGL UI for T-Deck Plus
+ * Touchscreen-based user interface using LVGL library
+ */
+
+#ifdef USE_LVGL_UI
+
+#include <Arduino.h>
+#include <lvgl.h>
+#include <TFT_eSPI.h>
+#define TOUCH_MODULES_GT911
+#include <TouchLib.h>
+#include <Wire.h>
+#include "lvgl_ui.h"
+#include "board_pinout.h"
+
+// Display dimensions
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 240
+
+// LVGL buffer size (use partial buffer to save memory, full buffer in PSRAM)
+#define LVGL_BUF_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
+
+// External TFT instance from display.cpp
+extern TFT_eSPI tft;
+
+// External touch module address (found by I2C scan in utils.cpp)
+extern uint8_t touchModuleAddress;
+
+// Touch controller
+static TouchLib* touch = nullptr;
+
+// Touch calibration (same as touch_utils.cpp)
+static const int16_t xCalibratedMin = 5;
+static const int16_t xCalibratedMax = 314;
+static const int16_t yCalibratedMin = 6;
+static const int16_t yCalibratedMax = 233;
+
+// LVGL display buffer (in PSRAM)
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t* buf1 = nullptr;
+static lv_color_t* buf2 = nullptr;
+
+// LVGL display and input drivers
+static lv_disp_drv_t disp_drv;
+static lv_indev_drv_t indev_drv;
+
+// UI Elements
+static lv_obj_t* screen_main = nullptr;
+static lv_obj_t* label_callsign = nullptr;
+static lv_obj_t* label_gps = nullptr;
+static lv_obj_t* label_battery = nullptr;
+static lv_obj_t* label_lora = nullptr;
+static lv_obj_t* label_wifi = nullptr;
+static lv_obj_t* label_time = nullptr;
+
+// LVGL tick tracking
+static uint32_t last_tick = 0;
+
+// Display flush callback
+static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color_p) {
+    uint32_t w = (area->x2 - area->x1 + 1);
+    uint32_t h = (area->y2 - area->y1 + 1);
+
+    tft.startWrite();
+    tft.setAddrWindow(area->x1, area->y1, w, h);
+    tft.pushColors((uint16_t*)&color_p->full, w * h, true);
+    tft.endWrite();
+
+    lv_disp_flush_ready(drv);
+}
+
+// Touch read callback
+static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
+    if (touch && touch->read()) {
+        TP_Point t = touch->getPoint(0);
+        // X and Y are inverted because TFT screen is rotated
+        uint16_t x = map(t.y, xCalibratedMin, xCalibratedMax, 0, SCREEN_WIDTH);
+        uint16_t y = map(t.x, yCalibratedMin, yCalibratedMax, 0, SCREEN_HEIGHT);
+        data->state = LV_INDEV_STATE_PR;
+        data->point.x = x;
+        data->point.y = y;
+    } else {
+        data->state = LV_INDEV_STATE_REL;
+    }
+}
+
+// Create the main dashboard screen
+static void create_dashboard() {
+    // Create main screen
+    screen_main = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_main, lv_color_hex(0x1a1a2e), 0);
+
+    // Status bar at top
+    lv_obj_t* status_bar = lv_obj_create(screen_main);
+    lv_obj_set_size(status_bar, SCREEN_WIDTH, 30);
+    lv_obj_set_pos(status_bar, 0, 0);
+    lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_border_width(status_bar, 0, 0);
+    lv_obj_set_style_radius(status_bar, 0, 0);
+    lv_obj_set_style_pad_all(status_bar, 5, 0);
+    lv_obj_set_flex_flow(status_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(status_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Callsign label (left)
+    label_callsign = lv_label_create(status_bar);
+    lv_label_set_text(label_callsign, "NOCALL");
+    lv_obj_set_style_text_color(label_callsign, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_text_font(label_callsign, &lv_font_montserrat_14, 0);
+
+    // Time label (center)
+    label_time = lv_label_create(status_bar);
+    lv_label_set_text(label_time, "--:--:--");
+    lv_obj_set_style_text_color(label_time, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(label_time, &lv_font_montserrat_14, 0);
+
+    // Battery label (right)
+    label_battery = lv_label_create(status_bar);
+    lv_label_set_text(label_battery, "-- %");
+    lv_obj_set_style_text_color(label_battery, lv_color_hex(0xffd700), 0);
+    lv_obj_set_style_text_font(label_battery, &lv_font_montserrat_14, 0);
+
+    // Main content area
+    lv_obj_t* content = lv_obj_create(screen_main);
+    lv_obj_set_size(content, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 80);
+    lv_obj_set_pos(content, 5, 35);
+    lv_obj_set_style_bg_color(content, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(content, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(content, 8, 0);
+    lv_obj_set_style_pad_all(content, 10, 0);
+
+    // GPS info
+    label_gps = lv_label_create(content);
+    lv_label_set_text(label_gps, "GPS: Acquiring...\nLat: ---.----\nLon: ---.----\nAlt: ----m  Spd: ---km/h");
+    lv_obj_set_style_text_color(label_gps, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_text_font(label_gps, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_gps, 0, 0);
+
+    // LoRa info
+    label_lora = lv_label_create(content);
+    lv_label_set_text(label_lora, "LoRa: Ready\nLast RX: ---");
+    lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
+    lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_lora, 0, 80);
+
+    // WiFi info
+    label_wifi = lv_label_create(content);
+    lv_label_set_text(label_wifi, "WiFi: Disconnected");
+    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xc792ea), 0);
+    lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_wifi, 0, 120);
+
+    // Bottom button bar
+    lv_obj_t* btn_bar = lv_obj_create(screen_main);
+    lv_obj_set_size(btn_bar, SCREEN_WIDTH, 40);
+    lv_obj_set_pos(btn_bar, 0, SCREEN_HEIGHT - 40);
+    lv_obj_set_style_bg_color(btn_bar, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_border_width(btn_bar, 0, 0);
+    lv_obj_set_style_radius(btn_bar, 0, 0);
+    lv_obj_set_style_pad_all(btn_bar, 5, 0);
+    lv_obj_set_flex_flow(btn_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Beacon button
+    lv_obj_t* btn_beacon = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_beacon, 90, 30);
+    lv_obj_set_style_bg_color(btn_beacon, lv_color_hex(0x00ff88), 0);
+    lv_obj_t* lbl_beacon = lv_label_create(btn_beacon);
+    lv_label_set_text(lbl_beacon, "BEACON");
+    lv_obj_center(lbl_beacon);
+    lv_obj_set_style_text_color(lbl_beacon, lv_color_hex(0x000000), 0);
+
+    // Messages button
+    lv_obj_t* btn_msg = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_msg, 90, 30);
+    lv_obj_set_style_bg_color(btn_msg, lv_color_hex(0x00d4ff), 0);
+    lv_obj_t* lbl_msg = lv_label_create(btn_msg);
+    lv_label_set_text(lbl_msg, "MSG");
+    lv_obj_center(lbl_msg);
+    lv_obj_set_style_text_color(lbl_msg, lv_color_hex(0x000000), 0);
+
+    // Settings button
+    lv_obj_t* btn_settings = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_settings, 90, 30);
+    lv_obj_set_style_bg_color(btn_settings, lv_color_hex(0xc792ea), 0);
+    lv_obj_t* lbl_settings = lv_label_create(btn_settings);
+    lv_label_set_text(lbl_settings, "SETUP");
+    lv_obj_center(lbl_settings);
+    lv_obj_set_style_text_color(lbl_settings, lv_color_hex(0x000000), 0);
+
+    // Load the screen
+    lv_scr_load(screen_main);
+}
+
+namespace LVGL_UI {
+
+    void setup() {
+        Serial.println("[LVGL] Initializing...");
+
+        // Initialize LVGL
+        lv_init();
+
+        // Initialize tick counter
+        last_tick = millis();
+
+        // Allocate display buffers in PSRAM
+        #ifdef BOARD_HAS_PSRAM
+            buf1 = (lv_color_t*)ps_malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
+            buf2 = (lv_color_t*)ps_malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
+            Serial.println("[LVGL] Using PSRAM for display buffers");
+        #else
+            buf1 = (lv_color_t*)malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
+            buf2 = nullptr;
+            Serial.println("[LVGL] Using RAM for display buffer");
+        #endif
+
+        if (!buf1) {
+            Serial.println("[LVGL] ERROR: Failed to allocate display buffer!");
+            return;
+        }
+
+        // Initialize display buffer
+        lv_disp_draw_buf_init(&draw_buf, buf1, buf2, LVGL_BUF_SIZE);
+
+        // Initialize display driver
+        lv_disp_drv_init(&disp_drv);
+        disp_drv.hor_res = SCREEN_WIDTH;
+        disp_drv.ver_res = SCREEN_HEIGHT;
+        disp_drv.flush_cb = disp_flush_cb;
+        disp_drv.draw_buf = &draw_buf;
+        disp_drv.full_refresh = (buf2 != nullptr) ? 1 : 0;  // Full refresh if double buffered
+        lv_disp_drv_register(&disp_drv);
+
+        // Initialize touch controller using detected I2C address
+        #ifdef HAS_TOUCHSCREEN
+            if (touchModuleAddress == 0x14) {
+                touch = new TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+            } else if (touchModuleAddress == 0x5d) {
+                touch = new TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+            }
+
+            if (touch && touch->init()) {
+                Serial.println("[LVGL] Touch initialized");
+
+                // Initialize touch input driver
+                lv_indev_drv_init(&indev_drv);
+                indev_drv.type = LV_INDEV_TYPE_POINTER;
+                indev_drv.read_cb = touch_read_cb;
+                lv_indev_drv_register(&indev_drv);
+            } else {
+                Serial.println("[LVGL] Touch init failed or not found");
+                if (touch) {
+                    delete touch;
+                    touch = nullptr;
+                }
+            }
+        #endif
+
+        // Create the UI
+        create_dashboard();
+
+        Serial.println("[LVGL] UI Ready!");
+    }
+
+    void loop() {
+        // Update LVGL tick
+        uint32_t now = millis();
+        lv_tick_inc(now - last_tick);
+        last_tick = now;
+
+        // Handle LVGL tasks
+        lv_timer_handler();
+    }
+
+    void updateGPS(double lat, double lng, double alt, double speed, int sats) {
+        if (label_gps) {
+            char buf[128];
+            snprintf(buf, sizeof(buf),
+                "GPS: %d sats\nLat: %.4f\nLon: %.4f\nAlt: %.0fm  Spd: %.0fkm/h",
+                sats, lat, lng, alt, speed);
+            lv_label_set_text(label_gps, buf);
+        }
+    }
+
+    void updateBattery(int percent, float voltage) {
+        if (label_battery) {
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d%%", percent);
+            lv_label_set_text(label_battery, buf);
+
+            // Change color based on level
+            if (percent > 50) {
+                lv_obj_set_style_text_color(label_battery, lv_color_hex(0x00ff88), 0);
+            } else if (percent > 20) {
+                lv_obj_set_style_text_color(label_battery, lv_color_hex(0xffd700), 0);
+            } else {
+                lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0);
+            }
+        }
+    }
+
+    void updateLoRa(const char* lastRx, int rssi) {
+        if (label_lora) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "LoRa: Ready\nLast RX: %s (%ddBm)", lastRx, rssi);
+            lv_label_set_text(label_lora, buf);
+        }
+    }
+
+    void updateWiFi(bool connected, int rssi) {
+        if (label_wifi) {
+            if (connected) {
+                char buf[32];
+                snprintf(buf, sizeof(buf), "WiFi: Connected (%ddBm)", rssi);
+                lv_label_set_text(label_wifi, buf);
+                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00ff88), 0);
+            } else {
+                lv_label_set_text(label_wifi, "WiFi: Disconnected");
+                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xc792ea), 0);
+            }
+        }
+    }
+
+    void showMessage(const char* from, const char* message) {
+        // TODO: Implement message popup
+    }
+
+}
+
+#endif // USE_LVGL_UI
