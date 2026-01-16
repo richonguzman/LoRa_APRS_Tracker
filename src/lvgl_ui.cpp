@@ -59,7 +59,7 @@ static lv_color_t* buf2 = nullptr;
 static lv_disp_drv_t disp_drv;
 static lv_indev_drv_t indev_drv;
 
-// UI Elements
+// UI Elements - Main screen
 static lv_obj_t* screen_main = nullptr;
 static lv_obj_t* label_callsign = nullptr;
 static lv_obj_t* label_gps = nullptr;
@@ -67,6 +67,9 @@ static lv_obj_t* label_battery = nullptr;
 static lv_obj_t* label_lora = nullptr;
 static lv_obj_t* label_wifi = nullptr;
 static lv_obj_t* label_time = nullptr;
+
+// UI Elements - Setup screen
+static lv_obj_t* screen_setup = nullptr;
 
 // LVGL tick tracking
 static uint32_t last_tick = 0;
@@ -111,10 +114,26 @@ static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
     }
 }
 
+// Forward declarations
+static void create_setup_screen();
+
 // Button event callbacks
 static void btn_beacon_clicked(lv_event_t* e) {
     sendUpdate = true;
     Serial.println("[LVGL] BEACON button pressed - sending beacon");
+}
+
+static void btn_setup_clicked(lv_event_t* e) {
+    Serial.println("[LVGL] SETUP button pressed");
+    if (!screen_setup) {
+        create_setup_screen();
+    }
+    lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 0, false);
+}
+
+static void btn_back_clicked(lv_event_t* e) {
+    Serial.println("[LVGL] BACK button pressed");
+    lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 0, false);
 }
 
 // Create the main dashboard screen
@@ -216,6 +235,7 @@ static void create_dashboard() {
     lv_obj_t* btn_settings = lv_btn_create(btn_bar);
     lv_obj_set_size(btn_settings, 90, 30);
     lv_obj_set_style_bg_color(btn_settings, lv_color_hex(0xc792ea), 0);
+    lv_obj_add_event_cb(btn_settings, btn_setup_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_settings = lv_label_create(btn_settings);
     lv_label_set_text(lbl_settings, "SETUP");
     lv_obj_center(lbl_settings);
@@ -223,6 +243,91 @@ static void create_dashboard() {
 
     // Load the screen
     lv_scr_load(screen_main);
+}
+
+// Setup menu item callbacks
+static void setup_item_callsign(lv_event_t* e) {
+    Serial.println("[LVGL] Setup: Callsign selected");
+    // TODO: Show callsign selection
+}
+
+static void setup_item_frequency(lv_event_t* e) {
+    Serial.println("[LVGL] Setup: Frequency selected");
+    // TODO: Show frequency selection
+}
+
+static void setup_item_speed(lv_event_t* e) {
+    Serial.println("[LVGL] Setup: Speed selected");
+    // TODO: Show speed selection
+}
+
+static void setup_item_display(lv_event_t* e) {
+    Serial.println("[LVGL] Setup: Display selected");
+    // TODO: Show display settings
+}
+
+static void setup_item_reboot(lv_event_t* e) {
+    Serial.println("[LVGL] Setup: Reboot selected");
+    ESP.restart();
+}
+
+// Create the setup screen
+static void create_setup_screen() {
+    screen_setup = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_setup, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_setup);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0xc792ea), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, "SETUP");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Menu list
+    lv_obj_t* list = lv_list_create(screen_setup);
+    lv_obj_set_size(list, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(list, 5, 40);
+    lv_obj_set_style_bg_color(list, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(list, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(list, 8, 0);
+
+    // Menu items
+    lv_obj_t* btn;
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_CALL, "Callsign");
+    lv_obj_add_event_cb(btn, setup_item_callsign, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_WIFI, "LoRa Frequency");
+    lv_obj_add_event_cb(btn, setup_item_frequency, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_SHUFFLE, "LoRa Speed");
+    lv_obj_add_event_cb(btn, setup_item_speed, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_SETTINGS, "Display");
+    lv_obj_add_event_cb(btn, setup_item_display, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_REFRESH, "Reboot");
+    lv_obj_add_event_cb(btn, setup_item_reboot, LV_EVENT_CLICKED, NULL);
+
+    Serial.println("[LVGL] Setup screen created");
 }
 
 namespace LVGL_UI {
