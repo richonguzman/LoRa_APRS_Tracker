@@ -178,6 +178,13 @@ void setup() {
     #endif
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+
+    // Memory stats
+    #ifdef BOARD_HAS_PSRAM
+        Serial.printf("[Memory] PSRAM: %u KB total, %u KB free\n", ESP.getPsramSize()/1024, ESP.getFreePsram()/1024);
+    #endif
+    Serial.printf("[Memory] Heap: %u KB total, %u KB free\n", ESP.getHeapSize()/1024, ESP.getFreeHeap()/1024);
+
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
 }

@@ -85,7 +85,11 @@ namespace NOTIFICATION_Utils {
         if (amplitude <= 0) return;  // Skip if volume is 0
 
         int numSamples = (I2S_SAMPLE_RATE * duration) / 1000;
-        int16_t* samples = (int16_t*)malloc(numSamples * sizeof(int16_t));
+        #ifdef BOARD_HAS_PSRAM
+            int16_t* samples = (int16_t*)ps_malloc(numSamples * sizeof(int16_t));
+        #else
+            int16_t* samples = (int16_t*)malloc(numSamples * sizeof(int16_t));
+        #endif
 
         if (samples == NULL) return;
 

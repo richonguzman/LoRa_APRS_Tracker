@@ -262,6 +262,9 @@ void displaySetup() {
     #ifdef HAS_TFT
         tft.init();
         tft.begin();
+        #ifdef BOARD_HAS_PSRAM
+            tft.setAttribute(PSRAM_ENABLE, true);  // Use PSRAM for sprite buffers
+        #endif
         if (Config.display.turn180) {
                 tft.setRotation(3);
         } else {
