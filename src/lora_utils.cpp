@@ -218,10 +218,20 @@ namespace LoRa_Utils {
         currentLoRaType = &Config.loraTypes[loraIndex];
 
         // Validate frequency and bandwidth values
-        if (currentLoRaType->frequency < 100000000 || currentLoRaType->frequency > 1000000000) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid frequency value: %ld", currentLoRaType->frequency);
-            return;
-        }
+        #if defined(LORA_FREQ_MIN) && defined(LORA_FREQ_MAX)
+            // Board-specific frequency validation
+            if (currentLoRaType->frequency < LORA_FREQ_MIN || currentLoRaType->frequency > LORA_FREQ_MAX) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Frequency %ld Hz out of range (%ld-%ld)",
+                    currentLoRaType->frequency, (long)LORA_FREQ_MIN, (long)LORA_FREQ_MAX);
+                return;
+            }
+        #else
+            // Generic frequency validation
+            if (currentLoRaType->frequency < 100000000 || currentLoRaType->frequency > 1000000000) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid frequency value: %ld", currentLoRaType->frequency);
+                return;
+            }
+        #endif
         if (currentLoRaType->signalBandwidth < 1000 || currentLoRaType->signalBandwidth > 1000000) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid bandwidth value: %ld", currentLoRaType->signalBandwidth);
             return;
