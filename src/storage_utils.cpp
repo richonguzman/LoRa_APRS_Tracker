@@ -20,10 +20,15 @@
 #include <SD.h>
 #include <SPI.h>
 #include <vector>
+#include <ArduinoJson.h>
 #include "board_pinout.h"
 #include "storage_utils.h"
 
 static bool sdAvailable = false;
+
+// In-memory contacts cache
+static std::vector<Contact> contactsCache;
+static bool contactsLoaded = false;
 
 // Root directory for all tracker data on SD card
 static const char* ROOT_DIR = "/LoRa_Tracker";
@@ -31,6 +36,7 @@ static const char* MESSAGES_DIR = "/LoRa_Tracker/Messages";
 static const char* INBOX_DIR = "/LoRa_Tracker/Messages/inbox";
 static const char* OUTBOX_DIR = "/LoRa_Tracker/Messages/outbox";
 static const char* CONTACTS_DIR = "/LoRa_Tracker/Contacts";
+static const char* CONTACTS_FILE = "/LoRa_Tracker/Contacts/contacts.json";
 
 namespace STORAGE_Utils {
 
@@ -232,6 +238,167 @@ namespace STORAGE_Utils {
             return SD.totalBytes();
         }
         return SPIFFS.totalBytes();
+    }
+
+    // ========== Contacts Management ==========
+
+    std::vector<Contact> loadContacts() {
+        if (contactsLoaded) {
+            return contactsCache;
+        }
+
+        contactsCache.clear();
+
+        if (!sdAvailable) {
+            Serial.println("[Storage] No SD card, contacts not available");
+            return contactsCache;
+        }
+
+        File file = SD.open(CONTACTS_FILE, FILE_READ);
+        if (!file) {
+            Serial.println("[Storage] No contacts file, starting fresh");
+            contactsLoaded = true;
+            return contactsCache;
+        }
+
+        // Parse JSON
+        DynamicJsonDocument doc(4096);
+        DeserializationError error = deserializeJson(doc, file);
+        file.close();
+
+        if (error) {
+            Serial.printf("[Storage] JSON parse error: %s\n", error.c_str());
+            contactsLoaded = true;
+            return contactsCache;
+        }
+
+        // Load contacts from JSON array
+        JsonArray array = doc.as<JsonArray>();
+        for (JsonObject obj : array) {
+            Contact c;
+            c.callsign = obj["callsign"].as<String>();
+            c.name = obj["name"].as<String>();
+            c.comment = obj["comment"].as<String>();
+            if (c.callsign.length() > 0) {
+                contactsCache.push_back(c);
+            }
+        }
+
+        Serial.printf("[Storage] Loaded %d contacts\n", contactsCache.size());
+        contactsLoaded = true;
+        return contactsCache;
+    }
+
+    bool saveContacts(const std::vector<Contact>& contacts) {
+        if (!sdAvailable) {
+            Serial.println("[Storage] No SD card, cannot save contacts");
+            return false;
+        }
+
+        // Build JSON
+        DynamicJsonDocument doc(4096);
+        JsonArray array = doc.to<JsonArray>();
+
+        for (const Contact& c : contacts) {
+            JsonObject obj = array.createNestedObject();
+            obj["callsign"] = c.callsign;
+            obj["name"] = c.name;
+            obj["comment"] = c.comment;
+        }
+
+        // Write to file
+        File file = SD.open(CONTACTS_FILE, FILE_WRITE);
+        if (!file) {
+            Serial.println("[Storage] Failed to open contacts file for writing");
+            return false;
+        }
+
+        serializeJsonPretty(doc, file);
+        file.close();
+
+        // Update cache
+        contactsCache = contacts;
+        contactsLoaded = true;
+
+        Serial.printf("[Storage] Saved %d contacts\n", contacts.size());
+        return true;
+    }
+
+    bool addContact(const Contact& contact) {
+        // Load existing contacts if not loaded
+        if (!contactsLoaded) {
+            loadContacts();
+        }
+
+        // Check if callsign already exists
+        for (const Contact& c : contactsCache) {
+            if (c.callsign.equalsIgnoreCase(contact.callsign)) {
+                Serial.printf("[Storage] Contact %s already exists\n", contact.callsign.c_str());
+                return false;
+            }
+        }
+
+        // Add to cache
+        contactsCache.push_back(contact);
+
+        // Save to file
+        return saveContacts(contactsCache);
+    }
+
+    bool removeContact(const String& callsign) {
+        if (!contactsLoaded) {
+            loadContacts();
+        }
+
+        for (auto it = contactsCache.begin(); it != contactsCache.end(); ++it) {
+            if (it->callsign.equalsIgnoreCase(callsign)) {
+                contactsCache.erase(it);
+                Serial.printf("[Storage] Removed contact %s\n", callsign.c_str());
+                return saveContacts(contactsCache);
+            }
+        }
+
+        Serial.printf("[Storage] Contact %s not found\n", callsign.c_str());
+        return false;
+    }
+
+    bool updateContact(const String& callsign, const Contact& newData) {
+        if (!contactsLoaded) {
+            loadContacts();
+        }
+
+        for (Contact& c : contactsCache) {
+            if (c.callsign.equalsIgnoreCase(callsign)) {
+                c.callsign = newData.callsign;
+                c.name = newData.name;
+                c.comment = newData.comment;
+                Serial.printf("[Storage] Updated contact %s\n", callsign.c_str());
+                return saveContacts(contactsCache);
+            }
+        }
+
+        Serial.printf("[Storage] Contact %s not found for update\n", callsign.c_str());
+        return false;
+    }
+
+    Contact* findContact(const String& callsign) {
+        if (!contactsLoaded) {
+            loadContacts();
+        }
+
+        for (Contact& c : contactsCache) {
+            if (c.callsign.equalsIgnoreCase(callsign)) {
+                return &c;
+            }
+        }
+        return nullptr;
+    }
+
+    int getContactCount() {
+        if (!contactsLoaded) {
+            loadContacts();
+        }
+        return contactsCache.size();
     }
 
 }

@@ -96,6 +96,36 @@ uint32_t    messageLedTime      = millis();
 
 namespace MSG_Utils {
 
+    // Clean old entries from deduplication buffer
+    static void cleanRecentMessagesBuffer() {
+        uint32_t now = millis();
+        while (!recentMessagesBuffer.empty() &&
+               (now - recentMessagesBuffer[0].timestamp) > MSG_DEDUP_WINDOW_MS) {
+            recentMessagesBuffer.erase(recentMessagesBuffer.begin());
+        }
+    }
+
+    // Check if message is duplicate (within 30-second window)
+    static bool isDuplicateMessage(const String& sender, const String& content) {
+        cleanRecentMessagesBuffer();
+
+        for (const auto& msg : recentMessagesBuffer) {
+            if (msg.sender == sender && msg.content == content) {
+                Serial.printf("[MSG] Duplicate detected: %s from %s\n", content.c_str(), sender.c_str());
+                return true;
+            }
+        }
+
+        // Add to buffer
+        RecentMessage newMsg;
+        newMsg.sender = sender;
+        newMsg.content = content;
+        newMsg.timestamp = millis();
+        recentMessagesBuffer.push_back(newMsg);
+
+        return false;
+    }
+
     bool warnNoAPRSMessages() {
         return noAPRSMsgWarning;
     }
@@ -122,6 +152,32 @@ namespace MSG_Utils {
 
     std::vector<String>& getLoadedWLNKMails() {
         return loadedWLNKMails;
+    }
+
+    std::vector<String> getMessagesForContact(const String& callsign) {
+        std::vector<String> result;
+
+        // Load APRS messages if not loaded
+        loadMessagesFromMemory(0);
+
+        // Filter messages by callsign
+        String upperCallsign = callsign;
+        upperCallsign.toUpperCase();
+
+        for (const String& msg : loadedAPRSMessages) {
+            // Message format: "CALLSIGN,message content"
+            int commaPos = msg.indexOf(',');
+            if (commaPos > 0) {
+                String msgCallsign = msg.substring(0, commaPos);
+                msgCallsign.toUpperCase();
+                if (msgCallsign == upperCallsign) {
+                    result.push_back(msg);
+                }
+            }
+        }
+
+        Serial.printf("[MSG] Found %d messages for %s\n", result.size(), callsign.c_str());
+        return result;
     }
 
     void loadNumMessages() {
@@ -228,36 +284,86 @@ namespace MSG_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted messages file type %d", typeOfFile);
     }
 
+    bool deleteMessageByIndex(uint8_t typeOfMessage, int index) {
+        // Load messages first
+        loadMessagesFromMemory(typeOfMessage);
+
+        std::vector<String>* messages = nullptr;
+        const char* filename = nullptr;
+        int* numMessages = nullptr;
+
+        if (typeOfMessage == 0) {
+            messages = &loadedAPRSMessages;
+            filename = "/aprsMessages.txt";
+            numMessages = &numAPRSMessages;
+        } else if (typeOfMessage == 1) {
+            messages = &loadedWLNKMails;
+            filename = "/winlinkMails.txt";
+            numMessages = &numWLNKMessages;
+        } else {
+            return false;
+        }
+
+        if (index < 0 || index >= (int)messages->size()) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Invalid message index %d", index);
+            return false;
+        }
+
+        // Remove message from vector
+        messages->erase(messages->begin() + index);
+        (*numMessages)--;
+
+        // Rewrite the file with remaining messages
+        STORAGE_Utils::removeFile(filename);
+
+        if (messages->size() > 0) {
+            File file = STORAGE_Utils::openFile(filename, FILE_WRITE);
+            if (file) {
+                for (const String& msg : *messages) {
+                    file.println(msg);
+                }
+                file.close();
+            }
+        }
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted message %d, %d remaining", index, messages->size());
+        return true;
+    }
+
     void saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage) {
         String message = newMessage;
-        if (typeMessage == 0 && lastMessageSaved != message) {   //APRS
+        message.trim();
+
+        // Check for duplicate using 30-second window
+        if (isDuplicateMessage(station, message)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Duplicate message ignored from %s", station.c_str());
+            return;
+        }
+
+        if (typeMessage == 0) {   //APRS
             File fileToAppendAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
             if(!fileToAppendAPRS) {
                 Serial.println("There was an error opening the file for appending");
                 return;
             }
-            message.trim();
             if(!fileToAppendAPRS.println(station + "," + message)) {
                 Serial.println("File append failed");
             }
-            lastMessageSaved = message;
             numAPRSMessages++;
             fileToAppendAPRS.close();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "APRS msg saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
-        } else if (typeMessage == 1 && lastMessageSaved != message) {    //WLNK
+        } else if (typeMessage == 1) {    //WLNK
             File fileToAppendWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", FILE_APPEND);
             if(!fileToAppendWLNK) {
                 Serial.println("There was an error opening the file for appending");
                 return;
             }
-            message.trim();
-            if(!fileToAppendWLNK.println(message)) {
+            if(!fileToAppendWLNK.println(station + "," + message)) {
                 Serial.println("File append failed");
             }
-            lastMessageSaved = message;
             numWLNKMessages++;
             fileToAppendWLNK.close();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Winlink mail saved to %s", STORAGE_Utils::getStorageType().c_str());

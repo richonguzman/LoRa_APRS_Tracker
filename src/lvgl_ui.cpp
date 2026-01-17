@@ -1887,7 +1887,8 @@ static void create_bluetooth_screen() {
 static lv_obj_t* msg_tabview = nullptr;
 static lv_obj_t* list_aprs_global = nullptr;
 static lv_obj_t* list_wlnk_global = nullptr;
-static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink
+static lv_obj_t* list_contacts_global = nullptr;
+static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts
 
 // Compose screen variables (declared early for use in callbacks)
 static lv_obj_t* screen_compose = nullptr;
@@ -1921,14 +1922,75 @@ static void show_message_detail(const char* msg) {
     lv_obj_add_event_cb(detail_msgbox, detail_msgbox_deleted_cb, LV_EVENT_DELETE, NULL);
 }
 
+// Forward declaration for message list
+static void populate_msg_list(lv_obj_t* list, int type);
+
+// Confirmation popup for delete operations
+static lv_obj_t* confirm_msgbox = nullptr;
+static int pending_delete_msg_index = -1;  // Index of message to delete (-1 = all)
+static bool msg_longpress_handled = false;
+
+static void confirm_delete_cb(lv_event_t* e) {
+    lv_obj_t* btn = lv_event_get_target(e);
+    const char* btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
+
+    if (btn_text && strcmp(btn_text, "Yes") == 0) {
+        if (pending_delete_msg_index == -1) {
+            // Delete all messages
+            Serial.printf("[LVGL] Confirmed: Delete all messages type %d\n", current_msg_type);
+            MSG_Utils::deleteFile(current_msg_type);
+        } else {
+            // Delete single message
+            Serial.printf("[LVGL] Confirmed: Delete message %d type %d\n", pending_delete_msg_index, current_msg_type);
+            MSG_Utils::deleteMessageByIndex(current_msg_type, pending_delete_msg_index);
+        }
+
+        // Refresh the current list
+        if (current_msg_type == 0 && list_aprs_global) {
+            populate_msg_list(list_aprs_global, 0);
+        } else if (current_msg_type == 1 && list_wlnk_global) {
+            populate_msg_list(list_wlnk_global, 1);
+        }
+    }
+
+    lv_msgbox_close(confirm_msgbox);
+    confirm_msgbox = nullptr;
+    pending_delete_msg_index = -1;
+}
+
+static void show_delete_confirmation(const char* message, int msg_index) {
+    pending_delete_msg_index = msg_index;
+
+    static const char* btns[] = {"Yes", "No", ""};
+    confirm_msgbox = lv_msgbox_create(NULL, "Confirmation", message, btns, false);
+    lv_obj_set_style_bg_color(confirm_msgbox, lv_color_hex(0x1a1a2e), 0);
+    lv_obj_set_style_text_color(confirm_msgbox, lv_color_hex(0xffffff), LV_PART_MAIN);
+    lv_obj_set_width(confirm_msgbox, 220);
+    lv_obj_center(confirm_msgbox);
+    lv_obj_add_event_cb(confirm_msgbox, confirm_delete_cb, LV_EVENT_VALUE_CHANGED, NULL);
+}
+
 // Message item click callback
 static void msg_item_clicked(lv_event_t* e) {
+    if (msg_longpress_handled) {
+        msg_longpress_handled = false;
+        return;
+    }
+
     lv_obj_t* btn = lv_event_get_target(e);
     lv_obj_t* label = lv_obj_get_child(btn, 0);
     if (label) {
         const char* text = lv_label_get_text(label);
         show_message_detail(text);
     }
+}
+
+// Message item long-press - delete single message
+static void msg_item_longpress(lv_event_t* e) {
+    int msg_index = (int)(intptr_t)lv_event_get_user_data(e);
+    Serial.printf("[LVGL] Message long-press: index %d\n", msg_index);
+    msg_longpress_handled = true;
+    show_delete_confirmation("Delete this message?", msg_index);
 }
 
 // Populate message list
@@ -1948,6 +2010,7 @@ static void populate_msg_list(lv_obj_t* list, int type) {
             for (size_t i = 0; i < messages.size(); i++) {
                 lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, messages[i].c_str());
                 lv_obj_add_event_cb(btn, msg_item_clicked, LV_EVENT_CLICKED, NULL);
+                lv_obj_add_event_cb(btn, msg_item_longpress, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
             }
         }
     } else {
@@ -1963,30 +2026,338 @@ static void populate_msg_list(lv_obj_t* list, int type) {
             for (size_t i = 0; i < messages.size(); i++) {
                 lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, messages[i].c_str());
                 lv_obj_add_event_cb(btn, msg_item_clicked, LV_EVENT_CLICKED, NULL);
+                lv_obj_add_event_cb(btn, msg_item_longpress, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
             }
         }
     }
+}
+
+// Contact add/edit screen variables
+static lv_obj_t* screen_contact_edit = nullptr;
+static lv_obj_t* contact_callsign_input = nullptr;
+static lv_obj_t* contact_name_input = nullptr;
+static lv_obj_t* contact_comment_input = nullptr;
+static lv_obj_t* contact_edit_keyboard = nullptr;
+static lv_obj_t* contact_current_input = nullptr;
+static String editing_contact_callsign = "";  // Empty = adding new, non-empty = editing
+
+// Forward declarations for contacts
+static void populate_contacts_list(lv_obj_t* list);
+static void show_contact_edit_screen(const Contact* contact);
+
+// Forward declaration
+static void create_compose_screen();
+
+// Flag to prevent click after long-press
+static bool contact_longpress_handled = false;
+
+// Contact item clicked - open compose with callsign pre-filled
+static void contact_item_clicked(lv_event_t* e) {
+    // Skip if this click follows a long-press
+    if (contact_longpress_handled) {
+        contact_longpress_handled = false;
+        return;
+    }
+
+    Contact* contact = (Contact*)lv_event_get_user_data(e);
+    if (!contact) return;
+
+    Serial.printf("[LVGL] Contact clicked: %s - opening compose\n", contact->callsign.c_str());
+
+    // Create compose screen and pre-fill recipient
+    create_compose_screen();
+    compose_screen_active = true;
+
+    // Pre-fill the To field with contact's callsign
+    lv_textarea_set_text(compose_to_input, contact->callsign.c_str());
+
+    // Focus on message input (skip To field since it's already filled)
+    current_focused_input = compose_msg_input;
+    lv_keyboard_set_textarea(compose_keyboard, compose_msg_input);
+
+    lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+}
+
+// Contact long-press - open edit screen
+static void contact_item_longpress(lv_event_t* e) {
+    Contact* contact = (Contact*)lv_event_get_user_data(e);
+    if (!contact) return;
+    Serial.printf("[LVGL] Contact long-press: %s\n", contact->callsign.c_str());
+    contact_longpress_handled = true;  // Block the following click event
+    show_contact_edit_screen(contact);
+}
+
+// Populate contacts list
+static void populate_contacts_list(lv_obj_t* list) {
+    lv_obj_clean(list);
+
+    std::vector<Contact> contacts = STORAGE_Utils::loadContacts();
+
+    if (contacts.size() == 0) {
+        lv_obj_t* empty = lv_label_create(list);
+        lv_label_set_text(empty, "No contacts\nTap + to add");
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
+        lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
+    } else {
+        for (size_t i = 0; i < contacts.size(); i++) {
+            Contact* c = STORAGE_Utils::findContact(contacts[i].callsign);
+            String display = contacts[i].callsign;
+            if (contacts[i].name.length() > 0) {
+                display += " - " + contacts[i].name;
+            }
+            if (contacts[i].comment.length() > 0) {
+                display += "\n" + contacts[i].comment;
+            }
+            lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_CALL, display.c_str());
+            lv_obj_add_event_cb(btn, contact_item_clicked, LV_EVENT_CLICKED, c);
+            lv_obj_add_event_cb(btn, contact_item_longpress, LV_EVENT_LONG_PRESSED, c);
+        }
+    }
+}
+
+// Contact edit screen callbacks
+static void contact_edit_input_focused(lv_event_t* e) {
+    lv_obj_t* ta = lv_event_get_target(e);
+    contact_current_input = ta;
+    if (contact_edit_keyboard) {
+        lv_keyboard_set_textarea(contact_edit_keyboard, ta);
+    }
+}
+
+static void contact_edit_keyboard_event(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_READY || code == LV_EVENT_CANCEL) {
+        lv_obj_add_flag(contact_edit_keyboard, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void btn_contact_save_clicked(lv_event_t* e) {
+    const char* callsign = lv_textarea_get_text(contact_callsign_input);
+    const char* name = lv_textarea_get_text(contact_name_input);
+    const char* comment = lv_textarea_get_text(contact_comment_input);
+
+    if (strlen(callsign) == 0) {
+        show_message_detail("Callsign required!");
+        return;
+    }
+
+    Contact contact;
+    contact.callsign = String(callsign);
+    contact.callsign.toUpperCase();
+    contact.name = String(name);
+    contact.comment = String(comment);
+
+    bool success;
+    if (editing_contact_callsign.length() > 0) {
+        // Editing existing contact
+        success = STORAGE_Utils::updateContact(editing_contact_callsign, contact);
+    } else {
+        // Adding new contact
+        success = STORAGE_Utils::addContact(contact);
+    }
+
+    if (success) {
+        Serial.printf("[LVGL] Contact saved: %s\n", contact.callsign.c_str());
+        // Go back to messages screen
+        lv_scr_load(screen_msg);
+        // Refresh contacts list
+        if (list_contacts_global) {
+            populate_contacts_list(list_contacts_global);
+        }
+    } else {
+        show_message_detail("Failed to save contact\n(duplicate callsign?)");
+    }
+}
+
+static void btn_contact_delete_clicked(lv_event_t* e) {
+    if (editing_contact_callsign.length() > 0) {
+        bool success = STORAGE_Utils::removeContact(editing_contact_callsign);
+        if (success) {
+            Serial.printf("[LVGL] Contact deleted: %s\n", editing_contact_callsign.c_str());
+            lv_scr_load(screen_msg);
+            if (list_contacts_global) {
+                populate_contacts_list(list_contacts_global);
+            }
+        }
+    }
+}
+
+static void btn_contact_cancel_clicked(lv_event_t* e) {
+    lv_scr_load(screen_msg);
+}
+
+static void btn_contact_kb_toggle_clicked(lv_event_t* e) {
+    if (lv_obj_has_flag(contact_edit_keyboard, LV_OBJ_FLAG_HIDDEN)) {
+        lv_obj_clear_flag(contact_edit_keyboard, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(contact_edit_keyboard, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+// Show contact edit screen
+static void show_contact_edit_screen(const Contact* contact) {
+    if (contact) {
+        editing_contact_callsign = contact->callsign;
+    } else {
+        editing_contact_callsign = "";
+    }
+
+    // Create screen if not exists
+    if (!screen_contact_edit) {
+        screen_contact_edit = lv_obj_create(NULL);
+        lv_obj_set_style_bg_color(screen_contact_edit, lv_color_hex(0x0f0f23), 0);
+
+        // Title bar
+        lv_obj_t* title_bar = lv_obj_create(screen_contact_edit);
+        lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+        lv_obj_set_pos(title_bar, 0, 0);
+        lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_border_width(title_bar, 0, 0);
+        lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+        // Back button
+        lv_obj_t* btn_back = lv_btn_create(title_bar);
+        lv_obj_set_size(btn_back, 30, 25);
+        lv_obj_align(btn_back, LV_ALIGN_LEFT_MID, 0, 0);
+        lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x444444), 0);
+        lv_obj_add_event_cb(btn_back, btn_contact_cancel_clicked, LV_EVENT_CLICKED, NULL);
+        lv_obj_t* lbl_back = lv_label_create(btn_back);
+        lv_label_set_text(lbl_back, LV_SYMBOL_LEFT);
+        lv_obj_center(lbl_back);
+
+        // Title
+        lv_obj_t* title = lv_label_create(title_bar);
+        lv_label_set_text(title, "Contact");
+        lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
+        lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+
+        // Save button
+        lv_obj_t* btn_save = lv_btn_create(title_bar);
+        lv_obj_set_size(btn_save, 40, 25);
+        lv_obj_align(btn_save, LV_ALIGN_RIGHT_MID, -50, 0);
+        lv_obj_set_style_bg_color(btn_save, lv_color_hex(0x00aa55), 0);
+        lv_obj_add_event_cb(btn_save, btn_contact_save_clicked, LV_EVENT_CLICKED, NULL);
+        lv_obj_t* lbl_save = lv_label_create(btn_save);
+        lv_label_set_text(lbl_save, LV_SYMBOL_OK);
+        lv_obj_center(lbl_save);
+
+        // Delete button
+        lv_obj_t* btn_del = lv_btn_create(title_bar);
+        lv_obj_set_size(btn_del, 40, 25);
+        lv_obj_align(btn_del, LV_ALIGN_RIGHT_MID, -5, 0);
+        lv_obj_set_style_bg_color(btn_del, lv_color_hex(0xff4444), 0);
+        lv_obj_add_event_cb(btn_del, btn_contact_delete_clicked, LV_EVENT_CLICKED, NULL);
+        lv_obj_t* lbl_del = lv_label_create(btn_del);
+        lv_label_set_text(lbl_del, LV_SYMBOL_TRASH);
+        lv_obj_center(lbl_del);
+
+        // Form container (scrollable for 3 fields)
+        lv_obj_t* form = lv_obj_create(screen_contact_edit);
+        lv_obj_set_size(form, SCREEN_WIDTH - 10, 160);
+        lv_obj_set_pos(form, 5, 40);
+        lv_obj_set_scrollbar_mode(form, LV_SCROLLBAR_MODE_AUTO);
+        lv_obj_set_style_bg_color(form, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_border_width(form, 0, 0);
+        lv_obj_set_style_pad_all(form, 5, 0);
+        lv_obj_set_flex_flow(form, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(form, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+        // Callsign input
+        lv_obj_t* lbl_call = lv_label_create(form);
+        lv_label_set_text(lbl_call, "Callsign:");
+        lv_obj_set_style_text_color(lbl_call, lv_color_hex(0x00d4ff), 0);
+
+        contact_callsign_input = lv_textarea_create(form);
+        lv_obj_set_size(contact_callsign_input, lv_pct(100), 30);
+        lv_textarea_set_one_line(contact_callsign_input, true);
+        lv_textarea_set_placeholder_text(contact_callsign_input, "F4ABC-9");
+        lv_obj_add_event_cb(contact_callsign_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
+
+        // Name input
+        lv_obj_t* lbl_name = lv_label_create(form);
+        lv_label_set_text(lbl_name, "Name:");
+        lv_obj_set_style_text_color(lbl_name, lv_color_hex(0x00d4ff), 0);
+
+        contact_name_input = lv_textarea_create(form);
+        lv_obj_set_size(contact_name_input, lv_pct(100), 30);
+        lv_textarea_set_one_line(contact_name_input, true);
+        lv_textarea_set_placeholder_text(contact_name_input, "Jean");
+        lv_obj_add_event_cb(contact_name_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
+
+        // Comment input
+        lv_obj_t* lbl_comment = lv_label_create(form);
+        lv_label_set_text(lbl_comment, "Note:");
+        lv_obj_set_style_text_color(lbl_comment, lv_color_hex(0x00d4ff), 0);
+
+        contact_comment_input = lv_textarea_create(form);
+        lv_obj_set_size(contact_comment_input, lv_pct(100), 30);
+        lv_textarea_set_one_line(contact_comment_input, true);
+        lv_textarea_set_placeholder_text(contact_comment_input, "Paris");
+        lv_obj_add_event_cb(contact_comment_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
+
+        // Keyboard toggle button
+        lv_obj_t* btn_kb = lv_btn_create(screen_contact_edit);
+        lv_obj_set_size(btn_kb, 40, 30);
+        lv_obj_set_pos(btn_kb, SCREEN_WIDTH - 50, 165);
+        lv_obj_set_style_bg_color(btn_kb, lv_color_hex(0x555555), 0);
+        lv_obj_add_event_cb(btn_kb, btn_contact_kb_toggle_clicked, LV_EVENT_CLICKED, NULL);
+        lv_obj_t* lbl_kb = lv_label_create(btn_kb);
+        lv_label_set_text(lbl_kb, LV_SYMBOL_KEYBOARD);
+        lv_obj_center(lbl_kb);
+
+        // Virtual keyboard (hidden by default)
+        contact_edit_keyboard = lv_keyboard_create(screen_contact_edit);
+        lv_obj_set_size(contact_edit_keyboard, SCREEN_WIDTH, 100);
+        lv_obj_align(contact_edit_keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
+        lv_obj_add_flag(contact_edit_keyboard, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_event_cb(contact_edit_keyboard, contact_edit_keyboard_event, LV_EVENT_ALL, NULL);
+    }
+
+    // Fill form with contact data
+    if (contact) {
+        lv_textarea_set_text(contact_callsign_input, contact->callsign.c_str());
+        lv_textarea_set_text(contact_name_input, contact->name.c_str());
+        lv_textarea_set_text(contact_comment_input, contact->comment.c_str());
+    } else {
+        lv_textarea_set_text(contact_callsign_input, "");
+        lv_textarea_set_text(contact_name_input, "");
+        lv_textarea_set_text(contact_comment_input, "");
+    }
+
+    lv_scr_load(screen_contact_edit);
 }
 
 // Tab changed callback
 static void msg_tab_changed(lv_event_t* e) {
     lv_obj_t* tabview = lv_event_get_target(e);
     uint16_t tab_idx = lv_tabview_get_tab_act(tabview);
-    current_msg_type = tab_idx;
-    Serial.printf("[LVGL] Messages tab changed to %d\n", tab_idx);
+
+    // Validate tab index (only 0, 1, 2 are valid)
+    if (tab_idx > 2) {
+        Serial.printf("[LVGL] Invalid tab index %d, ignoring\n", tab_idx);
+        return;
+    }
+
+    current_msg_type = (int)tab_idx;
+    Serial.printf("[LVGL] Messages tab changed to %d\n", current_msg_type);
+
+    // Refresh contacts list when tab is selected
+    if (current_msg_type == 2 && list_contacts_global) {
+        populate_contacts_list(list_contacts_global);
+    }
 }
 
 // Delete all messages callback
 static void btn_delete_msgs_clicked(lv_event_t* e) {
-    Serial.printf("[LVGL] Delete messages type %d\n", current_msg_type);
-    MSG_Utils::deleteFile(current_msg_type);
+    Serial.printf("[LVGL] Delete all button pressed, type %d\n", current_msg_type);
 
-    // Refresh the current list
-    if (current_msg_type == 0 && list_aprs_global) {
-        populate_msg_list(list_aprs_global, 0);
-    } else if (current_msg_type == 1 && list_wlnk_global) {
-        populate_msg_list(list_wlnk_global, 1);
+    // Don't delete contacts with this button
+    if (current_msg_type == 2) {
+        return;
     }
+
+    const char* msg = (current_msg_type == 0) ? "Delete all APRS messages?" : "Delete all Winlink mails?";
+    show_delete_confirmation(msg, -1);  // -1 means delete all
 }
 
 // Compose screen callbacks
@@ -2001,7 +2372,7 @@ static void compose_input_focused(lv_event_t* e) {
     lv_obj_t* ta = lv_event_get_target(e);
     current_focused_input = ta;
     lv_keyboard_set_textarea(compose_keyboard, ta);
-    lv_obj_clear_flag(compose_keyboard, LV_OBJ_FLAG_HIDDEN);
+    // Don't show keyboard automatically - user can toggle with button
 }
 
 static void btn_send_msg_clicked(lv_event_t* e) {
@@ -2012,9 +2383,26 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         Serial.printf("[LVGL] Sending message to %s: %s\n", to, msg);
         MSG_Utils::addToOutputBuffer(1, String(to), String(msg));
 
-        // Show confirmation and go back
+        // Save to outbox
+        String outboxPath = STORAGE_Utils::getOutboxPath();
+        if (outboxPath.length() > 0) {
+            // Create filename with timestamp
+            String filename = outboxPath + "/" + String(to) + "_" + String(millis()) + ".txt";
+            File file = STORAGE_Utils::openFile(filename, FILE_WRITE);
+            if (file) {
+                file.printf("To: %s\nMsg: %s\nTime: %lu\n", to, msg, millis());
+                file.close();
+                Serial.printf("[LVGL] Message saved to outbox: %s\n", filename.c_str());
+            }
+        }
+
+        // Show confirmation popup
+        LVGL_UI::showTxPacket(msg);
+
+        // Clear inputs and go back
         lv_textarea_set_text(compose_to_input, "");
         lv_textarea_set_text(compose_msg_input, "");
+        compose_screen_active = false;
         lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
     }
 }
@@ -2117,9 +2505,137 @@ static void create_compose_screen() {
     Serial.println("[LVGL] Compose screen created");
 }
 
+// Caps Lock and Symbol Lock state for physical keyboard
+static bool capsLockActive = false;
+static bool symbolLockActive = false;
+static uint32_t lastShiftTime = 0;
+static uint32_t lastSymbolTime = 0;
+static const uint32_t DOUBLE_TAP_MS = 400;  // Double tap window
+
+// T-Deck keyboard special key codes (adjust if needed)
+// These may vary depending on firmware - check serial output
+static const char KEY_SHIFT = 0x01;   // Shift key alone
+static const char KEY_SYMBOL = 0x02;  // Symbol key alone ($)
+
+// Symbol mapping for T-Deck keyboard (number row -> symbols)
+static char getSymbolChar(char key) {
+    switch(key) {
+        case '1': return '!';
+        case '2': return '@';
+        case '3': return '#';
+        case '4': return '$';
+        case '5': return '%';
+        case '6': return '^';
+        case '7': return '&';
+        case '8': return '*';
+        case '9': return '(';
+        case '0': return ')';
+        case 'q': return '#';
+        case 'w': return '1';
+        case 'e': return '2';
+        case 'r': return '3';
+        case 't': return '(';
+        case 'y': return ')';
+        case 'u': return '_';
+        case 'i': return '-';
+        case 'o': return '+';
+        case 'p': return '@';
+        case 'a': return '*';
+        case 's': return '4';
+        case 'd': return '5';
+        case 'f': return '6';
+        case 'g': return '/';
+        case 'h': return ':';
+        case 'j': return ';';
+        case 'k': return '\'';
+        case 'l': return '"';
+        case 'z': return '?';
+        case 'x': return '7';
+        case 'c': return '8';
+        case 'v': return '9';
+        case 'b': return '!';
+        case 'n': return ',';
+        case 'm': return '.';
+        default: return key;
+    }
+}
+
 // Handle physical keyboard input for compose screen
 void handleComposeKeyboard(char key) {
     if (!compose_screen_active || !current_focused_input) return;
+
+    // Debug: print key code
+    Serial.printf("[KB] Key: %d (0x%02X) '%c'\n", key, key, (key >= 32 && key < 127) ? key : '?');
+
+    // Check for Shift key double-tap (Caps Lock toggle)
+    if (key == KEY_SHIFT) {
+        uint32_t now = millis();
+        if (now - lastShiftTime < DOUBLE_TAP_MS) {
+            capsLockActive = !capsLockActive;
+            symbolLockActive = false;  // Disable symbol lock when enabling caps
+            Serial.printf("[KB] Caps Lock: %s\n", capsLockActive ? "ON" : "OFF");
+            // Show popup indicator
+            static lv_obj_t* lock_popup = nullptr;
+            if (lock_popup && lv_obj_is_valid(lock_popup)) {
+                lv_obj_del(lock_popup);
+            }
+            lock_popup = lv_label_create(lv_scr_act());
+            lv_label_set_text(lock_popup, capsLockActive ? "MAJ" : "maj");
+            lv_obj_set_style_bg_color(lock_popup, capsLockActive ? lv_color_hex(0x00aa00) : lv_color_hex(0x666666), 0);
+            lv_obj_set_style_bg_opa(lock_popup, LV_OPA_COVER, 0);
+            lv_obj_set_style_text_color(lock_popup, lv_color_hex(0xffffff), 0);
+            lv_obj_set_style_pad_all(lock_popup, 8, 0);
+            lv_obj_set_style_radius(lock_popup, 5, 0);
+            lv_obj_align(lock_popup, LV_ALIGN_TOP_MID, 0, 40);
+            // Auto-delete after 1.5 sec
+            lv_anim_t a;
+            lv_anim_init(&a);
+            lv_anim_set_var(&a, lock_popup);
+            lv_anim_set_time(&a, 1500);
+            lv_anim_set_deleted_cb(&a, [](lv_anim_t* anim) {
+                lv_obj_t* obj = (lv_obj_t*)anim->var;
+                if (obj && lv_obj_is_valid(obj)) lv_obj_del(obj);
+            });
+            lv_anim_start(&a);
+        }
+        lastShiftTime = now;
+        return;
+    }
+
+    // Check for Symbol key double-tap (Symbol Lock toggle)
+    if (key == KEY_SYMBOL) {
+        uint32_t now = millis();
+        if (now - lastSymbolTime < DOUBLE_TAP_MS) {
+            symbolLockActive = !symbolLockActive;
+            capsLockActive = false;  // Disable caps lock when enabling symbol
+            Serial.printf("[KB] Symbol Lock: %s\n", symbolLockActive ? "ON" : "OFF");
+            // Show popup indicator
+            static lv_obj_t* sym_popup = nullptr;
+            if (sym_popup && lv_obj_is_valid(sym_popup)) {
+                lv_obj_del(sym_popup);
+            }
+            sym_popup = lv_label_create(lv_scr_act());
+            lv_label_set_text(sym_popup, symbolLockActive ? "SYM" : "sym");
+            lv_obj_set_style_bg_color(sym_popup, symbolLockActive ? lv_color_hex(0x0088ff) : lv_color_hex(0x666666), 0);
+            lv_obj_set_style_bg_opa(sym_popup, LV_OPA_COVER, 0);
+            lv_obj_set_style_text_color(sym_popup, lv_color_hex(0xffffff), 0);
+            lv_obj_set_style_pad_all(sym_popup, 8, 0);
+            lv_obj_set_style_radius(sym_popup, 5, 0);
+            lv_obj_align(sym_popup, LV_ALIGN_TOP_MID, 0, 40);
+            // Auto-delete after 1.5 sec
+            lv_anim_t a;
+            lv_anim_init(&a);
+            lv_anim_set_var(&a, sym_popup);
+            lv_anim_set_time(&a, 1500);
+            lv_anim_set_deleted_cb(&a, [](lv_anim_t* anim) {
+                lv_obj_t* obj = (lv_obj_t*)anim->var;
+                if (obj && lv_obj_is_valid(obj)) lv_obj_del(obj);
+            });
+            lv_anim_start(&a);
+        }
+        lastSymbolTime = now;
+        return;
+    }
 
     if (key == 0x08 || key == 0x7F) {  // Backspace
         lv_textarea_del_char(current_focused_input);
@@ -2142,15 +2658,34 @@ void handleComposeKeyboard(char key) {
             }
         }
     } else if (key >= 32 && key < 127) {  // Printable chars
-        lv_textarea_add_char(current_focused_input, key);
+        char outputKey = key;
+
+        // Apply Symbol Lock transformation
+        if (symbolLockActive && key >= 'a' && key <= 'z') {
+            outputKey = getSymbolChar(key);
+        }
+        // Apply Caps Lock transformation (only for letters)
+        else if (capsLockActive && key >= 'a' && key <= 'z') {
+            outputKey = key - 32;  // Convert to uppercase
+        }
+
+        lv_textarea_add_char(current_focused_input, outputKey);
     }
 }
 
 static void btn_compose_clicked(lv_event_t* e) {
-    create_compose_screen();
-    compose_screen_active = true;
-    current_focused_input = compose_to_input;
-    lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    Serial.printf("[LVGL] Compose button clicked, current_msg_type=%d\n", current_msg_type);
+    if (current_msg_type == 2) {
+        // Contacts tab - open add contact screen
+        Serial.println("[LVGL] Opening contact edit screen");
+        show_contact_edit_screen(nullptr);
+    } else {
+        // Messages tab - open compose message screen
+        create_compose_screen();
+        compose_screen_active = true;
+        current_focused_input = compose_to_input;
+        lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    }
 }
 
 // Create the messages screen
@@ -2232,17 +2767,28 @@ static void create_msg_screen() {
     lv_obj_set_style_border_width(list_wlnk_global, 0, 0);
     populate_msg_list(list_wlnk_global, 1);
 
+    // Contacts Tab
+    lv_obj_t* tab_contacts = lv_tabview_add_tab(msg_tabview, "Contacts");
+    lv_obj_set_style_bg_color(tab_contacts, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_pad_all(tab_contacts, 5, 0);
+
+    list_contacts_global = lv_list_create(tab_contacts);
+    lv_obj_set_size(list_contacts_global, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(list_contacts_global, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_width(list_contacts_global, 0, 0);
+    populate_contacts_list(list_contacts_global);
+
     Serial.println("[LVGL] Messages screen created with tabs");
 }
 
 namespace LVGL_UI {
 
-    // Splash screen shown during boot
+    // Splash and init screens shown during boot
     static lv_obj_t* screen_splash = nullptr;
+    static lv_obj_t* screen_init = nullptr;
+    static lv_obj_t* init_status_label = nullptr;
 
-    void showSplashScreen(uint8_t loraIndex, const char* version) {
-        Serial.println("[LVGL] Showing splash screen");
-
+    void initLvglDisplay() {
         // Ensure backlight is on
         #ifdef BOARD_BL_PIN
             pinMode(BOARD_BL_PIN, OUTPUT);
@@ -2278,6 +2824,12 @@ namespace LVGL_UI {
             }
             lvgl_display_initialized = true;
         }
+    }
+
+    void showSplashScreen(uint8_t loraIndex, const char* version) {
+        Serial.println("[LVGL] Showing splash screen");
+
+        initLvglDisplay();
 
         // Create splash screen
         screen_splash = lv_obj_create(NULL);
@@ -2288,14 +2840,14 @@ namespace LVGL_UI {
         lv_label_set_text(title, "LoRa APRS");
         lv_obj_set_style_text_color(title, lv_color_hex(0x00ff88), 0);
         lv_obj_set_style_text_font(title, &lv_font_montserrat_22, 0);
-        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 30);
+        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 50);
 
         // Subtitle: (TRACKER)
         lv_obj_t* subtitle = lv_label_create(screen_splash);
         lv_label_set_text(subtitle, "(TRACKER)");
         lv_obj_set_style_text_color(subtitle, lv_color_hex(0x00d4ff), 0);
         lv_obj_set_style_text_font(subtitle, &lv_font_montserrat_18, 0);
-        lv_obj_align(subtitle, LV_ALIGN_TOP_MID, 0, 70);
+        lv_obj_align(subtitle, LV_ALIGN_TOP_MID, 0, 90);
 
         // LoRa Frequency
         const char* region;
@@ -2311,8 +2863,7 @@ namespace LVGL_UI {
         lv_obj_t* freq_label = lv_label_create(screen_splash);
         lv_label_set_text(freq_label, freqBuf);
         lv_obj_set_style_text_color(freq_label, lv_color_hex(0xffffff), 0);
-        lv_obj_set_style_text_font(freq_label, &lv_font_montserrat_14, 0);
-        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 10);
+        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 0);
 
         // Author and version
         char verBuf[48];
@@ -2320,14 +2871,61 @@ namespace LVGL_UI {
         lv_obj_t* ver_label = lv_label_create(screen_splash);
         lv_label_set_text(ver_label, verBuf);
         lv_obj_set_style_text_color(ver_label, lv_color_hex(0xc792ea), 0);
-        lv_obj_set_style_text_font(ver_label, &lv_font_montserrat_14, 0);
         lv_obj_align(ver_label, LV_ALIGN_BOTTOM_MID, 0, -30);
 
         // Load and display
         lv_scr_load(screen_splash);
         lv_refr_now(NULL);
 
-        Serial.println("[LVGL] Splash screen displayed");
+        // Brief delay then switch to init screen
+        delay(2400);
+
+        Serial.println("[LVGL] Splash done, showing init screen");
+    }
+
+    void showInitScreen() {
+        // Create initialization status screen
+        screen_init = lv_obj_create(NULL);
+        lv_obj_set_style_bg_color(screen_init, lv_color_hex(0x1a1a2e), 0);
+
+        // Title
+        lv_obj_t* title = lv_label_create(screen_init);
+        lv_label_set_text(title, "Initialisation...");
+        lv_obj_set_style_text_color(title, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 80);
+
+        // Status label (updated during init)
+        init_status_label = lv_label_create(screen_init);
+        lv_label_set_text(init_status_label, "...");
+        lv_obj_set_style_text_color(init_status_label, lv_color_hex(0xffffff), 0);
+        lv_obj_set_style_text_font(init_status_label, &lv_font_montserrat_14, 0);
+        lv_obj_align(init_status_label, LV_ALIGN_CENTER, 0, 20);
+
+        lv_scr_load(screen_init);
+        lv_refr_now(NULL);
+
+        // Delete splash
+        if (screen_splash) {
+            lv_obj_del(screen_splash);
+            screen_splash = nullptr;
+        }
+    }
+
+    void updateInitStatus(const char* status) {
+        if (init_status_label && lv_obj_is_valid(init_status_label)) {
+            lv_label_set_text(init_status_label, status);
+            lv_refr_now(NULL);
+        }
+        Serial.printf("[LVGL] Init: %s\n", status);
+    }
+
+    void hideInitScreen() {
+        if (screen_init) {
+            lv_obj_del(screen_init);
+            screen_init = nullptr;
+            init_status_label = nullptr;
+        }
     }
 
     void setup() {
@@ -2407,11 +3005,15 @@ namespace LVGL_UI {
         // Create the UI
         create_dashboard();
 
-        // Delete splash screen now that main screen is loaded
+        // Clean up any remaining init screens
         if (screen_splash) {
             lv_obj_del(screen_splash);
             screen_splash = nullptr;
-            Serial.println("[LVGL] Splash screen deleted");
+        }
+        if (screen_init) {
+            lv_obj_del(screen_init);
+            screen_init = nullptr;
+            init_status_label = nullptr;
         }
 
         // Force initial refresh
@@ -2773,6 +3375,65 @@ namespace LVGL_UI {
         lv_timer_set_repeat_count(wifi_eco_timer, 1);
 
         Serial.println("[LVGL] WiFi Eco msgbox created");
+    }
+
+    // Caps Lock popup
+    static lv_obj_t* capslock_msgbox = nullptr;
+    static lv_timer_t* capslock_timer = nullptr;
+
+    static void hide_capslock_popup(lv_timer_t* timer) {
+        if (capslock_msgbox && lv_obj_is_valid(capslock_msgbox)) {
+            lv_msgbox_close(capslock_msgbox);
+        }
+        capslock_msgbox = nullptr;
+        capslock_timer = nullptr;
+    }
+
+    void showCapsLockPopup(bool active) {
+        Serial.printf("[LVGL] showCapsLockPopup called: %s\n", active ? "ON" : "OFF");
+
+        // Check if LVGL UI is initialized
+        if (!screen_main) {
+            Serial.println("[LVGL] UI not initialized yet, skipping popup");
+            return;
+        }
+
+        // Close existing msgbox if any
+        if (capslock_msgbox && lv_obj_is_valid(capslock_msgbox)) {
+            lv_msgbox_close(capslock_msgbox);
+            capslock_msgbox = nullptr;
+        }
+        if (capslock_timer) {
+            lv_timer_del(capslock_timer);
+            capslock_timer = nullptr;
+        }
+
+        // Create message box on active screen
+        const char* title = active ? "MAJ" : "maj";
+        const char* msg = active ? "Caps Lock ON" : "Caps Lock OFF";
+        capslock_msgbox = lv_msgbox_create(lv_scr_act(), title, msg, NULL, false);
+        lv_obj_set_size(capslock_msgbox, 150, 70);
+        if (active) {
+            lv_obj_set_style_bg_color(capslock_msgbox, lv_color_hex(0x003300), 0);
+            lv_obj_set_style_border_color(capslock_msgbox, lv_color_hex(0x00ff00), 0);
+            lv_obj_set_style_text_color(capslock_msgbox, lv_color_hex(0x00ff00), 0);
+        } else {
+            lv_obj_set_style_bg_color(capslock_msgbox, lv_color_hex(0x333333), 0);
+            lv_obj_set_style_border_color(capslock_msgbox, lv_color_hex(0x888888), 0);
+            lv_obj_set_style_text_color(capslock_msgbox, lv_color_hex(0xaaaaaa), 0);
+        }
+        lv_obj_set_style_bg_opa(capslock_msgbox, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(capslock_msgbox, 2, 0);
+        lv_obj_center(capslock_msgbox);
+
+        // Force immediate refresh
+        lv_refr_now(NULL);
+
+        // Auto-close after 1.5 seconds
+        capslock_timer = lv_timer_create(hide_capslock_popup, 1500, NULL);
+        lv_timer_set_repeat_count(capslock_timer, 1);
+
+        Serial.println("[LVGL] Caps Lock popup created");
     }
 
     void handleComposeKeyboard(char key) {

@@ -85,6 +85,16 @@ int         messagesIterator        = 0;
 
 bool        showHumanHeading        = false;
 
+// Caps Lock detection via BBQ10 status register
+static bool         capsLockActive      = false;
+static bool         lastShiftState      = false;
+static uint32_t     lastShiftPressTime  = 0;
+static const uint32_t DOUBLE_TAP_MS     = 400;
+
+// BBQ10 Keyboard Registers
+static const uint8_t REG_KEY_STATUS     = 0x04;  // Key status register with modifier bits
+static const uint8_t REG_FIFO           = 0x09;  // Key FIFO register
+
 
 namespace KEYBOARD_Utils {
 
@@ -839,6 +849,28 @@ namespace KEYBOARD_Utils {
         }
     }
 
+    // Read BBQ10 key status register for modifier state
+    static uint8_t readKeyStatus() {
+        Wire.beginTransmission(keyboardAddress);
+        Wire.write(REG_KEY_STATUS);
+        Wire.endTransmission();
+        Wire.requestFrom(keyboardAddress, static_cast<uint8_t>(1));
+        if (Wire.available()) {
+            return Wire.read();
+        }
+        return 0;
+    }
+
+    // Check if Shift is currently pressed (bit 0 of key status)
+    static bool isShiftPressed() {
+        uint8_t status = readKeyStatus();
+        return (status & 0x01) != 0;  // Bit 0 = Shift modifier
+    }
+
+    bool isCapsLockActive() {
+        return capsLockActive;
+    }
+
     void read() {
         if (keyboardConnected) {
             uint32_t lastKey = millis() - keyboardTime;
@@ -847,9 +879,9 @@ namespace KEYBOARD_Utils {
             while (Wire.available()) {
                 char c = Wire.read();
                 if (c != 0) {
-                    //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
+                    Serial.printf("[KB] Key: %d (0x%02X) '%c'\n", c, c, (c >= 32 && c < 127) ? c : '?');
                     keyboardTime = millis();
-                    processPressedKey(c);      
+                    processPressedKey(c);
                 }
             }
         }

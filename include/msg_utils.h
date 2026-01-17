@@ -39,9 +39,11 @@ namespace MSG_Utils {
     void    loadNumMessages();
     std::vector<String>& getLoadedAPRSMessages();
     std::vector<String>& getLoadedWLNKMails();
+    std::vector<String> getMessagesForContact(const String& callsign);
     void    loadMessagesFromMemory(uint8_t typeOfMessage);
     void    ledNotification();
     void    deleteFile(uint8_t typeOfFile);
+    bool    deleteMessageByIndex(uint8_t typeOfMessage, int index);
     void    saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage);
     void    sendMessage(const String& station, const String& textMessage);
     void    addToOutputBuffer(uint8_t typeOfMessage, const String& station, const String& textMessage);

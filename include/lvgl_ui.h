@@ -11,6 +11,9 @@
 
 namespace LVGL_UI {
     void showSplashScreen(uint8_t loraIndex, const char* version);
+    void showInitScreen();                      // Show init screen with spinner
+    void updateInitStatus(const char* status);  // Update init status text
+    void hideInitScreen();                      // Hide init screen before dashboard
     void setup();
     void loop();
     void updateGPS(double lat, double lng, double alt, double speed, int sats);
@@ -25,6 +28,7 @@ namespace LVGL_UI {
     void showRxPacket(const char* packet);  // Display RX packet on screen (blue)
     void showWiFiEcoMode();  // Display WiFi eco mode popup
     void handleComposeKeyboard(char key);  // Handle physical keyboard for compose screen
+    void showCapsLockPopup(bool active);  // Display Caps Lock status popup
 }
 
 #endif // USE_LVGL_UI

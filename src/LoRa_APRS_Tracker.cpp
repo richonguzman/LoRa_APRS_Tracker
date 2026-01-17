@@ -146,6 +146,7 @@ void setup() {
     STATION_Utils::nearStationInit();
     #ifdef USE_LVGL_UI
         LVGL_UI::showSplashScreen(loraIndex, versionDate.c_str());
+        LVGL_UI::showInitScreen();
     #else
         startupScreen(loraIndex, versionDate);
     #endif
@@ -153,11 +154,17 @@ void setup() {
     // WiFi/BLE coexistence: WiFi first, then BLE
     // Start WiFi if configured (modem sleep enabled for coexistence)
     if (Config.wifiAPs.size() > 0 && Config.wifiAPs[0].ssid != "") {
+        #ifdef USE_LVGL_UI
+            LVGL_UI::updateInitStatus("WiFi...");
+        #endif
         WIFI_Utils::setup();
     }
 
     // Then start BLE if active
     if (bluetoothActive) {
+        #ifdef USE_LVGL_UI
+            LVGL_UI::updateInitStatus("Bluetooth...");
+        #endif
         if (Config.bluetooth.useBLE) {
             BLE_Utils::setup();
         } else {
@@ -167,9 +174,20 @@ void setup() {
         }
     }
 
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("Storage...");
+    #endif
     STORAGE_Utils::setup();
     MSG_Utils::loadNumMessages();
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("GPS...");
+    #endif
     GPS_Utils::setup();
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("LoRa...");
+    #endif
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
     Utils::i2cScannerForPeripherals();
@@ -189,7 +207,9 @@ void setup() {
     #endif
 
     #ifdef USE_LVGL_UI
-        LVGL_UI::setup();  // LVGL handles its own touch
+        LVGL_UI::updateInitStatus("Ready!");
+        delay(500);
+        LVGL_UI::setup();  // LVGL handles its own touch - also cleans up init screens
     #endif
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());

@@ -23,6 +23,13 @@
 #include <FS.h>
 #include <vector>
 
+// Contact structure
+struct Contact {
+    String callsign;
+    String name;
+    String comment;
+};
+
 namespace STORAGE_Utils {
 
     void    setup();
@@ -49,6 +56,15 @@ namespace STORAGE_Utils {
     String  getStorageType();
     uint64_t getUsedBytes();
     uint64_t getTotalBytes();
+
+    // Contacts management
+    std::vector<Contact> loadContacts();
+    bool saveContacts(const std::vector<Contact>& contacts);
+    bool addContact(const Contact& contact);
+    bool removeContact(const String& callsign);
+    bool updateContact(const String& callsign, const Contact& newData);
+    Contact* findContact(const String& callsign);
+    int getContactCount();
 
 }
 
