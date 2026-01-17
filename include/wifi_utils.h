@@ -30,6 +30,8 @@ namespace WIFI_Utils {
     void setup();
     bool isConnected();
     String getStatusLine();
+    bool startAPModeNonBlocking();
+    String getAPName();
 
 }
 

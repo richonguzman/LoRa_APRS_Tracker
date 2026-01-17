@@ -57,6 +57,7 @@ ____________________________________________________________________*/
 #include "menu_utils.h"
 #include "lora_utils.h"
 #include "wifi_utils.h"
+#include "storage_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "aprs_is_utils.h"
@@ -143,7 +144,9 @@ void setup() {
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
-    #ifndef USE_LVGL_UI
+    #ifdef USE_LVGL_UI
+        LVGL_UI::showSplashScreen(loraIndex, versionDate.c_str());
+    #else
         startupScreen(loraIndex, versionDate);
     #endif
 
@@ -164,6 +167,7 @@ void setup() {
         }
     }
 
+    STORAGE_Utils::setup();
     MSG_Utils::loadNumMessages();
     GPS_Utils::setup();
     currentLoRaType = &Config.loraTypes[loraIndex];
@@ -246,6 +250,7 @@ void loop() {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::sendToPhone(packet.text.substring(3));
             BLE_Utils::sendToLoRa();
+            BLE_Utils::tryReadDeviceName();  // Try to read device name after connection
         } else {
             #ifdef HAS_BT_CLASSIC
                 BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));

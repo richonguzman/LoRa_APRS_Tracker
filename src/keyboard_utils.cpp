@@ -31,6 +31,9 @@
 #include "msg_utils.h"
 #include "display.h"
 #include "utils.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 
 extern Configuration    Config;
@@ -611,6 +614,12 @@ namespace KEYBOARD_Utils {
     void processPressedKey(char key) {
         keyDetected = true;
         menuTime = millis();
+
+        // Forward key to LVGL compose screen if active
+        #ifdef USE_LVGL_UI
+            LVGL_UI::handleComposeKeyboard(key);
+        #endif
+
         /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
         if (!displayState) {
             displayToggle(true);

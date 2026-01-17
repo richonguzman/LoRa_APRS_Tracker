@@ -20,6 +20,7 @@
 #define MSG_UTILS_H_
 
 #include <Arduino.h>
+#include <vector>
 #include "lora_utils.h"
 
 struct Packet15SegBuffer {
@@ -36,6 +37,8 @@ namespace MSG_Utils {
     int     getNumAPRSMessages();
     int     getNumWLNKMails();
     void    loadNumMessages();
+    std::vector<String>& getLoadedAPRSMessages();
+    std::vector<String>& getLoadedWLNKMails();
     void    loadMessagesFromMemory(uint8_t typeOfMessage);
     void    ledNotification();
     void    deleteFile(uint8_t typeOfFile);

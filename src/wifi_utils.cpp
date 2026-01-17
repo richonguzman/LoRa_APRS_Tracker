@@ -23,13 +23,15 @@
 #include "wifi_utils.h"
 #include "web_utils.h"
 #include "display.h"
+#include "lvgl_ui.h"
 
 extern Configuration        Config;
 extern logging::Logger      logger;
 
 bool        WiFiConnected           = false;
 bool        WiFiStationMode         = false;
-bool        WiFiEcoMode             = false;    // WiFi sleeping, waiting for retry
+bool        WiFiEcoMode             = false;    // WiFi sleeping, waiting for retry (network unavailable)
+bool        WiFiUserDisabled        = false;    // User manually disabled WiFi (no retry)
 uint32_t    noClientsTime           = 0;
 uint32_t    previousWiFiMillis      = 0;
 uint32_t    lastWiFiDebug           = 0;
@@ -43,6 +45,11 @@ namespace WIFI_Utils {
     bool tryConnectToNetwork(const WiFi_AP& network);
 
     void checkWiFi() {
+        // User disabled WiFi manually - do nothing
+        if (WiFiUserDisabled) {
+            return;
+        }
+
         // Eco mode: WiFi is off, waiting for periodic retry
         if (WiFiEcoMode && WiFiStationMode) {
             uint32_t elapsed = millis() - lastWiFiRetry;
@@ -92,10 +99,7 @@ namespace WIFI_Utils {
     }
 
     void startBlockingWebConfig() {
-        String apName = "LoRaTracker-AP";
-        if (Config.beacons.size() > 0 && Config.beacons[0].callsign != "NOCALL-7") {
-            apName = Config.beacons[0].callsign + "-AP";
-        }
+        String apName = "LoRa-Tracker-AP";
 
         displayShow(" LoRa APRS", "    ** WEB-CONF **", "", "WiFiAP: " + apName, "IP    : 192.168.4.1", "", 0);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
@@ -186,7 +190,11 @@ namespace WIFI_Utils {
             WiFiEcoMode = true;
             lastWiFiRetry = millis();
             Serial.println("\nNot connected to WiFi! Entering eco mode, retry in 30 min");
-            displayShow("", " WiFi Eco Mode", "  Retry in 30 min", "", "", "", 1000);
+            #ifdef USE_LVGL_UI
+                LVGL_UI::showWiFiEcoMode();
+            #else
+                displayShow("", " WiFi Eco Mode", "  Retry in 1 min", "", "", "", 1000);
+            #endif
             // Proper WiFi shutdown
             esp_wifi_stop();
         }
@@ -211,6 +219,39 @@ namespace WIFI_Utils {
 
     bool isConnected() {
         return WiFiConnected;
+    }
+
+    // Non-blocking AP mode for LVGL UI
+    bool startAPModeNonBlocking() {
+        String apName = "LoRa-Tracker-AP";
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "WiFi", "Starting AP Mode: %s", apName.c_str());
+
+        // Stop any existing WiFi connection
+        WiFi.disconnect(true);
+        delay(100);
+
+        // Configure AP mode
+        WiFi.mode(WIFI_MODE_NULL);
+        delay(100);
+        WiFi.mode(WIFI_AP);
+        delay(100);
+
+        bool success = WiFi.softAP(apName.c_str(), Config.wifiAutoAP.password);
+        if (success) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "WiFi", "AP Started - IP: %s", WiFi.softAPIP().toString().c_str());
+            WEB_Utils::setup();
+            WiFiConnected = false;
+            WiFiStationMode = false;
+            return true;
+        } else {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "WiFi", "Failed to start AP");
+            return false;
+        }
+    }
+
+    String getAPName() {
+        return "LoRa-Tracker-AP";
     }
 
     String getStatusLine() {

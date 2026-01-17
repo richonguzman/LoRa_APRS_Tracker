@@ -10,6 +10,7 @@
 #include <lvgl.h>
 
 namespace LVGL_UI {
+    void showSplashScreen(uint8_t loraIndex, const char* version);
     void setup();
     void loop();
     void updateGPS(double lat, double lng, double alt, double speed, int sats);
@@ -20,7 +21,10 @@ namespace LVGL_UI {
     void updateCallsign(const char* callsign);
     void updateTime(int day, int month, int year, int hour, int minute, int second);
     void showMessage(const char* from, const char* message);
-    void showTxPacket(const char* packet);  // Display TX packet on screen
+    void showTxPacket(const char* packet);  // Display TX packet on screen (green)
+    void showRxPacket(const char* packet);  // Display RX packet on screen (blue)
+    void showWiFiEcoMode();  // Display WiFi eco mode popup
+    void handleComposeKeyboard(char key);  // Handle physical keyboard for compose screen
 }
 
 #endif // USE_LVGL_UI
