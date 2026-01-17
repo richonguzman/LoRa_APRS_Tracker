@@ -17,12 +17,16 @@
  */
 
 #include <NimBLEDevice.h>
+#include <esp_wifi.h>
 #include "configuration.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "ble_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 #define BLE_CHUNK_SIZE  512
 #define MAX_KISS_BUFFER 1024
@@ -51,19 +55,44 @@ extern bool             bluetoothActive;
 bool    shouldSendBLEtoLoRa     = false;
 String  BLEToLoRaPacket         = "";
 String  kissSerialBuffer        = "";
-
+String  bleConnectedDeviceAddr  = "";  // Connected device MAC address
+String  bleConnectedDeviceName  = "";  // Connected device name (from GAP)
+bool    bleNeedToReadName       = false;  // Flag to read name after connection
+NimBLEAddress bleConnectedPeerAddr;  // Peer address for client connection
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = true;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
-        delay(100);
+    }
+
+    void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
+        bluetoothConnected = true;
+        // Get connected device MAC address from connection descriptor
+        bleConnectedPeerAddr = NimBLEAddress(desc->peer_ota_addr);
+        bleConnectedDeviceAddr = bleConnectedPeerAddr.toString().c_str();
+        bleConnectedDeviceName = "";  // Will be read later
+        bleNeedToReadName = true;  // Signal to read name in loop
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
     void onDisconnect(NimBLEServer* pServer) {
         bluetoothConnected = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
-        delay(100);
+        bleConnectedDeviceAddr = "";
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = false;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected");
+        pServer->startAdvertising();
+    }
+
+    void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc, int reason) {
+        bluetoothConnected = false;
+        bleConnectedDeviceAddr = "";
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = false;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE client Disconnected (reason: %d)", reason);
         pServer->startAdvertising();
     }
 };
@@ -135,8 +164,12 @@ namespace BLE_Utils {
     }
 
     void setup() {
+        // Ensure WiFi modem sleep is enabled for WiFi/BLE coexistence
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+
         String BLEid = Config.bluetooth.deviceName;
-        BLEDevice::init(BLEid.c_str()); 
+        BLEDevice::init(BLEid.c_str());
+        BLEDevice::setPower(ESP_PWR_LVL_P3);  // Moderate power for coexistence
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
@@ -169,7 +202,11 @@ namespace BLE_Utils {
         if (!shouldSendBLEtoLoRa) return;
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
-        displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::showTxPacket(BLEToLoRaPacket.c_str());
+        #else
+            displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
+        #endif
         LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
         BLEToLoRaPacket = "";
         shouldSendBLEtoLoRa = false;
@@ -211,6 +248,23 @@ namespace BLE_Utils {
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
             txToPhoneOverBLE(receivedPacketString);
         }
+    }
+
+    String getConnectedDeviceAddress() {
+        return bleConnectedDeviceAddr;
+    }
+
+    String getConnectedDeviceName() {
+        return bleConnectedDeviceName;
+    }
+
+    // Try to read the device name from the connected peer
+    // Note: Most smartphones don't allow reverse client connections, so this usually fails
+    // Keeping the function but it's essentially a no-op for now
+    void tryReadDeviceName() {
+        // Disabled - smartphones typically don't expose their GAP service to peripherals
+        // The MAC address will be displayed instead
+        bleNeedToReadName = false;
     }
 
 }

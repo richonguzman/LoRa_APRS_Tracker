@@ -27,9 +27,11 @@ namespace KEYBOARD_Utils {
     void downArrow();
     void leftArrow();
     void rightArrow();
-    
+
     void processPressedKey(char key);
     void read();
+
+    bool isCapsLockActive();
 
     void setup();
 

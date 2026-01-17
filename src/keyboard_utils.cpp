@@ -31,6 +31,9 @@
 #include "msg_utils.h"
 #include "display.h"
 #include "utils.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 
 extern Configuration    Config;
@@ -82,6 +85,16 @@ int         messagesIterator        = 0;
 
 bool        showHumanHeading        = false;
 
+// Caps Lock detection via BBQ10 status register
+static bool         capsLockActive      = false;
+static bool         lastShiftState      = false;
+static uint32_t     lastShiftPressTime  = 0;
+static const uint32_t DOUBLE_TAP_MS     = 400;
+
+// BBQ10 Keyboard Registers
+static const uint8_t REG_KEY_STATUS     = 0x04;  // Key status register with modifier bits
+static const uint8_t REG_FIFO           = 0x09;  // Key FIFO register
+
 
 namespace KEYBOARD_Utils {
 
@@ -97,18 +110,36 @@ namespace KEYBOARD_Utils {
             if (menuDisplay < 130) menuDisplay = 133;
         }
 
-        else if (menuDisplay >= 20 && menuDisplay <= 27) {
-            menuDisplay--;
-            if (menuDisplay < 20) menuDisplay = 27;
+        else if ((menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215) {
+            if (menuDisplay == 22) {
+                menuDisplay = 215;
+            } else if (menuDisplay == 215) {
+                menuDisplay = 21;
+            } else {
+                menuDisplay--;
+                if (menuDisplay < 20) menuDisplay = 27;
+            }
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay--;
             if (menuDisplay < 220) menuDisplay = 221;
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay--;
+            if (menuDisplay < 2100) menuDisplay = 2103;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
             menuDisplay--;
             if (menuDisplay < 2210) menuDisplay = 2212;
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay--;
+            if (menuDisplay < 21500) menuDisplay = 21505;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
+        } else if (menuDisplay >= 250 && menuDisplay <= 251) {
+            menuDisplay--;
+            if (menuDisplay < 250) menuDisplay = 251;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay--;
+            if (menuDisplay < 2510) menuDisplay = 2514;
         }
         
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
@@ -183,18 +214,36 @@ namespace KEYBOARD_Utils {
             menuDisplay = 11;
         }
         
-        else if (menuDisplay >= 20 && menuDisplay <= 27) {
-        menuDisplay++;
-        if (menuDisplay > 27) menuDisplay = 20;
+        else if ((menuDisplay >= 20 && menuDisplay <= 27) || menuDisplay == 215) {
+            if (menuDisplay == 21) {
+                menuDisplay = 215;
+            } else if (menuDisplay == 215) {
+                menuDisplay = 22;
+            } else {
+                menuDisplay++;
+                if (menuDisplay > 27) menuDisplay = 20;
+            }
         } else if (menuDisplay >= 220 && menuDisplay <= 221) {
             menuDisplay++;
             if (menuDisplay > 221) menuDisplay = 220;
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay++;
+            if (menuDisplay > 2103) menuDisplay = 2100;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
             menuDisplay++;
             if (menuDisplay > 2212) menuDisplay = 2210;
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay++;
+            if (menuDisplay > 21505) menuDisplay = 21500;
         } else if (menuDisplay >= 240 && menuDisplay <= 241) {
             menuDisplay++;
             if (menuDisplay > 241) menuDisplay = 240;
+        } else if (menuDisplay >= 250 && menuDisplay <= 251) {
+            menuDisplay++;
+            if (menuDisplay > 251) menuDisplay = 250;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay++;
+            if (menuDisplay > 2514) menuDisplay = 2510;
         }
 
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
@@ -263,7 +312,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            menuDisplay = 21;  // Back from frequency selection
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            menuDisplay = 215;  // Back from speed selection
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=2510 && menuDisplay<=2514) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -324,6 +377,10 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
+        } else if (menuDisplay == 21) {
+            menuDisplay = 2100;  // Enter Frequency selection menu
+        } else if (menuDisplay == 215) {
+            menuDisplay = 21500;  // Enter Speed selection menu
         } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
@@ -360,13 +417,17 @@ namespace KEYBOARD_Utils {
             #endif
         }
 
-        else if (menuDisplay == 210) {
-            LoRa_Utils::changeFreq();
-            STATION_Utils::saveIndex(1, loraIndex);
-            menuDisplay = 21;
+        else if (menuDisplay >= 2100 && menuDisplay <= 2103) {
+            // Request frequency change (safe from ISR) - menuDisplay change handled in processPendingChanges()
+            int newLoraIndex = menuDisplay - 2100;  // 2100=0(EU), 2101=1(PL), 2102=2(UK), 2103=3(US)
+            LoRa_Utils::requestFrequencyChange(newLoraIndex);  // Always request, even if same
+        } else if (menuDisplay >= 21500 && menuDisplay <= 21505) {
+            // Request data rate change (safe from ISR) - menuDisplay change handled in processPendingChanges()
+            const int dataRates[] = {300, 244, 209, 183, 610, 1200};
+            int index = menuDisplay - 21500;
+            LoRa_Utils::requestDataRateChange(dataRates[index]);
         } else if (menuDisplay == 220) {
             displayEcoMode = !displayEcoMode;
-            displayShow(" DISPLAY", "", displayEcoMode ? "   ECO MODE -> ON" : "   ECO MODE -> OFF", 1000);
         } else if (menuDisplay == 221) {
             menuDisplay = 2210;
         } else if (menuDisplay >= 2210 && menuDisplay <= 2212) {
@@ -411,7 +472,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 241) {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
-            displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
+            menuDisplay = 2500;  // Trigger action in menu_utils
+        } else if (menuDisplay == 251) {
+            menuDisplay = 2510;
+        } else if (menuDisplay >= 2510 && menuDisplay <= 2514) {
+            menuDisplay = 25100 + (menuDisplay - 2510);  // Trigger action in menu_utils (25100-25104)
         } else if (menuDisplay == 270) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                 displayShow("", "", "    POWER OFF ...", 2000);
@@ -550,7 +615,7 @@ namespace KEYBOARD_Utils {
             POWER_Utils::shutdown();
         } else if (menuDisplay == 9001) {
             displayShow("", "", "  STARTING WiFi AP", 2000);
-            Config.wifiAP.active = true;
+            Config.wifiAutoAP.active = true;
             Config.writeFile();
             ESP.restart();
         }
@@ -559,6 +624,12 @@ namespace KEYBOARD_Utils {
     void processPressedKey(char key) {
         keyDetected = true;
         menuTime = millis();
+
+        // Forward key to LVGL compose screen if active
+        #ifdef USE_LVGL_UI
+            LVGL_UI::handleComposeKeyboard(key);
+        #endif
+
         /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
         if (!displayState) {
             displayToggle(true);
@@ -778,6 +849,28 @@ namespace KEYBOARD_Utils {
         }
     }
 
+    // Read BBQ10 key status register for modifier state
+    static uint8_t readKeyStatus() {
+        Wire.beginTransmission(keyboardAddress);
+        Wire.write(REG_KEY_STATUS);
+        Wire.endTransmission();
+        Wire.requestFrom(keyboardAddress, static_cast<uint8_t>(1));
+        if (Wire.available()) {
+            return Wire.read();
+        }
+        return 0;
+    }
+
+    // Check if Shift is currently pressed (bit 0 of key status)
+    static bool isShiftPressed() {
+        uint8_t status = readKeyStatus();
+        return (status & 0x01) != 0;  // Bit 0 = Shift modifier
+    }
+
+    bool isCapsLockActive() {
+        return capsLockActive;
+    }
+
     void read() {
         if (keyboardConnected) {
             uint32_t lastKey = millis() - keyboardTime;
@@ -786,9 +879,9 @@ namespace KEYBOARD_Utils {
             while (Wire.available()) {
                 char c = Wire.read();
                 if (c != 0) {
-                    //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
+                    Serial.printf("[KB] Key: %d (0x%02X) '%c'\n", c, c, (c >= 32 && c < 127) ? c : '?');
                     keyboardTime = millis();
-                    processPressedKey(c);      
+                    processPressedKey(c);
                 }
             }
         }

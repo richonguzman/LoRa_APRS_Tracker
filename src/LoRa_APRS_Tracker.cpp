@@ -57,8 +57,10 @@ ____________________________________________________________________*/
 #include "menu_utils.h"
 #include "lora_utils.h"
 #include "wifi_utils.h"
+#include "storage_utils.h"
 #include "msg_utils.h"
 #include "gps_utils.h"
+#include "aprs_is_utils.h"
 #include "web_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
@@ -66,6 +68,9 @@ ____________________________________________________________________*/
 #include "utils.h"
 #ifdef HAS_TOUCHSCREEN
 #include "touch_utils.h"
+#endif
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
 #endif
 
 
@@ -134,24 +139,32 @@ void setup() {
     displaySetup();
     POWER_Utils::externalPinSetup();
 
+    POWER_Utils::lowerCpuFrequency();
+
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
-    startupScreen(loraIndex, versionDate);
+    #ifdef USE_LVGL_UI
+        LVGL_UI::showSplashScreen(loraIndex, versionDate.c_str());
+        LVGL_UI::showInitScreen();
+    #else
+        startupScreen(loraIndex, versionDate);
+    #endif
 
-    WIFI_Utils::checkIfWiFiAP();
+    // WiFi/BLE coexistence: WiFi first, then BLE
+    // Start WiFi if configured (modem sleep enabled for coexistence)
+    if (Config.wifiAPs.size() > 0 && Config.wifiAPs[0].ssid != "") {
+        #ifdef USE_LVGL_UI
+            LVGL_UI::updateInitStatus("WiFi...");
+        #endif
+        WIFI_Utils::setup();
+    }
 
-    MSG_Utils::loadNumMessages();
-    GPS_Utils::setup();
-    currentLoRaType = &Config.loraTypes[loraIndex];
-    LoRa_Utils::setup();
-    Utils::i2cScannerForPeripherals();
-    WX_Utils::setup();
-
-    WiFi.mode(WIFI_OFF);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
-
+    // Then start BLE if active
     if (bluetoothActive) {
+        #ifdef USE_LVGL_UI
+            LVGL_UI::updateInitStatus("Bluetooth...");
+        #endif
         if (Config.bluetooth.useBLE) {
             BLE_Utils::setup();
         } else {
@@ -161,6 +174,25 @@ void setup() {
         }
     }
 
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("Storage...");
+    #endif
+    STORAGE_Utils::setup();
+    MSG_Utils::loadNumMessages();
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("GPS...");
+    #endif
+    GPS_Utils::setup();
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("LoRa...");
+    #endif
+    currentLoRaType = &Config.loraTypes[loraIndex];
+    LoRa_Utils::setup();
+    Utils::i2cScannerForPeripherals();
+    WX_Utils::setup();
+
     #ifdef BUTTON_PIN
         BUTTON_Utils::setup();
     #endif
@@ -169,11 +201,25 @@ void setup() {
     #endif
     KEYBOARD_Utils::setup();
     #ifdef HAS_TOUCHSCREEN
-        TOUCH_Utils::setup();
+        #ifndef USE_LVGL_UI
+            TOUCH_Utils::setup();  // Only use old touch when LVGL not active
+        #endif
     #endif
 
-    POWER_Utils::lowerCpuFrequency();
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("Ready!");
+        delay(500);
+        LVGL_UI::setup();  // LVGL handles its own touch - also cleans up init screens
+    #endif
+
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+
+    // Memory stats
+    #ifdef BOARD_HAS_PSRAM
+        Serial.printf("[Memory] PSRAM: %u KB total, %u KB free\n", ESP.getPsramSize()/1024, ESP.getFreePsram()/1024);
+    #endif
+    Serial.printf("[Memory] Heap: %u KB total, %u KB free\n", ESP.getHeapSize()/1024, ESP.getFreeHeap()/1024);
+
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
 }
@@ -195,6 +241,8 @@ void loop() {
 
     BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
+    WIFI_Utils::checkWiFi();
+    APRS_IS_Utils::checkConnection();
 
     #ifdef BUTTON_PIN
         BUTTON_Utils::loop();
@@ -204,8 +252,13 @@ void loop() {
         JOYSTICK_Utils::loop();
     #endif
     #ifdef HAS_TOUCHSCREEN
-        TOUCH_Utils::loop();
+        #ifndef USE_LVGL_UI
+            TOUCH_Utils::loop();
+        #endif
     #endif
+
+    // Traiter les changements de configuration LoRa pendants (depuis ISR)
+    LoRa_Utils::processPendingChanges();
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
@@ -217,6 +270,7 @@ void loop() {
         if (Config.bluetooth.useBLE) {
             BLE_Utils::sendToPhone(packet.text.substring(3));
             BLE_Utils::sendToLoRa();
+            BLE_Utils::tryReadDeviceName();  // Try to read device name after connection
         } else {
             #ifdef HAS_BT_CLASSIC
                 BLUETOOTH_Utils::sendToPhone(packet.text.substring(3));
@@ -251,7 +305,9 @@ void loop() {
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
             GPS_Utils::checkStartUpFrames();
-            MENU_Utils::showOnScreen();
+            #ifndef USE_LVGL_UI
+                MENU_Utils::showOnScreen();
+            #endif
             refreshDisplayTime = millis();
         }
         SLEEP_Utils::checkIfGPSShouldSleep();
@@ -261,8 +317,16 @@ void loop() {
         }
         STATION_Utils::checkStandingUpdateTime();
         if (millis() - refreshDisplayTime >= 1000) {
-            MENU_Utils::showOnScreen();
+            #ifndef USE_LVGL_UI
+                MENU_Utils::showOnScreen();
+            #endif
             refreshDisplayTime = millis();
         }
     }
+
+    #ifdef USE_LVGL_UI
+        LVGL_UI::loop();
+    #endif
+
+    yield();
 }

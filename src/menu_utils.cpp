@@ -20,6 +20,7 @@
 #include <TinyGPS++.h>
 #include <vector>
 #include "notification_utils.h"
+#include "wifi_utils.h"
 #include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
@@ -30,6 +31,7 @@
 #include "msg_utils.h"
 #include "gps_utils.h"
 #include "wx_utils.h"
+#include "lora_utils.h"
 #include "display.h"
 #include "utils.h"
 
@@ -350,10 +352,13 @@ namespace MENU_Utils {
                 displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                displayShow(" CONFIG>", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                displayShow(" CONFIG>", "  Change Callsign ", "> Change Frequency", "  Change Speed", "  Display",lastLine);
+                break;
+            case 215:   // 2.Configuration ---> Change Speed
+                displayShow(" CONFIG>", "  Change Frequency", "> Change Speed", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                displayShow(" CONFIG>", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                displayShow(" CONFIG>", "  Change Speed", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
                 displayShow(" CONFIG>", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
@@ -376,14 +381,36 @@ namespace MENU_Utils {
                 displayShow(" CALLSIGN>", "","  Confirm Change?","","","<Back         Select>");
                 break;
 
-            case 210:   // 2.Configuration ---> Change Frequency
-                switch (loraIndex) {
-                    case 0: freqChangeWarning = "      EU --> PL"; break;
-                    case 1: freqChangeWarning = "      PL --> UK"; break;
-                    case 2: freqChangeWarning = "      UK --> US"; break;
-                    case 3: freqChangeWarning = "      US --> EU"; break;
-                }
-                displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
+            case 2100:   // 2.Configuration ---> Change Frequency: EU
+                displayShow("FREQUENCY", "", "> EU  433.775 MHz", "  PL  434.855 MHz", "  UK  439.913 MHz", lastLine);
+                break;
+            case 2101:   // 2.Configuration ---> Change Frequency: PL
+                displayShow("FREQUENCY", "", "  EU  433.775 MHz", "> PL  434.855 MHz", "  UK  439.913 MHz", lastLine);
+                break;
+            case 2102:   // 2.Configuration ---> Change Frequency: UK
+                displayShow("FREQUENCY", "", "  PL  434.855 MHz", "> UK  439.913 MHz", "  US  915.000 MHz", lastLine);
+                break;
+            case 2103:   // 2.Configuration ---> Change Frequency: US
+                displayShow("FREQUENCY", "", "  UK  439.913 MHz", "> US  915.000 MHz", "  EU  433.775 MHz", lastLine);
+                break;
+
+            case 21500:   // 2.Configuration ---> Change Speed: 300 bps
+                displayShow("DATA RATE", "", "> 300bps  (SF12,CR5)", "  244bps  (SF12,CR6)", "  209bps  (SF12,CR7)", lastLine);
+                break;
+            case 21501:   // 2.Configuration ---> Change Speed: 244 bps
+                displayShow("DATA RATE", "", "  300bps  (SF12,CR5)", "> 244bps  (SF12,CR6)", "  209bps  (SF12,CR7)", lastLine);
+                break;
+            case 21502:   // 2.Configuration ---> Change Speed: 209 bps
+                displayShow("DATA RATE", "", "  244bps  (SF12,CR6)", "> 209bps  (SF12,CR7)", "  183bps  (SF12,CR8)", lastLine);
+                break;
+            case 21503:   // 2.Configuration ---> Change Speed: 183 bps
+                displayShow("DATA RATE", "", "  209bps  (SF12,CR7)", "> 183bps  (SF12,CR8)", "  610bps  (SF10,CR8)", lastLine);
+                break;
+            case 21504:   // 2.Configuration ---> Change Speed: 610 bps
+                displayShow("DATA RATE", "", "  183bps  (SF12,CR8)", "> 610bps  (SF10,CR8)", "  1200bps (SF9,CR7)", lastLine);
+                break;
+            case 21505:   // 2.Configuration ---> Change Speed: 1200 bps
+                displayShow("DATA RATE", "", "  610bps  (SF10,CR8)", "> 1200bps (SF9,CR7)", "  300bps  (SF12,CR5)", lastLine);
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
@@ -406,11 +433,14 @@ namespace MENU_Utils {
             case 230:
                 if (bluetoothActive) {
                     bluetoothActive = false;
-                    displayShow("BLUETOOTH>", "", " Bluetooth --> OFF", 1000);
+                    Config.bluetooth.active = false;
+                    displayShow("BLUETOOTH>", "", " Bluetooth --> OFF", "", "", "", 1500);
                 } else {
                     bluetoothActive = true;
-                    displayShow("BLUETOOTH>", "", " Bluetooth --> ON", 1000);
+                    Config.bluetooth.active = true;
+                    displayShow("BLUETOOTH>", "", " Bluetooth --> ON", " (WiFi+BLE coexist)", "", "", 1500);
                 }
+                Config.writeFile();
                 menuDisplay = 23;
                 break;
 
@@ -421,8 +451,57 @@ namespace MENU_Utils {
                 displayShow(" STATUS>", "", "  Write","> Select","",lastLine);
                 break;
 
-            case 250:    // 2.Configuration ---> Notifications
-                displayShow(" NOTIFIC>", "> Turn Off Sound/Led","","","",lastLine);
+            case 250:    // 2.Configuration ---> Notifications ---> Turn Off
+                displayShow(" NOTIFIC>", "> Turn Off Sound/Led","  Volume (" + String(Config.notification.volume) + "%)","","",lastLine);
+                break;
+            case 251:    // 2.Configuration ---> Notifications ---> Volume
+                displayShow(" NOTIFIC>", "  Turn Off Sound/Led","> Volume (" + String(Config.notification.volume) + "%)","","",lastLine);
+                break;
+            case 2510:   // 2.Configuration ---> Notifications ---> Volume: 0%
+                displayShow("  VOLUME>", "> 0%   (Mute)", "  25%", "  50%","  75%",lastLine);
+                break;
+            case 2511:   // 2.Configuration ---> Notifications ---> Volume: 25%
+                displayShow("  VOLUME>", "  0%   (Mute)", "> 25%", "  50%","  75%",lastLine);
+                break;
+            case 2512:   // 2.Configuration ---> Notifications ---> Volume: 50%
+                displayShow("  VOLUME>", "  25%", "> 50%", "  75%","  100%",lastLine);
+                break;
+            case 2513:   // 2.Configuration ---> Notifications ---> Volume: 75%
+                displayShow("  VOLUME>", "  50%", "> 75%", "  100%","  0%   (Mute)",lastLine);
+                break;
+            case 2514:   // 2.Configuration ---> Notifications ---> Volume: 100%
+                displayShow("  VOLUME>", "  75%", "> 100%", "  0%   (Mute)","  25%",lastLine);
+                break;
+
+            case 2500:  // 2.Configuration ---> Notifications ---> Toggle Sound (action)
+                if (Config.notification.buzzerActive) {
+                    Config.notification.buzzerActive = false;
+                    displayShow(" NOTIFIC", "", "Sound --> OFF", "", "", "", 1500);
+                } else {
+                    Config.notification.buzzerActive = true;
+                    displayShow(" NOTIFIC", "", "Sound --> ON", "", "", "", 1500);
+                    NOTIFICATION_Utils::beaconTxBeep();  // Test beep to confirm
+                }
+                Config.writeFile();
+                menuDisplay = 25;
+                break;
+
+            case 25100: // Volume 0%
+            case 25101: // Volume 25%
+            case 25102: // Volume 50%
+            case 25103: // Volume 75%
+            case 25104: // Volume 100%
+                {
+                    const int volumeLevels[] = {0, 25, 50, 75, 100};
+                    int index = menuDisplay - 25100;
+                    Config.notification.volume = volumeLevels[index];
+                    displayShow("  VOLUME", "", "Volume --> " + String(Config.notification.volume) + "%", "", "", "", 1500);
+                    if (Config.notification.volume > 0) {
+                        NOTIFICATION_Utils::beaconTxBeep();  // Test beep at new volume
+                    }
+                    Config.writeFile();
+                    menuDisplay = 251;
+                }
                 break;
 
             case 260:   // 2.Configuration ---> Reboot
@@ -727,12 +806,12 @@ namespace MENU_Utils {
                     }
                 }
 
+                const auto time_now = now();
                 if (disableGPS) {
                     secondRowMainMenu = "";
                     thirdRowMainMenu = "    LoRa APRS TNC";
                     fourthRowMainMenu = "";
                 } else {
-                    const auto time_now = now();
                     secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
                         thirdRowMainMenu = String(gps.location.lat(), 4);
@@ -740,13 +819,11 @@ namespace MENU_Utils {
                         thirdRowMainMenu += String(gps.location.lng(), 4);
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
-                        thirdRowMainMenu += " LoRa[";
-                        switch (loraIndex) {
-                            case 0: thirdRowMainMenu += "Eu]"; break;
-                            case 1: thirdRowMainMenu += "PL]"; break;
-                            case 2: thirdRowMainMenu += "UK]"; break;
-                            case 3: thirdRowMainMenu += "US]"; break;
-                        }
+                        thirdRowMainMenu += " ";
+
+                        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+                        int rate = Config.loraTypes[loraIndex].dataRate;
+                        thirdRowMainMenu += String(freq, 3) + "@" + String(rate);
                     }
                     
                     for (int i = thirdRowMainMenu.length(); i < 18; i++) {
@@ -812,7 +889,16 @@ namespace MENU_Utils {
                     }
                 }
 
-                if (showHumanHeading) {
+                String wifiStatus = WIFI_Utils::getStatusLine();
+                if (wifiStatus.length() > 0) {
+                    // Sync with GPS/locator alternation: GPS coords -> Last RX, Locator -> WiFi
+                    if (time_now % 10 < 5) {
+                        fifthRowMainMenu = "LAST Rx = ";
+                        fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
+                    } else {
+                        fifthRowMainMenu = wifiStatus;
+                    }
+                } else if (showHumanHeading) {
                     fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
                 } else {
                     fifthRowMainMenu = "LAST Rx = ";
@@ -878,12 +964,38 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected";
                 }
-                displayShow(firstRowMainMenu,
-                            secondRowMainMenu,
-                            thirdRowMainMenu,
-                            fourthRowMainMenu,
-                            fifthRowMainMenu,
-                            sixthRowMainMenu);
+                #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+                    // T-Deck: header already shows callsign, date/time, GPS coords, satellites
+                    // Main area shows: locator/freq, altitude/speed/course, Last RX, WiFi, battery, near station
+                    String locatorFreqRow;
+                    if (!disableGPS) {
+                        locatorFreqRow = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        locatorFreqRow += " ";
+                        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+                        int rate = Config.loraTypes[loraIndex].dataRate;
+                        locatorFreqRow += String(freq, 3) + "@" + String(rate);
+                    }
+                    String lastRxRow = "LAST Rx = ";
+                    lastRxRow += MSG_Utils::getLastHeardTracker();
+                    String nearStationRow = STATION_Utils::getNearStation(0);
+                    if (nearStationRow.length() > 0) {
+                        nearStationRow = "Near: " + nearStationRow;
+                    }
+                    String wifiRow = WIFI_Utils::getStatusLine();
+                    displayShow(locatorFreqRow,
+                                fourthRowMainMenu,
+                                lastRxRow,
+                                nearStationRow,
+                                wifiRow,
+                                sixthRowMainMenu);
+                #else
+                    displayShow(firstRowMainMenu,
+                                secondRowMainMenu,
+                                thirdRowMainMenu,
+                                fourthRowMainMenu,
+                                fifthRowMainMenu,
+                                sixthRowMainMenu);
+                #endif
                 break;
         }
     }

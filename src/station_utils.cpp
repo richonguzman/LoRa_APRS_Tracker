@@ -27,10 +27,14 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
+#include "aprs_is_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -211,31 +215,41 @@ namespace STATION_Utils {
         
         if (!shouldSleepLowVoltage) {
             String comment = (winlinkCommentState ? "winlink" : currentBeacon->comment);
+            if (comment == "") comment = "LoRa APRS Tracker";
             int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
 
             if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
                 #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                     String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(HAS_AXP192)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += batteryVoltage;
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "mA)";
                     #elif defined(HAS_AXP2101)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += String(batteryVoltage.toFloat(),2);
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "%)";
                     #endif
                 #elif defined(BATTERY_PIN)
-                    comment += " Bat=";
+                    comment += " Batt=";
                     comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V";
+                    comment += "V (";
                     comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
-                    comment += "%";
+                    comment += "%)";
                 #endif
+            }
+
+            // Add LoRa frequency and data rate info
+            if (Config.lora.sendInfo) {
+                comment += " ";
+                comment += String(Config.loraTypes[loraIndex].frequency / 1000000.0, 3);
+                comment += "MHz ";
+                comment += String(Config.loraTypes[loraIndex].dataRate);
+                comment += "bps";
             }
 
             if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
@@ -250,8 +264,17 @@ namespace STATION_Utils {
             packet += "**LowVoltagePowerOff**";
         }
 
-        displayShow("<<< TX >>>", "", packet, 100);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::showTxPacket(packet.c_str());
+        #else
+            displayShow("<<< TX >>>", "", packet, 100);
+        #endif
         LoRa_Utils::sendNewPacket(packet);
+
+        // Upload to APRS-IS if connected
+        if (APRS_IS_Utils::isConnected()) {
+            APRS_IS_Utils::upload(packet);
+        }
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
