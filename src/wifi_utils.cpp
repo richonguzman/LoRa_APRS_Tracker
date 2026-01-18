@@ -200,21 +200,32 @@ namespace WIFI_Utils {
         }
     }
 
+    bool needsWebConfig() {
+        return (Config.wifiAutoAP.active ||
+                Config.beacons[0].callsign == "NOCALL-7" ||
+                Config.wifiAPs.size() == 0 ||
+                Config.wifiAPs[0].ssid == "");
+    }
+
     void setup() {
         // btStop() removed for WiFi/BLE coexistence
         // Modem sleep (WIFI_PS_MIN_MODEM) is enabled after connection
 
-        // Mode web-conf bloquant si activé, callsign NOCALL, ou pas de réseau WiFi configuré
-        if (Config.wifiAutoAP.active ||
-            Config.beacons[0].callsign == "NOCALL-7" ||
-            Config.wifiAPs.size() == 0 ||
-            Config.wifiAPs[0].ssid == "") {
-            startBlockingWebConfig();
-            // Ne revient jamais ici - reboot après config
-        }
-
-        // Mode Station: connexion au réseau WiFi configuré
-        startStationMode();
+        #ifdef USE_LVGL_UI
+            // Pour LVGL, on laisse le main gérer le web-conf après init LVGL
+            if (!needsWebConfig()) {
+                startStationMode();
+            }
+            // Si needsWebConfig(), le main affichera l'écran LVGL web-conf
+        #else
+            // Mode web-conf bloquant si activé, callsign NOCALL, ou pas de réseau WiFi configuré
+            if (needsWebConfig()) {
+                startBlockingWebConfig();
+                // Ne revient jamais ici - reboot après config
+            }
+            // Mode Station: connexion au réseau WiFi configuré
+            startStationMode();
+        #endif
     }
 
     bool isConnected() {

@@ -28,6 +28,7 @@ namespace WIFI_Utils {
     void startBlockingWebConfig();
     void startStationMode();
     void setup();
+    bool needsWebConfig();
     bool isConnected();
     String getStatusLine();
     bool startAPModeNonBlocking();

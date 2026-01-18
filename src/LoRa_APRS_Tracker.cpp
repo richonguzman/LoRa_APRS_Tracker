@@ -131,12 +131,20 @@ extern bool gpsIsActive;
 void setup() {
     Serial.begin(115200);
 
+    // Turn off backlight immediately to avoid garbage display during init
+    #if defined(USE_LVGL_UI) && defined(BOARD_BL_PIN)
+        pinMode(BOARD_BL_PIN, OUTPUT);
+        digitalWrite(BOARD_BL_PIN, LOW);
+    #endif
+
     #ifndef DEBUG
         logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();
-    displaySetup();
+    #ifndef USE_LVGL_UI
+        displaySetup();  // Skip for LVGL - it does its own TFT init
+    #endif
     POWER_Utils::externalPinSetup();
 
     POWER_Utils::lowerCpuFrequency();
@@ -152,13 +160,14 @@ void setup() {
     #endif
 
     // WiFi/BLE coexistence: WiFi first, then BLE
-    // Start WiFi if configured (modem sleep enabled for coexistence)
-    if (Config.wifiAPs.size() > 0 && Config.wifiAPs[0].ssid != "") {
-        #ifdef USE_LVGL_UI
-            LVGL_UI::updateInitStatus("WiFi...");
-        #endif
-        WIFI_Utils::setup();
-    }
+    // Start WiFi setup - will enter blocking web-conf mode if:
+    // - NOCALL callsign (fresh install)
+    // - No WiFi configured
+    // - wifiAutoAP.active flag set
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("WiFi...");
+    #endif
+    WIFI_Utils::setup();
 
     // Then start BLE if active
     if (bluetoothActive) {
@@ -210,6 +219,11 @@ void setup() {
         LVGL_UI::updateInitStatus("Ready!");
         delay(500);
         LVGL_UI::setup();  // LVGL handles its own touch - also cleans up init screens
+
+        // Check if first boot web-conf needed (NOCALL or no WiFi configured)
+        if (WIFI_Utils::needsWebConfig()) {
+            LVGL_UI::showBootWebConfig();  // Blocking - never returns, reboots after config
+        }
     #endif
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());

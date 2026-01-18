@@ -2789,15 +2789,21 @@ namespace LVGL_UI {
     static lv_obj_t* init_status_label = nullptr;
 
     void initLvglDisplay() {
-        // Ensure backlight is on
+        // Turn off backlight during init to avoid garbage display
         #ifdef BOARD_BL_PIN
             pinMode(BOARD_BL_PIN, OUTPUT);
-            digitalWrite(BOARD_BL_PIN, HIGH);
+            digitalWrite(BOARD_BL_PIN, LOW);
         #endif
 
-        // Re-init TFT
+        // Init TFT
         tft.init();
         tft.setRotation(1);
+        tft.fillScreen(TFT_BLACK);  // Clear to black before showing anything
+
+        // Now turn on backlight
+        #ifdef BOARD_BL_PIN
+            digitalWrite(BOARD_BL_PIN, HIGH);
+        #endif
 
         // Initialize LVGL if not already done
         if (!lvgl_display_initialized) {
@@ -3438,6 +3444,128 @@ namespace LVGL_UI {
 
     void handleComposeKeyboard(char key) {
         ::handleComposeKeyboard(key);
+    }
+
+    void showBootWebConfig() {
+        Serial.println("[LVGL] First boot web-conf mode (NOCALL detected)");
+
+        // Create web-conf screen
+        screen_webconf = lv_obj_create(NULL);
+        lv_obj_set_style_bg_color(screen_webconf, lv_color_hex(0x1a1a2e), 0);
+
+        // Title bar (orange for web-conf)
+        lv_obj_t* title_bar = lv_obj_create(screen_webconf);
+        lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+        lv_obj_set_pos(title_bar, 0, 0);
+        lv_obj_set_style_bg_color(title_bar, lv_color_hex(0xff6b35), 0);
+        lv_obj_set_style_border_width(title_bar, 0, 0);
+        lv_obj_set_style_radius(title_bar, 0, 0);
+
+        lv_obj_t* title = lv_label_create(title_bar);
+        lv_label_set_text(title, "First Time Setup");
+        lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
+        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+        lv_obj_center(title);
+
+        // Content area
+        lv_obj_t* content = lv_obj_create(screen_webconf);
+        lv_obj_set_size(content, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 55);
+        lv_obj_set_pos(content, 10, 45);
+        lv_obj_set_style_bg_color(content, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_border_color(content, lv_color_hex(0xff6b35), 0);
+        lv_obj_set_style_radius(content, 8, 0);
+        lv_obj_set_style_pad_all(content, 15, 0);
+        lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+        // Starting message
+        lv_obj_t* msg1 = lv_label_create(content);
+        lv_label_set_text(msg1, "Starting WiFi Access Point...");
+        lv_obj_set_style_text_color(msg1, lv_color_hex(0xffa500), 0);
+        lv_obj_set_style_text_font(msg1, &lv_font_montserrat_14, 0);
+
+        // Load screen and refresh
+        lv_scr_load(screen_webconf);
+        lv_timer_handler();
+
+        // Start AP mode
+        bool success = WIFI_Utils::startAPModeNonBlocking();
+
+        // Update screen with result
+        lv_obj_clean(content);
+
+        if (success) {
+            String apName = WIFI_Utils::getAPName();
+
+            lv_obj_t* lbl_status = lv_label_create(content);
+            lv_label_set_text(lbl_status, "WiFi AP Active");
+            lv_obj_set_style_text_color(lbl_status, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_font(lbl_status, &lv_font_montserrat_18, 0);
+
+            lv_obj_t* lbl_ssid = lv_label_create(content);
+            String ssidText = "SSID: " + apName;
+            lv_label_set_text(lbl_ssid, ssidText.c_str());
+            lv_obj_set_style_text_color(lbl_ssid, lv_color_hex(0xffffff), 0);
+            lv_obj_set_style_text_font(lbl_ssid, &lv_font_montserrat_14, 0);
+
+            lv_obj_t* lbl_pass = lv_label_create(content);
+            lv_label_set_text(lbl_pass, "Pass: 1234567890");
+            lv_obj_set_style_text_color(lbl_pass, lv_color_hex(0xffaa00), 0);
+            lv_obj_set_style_text_font(lbl_pass, &lv_font_montserrat_14, 0);
+
+            lv_obj_t* lbl_ip = lv_label_create(content);
+            lv_label_set_text(lbl_ip, "IP: 192.168.4.1");
+            lv_obj_set_style_text_color(lbl_ip, lv_color_hex(0x00d4ff), 0);
+            lv_obj_set_style_text_font(lbl_ip, &lv_font_montserrat_18, 0);
+
+            lv_obj_t* lbl_info = lv_label_create(content);
+            lv_label_set_text(lbl_info, "Connect to WiFi AP\nthen open http://192.168.4.1\nto configure your callsign");
+            lv_obj_set_style_text_color(lbl_info, lv_color_hex(0xaaaaaa), 0);
+            lv_obj_set_style_text_font(lbl_info, &lv_font_montserrat_14, 0);
+            lv_obj_set_style_text_align(lbl_info, LV_TEXT_ALIGN_CENTER, 0);
+
+            // Reboot button
+            lv_obj_t* btn_reboot = lv_btn_create(content);
+            lv_obj_set_size(btn_reboot, 120, 40);
+            lv_obj_set_style_bg_color(btn_reboot, lv_color_hex(0xff6b6b), 0);
+            lv_obj_add_event_cb(btn_reboot, webconf_reboot_cb, LV_EVENT_CLICKED, NULL);
+            lv_obj_t* lbl_btn = lv_label_create(btn_reboot);
+            lv_label_set_text(lbl_btn, "Reboot");
+            lv_obj_center(lbl_btn);
+
+            // Force complete screen refresh
+            lv_refr_now(NULL);
+            lv_timer_handler();
+
+            // *** BLOCKING LOOP - Only LVGL and touch handled ***
+            Serial.println("[LVGL] Entering First Boot Web-Conf blocking loop");
+            webconf_reboot_requested = false;
+
+            while (!webconf_reboot_requested) {
+                uint32_t now = millis();
+                lv_tick_inc(now - last_tick);
+                last_tick = now;
+                lv_timer_handler();
+                yield();
+                delay(10);
+            }
+
+            Serial.println("[LVGL] Rebooting from First Boot Web-Conf");
+            ESP.restart();
+
+        } else {
+            lv_obj_t* lbl_error = lv_label_create(content);
+            lv_label_set_text(lbl_error, "Failed to start AP!\nPlease reboot");
+            lv_obj_set_style_text_color(lbl_error, lv_color_hex(0xff6b6b), 0);
+            lv_obj_set_style_text_font(lbl_error, &lv_font_montserrat_18, 0);
+            lv_obj_set_style_text_align(lbl_error, LV_TEXT_ALIGN_CENTER, 0);
+
+            lv_timer_handler();
+
+            // Wait and reboot
+            delay(5000);
+            ESP.restart();
+        }
     }
 
 }

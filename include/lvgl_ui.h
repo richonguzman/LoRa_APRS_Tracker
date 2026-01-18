@@ -29,6 +29,7 @@ namespace LVGL_UI {
     void showWiFiEcoMode();  // Display WiFi eco mode popup
     void handleComposeKeyboard(char key);  // Handle physical keyboard for compose screen
     void showCapsLockPopup(bool active);  // Display Caps Lock status popup
+    void showBootWebConfig();  // Show web-conf screen at boot (blocking, LVGL-based)
 }
 
 #endif // USE_LVGL_UI
