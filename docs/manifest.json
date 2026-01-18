@@ -1,12 +1,10 @@
 {
-  "name": "LoRa APRS Tracker - T-Deck Plus 433MHz",
+  "name": "LoRa APRS Tracker - T-Deck Plus 433MHz (Update)",
   "version": "2025.01.18",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "parts": [
-        { "path": "firmware/bootloader.bin", "offset": 0 },
-        { "path": "firmware/partitions.bin", "offset": 32768 },
         { "path": "firmware/firmware.bin", "offset": 65536 }
       ]
     }
