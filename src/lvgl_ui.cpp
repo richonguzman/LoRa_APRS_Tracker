@@ -414,25 +414,25 @@ static void create_dashboard() {
     lv_obj_set_flex_flow(btn_bar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(btn_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    // Beacon button
+    // Beacon button (APRS red)
     lv_obj_t* btn_beacon = lv_btn_create(btn_bar);
     lv_obj_set_size(btn_beacon, 90, 30);
-    lv_obj_set_style_bg_color(btn_beacon, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(btn_beacon, lv_color_hex(0xcc0000), 0);  // APRS red
     lv_obj_add_event_cb(btn_beacon, btn_beacon_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_beacon = lv_label_create(btn_beacon);
     lv_label_set_text(lbl_beacon, "BEACON");
     lv_obj_center(lbl_beacon);
-    lv_obj_set_style_text_color(lbl_beacon, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(lbl_beacon, lv_color_hex(0xffffff), 0);  // White text
 
-    // Messages button
+    // Messages button (APRS blue)
     lv_obj_t* btn_msg = lv_btn_create(btn_bar);
     lv_obj_set_size(btn_msg, 90, 30);
-    lv_obj_set_style_bg_color(btn_msg, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_bg_color(btn_msg, lv_color_hex(0x0066cc), 0);  // APRS blue (globe)
     lv_obj_add_event_cb(btn_msg, btn_msg_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_msg = lv_label_create(btn_msg);
     lv_label_set_text(lbl_msg, "MSG");
     lv_obj_center(lbl_msg);
-    lv_obj_set_style_text_color(lbl_msg, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(lbl_msg, lv_color_hex(0xffffff), 0);  // White text
 
     // Settings button
     lv_obj_t* btn_settings = lv_btn_create(btn_bar);
