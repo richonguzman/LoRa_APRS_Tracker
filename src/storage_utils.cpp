@@ -151,13 +151,23 @@ namespace STORAGE_Utils {
 
     File openFile(const String& path, const char* mode) {
         if (sdAvailable) {
+            String sdPath;
             // If path starts with /, use it as-is for SD
             if (path.startsWith("/LoRa_Tracker")) {
-                return SD.open(path, mode);
+                sdPath = path;
+            } else {
+                // Legacy: prepend messages path
+                sdPath = String(MESSAGES_DIR) + path;
             }
-            // Legacy: prepend messages path
-            String sdPath = String(MESSAGES_DIR) + path;
+            // For read mode, check if file exists first to avoid ESP32 error spam
+            if (strcmp(mode, "r") == 0 && !SD.exists(sdPath)) {
+                return File();  // Return empty File object
+            }
             return SD.open(sdPath, mode);
+        }
+        // For SPIFFS read mode, check existence first
+        if (strcmp(mode, "r") == 0 && !SPIFFS.exists(path)) {
+            return File();
         }
         return SPIFFS.open(path, mode);
     }

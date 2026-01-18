@@ -20,6 +20,7 @@
 #include "battery_utils.h"
 #include "lora_utils.h"
 #include "station_utils.h"
+#include "utils.h"
 #include "msg_utils.h"
 #include "notification_utils.h"
 #include "custom_characters.h"
@@ -290,12 +291,6 @@ static void create_dashboard() {
     screen_main = lv_obj_create(NULL);
     lv_obj_set_style_bg_color(screen_main, lv_color_hex(0x1a1a2e), 0);
 
-    // Background watermark logo (very subtle)
-    lv_obj_t* bg_logo = lv_img_create(screen_main);
-    lv_img_set_src(bg_logo, &lora_aprs_bg);
-    lv_obj_align(bg_logo, LV_ALIGN_CENTER, 0, 20);
-    lv_obj_set_style_img_opa(bg_logo, LV_OPA_30, 0);  // 30% opacity for subtle watermark
-
     // Status bar at top
     lv_obj_t* status_bar = lv_obj_create(screen_main);
     lv_obj_set_size(status_bar, SCREEN_WIDTH, 30);
@@ -341,8 +336,8 @@ static void create_dashboard() {
 
     // GPS info
     label_gps = lv_label_create(content);
-    lv_label_set_text(label_gps, "GPS: -- sat Lat: --.---- Lon: --.----\nAlt: ---- m  Spd: --- km/h");
-    lv_obj_set_style_text_color(label_gps, lv_color_hex(0x00d4ff), 0);
+    lv_label_set_text(label_gps, "GPS: -- sat  Loc: --------\nLat: --.----  Lon: --.----\nAlt: ---- m  Spd: --- km/h");
+    lv_obj_set_style_text_color(label_gps, lv_color_hex(0x759a9e), 0);
     lv_obj_set_style_text_font(label_gps, &lv_font_montserrat_14, 0);
     lv_obj_set_pos(label_gps, 0, 0);
 
@@ -355,14 +350,14 @@ static void create_dashboard() {
     lv_label_set_text(label_lora, lora_init);
     lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
     lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_lora, 0, 40);
+    lv_obj_set_pos(label_lora, 0, 55);
 
     // WiFi info
     label_wifi = lv_label_create(content);
     lv_label_set_text(label_wifi, "WiFi: ---");
-    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00d4ff), 0);  // Cyan like GPS
+    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
     lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_wifi, 0, 80);
+    lv_obj_set_pos(label_wifi, 0, 95);
 
     // Bluetooth info
     label_bluetooth = lv_label_create(content);
@@ -383,14 +378,14 @@ static void create_dashboard() {
         lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xffa500), 0);  // Orange
     }
     lv_obj_set_style_text_font(label_bluetooth, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_bluetooth, 0, 100);
+    lv_obj_set_pos(label_bluetooth, 0, 115);
 
     // Battery info
     label_battery = lv_label_create(content);
     lv_label_set_text(label_battery, "Bat: --.-- V (--%)");
     lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0);  // Red/coral color
     lv_obj_set_style_text_font(label_battery, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_battery, 0, 120);
+    lv_obj_set_pos(label_battery, 0, 135);
 
     // Storage info
     label_storage = lv_label_create(content);
@@ -401,7 +396,7 @@ static void create_dashboard() {
     lv_label_set_text(label_storage, storageInfo.c_str());
     lv_obj_set_style_text_color(label_storage, lv_color_hex(0xffcc00), 0);  // Yellow/gold
     lv_obj_set_style_text_font(label_storage, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_storage, 0, 140);
+    lv_obj_set_pos(label_storage, 0, 155);
 
     // Bottom button bar
     lv_obj_t* btn_bar = lv_obj_create(screen_main);
@@ -609,7 +604,7 @@ static void setup_item_webconf(lv_event_t* e) {
 
         lv_obj_t* lbl_status = lv_label_create(content);
         lv_label_set_text(lbl_status, "WiFi AP Active");
-        lv_obj_set_style_text_color(lbl_status, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_text_color(lbl_status, lv_color_hex(0x006600), 0);
         lv_obj_set_style_text_font(lbl_status, &lv_font_montserrat_18, 0);
 
         lv_obj_t* lbl_ssid = lv_label_create(content);
@@ -620,7 +615,7 @@ static void setup_item_webconf(lv_event_t* e) {
 
         lv_obj_t* lbl_ip = lv_label_create(content);
         lv_label_set_text(lbl_ip, "IP: 192.168.4.1");
-        lv_obj_set_style_text_color(lbl_ip, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_color(lbl_ip, lv_color_hex(0x0000cc), 0);
         lv_obj_set_style_text_font(lbl_ip, &lv_font_montserrat_18, 0);
 
         lv_obj_t* lbl_info = lv_label_create(content);
@@ -777,7 +772,7 @@ static void freq_item_clicked(lv_event_t* e) {
     }
 
     // Highlight new selection immediately
-    lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
     lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
     current_freq_btn = btn;
 
@@ -794,7 +789,7 @@ static void create_freq_screen() {
     lv_obj_t* title_bar = lv_obj_create(screen_freq);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
     lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x0000cc), 0);
     lv_obj_set_style_border_width(title_bar, 0, 0);
     lv_obj_set_style_radius(title_bar, 0, 0);
     lv_obj_set_style_pad_all(title_bar, 5, 0);
@@ -811,7 +806,7 @@ static void create_freq_screen() {
     // Title
     lv_obj_t* title = lv_label_create(title_bar);
     lv_label_set_text(title, "LoRa Frequency");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
 
@@ -847,7 +842,7 @@ static void create_freq_screen() {
         // Set style for all items explicitly
         if (i == loraIndex) {
             // Highlight current selection
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
             lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
             current_freq_btn = btn;  // Track current selection
         } else {
@@ -874,7 +869,7 @@ static void speed_item_clicked(lv_event_t* e) {
     }
 
     // Highlight new selection immediately
-    lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
     lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
     current_speed_btn = btn;
 
@@ -943,7 +938,7 @@ static void create_speed_screen() {
         // Set style for all items explicitly
         if (speeds[i].dataRate == currentDataRate) {
             // Highlight current selection
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
             lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
             current_speed_btn = btn;  // Track current selection
         } else {
@@ -975,7 +970,7 @@ static void callsign_item_clicked(lv_event_t* e) {
     }
 
     // Highlight new selection immediately
-    lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
     lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
     current_callsign_btn = btn;
 
@@ -992,7 +987,7 @@ static void create_callsign_screen() {
     lv_obj_t* title_bar = lv_obj_create(screen_callsign);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
     lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x006600), 0);
     lv_obj_set_style_border_width(title_bar, 0, 0);
     lv_obj_set_style_radius(title_bar, 0, 0);
     lv_obj_set_style_pad_all(title_bar, 5, 0);
@@ -1009,7 +1004,7 @@ static void create_callsign_screen() {
     // Title
     lv_obj_t* title = lv_label_create(title_bar);
     lv_label_set_text(title, "Callsign");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
 
@@ -1034,7 +1029,7 @@ static void create_callsign_screen() {
         // Set style for all items explicitly
         if (i == myBeaconsIndex) {
             // Highlight current selection
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x006600), 0);
             lv_obj_set_style_text_color(btn, lv_color_hex(0x000000), 0);
             current_callsign_btn = btn;  // Track current selection
         } else {
@@ -1142,7 +1137,7 @@ static void create_display_screen() {
     lv_obj_set_size(eco_switch, 60, 30);
     lv_obj_align(eco_switch, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(eco_switch, lv_color_hex(0x333333), LV_PART_MAIN);  // Off track
-    lv_obj_set_style_bg_color(eco_switch, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);  // On track
+    lv_obj_set_style_bg_color(eco_switch, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);  // On track
     lv_obj_set_style_bg_color(eco_switch, lv_color_hex(0xffffff), LV_PART_KNOB);  // Knob
     if (displayEcoMode) {
         lv_obj_add_state(eco_switch, LV_STATE_CHECKED);
@@ -1178,12 +1173,13 @@ static void create_display_screen() {
 
     // Slider (reduced width to fit within frame with knob)
     brightness_slider = lv_slider_create(bright_row);
-    lv_obj_set_size(brightness_slider, lv_pct(90), 20);
+    lv_obj_set_size(brightness_slider, lv_pct(80), 20);
     lv_obj_align(brightness_slider, LV_ALIGN_TOP_MID, 0, 30);
+    lv_obj_set_style_pad_all(brightness_slider, 5, LV_PART_KNOB);  // Smaller knob padding
     lv_slider_set_range(brightness_slider, BRIGHT_MIN, BRIGHT_MAX);
     lv_slider_set_value(brightness_slider, screenBrightness, LV_ANIM_OFF);
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x444466), LV_PART_MAIN);  // Visible track
-    lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x00d4ff), LV_PART_INDICATOR);  // Cyan filled
+    lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x0000cc), LV_PART_INDICATOR);  // Cyan filled
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0xffffff), LV_PART_KNOB);  // White knob
     lv_obj_add_event_cb(brightness_slider, brightness_slider_changed, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(brightness_slider, brightness_slider_released, LV_EVENT_RELEASED, NULL);
@@ -1293,7 +1289,7 @@ static void create_sound_screen() {
     lv_obj_set_size(sound_switch, 50, 25);
     lv_obj_align(sound_switch, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(sound_switch, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(sound_switch, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(sound_switch, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_set_style_bg_color(sound_switch, lv_color_hex(0xffffff), LV_PART_KNOB);
     if (Config.notification.buzzerActive) {
         lv_obj_add_state(sound_switch, LV_STATE_CHECKED);
@@ -1349,7 +1345,7 @@ static void create_sound_screen() {
     lv_obj_set_size(tx_sw, 45, 22);
     lv_obj_align(tx_sw, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(tx_sw, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(tx_sw, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(tx_sw, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);
     if (Config.notification.txBeep) lv_obj_add_state(tx_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(tx_sw, tx_beep_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
@@ -1370,7 +1366,7 @@ static void create_sound_screen() {
     lv_obj_set_size(rx_sw, 45, 22);
     lv_obj_align(rx_sw, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(rx_sw, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(rx_sw, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(rx_sw, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);
     if (Config.notification.messageRxBeep) lv_obj_add_state(rx_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(rx_sw, rx_beep_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
@@ -1391,7 +1387,7 @@ static void create_sound_screen() {
     lv_obj_set_size(sta_sw, 45, 22);
     lv_obj_align(sta_sw, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(sta_sw, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(sta_sw, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(sta_sw, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);
     if (Config.notification.stationBeep) lv_obj_add_state(sta_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(sta_sw, station_beep_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
@@ -1459,7 +1455,7 @@ static void update_wifi_screen_status() {
             lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff6b6b), 0);
         } else if (WiFiConnected) {
             lv_label_set_text(wifi_status_label, "Connected");
-            lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x006600), 0);
         } else if (WiFiEcoMode) {
             lv_label_set_text(wifi_status_label, "Eco (retry)");
             lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xffa500), 0);
@@ -1510,7 +1506,7 @@ static void create_wifi_screen() {
     lv_obj_t* title_bar = lv_obj_create(screen_wifi);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
     lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x0000cc), 0);
     lv_obj_set_style_border_width(title_bar, 0, 0);
     lv_obj_set_style_radius(title_bar, 0, 0);
     lv_obj_set_style_pad_all(title_bar, 5, 0);
@@ -1527,7 +1523,7 @@ static void create_wifi_screen() {
     // Title
     lv_obj_t* title = lv_label_create(title_bar);
     lv_label_set_text(title, "WiFi");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
 
@@ -1559,7 +1555,7 @@ static void create_wifi_screen() {
     lv_obj_set_size(wifi_switch, 50, 25);
     lv_obj_align(wifi_switch, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_set_style_bg_color(wifi_switch, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(wifi_switch, lv_color_hex(0x00ff88), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(wifi_switch, lv_color_hex(0x006600), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_set_style_bg_color(wifi_switch, lv_color_hex(0xffffff), LV_PART_KNOB);
     // Set switch state based on current WiFi state
     if (!WiFiUserDisabled) {
@@ -1586,7 +1582,7 @@ static void create_wifi_screen() {
         lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff6b6b), 0);
     } else if (WiFiConnected) {
         lv_label_set_text(wifi_status_label, "Connected");
-        lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x006600), 0);
     } else if (WiFiEcoMode) {
         lv_label_set_text(wifi_status_label, "Eco mode (retry)");
         lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xffa500), 0);
@@ -1612,7 +1608,7 @@ static void create_wifi_screen() {
 
     wifi_ip_label = lv_label_create(wifi_ip_row);
     lv_label_set_text(wifi_ip_label, "---");
-    lv_obj_set_style_text_color(wifi_ip_label, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_text_color(wifi_ip_label, lv_color_hex(0x0000cc), 0);
     lv_obj_set_style_text_font(wifi_ip_label, &lv_font_montserrat_14, 0);
     lv_obj_align(wifi_ip_label, LV_ALIGN_RIGHT_MID, 0, 0);
 
@@ -1631,7 +1627,7 @@ static void create_wifi_screen() {
 
     wifi_rssi_label = lv_label_create(wifi_rssi_row);
     lv_label_set_text(wifi_rssi_label, "---");
-    lv_obj_set_style_text_color(wifi_rssi_label, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_text_color(wifi_rssi_label, lv_color_hex(0x0000cc), 0);
     lv_obj_set_style_text_font(wifi_rssi_label, &lv_font_montserrat_14, 0);
     lv_obj_align(wifi_rssi_label, LV_ALIGN_RIGHT_MID, 0, 0);
 
@@ -1664,7 +1660,7 @@ static void update_bluetooth_screen_status() {
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xff6b6b), 0);
         } else if (bluetoothConnected) {
             lv_label_set_text(bluetooth_status_label, "Connected");
-            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0x006600), 0);
         } else {
             lv_label_set_text(bluetooth_status_label, "Waiting...");
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
@@ -1823,7 +1819,7 @@ static void create_bluetooth_screen() {
         lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xff6b6b), 0);
     } else if (bluetoothConnected) {
         lv_label_set_text(bluetooth_status_label, "Connected");
-        lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0x006600), 0);
     } else {
         lv_label_set_text(bluetooth_status_label, "ON (waiting)");
         lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
@@ -2273,7 +2269,7 @@ static void show_contact_edit_screen(const Contact* contact) {
         // Callsign input
         lv_obj_t* lbl_call = lv_label_create(form);
         lv_label_set_text(lbl_call, "Callsign:");
-        lv_obj_set_style_text_color(lbl_call, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_color(lbl_call, lv_color_hex(0x0000cc), 0);
 
         contact_callsign_input = lv_textarea_create(form);
         lv_obj_set_size(contact_callsign_input, lv_pct(100), 30);
@@ -2284,7 +2280,7 @@ static void show_contact_edit_screen(const Contact* contact) {
         // Name input
         lv_obj_t* lbl_name = lv_label_create(form);
         lv_label_set_text(lbl_name, "Name:");
-        lv_obj_set_style_text_color(lbl_name, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_color(lbl_name, lv_color_hex(0x0000cc), 0);
 
         contact_name_input = lv_textarea_create(form);
         lv_obj_set_size(contact_name_input, lv_pct(100), 30);
@@ -2295,7 +2291,7 @@ static void show_contact_edit_screen(const Contact* contact) {
         // Comment input
         lv_obj_t* lbl_comment = lv_label_create(form);
         lv_label_set_text(lbl_comment, "Note:");
-        lv_obj_set_style_text_color(lbl_comment, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_color(lbl_comment, lv_color_hex(0x0000cc), 0);
 
         contact_comment_input = lv_textarea_create(form);
         lv_obj_set_size(contact_comment_input, lv_pct(100), 30);
@@ -2430,7 +2426,7 @@ static void create_compose_screen() {
     lv_obj_t* title_bar = lv_obj_create(screen_compose);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
     lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00ff88), 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x006600), 0);
     lv_obj_set_style_border_width(title_bar, 0, 0);
     lv_obj_set_style_radius(title_bar, 0, 0);
     lv_obj_set_style_pad_all(title_bar, 5, 0);
@@ -2447,7 +2443,7 @@ static void create_compose_screen() {
     // Title
     lv_obj_t* title = lv_label_create(title_bar);
     lv_label_set_text(title, "Compose Message");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 30, 0);
 
@@ -2705,7 +2701,7 @@ static void create_msg_screen() {
     lv_obj_t* title_bar = lv_obj_create(screen_msg);
     lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
     lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x0000cc), 0);
     lv_obj_set_style_border_width(title_bar, 0, 0);
     lv_obj_set_style_radius(title_bar, 0, 0);
     lv_obj_set_style_pad_all(title_bar, 5, 0);
@@ -2722,7 +2718,7 @@ static void create_msg_screen() {
     // Title
     lv_obj_t* title = lv_label_create(title_bar);
     lv_label_set_text(title, "Messages");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
 
@@ -2803,14 +2799,20 @@ namespace LVGL_UI {
             digitalWrite(BOARD_BL_PIN, LOW);
         #endif
 
+        // Load saved brightness from storage
+        STATION_Utils::loadIndex(2);  // Screen Brightness value
+        // Ensure brightness is within valid range
+        if (screenBrightness < BRIGHT_MIN) screenBrightness = BRIGHT_MIN;
+        if (screenBrightness > BRIGHT_MAX) screenBrightness = BRIGHT_MAX;
+
         // Init TFT
         tft.init();
         tft.setRotation(1);
         tft.fillScreen(TFT_BLACK);  // Clear to black before showing anything
 
-        // Now turn on backlight
+        // Now turn on backlight with saved brightness
         #ifdef BOARD_BL_PIN
-            digitalWrite(BOARD_BL_PIN, HIGH);
+            analogWrite(BOARD_BL_PIN, screenBrightness);
         #endif
 
         // Initialize LVGL if not already done
@@ -2875,7 +2877,7 @@ namespace LVGL_UI {
         lv_obj_t* freq_label = lv_label_create(screen_splash);
         lv_label_set_text(freq_label, freqBuf);
         lv_obj_set_style_text_color(freq_label, lv_color_hex(0x0033cc), 0);  // Blue to match LoRa logo
-        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 20);
+        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 40);
 
         // Author and version
         char verBuf[48];
@@ -2896,32 +2898,20 @@ namespace LVGL_UI {
     }
 
     void showInitScreen() {
-        // Create initialization status screen
-        screen_init = lv_obj_create(NULL);
-        lv_obj_set_style_bg_color(screen_init, lv_color_hex(0x1a1a2e), 0);
-
-        // Title
-        lv_obj_t* title = lv_label_create(screen_init);
-        lv_label_set_text(title, "Initialisation...");
-        lv_obj_set_style_text_color(title, lv_color_hex(0x00d4ff), 0);
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
-        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 80);
-
-        // Status label (updated during init)
-        init_status_label = lv_label_create(screen_init);
-        lv_label_set_text(init_status_label, "...");
-        lv_obj_set_style_text_color(init_status_label, lv_color_hex(0xffffff), 0);
-        lv_obj_set_style_text_font(init_status_label, &lv_font_montserrat_14, 0);
-        lv_obj_align(init_status_label, LV_ALIGN_CENTER, 0, 20);
-
-        lv_scr_load(screen_init);
-        lv_refr_now(NULL);
-
-        // Delete splash
-        if (screen_splash) {
-            lv_obj_del(screen_splash);
-            screen_splash = nullptr;
+        // Keep splash screen visible, just add init status label on it
+        if (!screen_splash) {
+            Serial.println("[LVGL] ERROR: splash screen not available for init");
+            return;
         }
+
+        // Add status label to splash screen (below the version info)
+        init_status_label = lv_label_create(screen_splash);
+        lv_label_set_text(init_status_label, "Initialisation...");
+        lv_obj_set_style_text_color(init_status_label, lv_color_hex(0x0066cc), 0);  // Blue to match logo
+        lv_obj_set_style_text_font(init_status_label, &lv_font_montserrat_14, 0);
+        lv_obj_align(init_status_label, LV_ALIGN_BOTTOM_MID, 0, -10);
+
+        lv_refr_now(NULL);
     }
 
     void updateInitStatus(const char* status) {
@@ -2933,9 +2923,10 @@ namespace LVGL_UI {
     }
 
     void hideInitScreen() {
-        if (screen_init) {
-            lv_obj_del(screen_init);
-            screen_init = nullptr;
+        // Delete splash screen (which now contains the init label)
+        if (screen_splash) {
+            lv_obj_del(screen_splash);
+            screen_splash = nullptr;
             init_status_label = nullptr;
         }
     }
@@ -2946,12 +2937,19 @@ namespace LVGL_UI {
         // Initialize tick counter
         last_tick = millis();
 
+        // Load saved brightness from storage
+        STATION_Utils::loadIndex(2);  // Screen Brightness value
+        // Ensure brightness is within valid range for slider
+        if (screenBrightness < BRIGHT_MIN) screenBrightness = BRIGHT_MIN;
+        if (screenBrightness > BRIGHT_MAX) screenBrightness = BRIGHT_MAX;
+        Serial.printf("[LVGL] Loaded brightness: %d\n", screenBrightness);
+
         // Only initialize display if not already done by splash screen
         if (!lvgl_display_initialized) {
-            // Ensure backlight is on
+            // Set backlight with saved brightness
             #ifdef BOARD_BL_PIN
                 pinMode(BOARD_BL_PIN, OUTPUT);
-                digitalWrite(BOARD_BL_PIN, HIGH);
+                analogWrite(BOARD_BL_PIN, screenBrightness);
             #endif
 
             // Re-init TFT for LVGL
@@ -3120,9 +3118,10 @@ namespace LVGL_UI {
     void updateGPS(double lat, double lng, double alt, double speed, int sats) {
         if (label_gps) {
             char buf[128];
+            const char* locator = Utils::getMaidenheadLocator(lat, lng, 8);
             snprintf(buf, sizeof(buf),
-                "GPS: %d sat Lat: %.4f Lon: %.4f\nAlt: %.0f m  Spd: %.0f km/h",
-                sats, lat, lng, alt, speed);
+                "GPS: %d sat  Loc: %s\nLat: %.4f  Lon: %.4f\nAlt: %.0f m  Spd: %.0f km/h",
+                sats, locator, lat, lng, alt, speed);
             lv_label_set_text(label_gps, buf);
         }
     }
@@ -3135,7 +3134,7 @@ namespace LVGL_UI {
 
             // Change color based on level (red/coral base, green when good)
             if (percent > 50) {
-                lv_obj_set_style_text_color(label_battery, lv_color_hex(0x00ff88), 0);  // Green
+                lv_obj_set_style_text_color(label_battery, lv_color_hex(0x006600), 0);  // Green
             } else if (percent > 20) {
                 lv_obj_set_style_text_color(label_battery, lv_color_hex(0xffa500), 0);  // Orange
             } else {
@@ -3174,13 +3173,13 @@ namespace LVGL_UI {
                 String ip = WiFi.localIP().toString();
                 snprintf(buf, sizeof(buf), "WiFi: %s (%d dBm)", ip.c_str(), rssi);
                 lv_label_set_text(label_wifi, buf);
-                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00d4ff), 0);  // Cyan
+                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
             } else if (WiFiEcoMode) {
                 lv_label_set_text(label_wifi, "WiFi: Eco (sleep)");
                 lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xffa500), 0);  // Orange
             } else {
                 lv_label_set_text(label_wifi, "WiFi: ---");
-                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x00d4ff), 0);  // Cyan
+                lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
             }
         }
     }
@@ -3253,8 +3252,8 @@ namespace LVGL_UI {
     static lv_timer_t* tx_popup_timer = nullptr;
 
     static void hide_tx_popup(lv_timer_t* timer) {
-        if (tx_msgbox) {
-            lv_msgbox_close(tx_msgbox);
+        if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
+            lv_obj_del(tx_msgbox);
             tx_msgbox = nullptr;
         }
         tx_popup_timer = nullptr;
@@ -3264,8 +3263,8 @@ namespace LVGL_UI {
         Serial.printf("[LVGL] showTxPacket called: %s\n", packet);
 
         // Close existing msgbox if any
-        if (tx_msgbox) {
-            lv_msgbox_close(tx_msgbox);
+        if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
+            lv_obj_del(tx_msgbox);
             tx_msgbox = nullptr;
         }
         if (tx_popup_timer) {
@@ -3278,9 +3277,9 @@ namespace LVGL_UI {
         lv_obj_set_size(tx_msgbox, 280, 120);
         lv_obj_set_style_bg_color(tx_msgbox, lv_color_hex(0x002200), 0);
         lv_obj_set_style_bg_opa(tx_msgbox, LV_OPA_COVER, 0);
-        lv_obj_set_style_border_color(tx_msgbox, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_border_color(tx_msgbox, lv_color_hex(0x006600), 0);
         lv_obj_set_style_border_width(tx_msgbox, 3, 0);
-        lv_obj_set_style_text_color(tx_msgbox, lv_color_hex(0x00ff88), 0);
+        lv_obj_set_style_text_color(tx_msgbox, lv_color_hex(0x006600), 0);
         lv_obj_center(tx_msgbox);
 
         // Force immediate refresh
@@ -3298,8 +3297,8 @@ namespace LVGL_UI {
     static lv_timer_t* rx_lora_timer = nullptr;
 
     static void hide_rx_lora_popup(lv_timer_t* timer) {
-        if (rx_lora_msgbox) {
-            lv_msgbox_close(rx_lora_msgbox);
+        if (rx_lora_msgbox && lv_obj_is_valid(rx_lora_msgbox)) {
+            lv_obj_del(rx_lora_msgbox);
             rx_lora_msgbox = nullptr;
         }
         rx_lora_timer = nullptr;
@@ -3309,8 +3308,8 @@ namespace LVGL_UI {
         Serial.printf("[LVGL] showRxPacket called: %s\n", packet);
 
         // Close existing msgbox if any
-        if (rx_lora_msgbox) {
-            lv_msgbox_close(rx_lora_msgbox);
+        if (rx_lora_msgbox && lv_obj_is_valid(rx_lora_msgbox)) {
+            lv_obj_del(rx_lora_msgbox);
             rx_lora_msgbox = nullptr;
         }
         if (rx_lora_timer) {
@@ -3343,8 +3342,8 @@ namespace LVGL_UI {
     static lv_timer_t* wifi_eco_timer = nullptr;
 
     static void hide_wifi_eco_popup(lv_timer_t* timer) {
-        if (wifi_eco_msgbox) {
-            lv_msgbox_close(wifi_eco_msgbox);
+        if (wifi_eco_msgbox && lv_obj_is_valid(wifi_eco_msgbox)) {
+            lv_obj_del(wifi_eco_msgbox);
             wifi_eco_msgbox = nullptr;
         }
         wifi_eco_timer = nullptr;
@@ -3360,8 +3359,8 @@ namespace LVGL_UI {
         }
 
         // Close existing msgbox if any
-        if (wifi_eco_msgbox) {
-            lv_msgbox_close(wifi_eco_msgbox);
+        if (wifi_eco_msgbox && lv_obj_is_valid(wifi_eco_msgbox)) {
+            lv_obj_del(wifi_eco_msgbox);
             wifi_eco_msgbox = nullptr;
         }
         if (wifi_eco_timer) {
@@ -3505,7 +3504,7 @@ namespace LVGL_UI {
 
             lv_obj_t* lbl_status = lv_label_create(content);
             lv_label_set_text(lbl_status, "WiFi AP Active");
-            lv_obj_set_style_text_color(lbl_status, lv_color_hex(0x00ff88), 0);
+            lv_obj_set_style_text_color(lbl_status, lv_color_hex(0x006600), 0);
             lv_obj_set_style_text_font(lbl_status, &lv_font_montserrat_18, 0);
 
             lv_obj_t* lbl_ssid = lv_label_create(content);
@@ -3521,7 +3520,7 @@ namespace LVGL_UI {
 
             lv_obj_t* lbl_ip = lv_label_create(content);
             lv_label_set_text(lbl_ip, "IP: 192.168.4.1");
-            lv_obj_set_style_text_color(lbl_ip, lv_color_hex(0x00d4ff), 0);
+            lv_obj_set_style_text_color(lbl_ip, lv_color_hex(0x0000cc), 0);
             lv_obj_set_style_text_font(lbl_ip, &lv_font_montserrat_18, 0);
 
             lv_obj_t* lbl_info = lv_label_create(content);
