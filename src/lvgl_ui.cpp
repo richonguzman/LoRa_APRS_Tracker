@@ -26,6 +26,7 @@
 #include "ble_utils.h"
 #include "wifi_utils.h"
 #include "lora_aprs_logo.h"
+#include "lora_aprs_bg.h"
 #include "storage_utils.h"
 
 // APRS symbol mapping (same as display.cpp)
@@ -288,6 +289,12 @@ static void create_dashboard() {
     // Create main screen
     screen_main = lv_obj_create(NULL);
     lv_obj_set_style_bg_color(screen_main, lv_color_hex(0x1a1a2e), 0);
+
+    // Background watermark logo (very subtle)
+    lv_obj_t* bg_logo = lv_img_create(screen_main);
+    lv_img_set_src(bg_logo, &lora_aprs_bg);
+    lv_obj_align(bg_logo, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_set_style_img_opa(bg_logo, LV_OPA_30, 0);  // 30% opacity for subtle watermark
 
     // Status bar at top
     lv_obj_t* status_bar = lv_obj_create(screen_main);
