@@ -177,12 +177,8 @@ function loadSettings(settings) {
     document.getElementById("email").value                              = settings.other.email;
 
     // DISPLAY
-    document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
     document.getElementById("display.turn180").checked                  = settings.display.turn180;
-    document.getElementById("display.timeout").value                    = settings.display.timeout;
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
-    DisplayEcoModeCheckbox.checked  = settings.display.ecoMode;
-    DisplayTimeout.disabled         = !DisplayEcoModeCheckbox.checked;
 
     // BLUETOOTH
     document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;
@@ -387,13 +383,6 @@ document.getElementById('reboot').addEventListener('click', function (e) {
     showToast("Your device will be rebooted in a while");
 });
 
-
-// Display Switches
-const DisplayEcoModeCheckbox    = document.querySelector('input[name="display.ecoMode"]');
-const DisplayTimeout            = document.querySelector('input[name="display.timeout"]');
-DisplayEcoModeCheckbox.addEventListener("change", function () {
-    DisplayTimeout.disabled     = !this.checked;
-});
 
 // Bluetooth Switches
 const BluetoothActiveCheckbox   = document.querySelector('input[name="bluetooth.active"]');
