@@ -333,6 +333,40 @@ bool Configuration::readFile() {
 
         configFile.close();
 
+        // Add defaults if vectors are empty (old config format)
+        if (wifiAPs.size() == 0) {
+            WiFi_AP defaultWifi;
+            defaultWifi.ssid = "";
+            defaultWifi.password = "";
+            wifiAPs.push_back(defaultWifi);
+            needsRewrite = true;
+            Serial.println("Added default WiFi AP entry");
+        }
+        if (beacons.size() == 0) {
+            Beacon bcn;
+            bcn.callsign = "NOCALL-7";
+            bcn.symbol = "[";
+            bcn.overlay = "/";
+            bcn.smartBeaconActive = true;
+            bcn.smartBeaconSetting = 0;
+            bcn.gpsEcoMode = false;
+            beacons.push_back(bcn);
+            needsRewrite = true;
+            Serial.println("Added default beacon entry");
+        }
+        if (loraTypes.size() == 0) {
+            LoraType loraType;
+            loraType.frequency = 433775000;
+            loraType.spreadingFactor = 12;
+            loraType.signalBandwidth = 125000;
+            loraType.codingRate4 = 5;
+            loraType.power = 20;
+            loraType.dataRate = 300;
+            loraTypes.push_back(loraType);
+            needsRewrite = true;
+            Serial.println("Added default LoRa entry");
+        }
+
         if (needsRewrite) {
             Serial.println("Config JSON incomplete, rewriting...");
             writeFile();
