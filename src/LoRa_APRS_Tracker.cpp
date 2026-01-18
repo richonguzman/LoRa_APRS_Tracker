@@ -293,6 +293,11 @@ void loop() {
         }
     }
 
+    // Check BLE eco mode timeout (sleep BLE after inactivity)
+    if (bluetoothActive && Config.bluetooth.useBLE) {
+        BLE_Utils::checkEcoMode();
+    }
+
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedStationsByTimeAndDelete();

@@ -539,6 +539,10 @@ static void setup_item_wifi(lv_event_t* e) {
 
 static void setup_item_bluetooth(lv_event_t* e) {
     Serial.println("[LVGL] Setup: Bluetooth selected");
+    // Wake BLE if sleeping (eco mode)
+    if (BLE_Utils::isSleeping()) {
+        BLE_Utils::wake();
+    }
     // Recreate screen each time to update status
     if (screen_bluetooth) {
         // Stop timer before deleting screen
@@ -3155,6 +3159,9 @@ namespace LVGL_UI {
             if (label_bluetooth) {
                 if (!bluetoothActive) {
                     lv_label_set_text(label_bluetooth, "BT: Disabled");
+                    lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
+                } else if (BLE_Utils::isSleeping()) {
+                    lv_label_set_text(label_bluetooth, "BT: Eco Sleep");
                     lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
                 } else if (bluetoothConnected) {
                     String addr = BLE_Utils::getConnectedDeviceAddress();

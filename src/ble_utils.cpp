@@ -60,11 +60,18 @@ String  bleConnectedDeviceName  = "";  // Connected device name (from GAP)
 bool    bleNeedToReadName       = false;  // Flag to read name after connection
 NimBLEAddress bleConnectedPeerAddr;  // Peer address for client connection
 
+// BLE Eco Mode variables
+bool        bleEcoMode          = true;     // BLE eco mode always active (automatic)
+bool        bleSleeping         = false;    // BLE is currently sleeping (stopped)
+uint32_t    bleLastActivityTime = 0;        // Last time BLE had activity (connection)
+const uint32_t BLE_ECO_TIMEOUT  = 5 * 60 * 1000;  // 5 minutes timeout
+
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
         bleConnectedDeviceName = "";
         bleNeedToReadName = true;
+        bleLastActivityTime = millis();  // Reset eco mode timer
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
     }
 
@@ -75,6 +82,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceAddr = bleConnectedPeerAddr.toString().c_str();
         bleConnectedDeviceName = "";  // Will be read later
         bleNeedToReadName = true;  // Signal to read name in loop
+        bleLastActivityTime = millis();  // Reset eco mode timer
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
@@ -164,6 +172,10 @@ namespace BLE_Utils {
     }
 
     void setup() {
+        // Initialize eco mode timer
+        bleLastActivityTime = millis();
+        bleSleeping = false;
+
         // Ensure WiFi modem sleep is enabled for WiFi/BLE coexistence
         esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 
@@ -265,6 +277,38 @@ namespace BLE_Utils {
         // Disabled - smartphones typically don't expose their GAP service to peripherals
         // The MAC address will be displayed instead
         bleNeedToReadName = false;
+    }
+
+    // Check BLE eco mode timeout - call this from main loop
+    void checkEcoMode() {
+        if (!bleEcoMode || !bluetoothActive || bleSleeping || bluetoothConnected) {
+            return;  // Eco mode disabled, BLE not active, already sleeping, or connected
+        }
+
+        uint32_t now = millis();
+        if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
+            // Timeout reached - put BLE to sleep
+            bleSleeping = true;
+            BLEDevice::deinit();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
+            Serial.println("[BLE] Eco mode: BLE stopped (5 min timeout)");
+        }
+    }
+
+    // Wake up BLE from eco mode sleep
+    void wake() {
+        if (!bleSleeping) return;
+
+        Serial.println("[BLE] Waking up from eco mode");
+        bleSleeping = false;
+        bleLastActivityTime = millis();
+        setup();  // Re-initialize BLE
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE restarted");
+    }
+
+    // Check if BLE is sleeping
+    bool isSleeping() {
+        return bleSleeping;
     }
 
 }
