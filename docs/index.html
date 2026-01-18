@@ -60,6 +60,30 @@
       color: #888;
       font-size: 0.9em;
     }
+    .erase-option {
+      margin: 20px 0;
+      padding: 15px;
+      background: #1a1a2e;
+      border-radius: 5px;
+      text-align: left;
+      display: inline-block;
+    }
+    .erase-option label {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .erase-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .erase-option .hint {
+      font-size: 0.85em;
+      color: #888;
+      margin-top: 8px;
+    }
     .features {
       text-align: left;
       columns: 2;
@@ -76,7 +100,16 @@
   <div class="container">
     <h2>Installation du Firmware</h2>
     <p>Connectez votre T-Deck Plus en USB et cliquez sur le bouton :</p>
-    <esp-web-install-button class="install-btn" manifest="manifest.json">
+
+    <div class="erase-option">
+      <label>
+        <input type="checkbox" id="eraseCheckbox">
+        <span>Effacer toute la mémoire (erase all)</span>
+      </label>
+      <div class="hint">⚠️ Si coché, la configuration existante sera effacée</div>
+    </div>
+
+    <esp-web-install-button id="installButton" class="install-btn" manifest="manifest.json">
       <button slot="activate">Installer le Firmware</button>
       <span slot="unsupported">
         Navigateur non supporté. Utilisez Chrome ou Edge.
@@ -86,6 +119,17 @@
       </span>
     </esp-web-install-button>
   </div>
+
+  <script>
+    document.getElementById('eraseCheckbox').addEventListener('change', function() {
+      const installBtn = document.getElementById('installButton');
+      if (this.checked) {
+        installBtn.setAttribute('erase-first', '');
+      } else {
+        installBtn.removeAttribute('erase-first');
+      }
+    });
+  </script>
 
   <div class="warning">
     <strong>Avant l'installation :</strong>
