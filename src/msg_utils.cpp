@@ -355,6 +355,25 @@ namespace MSG_Utils {
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
+
+            // Check if sender is a new contact (only for personal messages, not system messages)
+            #ifdef USE_LVGL_UI
+            // Skip system/service callsigns
+            bool isSystemCallsign = station.startsWith("BLN") ||
+                                    station.startsWith("NWS") ||
+                                    station.startsWith("WX") ||
+                                    station.indexOf("-15") > 0 ||  // Query services
+                                    station == "WLNK-1";
+
+            if (!isSystemCallsign && STORAGE_Utils::isSDAvailable()) {
+                Contact* existingContact = STORAGE_Utils::findContact(station);
+                if (existingContact == nullptr) {
+                    // Unknown contact - show popup to ask user
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "New contact detected: %s", station.c_str());
+                    LVGL_UI::showAddContactPrompt(station.c_str());
+                }
+            }
+            #endif
         } else if (typeMessage == 1) {    //WLNK
             File fileToAppendWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", FILE_APPEND);
             if(!fileToAppendWLNK) {

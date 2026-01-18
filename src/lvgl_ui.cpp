@@ -5,6 +5,7 @@
 #ifdef USE_LVGL_UI
 
 #include <Arduino.h>
+#include <FS.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <TinyGPS++.h>
@@ -1966,7 +1967,7 @@ static int pending_delete_msg_index = -1;  // Index of message to delete (-1 = a
 static bool msg_longpress_handled = false;
 
 static void confirm_delete_cb(lv_event_t* e) {
-    lv_obj_t* btn = lv_event_get_target(e);
+    (void)e;  // Unused parameter
     const char* btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
 
     if (btn_text && strcmp(btn_text, "Yes") == 0) {
@@ -2425,6 +2426,7 @@ static void btn_send_msg_clicked(lv_event_t* e) {
             String sentMsg = String(to) + ",>" + String(msg);
             msgFile.println(sentMsg);
             msgFile.close();
+            MSG_Utils::loadNumMessages();  // Update message counter
             Serial.printf("[LVGL] Sent message saved: %s\n", sentMsg.c_str());
         } else {
             Serial.println("[LVGL] Failed to save sent message");
@@ -2693,6 +2695,7 @@ void handleComposeKeyboard(char key) {
                     String sentMsg = String(to) + ",>" + String(msg);
                     msgFile.println(sentMsg);
                     msgFile.close();
+                    MSG_Utils::loadNumMessages();  // Update message counter
                 }
 
                 lv_textarea_set_text(compose_to_input, "");
@@ -3091,8 +3094,10 @@ namespace LVGL_UI {
         lv_timer_handler();
 
         // Display eco mode: dim screen after inactivity timeout
+        // Use fresh millis() value since lastActivityTime may have been updated during lv_timer_handler()
         if (displayEcoMode && !screenDimmed) {
-            if (now - lastActivityTime >= ECO_TIMEOUT_MS) {
+            uint32_t currentTime = millis();
+            if (currentTime - lastActivityTime >= ECO_TIMEOUT_MS) {
                 screenDimmed = true;
                 #ifdef BOARD_BL_PIN
                     analogWrite(BOARD_BL_PIN, 0);  // Turn off backlight
@@ -3499,6 +3504,85 @@ namespace LVGL_UI {
         lv_timer_set_repeat_count(capslock_timer, 1);
 
         Serial.println("[LVGL] Caps Lock popup created");
+    }
+
+    // Add Contact confirmation popup
+    static lv_obj_t* add_contact_msgbox = nullptr;
+    static String pending_contact_callsign;
+
+    static void add_contact_btn_callback(lv_event_t* e) {
+        (void)e;  // Unused parameter
+        const char* btn_text = lv_msgbox_get_active_btn_text(add_contact_msgbox);
+
+        if (btn_text && strcmp(btn_text, "Oui") == 0) {
+            // User confirmed - add contact
+            Contact newContact;
+            newContact.callsign = pending_contact_callsign;
+            newContact.name = "";
+            newContact.comment = "Auto-added";
+
+            if (STORAGE_Utils::addContact(newContact)) {
+                Serial.printf("[LVGL] Contact %s added successfully\n", pending_contact_callsign.c_str());
+            } else {
+                Serial.printf("[LVGL] Failed to add contact %s\n", pending_contact_callsign.c_str());
+            }
+        } else {
+            Serial.printf("[LVGL] User declined to add contact %s\n", pending_contact_callsign.c_str());
+        }
+
+        // Close the popup
+        if (add_contact_msgbox && lv_obj_is_valid(add_contact_msgbox)) {
+            lv_obj_del(add_contact_msgbox);
+            add_contact_msgbox = nullptr;
+        }
+        pending_contact_callsign = "";
+    }
+
+    void showAddContactPrompt(const char* callsign) {
+        Serial.printf("[LVGL] showAddContactPrompt called for: %s\n", callsign);
+
+        // Check if LVGL UI is initialized
+        if (!screen_main) {
+            Serial.println("[LVGL] UI not initialized yet, skipping popup");
+            return;
+        }
+
+        // Close existing msgbox if any
+        if (add_contact_msgbox && lv_obj_is_valid(add_contact_msgbox)) {
+            lv_obj_del(add_contact_msgbox);
+            add_contact_msgbox = nullptr;
+        }
+
+        // Store callsign for callback
+        pending_contact_callsign = String(callsign);
+
+        // Create message with callsign
+        char msg[64];
+        snprintf(msg, sizeof(msg), "Nouveau contact:\n%s\n\nAjouter?", callsign);
+
+        // Create message box with Yes/No buttons
+        static const char* btns[] = {"Oui", "Non", ""};
+        add_contact_msgbox = lv_msgbox_create(lv_layer_top(), "Contact?", msg, btns, false);
+        lv_obj_set_size(add_contact_msgbox, 220, 140);
+        lv_obj_set_style_bg_color(add_contact_msgbox, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_bg_opa(add_contact_msgbox, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_color(add_contact_msgbox, lv_color_hex(0x006600), 0);
+        lv_obj_set_style_border_width(add_contact_msgbox, 3, 0);
+        lv_obj_set_style_text_color(add_contact_msgbox, lv_color_hex(0xffffff), 0);
+        lv_obj_center(add_contact_msgbox);
+
+        // Style the buttons
+        lv_obj_t* btns_obj = lv_msgbox_get_btns(add_contact_msgbox);
+        lv_obj_set_style_bg_color(btns_obj, lv_color_hex(0x006600), LV_PART_ITEMS);
+        lv_obj_set_style_text_color(btns_obj, lv_color_hex(0xffffff), LV_PART_ITEMS);
+
+        // Add event callback
+        lv_obj_add_event_cb(add_contact_msgbox, add_contact_btn_callback, LV_EVENT_VALUE_CHANGED, NULL);
+
+        // Force immediate refresh
+        lv_refr_now(NULL);
+
+        Serial.println("[LVGL] Add contact popup created");
     }
 
     void handleComposeKeyboard(char key) {
