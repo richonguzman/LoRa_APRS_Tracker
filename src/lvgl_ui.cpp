@@ -3208,8 +3208,8 @@ namespace LVGL_UI {
         char content[256];
         snprintf(content, sizeof(content), "From: %s\n\n%s", from, message);
 
-        // Create message box on active screen (blue color for RX)
-        rx_msgbox = lv_msgbox_create(lv_scr_act(), ">>> MSG Rx <<<", content, NULL, false);
+        // Create message box on top layer (visible on all screens)
+        rx_msgbox = lv_msgbox_create(lv_layer_top(), ">>> MSG Rx <<<", content, NULL, false);
         lv_obj_set_size(rx_msgbox, 290, 140);
         lv_obj_set_style_bg_color(rx_msgbox, lv_color_hex(0x000022), 0);
         lv_obj_set_style_bg_opa(rx_msgbox, LV_OPA_COVER, 0);
@@ -3267,8 +3267,8 @@ namespace LVGL_UI {
             tx_popup_timer = nullptr;
         }
 
-        // Create message box on active screen
-        tx_msgbox = lv_msgbox_create(lv_scr_act(), "<<< TX >>>", packet, NULL, false);
+        // Create message box on top layer (visible on all screens)
+        tx_msgbox = lv_msgbox_create(lv_layer_top(), "<<< TX >>>", packet, NULL, false);
         lv_obj_set_size(tx_msgbox, 280, 120);
         lv_obj_set_style_bg_color(tx_msgbox, lv_color_hex(0x002200), 0);
         lv_obj_set_style_bg_opa(tx_msgbox, LV_OPA_COVER, 0);
@@ -3312,8 +3312,8 @@ namespace LVGL_UI {
             rx_lora_timer = nullptr;
         }
 
-        // Create message box on active screen (blue for RX)
-        rx_lora_msgbox = lv_msgbox_create(lv_scr_act(), ">>> RX <<<", packet, NULL, false);
+        // Create message box on top layer (visible on all screens)
+        rx_lora_msgbox = lv_msgbox_create(lv_layer_top(), ">>> RX <<<", packet, NULL, false);
         lv_obj_set_size(rx_lora_msgbox, 280, 120);
         lv_obj_set_style_bg_color(rx_lora_msgbox, lv_color_hex(0x000033), 0);
         lv_obj_set_style_bg_opa(rx_lora_msgbox, LV_OPA_COVER, 0);
@@ -3363,8 +3363,8 @@ namespace LVGL_UI {
             wifi_eco_timer = nullptr;
         }
 
-        // Create message box on active screen
-        wifi_eco_msgbox = lv_msgbox_create(lv_scr_act(), "WiFi Eco Mode", "Connection failed\nRetry in 30 min", NULL, false);
+        // Create message box on top layer (visible on all screens)
+        wifi_eco_msgbox = lv_msgbox_create(lv_layer_top(), "WiFi Eco Mode", "Connection failed\nRetry in 30 min", NULL, false);
         lv_obj_set_size(wifi_eco_msgbox, 240, 100);
         lv_obj_set_style_bg_color(wifi_eco_msgbox, lv_color_hex(0x332200), 0);
         lv_obj_set_style_bg_opa(wifi_eco_msgbox, LV_OPA_COVER, 0);
@@ -3414,10 +3414,10 @@ namespace LVGL_UI {
             capslock_timer = nullptr;
         }
 
-        // Create message box on active screen
+        // Create message box on top layer (visible on all screens)
         const char* title = active ? "MAJ" : "maj";
         const char* msg = active ? "Caps Lock ON" : "Caps Lock OFF";
-        capslock_msgbox = lv_msgbox_create(lv_scr_act(), title, msg, NULL, false);
+        capslock_msgbox = lv_msgbox_create(lv_layer_top(), title, msg, NULL, false);
         lv_obj_set_size(capslock_msgbox, 150, 70);
         if (active) {
             lv_obj_set_style_bg_color(capslock_msgbox, lv_color_hex(0x003300), 0);
