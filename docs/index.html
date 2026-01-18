@@ -30,51 +30,10 @@
       margin: 20px 0;
       text-align: center;
     }
-    .install-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      align-items: center;
-      margin-top: 20px;
-    }
-    .install-option {
-      padding: 15px;
-      border-radius: 8px;
-      width: 100%;
-      max-width: 400px;
-    }
-    .install-option.update {
-      background: #1a3a1a;
-      border: 2px solid #4CAF50;
-    }
-    .install-option.full {
-      background: #3a1a1a;
-      border: 2px solid #ff6b6b;
-    }
-    .install-option h3 {
-      margin: 0 0 10px 0;
-      font-size: 1.1em;
-    }
-    .install-option.update h3 {
-      color: #4CAF50;
-    }
-    .install-option.full h3 {
-      color: #ff6b6b;
-    }
-    .install-option p {
-      margin: 0 0 15px 0;
-      font-size: 0.9em;
-      color: #aaa;
-    }
     .install-btn {
       --esp-tools-button-color: #4CAF50;
       --esp-tools-button-text-color: #fff;
-      font-size: 1.1em;
-    }
-    .install-btn-full {
-      --esp-tools-button-color: #ff6b6b;
-      --esp-tools-button-text-color: #fff;
-      font-size: 1.1em;
+      font-size: 1.2em;
     }
     .warning {
       background: #ff980020;
@@ -107,7 +66,6 @@
     }
     @media (max-width: 600px) {
       .features { columns: 1; }
-      .install-buttons { flex-direction: column; }
     }
   </style>
 </head>
@@ -117,29 +75,13 @@
 
   <div class="container">
     <h2>Firmware Installation</h2>
-    <p>Connect your T-Deck Plus via USB and choose an option:</p>
+    <p>Connect your T-Deck Plus via USB and click the button:</p>
 
-    <div class="install-buttons">
-      <div class="install-option update">
-        <h3>Update Firmware</h3>
-        <p>Preserves your existing configuration (callsign, WiFi, etc.)</p>
-        <esp-web-install-button class="install-btn" manifest="manifest.json">
-          <button slot="activate">Update Firmware</button>
-          <span slot="unsupported">Browser not supported. Use Chrome or Edge.</span>
-          <span slot="not-allowed">USB access not authorized.</span>
-        </esp-web-install-button>
-      </div>
-
-      <div class="install-option full">
-        <h3>Full Install (First Time)</h3>
-        <p>Erases everything and installs fresh. Use for new devices or to reset.</p>
-        <esp-web-install-button class="install-btn-full" manifest="manifest-full.json" erase-first>
-          <button slot="activate">Full Install</button>
-          <span slot="unsupported">Browser not supported. Use Chrome or Edge.</span>
-          <span slot="not-allowed">USB access not authorized.</span>
-        </esp-web-install-button>
-      </div>
-    </div>
+    <esp-web-install-button class="install-btn" manifest="manifest.json">
+      <button slot="activate">Install Firmware</button>
+      <span slot="unsupported">Browser not supported. Use Chrome or Edge.</span>
+      <span slot="not-allowed">USB access not authorized.</span>
+    </esp-web-install-button>
   </div>
 
   <div class="warning">
