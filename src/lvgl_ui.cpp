@@ -25,6 +25,7 @@
 #include "custom_characters.h"
 #include "ble_utils.h"
 #include "wifi_utils.h"
+#include "lora_aprs_logo.h"
 #include "storage_utils.h"
 
 // APRS symbol mapping (same as display.cpp)
@@ -2839,21 +2840,19 @@ namespace LVGL_UI {
 
         // Create splash screen
         screen_splash = lv_obj_create(NULL);
-        lv_obj_set_style_bg_color(screen_splash, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_bg_color(screen_splash, lv_color_hex(0xffffff), 0);  // White background for logo
 
-        // Title: LoRa APRS
-        lv_obj_t* title = lv_label_create(screen_splash);
-        lv_label_set_text(title, "LoRa APRS");
-        lv_obj_set_style_text_color(title, lv_color_hex(0x00ff88), 0);
-        lv_obj_set_style_text_font(title, &lv_font_montserrat_22, 0);
-        lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 50);
+        // LoRa APRS Logo image
+        lv_obj_t* logo = lv_img_create(screen_splash);
+        lv_img_set_src(logo, &lora_aprs_logo);
+        lv_obj_align(logo, LV_ALIGN_TOP_MID, 0, 30);
 
         // Subtitle: (TRACKER)
         lv_obj_t* subtitle = lv_label_create(screen_splash);
         lv_label_set_text(subtitle, "(TRACKER)");
-        lv_obj_set_style_text_color(subtitle, lv_color_hex(0x00d4ff), 0);
+        lv_obj_set_style_text_color(subtitle, lv_color_hex(0x0066cc), 0);  // Blue to match logo
         lv_obj_set_style_text_font(subtitle, &lv_font_montserrat_18, 0);
-        lv_obj_align(subtitle, LV_ALIGN_TOP_MID, 0, 90);
+        lv_obj_align(subtitle, LV_ALIGN_TOP_MID, 0, 115);
 
         // LoRa Frequency
         const char* region;
@@ -2868,15 +2867,15 @@ namespace LVGL_UI {
         snprintf(freqBuf, sizeof(freqBuf), "LoRa Freq [%s]", region);
         lv_obj_t* freq_label = lv_label_create(screen_splash);
         lv_label_set_text(freq_label, freqBuf);
-        lv_obj_set_style_text_color(freq_label, lv_color_hex(0xffffff), 0);
-        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_style_text_color(freq_label, lv_color_hex(0x0033cc), 0);  // Blue to match LoRa logo
+        lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 20);
 
         // Author and version
         char verBuf[48];
         snprintf(verBuf, sizeof(verBuf), "CA2RXU  %s", version);
         lv_obj_t* ver_label = lv_label_create(screen_splash);
         lv_label_set_text(ver_label, verBuf);
-        lv_obj_set_style_text_color(ver_label, lv_color_hex(0xc792ea), 0);
+        lv_obj_set_style_text_color(ver_label, lv_color_hex(0xcc0000), 0);  // Red to match APRS logo
         lv_obj_align(ver_label, LV_ALIGN_BOTTOM_MID, 0, -30);
 
         // Load and display
