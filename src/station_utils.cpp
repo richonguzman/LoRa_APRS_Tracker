@@ -43,6 +43,7 @@ extern TinyGPSPlus          gps;
 extern uint8_t              myBeaconsIndex;
 extern uint8_t              loraIndex;
 extern uint8_t              screenBrightness;
+extern bool                 displayEcoMode;
 
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
@@ -297,12 +298,13 @@ namespace STATION_Utils {
             case 0: filePath = "/callsignIndex.txt"; break;
             case 1: filePath = "/freqIndex.txt"; break;
             case 2: filePath = "/brightness.txt"; break;
+            case 3: filePath = "/displayEcoMode.txt"; break;
             default: return; // Invalid type, exit function
         }
-    
+
         File fileIndex = SPIFFS.open(filePath, "w");
         if (!fileIndex) return;
-    
+
         String dataToSave = String(index);
         if (fileIndex.println(dataToSave)) {
             String logMessage;
@@ -310,6 +312,7 @@ namespace STATION_Utils {
                 case 0: logMessage = "New Callsign Index"; break;
                 case 1: logMessage = "New Frequency Index"; break;
                 case 2: logMessage = "New Brightness"; break;
+                case 3: logMessage = "Display Eco Mode"; break;
                 default: return; // Invalid type, exit function
             }
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s saved to SPIFFS", logMessage.c_str());
@@ -323,6 +326,7 @@ namespace STATION_Utils {
             case 0: filePath = "/callsignIndex.txt"; break;
             case 1: filePath = "/freqIndex.txt"; break;
             case 2: filePath = "/brightness.txt"; break;
+            case 3: filePath = "/displayEcoMode.txt"; break;
             default: return; // Invalid type, exit function
         }
 
@@ -337,6 +341,7 @@ namespace STATION_Utils {
                         screenBrightness = 1;
                     #endif
                     break;
+                case 3: displayEcoMode = false; break;  // Default: off
                 default: return; // Invalid type, exit function
             }
             return;
@@ -352,9 +357,12 @@ namespace STATION_Utils {
                 } else if (type == 1) {
                     loraIndex = index;
                     logMessage = "LoRa Freq Index:";
-                } else {
+                } else if (type == 2) {
                     screenBrightness = index;
                     logMessage = "Brightness:";
+                } else if (type == 3) {
+                    displayEcoMode = (index != 0);
+                    logMessage = "Display Eco Mode:";
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
             }

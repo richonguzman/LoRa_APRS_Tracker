@@ -1075,6 +1075,9 @@ static void eco_switch_changed(lv_event_t* e) {
     displayEcoMode = lv_obj_has_state(sw, LV_STATE_CHECKED);
     Serial.printf("[LVGL] ECO Mode: %s\n", displayEcoMode ? "ON" : "OFF");
 
+    // Save setting to SPIFFS
+    STATION_Utils::saveIndex(3, displayEcoMode ? 1 : 0);
+
     if (displayEcoMode) {
         // Reset activity timer when enabling eco mode
         lastActivityTime = millis();
@@ -2980,8 +2983,9 @@ namespace LVGL_UI {
         // Initialize tick counter
         last_tick = millis();
 
-        // Load saved brightness from storage
+        // Load saved settings from storage
         STATION_Utils::loadIndex(2);  // Screen Brightness value
+        STATION_Utils::loadIndex(3);  // Display Eco Mode
         // Ensure brightness is within valid range for slider
         if (screenBrightness < BRIGHT_MIN) screenBrightness = BRIGHT_MIN;
         if (screenBrightness > BRIGHT_MAX) screenBrightness = BRIGHT_MAX;
