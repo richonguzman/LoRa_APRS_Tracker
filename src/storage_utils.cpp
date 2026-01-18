@@ -71,8 +71,8 @@ namespace STORAGE_Utils {
     }
 
     void setup() {
-        // Always init SPIFFS as fallback
-        if (!SPIFFS.begin(true)) {
+        // Always init SPIFFS as fallback (don't format on fail to preserve config)
+        if (!SPIFFS.begin(false)) {
             Serial.println("[Storage] SPIFFS mount failed");
         } else {
             Serial.println("[Storage] SPIFFS mounted");
