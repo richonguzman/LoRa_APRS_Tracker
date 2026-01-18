@@ -91,6 +91,11 @@ static lv_color_t* buf2 = nullptr;
 static lv_disp_drv_t disp_drv;
 static lv_indev_drv_t indev_drv;
 
+// Display eco mode (screen dimming after inactivity)
+static const uint32_t ECO_TIMEOUT_MS = 10000;  // 10 seconds of inactivity
+static uint32_t lastActivityTime = 0;
+static bool screenDimmed = false;
+
 // UI Elements - Main screen
 static lv_obj_t* screen_main = nullptr;
 static lv_obj_t* label_callsign = nullptr;
@@ -184,6 +189,19 @@ static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
         data->state = LV_INDEV_STATE_PR;
         data->point.x = x;
         data->point.y = y;
+
+        // Reset activity timer on touch
+        lastActivityTime = millis();
+
+        // Wake up screen if dimmed
+        if (screenDimmed) {
+            screenDimmed = false;
+            #ifdef BOARD_BL_PIN
+                analogWrite(BOARD_BL_PIN, screenBrightness);
+            #endif
+            Serial.println("[LVGL] Screen woken up by touch");
+        }
+
         // Debug: print touch coordinates
         if (millis() - lastTouchDebug > 500) {
             Serial.printf("[LVGL Touch] x=%d y=%d (raw: %d,%d)\n", x, y, t.x, t.y);
@@ -1055,6 +1073,19 @@ static void eco_switch_changed(lv_event_t* e) {
     lv_obj_t* sw = lv_event_get_target(e);
     displayEcoMode = lv_obj_has_state(sw, LV_STATE_CHECKED);
     Serial.printf("[LVGL] ECO Mode: %s\n", displayEcoMode ? "ON" : "OFF");
+
+    if (displayEcoMode) {
+        // Reset activity timer when enabling eco mode
+        lastActivityTime = millis();
+    } else {
+        // Wake up screen when disabling eco mode
+        if (screenDimmed) {
+            screenDimmed = false;
+            #ifdef BOARD_BL_PIN
+                analogWrite(BOARD_BL_PIN, screenBrightness);
+            #endif
+        }
+    }
 }
 
 static void brightness_slider_changed(lv_event_t* e) {
@@ -2387,17 +2418,16 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         Serial.printf("[LVGL] Sending message to %s: %s\n", to, msg);
         MSG_Utils::addToOutputBuffer(1, String(to), String(msg));
 
-        // Save to outbox
-        String outboxPath = STORAGE_Utils::getOutboxPath();
-        if (outboxPath.length() > 0) {
-            // Create filename with timestamp
-            String filename = outboxPath + "/" + String(to) + "_" + String(millis()) + ".txt";
-            File file = STORAGE_Utils::openFile(filename, FILE_WRITE);
-            if (file) {
-                file.printf("To: %s\nMsg: %s\nTime: %lu\n", to, msg, millis());
-                file.close();
-                Serial.printf("[LVGL] Message saved to outbox: %s\n", filename.c_str());
-            }
+        // Save sent message to aprsMessages.txt (same format as received messages)
+        // Format: "TO_CALLSIGN,>message" (> prefix indicates sent message)
+        File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
+        if (msgFile) {
+            String sentMsg = String(to) + ",>" + String(msg);
+            msgFile.println(sentMsg);
+            msgFile.close();
+            Serial.printf("[LVGL] Sent message saved: %s\n", sentMsg.c_str());
+        } else {
+            Serial.println("[LVGL] Failed to save sent message");
         }
 
         // Show confirmation popup
@@ -2655,6 +2685,16 @@ void handleComposeKeyboard(char key) {
             const char* msg = lv_textarea_get_text(compose_msg_input);
             if (strlen(to) > 0 && strlen(msg) > 0) {
                 MSG_Utils::addToOutputBuffer(1, String(to), String(msg));
+
+                // Save sent message to aprsMessages.txt (same format as received messages)
+                // Format: "TO_CALLSIGN,>message" (> prefix indicates sent message)
+                File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
+                if (msgFile) {
+                    String sentMsg = String(to) + ",>" + String(msg);
+                    msgFile.println(sentMsg);
+                    msgFile.close();
+                }
+
                 lv_textarea_set_text(compose_to_input, "");
                 lv_textarea_set_text(compose_msg_input, "");
                 compose_screen_active = false;
@@ -3031,6 +3071,9 @@ namespace LVGL_UI {
         lv_refr_now(NULL);
         Serial.println("[LVGL] Forced initial refresh");
 
+        // Initialize activity timer for eco mode
+        lastActivityTime = millis();
+
         Serial.println("[LVGL] UI Ready");
     }
 
@@ -3046,6 +3089,17 @@ namespace LVGL_UI {
 
         // Handle LVGL tasks
         lv_timer_handler();
+
+        // Display eco mode: dim screen after inactivity timeout
+        if (displayEcoMode && !screenDimmed) {
+            if (now - lastActivityTime >= ECO_TIMEOUT_MS) {
+                screenDimmed = true;
+                #ifdef BOARD_BL_PIN
+                    analogWrite(BOARD_BL_PIN, 0);  // Turn off backlight
+                #endif
+                Serial.println("[LVGL] Screen dimmed (eco mode)");
+            }
+        }
 
         // Update data every second
         if (now - last_data_update >= 1000) {
