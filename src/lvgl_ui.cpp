@@ -138,6 +138,7 @@ static lv_obj_t* screen_map = nullptr;
 static lv_obj_t* map_canvas = nullptr;
 static lv_color_t* map_canvas_buf = nullptr;
 static lv_obj_t* map_title_label = nullptr;  // Title label to update zoom level
+static lv_obj_t* map_container = nullptr;    // Container for canvas and station buttons
 // Available zoom levels (only levels with tiles on SD card)
 static const int map_available_zooms[] = {8, 10, 12, 14};
 static const int map_zoom_count = sizeof(map_available_zooms) / sizeof(map_available_zooms[0]);
@@ -2278,25 +2279,102 @@ static void btn_map_recenter_clicked(lv_event_t* e) {
     schedule_map_reload();
 }
 
-// Timer callback to reload map screen (deferred to let touch event complete)
+// Forward declarations
+static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offsetX, int offsetY);
+static void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbol, lv_color_t color);
+static lv_color_t getAPRSSymbolColor(const char* symbol);
+static void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* x, int* y);
+
+// Redraw just the canvas content without recreating the screen (for zoom)
+static void redraw_map_canvas() {
+    Serial.println("[MAP-DEBUG] redraw_map_canvas START");
+
+    if (!map_canvas || !map_canvas_buf || !map_title_label) {
+        Serial.println("[MAP-DEBUG] Canvas or title not initialized, doing full reload");
+        screen_map = nullptr;
+        create_map_screen();
+        lv_disp_load_scr(screen_map);
+        return;
+    }
+
+    // Update title with new zoom level
+    char title_text[32];
+    snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
+    lv_label_set_text(map_title_label, title_text);
+    Serial.printf("[MAP-DEBUG] Title updated to: %s\n", title_text);
+
+    // Clear canvas
+    lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
+
+    // Recalculate tile positions
+    int centerTileX, centerTileY;
+    latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
+
+    int n = 1 << map_current_zoom;
+    float tileXf = (map_center_lon + 180.0f) / 360.0f * n;
+    float latRad = map_center_lat * PI / 180.0f;
+    float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
+
+    float fracX = tileXf - centerTileX;
+    float fracY = tileYf - centerTileY;
+    int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
+    int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
+
+    Serial.printf("[MAP] Center tile: %d/%d, sub-offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
+
+    // Load tiles
+    bool hasTiles = false;
+    if (STORAGE_Utils::isSDAvailable()) {
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int tileX = centerTileX + dx;
+                int tileY = centerTileY + dy;
+                int offsetX = MAP_CANVAS_WIDTH / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
+                int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
+
+                if (dx == 0 && dy == 0) {
+                    Serial.printf("[MAP] Center tile offset: %d,%d\n", offsetX, offsetY);
+                }
+
+                if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
+                    hasTiles = true;
+                }
+            }
+        }
+    }
+
+    if (!hasTiles) {
+        lv_draw_label_dsc_t label_dsc;
+        lv_draw_label_dsc_init(&label_dsc);
+        label_dsc.color = lv_color_hex(0xaaaaaa);
+        label_dsc.font = &lv_font_montserrat_14;
+        lv_canvas_draw_text(map_canvas, 40, MAP_CANVAS_HEIGHT / 2 - 30, 240, &label_dsc,
+            "No offline tiles available.");
+    }
+
+    // Draw own position
+    if (gps.location.isValid()) {
+        int myX, myY;
+        latLonToPixel(gps.location.lat(), gps.location.lng(),
+                      map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
+        if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
+            Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
+            drawMapSymbol(map_canvas, myX, myY, currentBeacon->symbol.c_str(), getAPRSSymbolColor(currentBeacon->symbol.c_str()));
+        }
+    }
+
+    // Force canvas update
+    lv_obj_invalidate(map_canvas);
+    Serial.println("[MAP-DEBUG] redraw_map_canvas END");
+}
+
+// Timer callback to reload map screen (for pan/recenter)
 static void map_reload_timer_cb(lv_timer_t* timer) {
     Serial.println("[MAP-DEBUG] Timer callback START");
     lv_timer_del(timer);
-    yield();  // Let system breathe
     screen_map = nullptr;
     create_map_screen();
-    Serial.println("[MAP-DEBUG] Screen created, loading...");
-    yield();  // Let system breathe after tile loading
     lv_disp_load_scr(screen_map);
-    Serial.println("[MAP-DEBUG] Invalidating screen...");
-    lv_obj_invalidate(screen_map);
-    yield();
-    Serial.println("[MAP-DEBUG] Screen loaded, refreshing...");
-    lv_refr_now(NULL);
-    yield();
-    Serial.println("[MAP-DEBUG] Calling task handler...");
-    lv_task_handler();
-    yield();
     Serial.println("[MAP-DEBUG] Timer callback END");
 }
 
@@ -2315,7 +2393,7 @@ static void btn_map_zoomin_clicked(lv_event_t* e) {
         map_zoom_index++;
         map_current_zoom = map_available_zooms[map_zoom_index];
         Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
-        schedule_map_reload();
+        redraw_map_canvas();  // Just redraw canvas, don't recreate screen
     } else {
         Serial.println("[MAP-DEBUG] Already at max zoom");
     }
@@ -2329,7 +2407,7 @@ static void btn_map_zoomout_clicked(lv_event_t* e) {
         map_zoom_index--;
         map_current_zoom = map_available_zooms[map_zoom_index];
         Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
-        schedule_map_reload();
+        redraw_map_canvas();  // Just redraw canvas, don't recreate screen
     } else {
         Serial.println("[MAP-DEBUG] Already at min zoom");
     }
@@ -2392,7 +2470,6 @@ static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int
         Serial.printf("[MAP] Cache hit: %d/%d/%d\n", zoom, tileX, tileY);
         copyTileToCanvas(tileCache[cacheIdx].data, canvasBuffer, offsetX, offsetY,
                          MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-        yield();  // Let system breathe
         return true;
     }
 
@@ -2459,7 +2536,6 @@ static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int
             copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY,
                              MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
 
-            yield();  // Let system breathe after each tile load
             return true;
         }
     }
@@ -2542,7 +2618,7 @@ static void create_map_screen() {
     lv_obj_center(lbl_recenter);
 
     // Map canvas area
-    lv_obj_t* map_container = lv_obj_create(screen_map);
+    map_container = lv_obj_create(screen_map);
     lv_obj_set_size(map_container, SCREEN_WIDTH, MAP_CANVAS_HEIGHT);
     lv_obj_set_pos(map_container, 0, 35);
     lv_obj_set_style_bg_color(map_container, lv_color_hex(0x2F4F4F), 0);  // Dark slate gray
