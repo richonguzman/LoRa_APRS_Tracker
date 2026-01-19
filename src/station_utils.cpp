@@ -27,10 +27,14 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "lora_utils.h"
+#include "aprs_is_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -39,6 +43,7 @@ extern TinyGPSPlus          gps;
 extern uint8_t              myBeaconsIndex;
 extern uint8_t              loraIndex;
 extern uint8_t              screenBrightness;
+extern bool                 displayEcoMode;
 
 extern uint32_t             lastTx;
 extern uint32_t             lastTxTime;
@@ -211,31 +216,41 @@ namespace STATION_Utils {
         
         if (!shouldSleepLowVoltage) {
             String comment = (winlinkCommentState ? "winlink" : currentBeacon->comment);
+            if (comment == "") comment = "LoRa APRS Tracker";
             int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
 
             if (Config.battery.sendVoltage && !Config.battery.voltageAsTelemetry) {
                 #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                     String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(HAS_AXP192)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += batteryVoltage;
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "mA)";
                     #elif defined(HAS_AXP2101)
-                        comment += " Bat=";
+                        comment += " Batt=";
                         comment += String(batteryVoltage.toFloat(),2);
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "%)";
                     #endif
                 #elif defined(BATTERY_PIN)
-                    comment += " Bat=";
+                    comment += " Batt=";
                     comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V";
+                    comment += "V (";
                     comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
-                    comment += "%";
+                    comment += "%)";
                 #endif
+            }
+
+            // Add LoRa frequency and data rate info
+            if (Config.lora.sendInfo) {
+                comment += " ";
+                comment += String(Config.loraTypes[loraIndex].frequency / 1000000.0, 3);
+                comment += "MHz ";
+                comment += String(Config.loraTypes[loraIndex].dataRate);
+                comment += "bps";
             }
 
             if (comment != "" || (Config.battery.sendVoltage && Config.battery.voltageAsTelemetry) || (Config.telemetry.sendTelemetry && wxModuleFound)) {
@@ -250,8 +265,17 @@ namespace STATION_Utils {
             packet += "**LowVoltagePowerOff**";
         }
 
-        displayShow("<<< TX >>>", "", packet, 100);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::showTxPacket(packet.c_str());
+        #else
+            displayShow("<<< TX >>>", "", packet, 100);
+        #endif
         LoRa_Utils::sendNewPacket(packet);
+
+        // Upload to APRS-IS if connected
+        if (APRS_IS_Utils::isConnected()) {
+            APRS_IS_Utils::upload(packet);
+        }
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
@@ -274,12 +298,13 @@ namespace STATION_Utils {
             case 0: filePath = "/callsignIndex.txt"; break;
             case 1: filePath = "/freqIndex.txt"; break;
             case 2: filePath = "/brightness.txt"; break;
+            case 3: filePath = "/displayEcoMode.txt"; break;
             default: return; // Invalid type, exit function
         }
-    
+
         File fileIndex = SPIFFS.open(filePath, "w");
         if (!fileIndex) return;
-    
+
         String dataToSave = String(index);
         if (fileIndex.println(dataToSave)) {
             String logMessage;
@@ -287,6 +312,7 @@ namespace STATION_Utils {
                 case 0: logMessage = "New Callsign Index"; break;
                 case 1: logMessage = "New Frequency Index"; break;
                 case 2: logMessage = "New Brightness"; break;
+                case 3: logMessage = "Display Eco Mode"; break;
                 default: return; // Invalid type, exit function
             }
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s saved to SPIFFS", logMessage.c_str());
@@ -300,6 +326,7 @@ namespace STATION_Utils {
             case 0: filePath = "/callsignIndex.txt"; break;
             case 1: filePath = "/freqIndex.txt"; break;
             case 2: filePath = "/brightness.txt"; break;
+            case 3: filePath = "/displayEcoMode.txt"; break;
             default: return; // Invalid type, exit function
         }
 
@@ -314,6 +341,7 @@ namespace STATION_Utils {
                         screenBrightness = 1;
                     #endif
                     break;
+                case 3: displayEcoMode = false; break;  // Default: off
                 default: return; // Invalid type, exit function
             }
             return;
@@ -329,9 +357,12 @@ namespace STATION_Utils {
                 } else if (type == 1) {
                     loraIndex = index;
                     logMessage = "LoRa Freq Index:";
-                } else {
+                } else if (type == 2) {
                     screenBrightness = index;
                     logMessage = "Brightness:";
+                } else if (type == 3) {
+                    displayEcoMode = (index != 0);
+                    logMessage = "Display Eco Mode:";
                 }
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
             }

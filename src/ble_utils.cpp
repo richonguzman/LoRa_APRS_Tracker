@@ -17,12 +17,16 @@
  */
 
 #include <NimBLEDevice.h>
+#include <esp_wifi.h>
 #include "configuration.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "ble_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 #define BLE_CHUNK_SIZE  512
 #define MAX_KISS_BUFFER 1024
@@ -51,19 +55,52 @@ extern bool             bluetoothActive;
 bool    shouldSendBLEtoLoRa     = false;
 String  BLEToLoRaPacket         = "";
 String  kissSerialBuffer        = "";
+String  bleConnectedDeviceAddr  = "";  // Connected device MAC address
+String  bleConnectedDeviceName  = "";  // Connected device name (from GAP)
+bool    bleNeedToReadName       = false;  // Flag to read name after connection
+NimBLEAddress bleConnectedPeerAddr;  // Peer address for client connection
 
+// BLE Eco Mode variables
+bool        bleEcoMode          = true;     // BLE eco mode always active (automatic)
+bool        bleSleeping         = false;    // BLE is currently sleeping (stopped)
+uint32_t    bleLastActivityTime = 0;        // Last time BLE had activity (connection)
+const uint32_t BLE_ECO_TIMEOUT  = 5 * 60 * 1000;  // 5 minutes timeout
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = true;
+        bleLastActivityTime = millis();  // Reset eco mode timer
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
-        delay(100);
+    }
+
+    void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
+        bluetoothConnected = true;
+        // Get connected device MAC address from connection descriptor
+        bleConnectedPeerAddr = NimBLEAddress(desc->peer_ota_addr);
+        bleConnectedDeviceAddr = bleConnectedPeerAddr.toString().c_str();
+        bleConnectedDeviceName = "";  // Will be read later
+        bleNeedToReadName = true;  // Signal to read name in loop
+        bleLastActivityTime = millis();  // Reset eco mode timer
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
     void onDisconnect(NimBLEServer* pServer) {
         bluetoothConnected = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
-        delay(100);
+        bleConnectedDeviceAddr = "";
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = false;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected");
+        pServer->startAdvertising();
+    }
+
+    void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc, int reason) {
+        bluetoothConnected = false;
+        bleConnectedDeviceAddr = "";
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = false;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE client Disconnected (reason: %d)", reason);
         pServer->startAdvertising();
     }
 };
@@ -135,8 +172,16 @@ namespace BLE_Utils {
     }
 
     void setup() {
+        // Initialize eco mode timer
+        bleLastActivityTime = millis();
+        bleSleeping = false;
+
+        // Ensure WiFi modem sleep is enabled for WiFi/BLE coexistence
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+
         String BLEid = Config.bluetooth.deviceName;
-        BLEDevice::init(BLEid.c_str()); 
+        BLEDevice::init(BLEid.c_str());
+        BLEDevice::setPower(ESP_PWR_LVL_P3);  // Moderate power for coexistence
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
@@ -169,7 +214,11 @@ namespace BLE_Utils {
         if (!shouldSendBLEtoLoRa) return;
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
-        displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::showTxPacket(BLEToLoRaPacket.c_str());
+        #else
+            displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
+        #endif
         LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
         BLEToLoRaPacket = "";
         shouldSendBLEtoLoRa = false;
@@ -211,6 +260,55 @@ namespace BLE_Utils {
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
             txToPhoneOverBLE(receivedPacketString);
         }
+    }
+
+    String getConnectedDeviceAddress() {
+        return bleConnectedDeviceAddr;
+    }
+
+    String getConnectedDeviceName() {
+        return bleConnectedDeviceName;
+    }
+
+    // Try to read the device name from the connected peer
+    // Note: Most smartphones don't allow reverse client connections, so this usually fails
+    // Keeping the function but it's essentially a no-op for now
+    void tryReadDeviceName() {
+        // Disabled - smartphones typically don't expose their GAP service to peripherals
+        // The MAC address will be displayed instead
+        bleNeedToReadName = false;
+    }
+
+    // Check BLE eco mode timeout - call this from main loop
+    void checkEcoMode() {
+        if (!bleEcoMode || !bluetoothActive || bleSleeping || bluetoothConnected) {
+            return;  // Eco mode disabled, BLE not active, already sleeping, or connected
+        }
+
+        uint32_t now = millis();
+        if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
+            // Timeout reached - put BLE to sleep
+            bleSleeping = true;
+            BLEDevice::deinit();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
+            Serial.println("[BLE] Eco mode: BLE stopped (5 min timeout)");
+        }
+    }
+
+    // Wake up BLE from eco mode sleep
+    void wake() {
+        if (!bleSleeping) return;
+
+        Serial.println("[BLE] Waking up from eco mode");
+        bleSleeping = false;
+        bleLastActivityTime = millis();
+        setup();  // Re-initialize BLE
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE restarted");
+    }
+
+    // Check if BLE is sleeping
+    bool isSleeping() {
+        return bleSleeping;
     }
 
 }

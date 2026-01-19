@@ -27,6 +27,12 @@ namespace BLE_Utils {
     void setup();
     void sendToLoRa();
     void sendToPhone(const String& packet);
+    String getConnectedDeviceAddress();
+    String getConnectedDeviceName();
+    void tryReadDeviceName();  // Call periodically to attempt reading device name
+    void checkEcoMode();       // Check BLE eco mode timeout
+    void wake();               // Wake BLE from eco mode sleep
+    bool isSleeping();         // Check if BLE is sleeping
 
 }
 

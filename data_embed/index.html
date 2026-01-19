@@ -324,21 +324,6 @@
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
-                                                name="display.ecoMode"
-                                                id="display.ecoMode"
-                                                class="form-check-input"
-                                            />
-                                            <label
-                                                for="display.ecoMode"
-                                                class="form-label"
-                                                >Enable Display EcoMode</label
-                                            >
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                type="checkbox"
                                                 name="display.turn180"
                                                 id="display.turn180"
                                                 class="form-check-input"
@@ -347,27 +332,6 @@
                                                 for="display.turn180"
                                                 class="form-label"
                                                 >Turn 180º</label
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mt-1">
-                                    <div class="col-6">
-                                        <label
-                                            for="display.timeout"
-                                            class="form-label"
-                                            >Display Timeout (for EcoMode)</label
-                                        >
-                                        <div class="input-group">
-                                            <input
-                                                type="text"
-                                                name="display.timeout"
-                                                id="display.timeout"
-                                                value="4"
-                                                class="form-control"
-                                            />
-                                            <span class="input-group-text"
-                                                >seconds</span
                                             >
                                         </div>
                                     </div>
@@ -444,7 +408,7 @@
                                     </div>
                                 </div>
                                 <div class="row mt-3">
-                                    <div class="col-6">
+                                    <div class="col-6" id="btClassicOption">
                                         <div class="form-check form-switch">
                                             <input
                                                 type="checkbox"
@@ -473,6 +437,91 @@
                                                 >Enable: KISS / Disable: TNC2</label
                                             >
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
+                                        class="bi bi-globe"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path
+                                            d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m7.5-6.923c-.67.204-1.335.82-1.887 1.855A8 8 0 0 0 5.145 4H7.5zM4.09 4a9.3 9.3 0 0 1 .64-1.539 7 7 0 0 1 .597-.933A7.03 7.03 0 0 0 2.255 4zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a7 7 0 0 0-.656 2.5zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5zM8.5 5v2.5h2.99a12.5 12.5 0 0 0-.337-2.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5zM5.145 12q.208.58.468 1.068c.552 1.035 1.218 1.65 1.887 1.855V12zm.182 2.472a7 7 0 0 1-.597-.933A9.3 9.3 0 0 1 4.09 12H2.255a7 7 0 0 0 3.072 2.472M3.82 11a13.7 13.7 0 0 1-.312-2.5h-1.834a7 7 0 0 0 .656 2.5zm6.853 3.472A7 7 0 0 0 13.745 12H11.91a9.3 9.3 0 0 1-.64 1.539 7 7 0 0 1-.597.933M8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855q.26-.487.468-1.068zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-1.834a13.7 13.7 0 0 1-.312 2.5zm2.802-3.5a7 7 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7 7 0 0 0-3.072-2.472c.218.284.418.598.597.933M10.855 4a8 8 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4z"
+                                        />
+                                    </svg>
+                                    APRS-IS
+                                </h5>
+                                <small
+                                    >Internet Gateway Configuration (requires WiFi).</small
+                                >
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="aprs_is.active"
+                                                id="aprs_is.active"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="aprs_is.active"
+                                                class="form-label"
+                                                >Enable APRS-IS</label
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="aprs_is.server"
+                                            class="form-label"
+                                            >APRS-IS Server</label>
+                                        <input
+                                            name="aprs_is.server"
+                                            id="aprs_is.server"
+                                            class="form-control"
+                                            placeholder="euro.aprs2.net"
+                                            value="euro.aprs2.net"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="aprs_is.port"
+                                            class="form-label"
+                                            >Port</label>
+                                        <input
+                                            type="number"
+                                            name="aprs_is.port"
+                                            id="aprs_is.port"
+                                            class="form-control"
+                                            placeholder="14580"
+                                            value="14580"
+                                        />
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="aprs_is.passcode"
+                                            class="form-label"
+                                            >Passcode</label>
+                                        <input
+                                            name="aprs_is.passcode"
+                                            id="aprs_is.passcode"
+                                            class="form-control"
+                                            placeholder="-1"
+                                            value="-1"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -764,6 +813,89 @@
                                         width="20"
                                         height="20"
                                         fill="currentColor"
+                                        class="bi bi-wifi"
+                                        viewBox="0 0 16 16"
+                                    >
+                                        <path d="M15.384 6.115a.485.485 0 0 0-.047-.736A12.44 12.44 0 0 0 8 3C5.259 3 2.723 3.882.663 5.379a.485.485 0 0 0-.048.736.52.52 0 0 0 .668.05A11.45 11.45 0 0 1 8 4c2.507 0 4.827.802 6.716 2.164.205.148.49.13.668-.049"/>
+                                        <path d="M13.229 8.271a.482.482 0 0 0-.063-.745A9.46 9.46 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.576 1.336c.206.132.48.108.653-.065"/>
+                                        <path d="M11.046 10.454a.5.5 0 0 0-.075-.753A6.47 6.47 0 0 0 8 9a6.47 6.47 0 0 0-2.971.701.5.5 0 0 0-.075.752.5.5 0 0 0 .621.086A5.48 5.48 0 0 1 8 10c.94 0 1.83.236 2.426.539a.5.5 0 0 0 .62-.085"/>
+                                        <path d="M9.06 12.44a.5.5 0 0 0-.078-.75 3.6 3.6 0 0 0-1.964-.544c-.718 0-1.38.212-1.964.544a.5.5 0 0 0 .617.869A2.6 2.6 0 0 1 8 12c.51 0 .99.14 1.383.369a.5.5 0 0 0 .617-.129.5.5 0 0 0 .06-.2m-1.06 1.06a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                                    </svg>
+                                    WiFi Network
+                                </h5>
+                                <small
+                                    >Configure WiFi network to connect to.</small
+                                >
+                            </div>
+                            <div class="col-lg-9 col-sm-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.0.ssid"
+                                            class="form-label"
+                                            >SSID 1</label>
+                                        <input
+                                            type="text"
+                                            name="wifi.AP.0.ssid"
+                                            id="wifi.AP.0.ssid"
+                                            class="form-control"
+                                            placeholder="Home WiFi"
+                                        />
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.0.password"
+                                            class="form-label"
+                                            >Password 1</label>
+                                        <input
+                                            type="password"
+                                            name="wifi.AP.0.password"
+                                            id="wifi.AP.0.password"
+                                            class="form-control"
+                                            placeholder="WiFi password"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.1.ssid"
+                                            class="form-label"
+                                            >SSID 2</label>
+                                        <input
+                                            type="text"
+                                            name="wifi.AP.1.ssid"
+                                            id="wifi.AP.1.ssid"
+                                            class="form-control"
+                                            placeholder="Smartphone hotspot"
+                                        />
+                                    </div>
+                                    <div class="col-6">
+                                        <label
+                                            for="wifi.AP.1.password"
+                                            class="form-label"
+                                            >Password 2</label>
+                                        <input
+                                            type="password"
+                                            name="wifi.AP.1.password"
+                                            id="wifi.AP.1.password"
+                                            class="form-control"
+                                            placeholder="Hotspot password"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+
+                        <div class="row my-5 d-flex align-items-top">
+                            <div class="col-lg-3 col-sm-12">
+                                <h5>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="20"
+                                        height="20"
+                                        fill="currentColor"
                                         class="bi bi-router-fill"
                                         viewBox="0 0 16 16"
                                     >
@@ -780,22 +912,22 @@
                                             d="M8.5 5.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
                                         />
                                     </svg>
-                                    WiFi AP
+                                    WiFi AP (Fallback)
                                 </h5>
                                 <small
-                                    >Add your password to access WiFi AP.</small
+                                    >Password for fallback Access Point.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
                                 <div class="col-6">
-                                    <label 
-                                        for="wifiAP.password" 
+                                    <label
+                                        for="wifi.autoAP.password"
                                         class="form-label"
                                         >Password</label>
                                     <input
                                         type="password"
-                                        name="wifiAP.password"
-                                        id="wifiAP.password"
+                                        name="wifi.autoAP.password"
+                                        id="wifi.autoAP.password"
                                         class="form-control"
                                         placeholder="1234567890"
                                         value="1234567890"
@@ -986,7 +1118,25 @@
                                             <span class="input-group-text">Pin</span>
                                         </div>
                                     </div>
-                                    
+
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <label
+                                            for="notification.volume"
+                                            class="form-label"
+                                            >Volume: <span id="volumeValue">50</span>%</label>
+                                        <input
+                                            type="range"
+                                            name="notification.volume"
+                                            id="notification.volume"
+                                            class="form-range"
+                                            min="0"
+                                            max="100"
+                                            value="50"
+                                            oninput="document.getElementById('volumeValue').textContent = this.value"
+                                        />
+                                    </div>
                                 </div>
                                 <div class="row mt-3">
                                     <div class="col-6">

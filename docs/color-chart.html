@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoRa APRS Tracker - Color Chart</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #00ff88;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    .section h2 {
+      color: #c792ea;
+      border-bottom: 2px solid #c792ea;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .color-card {
+      background: #16213e;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .color-preview {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .color-info {
+      padding: 15px;
+    }
+    .color-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    .color-hex {
+      font-family: monospace;
+      font-size: 18px;
+      color: #00d4ff;
+      margin-bottom: 8px;
+    }
+    .color-usage {
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+    .preview-dark {
+      color: #ffffff;
+    }
+    .preview-light {
+      color: #000000;
+    }
+    .buttons-demo {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .demo-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .screen-demo {
+      background: #1a1a2e;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      max-width: 400px;
+    }
+    .status-bar-demo {
+      background: #16213e;
+      padding: 10px 15px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    .content-demo {
+      background: #0f0f23;
+      border: 1px solid #16213e;
+      border-radius: 5px;
+      padding: 15px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #333;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>LoRa APRS Tracker - LVGL Color Chart</h1>
+  <p class="subtitle">T-Deck Plus 433 MHz - LVGL UI Edition</p>
+
+  <div class="section">
+    <h2>Background Colors</h2>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-preview preview-dark" style="background: #1a1a2e;">Main Screen</div>
+        <div class="color-info">
+          <div class="color-name">Primary Background</div>
+          <div class="color-hex">#1a1a2e</div>
+          <div class="color-usage">Main screens, dialogs, popups</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-dark" style="background: #16213e;">Status Bar</div>
+        <div class="color-info">
+          <div class="color-name">Secondary Background</div>
+          <div class="color-hex">#16213e</div>
+          <div class="color-usage">Status bars, panels, title bars</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-dark" style="background: #0f0f23;">Content Area</div>
+        <div class="color-info">
+          <div class="color-name">Dark Background</div>
+          <div class="color-hex">#0f0f23</div>
+          <div class="color-usage">Content areas, lists, input fields</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Accent Colors</h2>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #00ff88;">BEACON</div>
+        <div class="color-info">
+          <div class="color-name">Green - Primary Action</div>
+          <div class="color-hex">#00ff88</div>
+          <div class="color-usage">Beacon button, success states, confirmations</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #00d4ff;">MSG</div>
+        <div class="color-info">
+          <div class="color-name">Cyan - Information</div>
+          <div class="color-hex">#00d4ff</div>
+          <div class="color-usage">GPS, WiFi, messages button, links</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #c792ea;">SETUP</div>
+        <div class="color-info">
+          <div class="color-name">Violet - Settings</div>
+          <div class="color-hex">#c792ea</div>
+          <div class="color-usage">Setup menu, Bluetooth BLE, secondary actions</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #ff6b6b;">ERROR</div>
+        <div class="color-info">
+          <div class="color-name">Red/Coral - Alert</div>
+          <div class="color-hex">#ff6b6b</div>
+          <div class="color-usage">LoRa indicator, battery, errors, warnings</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #ffa500;">ALERT</div>
+        <div class="color-info">
+          <div class="color-name">Orange - Warning</div>
+          <div class="color-hex">#ffa500</div>
+          <div class="color-usage">Bluetooth Classic, alerts, cautions</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #ffcc00;">STORAGE</div>
+        <div class="color-info">
+          <div class="color-name">Yellow/Gold - Storage</div>
+          <div class="color-hex">#ffcc00</div>
+          <div class="color-usage">SD card, storage indicators</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Text Colors</h2>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-preview preview-dark" style="background: #333;">Primary Text</div>
+        <div class="color-info">
+          <div class="color-name">White - Primary Text</div>
+          <div class="color-hex">#ffffff</div>
+          <div class="color-usage">Callsign, main labels, important text</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview" style="background: #333; color: #aaaaaa;">Secondary Text</div>
+        <div class="color-info">
+          <div class="color-name">Light Gray - Secondary</div>
+          <div class="color-hex">#aaaaaa</div>
+          <div class="color-usage">Descriptions, hints, info text</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview" style="background: #333; color: #666666;">Disabled Text</div>
+        <div class="color-info">
+          <div class="color-name">Dark Gray - Disabled</div>
+          <div class="color-hex">#666666</div>
+          <div class="color-usage">Disabled items, inactive states</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #00ff88;">Button Text</div>
+        <div class="color-info">
+          <div class="color-name">Black - Button Text</div>
+          <div class="color-hex">#000000</div>
+          <div class="color-usage">Text on colored buttons</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Special Colors</h2>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #ff6b35;">WEB-CONF</div>
+        <div class="color-info">
+          <div class="color-name">Orange Red - Web Config</div>
+          <div class="color-hex">#ff6b35</div>
+          <div class="color-usage">Web configuration mode title bar</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview preview-light" style="background: #002200; border: 3px solid #00ff88;">TX Popup</div>
+        <div class="color-info">
+          <div class="color-name">Dark Green - TX Popup</div>
+          <div class="color-hex">#002200 + #00ff88</div>
+          <div class="color-usage">Transmit packet notification</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview" style="background: #000033; border: 3px solid #4488ff; color: #88bbff;">RX Popup</div>
+        <div class="color-info">
+          <div class="color-name">Dark Blue - RX Popup</div>
+          <div class="color-hex">#000033 + #4488ff</div>
+          <div class="color-usage">Receive packet notification</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-preview" style="background: #332200; border: 3px solid #ffa500; color: #ffa500;">WiFi Eco</div>
+        <div class="color-info">
+          <div class="color-name">Dark Orange - WiFi Eco</div>
+          <div class="color-hex">#332200 + #ffa500</div>
+          <div class="color-usage">WiFi eco mode notification</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>UI Preview</h2>
+    <div class="screen-demo">
+      <div class="status-bar-demo">
+        <span style="color: #ffffff; font-weight: bold;">F4XXX-7</span>
+        <span style="color: #ffffff;">12:34</span>
+      </div>
+      <div class="content-demo">
+        <div style="margin-bottom: 10px;">
+          <span style="color: #00d4ff;">GPS:</span> <span style="color: #fff;">48.8566, 2.3522</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span style="color: #ff6b6b;">LoRa:</span> <span style="color: #fff;">433.775 MHz</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span style="color: #00d4ff;">WiFi:</span> <span style="color: #fff;">Connected</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span style="color: #ff6b6b;">Batt:</span> <span style="color: #fff;">4.12V</span>
+        </div>
+        <div>
+          <span style="color: #ffcc00;">SD:</span> <span style="color: #fff;">29.8GB</span>
+        </div>
+      </div>
+      <div class="buttons-demo">
+        <button class="demo-btn" style="background: #00ff88; color: #000;">BEACON</button>
+        <button class="demo-btn" style="background: #00d4ff; color: #000;">MSG</button>
+        <button class="demo-btn" style="background: #c792ea; color: #000;">SETUP</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>LVGL Color Codes</h2>
+    <div style="background: #0f0f23; padding: 20px; border-radius: 10px; font-family: monospace; font-size: 14px; line-height: 2;">
+      <code style="color: #00ff88;">lv_color_hex(0x1a1a2e)</code> <span style="color: #666;">// Primary background</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0x16213e)</code> <span style="color: #666;">// Secondary background</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0x0f0f23)</code> <span style="color: #666;">// Dark background</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0x00ff88)</code> <span style="color: #666;">// Green accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0x00d4ff)</code> <span style="color: #666;">// Cyan accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xc792ea)</code> <span style="color: #666;">// Violet accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xff6b6b)</code> <span style="color: #666;">// Red/coral accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xffa500)</code> <span style="color: #666;">// Orange accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xffcc00)</code> <span style="color: #666;">// Yellow accent</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xffffff)</code> <span style="color: #666;">// White text</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0xaaaaaa)</code> <span style="color: #666;">// Gray text</span><br>
+      <code style="color: #00ff88;">lv_color_hex(0x000000)</code> <span style="color: #666;">// Black text</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    LoRa APRS Tracker - LVGL UI Color Chart<br>
+    Fork by <a href="https://github.com/moricef/LoRa_APRS_Tracker" style="color: #00d4ff;">moricef</a>
+    | Original project <a href="https://github.com/richonguzman/LoRa_APRS_Tracker" style="color: #00d4ff;">CA2RXU</a>
+  </div>
+</body>
+</html>

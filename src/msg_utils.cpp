@@ -18,9 +18,9 @@
 
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
-#include <SPIFFS.h>
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
+#include "storage_utils.h"
 #include "winlink_utils.h"
 #include "configuration.h"
 #include "board_pinout.h"
@@ -30,6 +30,9 @@
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 
 extern Beacon               *currentBeacon;
@@ -65,6 +68,15 @@ bool    noAPRSMsgWarning        = false;
 bool    noWLNKMsgWarning        = false;
 String  lastHeardTracker        = "NONE";
 
+// Duplicate message detection buffer (30 second window)
+struct RecentMessage {
+    String sender;
+    String content;
+    uint32_t timestamp;
+};
+std::vector<RecentMessage> recentMessagesBuffer;
+const uint32_t MSG_DEDUP_WINDOW_MS = 30000;  // 30 seconds
+
 std::vector<String>             loadedAPRSMessages;
 std::vector<String>             loadedWLNKMails;
 std::vector<String>             outputMessagesBuffer;
@@ -83,6 +95,36 @@ uint32_t    messageLedTime      = millis();
 
 
 namespace MSG_Utils {
+
+    // Clean old entries from deduplication buffer
+    static void cleanRecentMessagesBuffer() {
+        uint32_t now = millis();
+        while (!recentMessagesBuffer.empty() &&
+               (now - recentMessagesBuffer[0].timestamp) > MSG_DEDUP_WINDOW_MS) {
+            recentMessagesBuffer.erase(recentMessagesBuffer.begin());
+        }
+    }
+
+    // Check if message is duplicate (within 30-second window)
+    static bool isDuplicateMessage(const String& sender, const String& content) {
+        cleanRecentMessagesBuffer();
+
+        for (const auto& msg : recentMessagesBuffer) {
+            if (msg.sender == sender && msg.content == content) {
+                Serial.printf("[MSG] Duplicate detected: %s from %s\n", content.c_str(), sender.c_str());
+                return true;
+            }
+        }
+
+        // Add to buffer
+        RecentMessage newMsg;
+        newMsg.sender = sender;
+        newMsg.content = content;
+        newMsg.timestamp = millis();
+        recentMessagesBuffer.push_back(newMsg);
+
+        return false;
+    }
 
     bool warnNoAPRSMessages() {
         return noAPRSMsgWarning;
@@ -104,47 +146,68 @@ namespace MSG_Utils {
         return numWLNKMessages;
     }
 
+    std::vector<String>& getLoadedAPRSMessages() {
+        return loadedAPRSMessages;
+    }
+
+    std::vector<String>& getLoadedWLNKMails() {
+        return loadedWLNKMails;
+    }
+
+    std::vector<String> getMessagesForContact(const String& callsign) {
+        std::vector<String> result;
+
+        // Load APRS messages if not loaded
+        loadMessagesFromMemory(0);
+
+        // Filter messages by callsign
+        String upperCallsign = callsign;
+        upperCallsign.toUpperCase();
+
+        for (const String& msg : loadedAPRSMessages) {
+            // Message format: "CALLSIGN,message content"
+            int commaPos = msg.indexOf(',');
+            if (commaPos > 0) {
+                String msgCallsign = msg.substring(0, commaPos);
+                msgCallsign.toUpperCase();
+                if (msgCallsign == upperCallsign) {
+                    result.push_back(msg);
+                }
+            }
+        }
+
+        Serial.printf("[MSG] Found %d messages for %s\n", result.size(), callsign.c_str());
+        return result;
+    }
+
     void loadNumMessages() {
-        if(!SPIFFS.begin(true)) {
-            Serial.println("An Error has occurred while mounting SPIFFS");
-            return;
-        }
-
-        File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
+        File fileToReadAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", "r");
         if(!fileToReadAPRS) {
-            Serial.println("Failed to open APRS_Msg for reading");
-            return;
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "No APRS messages file");
+            numAPRSMessages = 0;
+        } else {
+            std::vector<String> v1;
+            while (fileToReadAPRS.available()) {
+                v1.push_back(fileToReadAPRS.readStringUntil('\n'));
+            }
+            fileToReadAPRS.close();
+            numAPRSMessages = v1.size();
         }
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "APRS Messages: %d (%s)", numAPRSMessages, STORAGE_Utils::getStorageType().c_str());
 
-        std::vector<String> v1;
-        while (fileToReadAPRS.available()) {
-            v1.push_back(fileToReadAPRS.readStringUntil('\n'));
-        }
-        fileToReadAPRS.close();
-
-        numAPRSMessages = 0;
-        for (String s1 : v1) {
-            numAPRSMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
-    
-        File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
+        File fileToReadWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", "r");
         if(!fileToReadWLNK) {
-            Serial.println("Failed to open Winlink_Msg for reading");
-            return;
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "No Winlink mails file");
+            numWLNKMessages = 0;
+        } else {
+            std::vector<String> v2;
+            while (fileToReadWLNK.available()) {
+                v2.push_back(fileToReadWLNK.readStringUntil('\n'));
+            }
+            fileToReadWLNK.close();
+            numWLNKMessages = v2.size();
         }
-
-        std::vector<String> v2;
-        while (fileToReadWLNK.available()) {
-            v2.push_back(fileToReadWLNK.readStringUntil('\n'));
-        }
-        fileToReadWLNK.close();
-
-        numWLNKMessages = 0;
-        for (String s2 : v2) {
-            numWLNKMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Winlink Mails: %d", numWLNKMessages);
     }
 
     void loadMessagesFromMemory(uint8_t typeOfMessage) {
@@ -155,7 +218,7 @@ namespace MSG_Utils {
                 noAPRSMsgWarning = true;
             } else {
                 loadedAPRSMessages.clear();
-                fileToRead = SPIFFS.open("/aprsMessages.txt");
+                fileToRead = STORAGE_Utils::openFile("/aprsMessages.txt", "r");
             }
             if (noAPRSMsgWarning) {
                 displayShow("   INFO", "", " NO APRS MSG SAVED", 1500);
@@ -175,7 +238,7 @@ namespace MSG_Utils {
                 noWLNKMsgWarning = true;
             } else {
                 loadedWLNKMails.clear();
-                fileToRead = SPIFFS.open("/winlinkMails.txt");
+                fileToRead = STORAGE_Utils::openFile("/winlinkMails.txt", "r");
             }
             if (noWLNKMsgWarning) {
                 displayShow("   INFO", "", " NO WLNK MAILS SAVED", 1500);
@@ -208,49 +271,121 @@ namespace MSG_Utils {
     }
 
     void deleteFile(uint8_t typeOfFile) {
-        if(!SPIFFS.begin(true)) {
-            Serial.println("An Error has occurred while mounting SPIFFS");
-            return;
-        }
         if (typeOfFile == 0) {  //APRS
-            SPIFFS.remove("/aprsMessages.txt");
+            STORAGE_Utils::removeFile("/aprsMessages.txt");
+            numAPRSMessages = 0;
+            loadedAPRSMessages.clear();
         } else if (typeOfFile == 1) {   //WLNK
-            SPIFFS.remove("/winlinkMails.txt");
-        }    
+            STORAGE_Utils::removeFile("/winlinkMails.txt");
+            numWLNKMessages = 0;
+            loadedWLNKMails.clear();
+        }
         if (Config.notification.ledMessage) messageLed = false;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted messages file type %d", typeOfFile);
+    }
+
+    bool deleteMessageByIndex(uint8_t typeOfMessage, int index) {
+        // Load messages first
+        loadMessagesFromMemory(typeOfMessage);
+
+        std::vector<String>* messages = nullptr;
+        const char* filename = nullptr;
+        int* numMessages = nullptr;
+
+        if (typeOfMessage == 0) {
+            messages = &loadedAPRSMessages;
+            filename = "/aprsMessages.txt";
+            numMessages = &numAPRSMessages;
+        } else if (typeOfMessage == 1) {
+            messages = &loadedWLNKMails;
+            filename = "/winlinkMails.txt";
+            numMessages = &numWLNKMessages;
+        } else {
+            return false;
+        }
+
+        if (index < 0 || index >= (int)messages->size()) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Invalid message index %d", index);
+            return false;
+        }
+
+        // Remove message from vector
+        messages->erase(messages->begin() + index);
+        (*numMessages)--;
+
+        // Rewrite the file with remaining messages
+        STORAGE_Utils::removeFile(filename);
+
+        if (messages->size() > 0) {
+            File file = STORAGE_Utils::openFile(filename, FILE_WRITE);
+            if (file) {
+                for (const String& msg : *messages) {
+                    file.println(msg);
+                }
+                file.close();
+            }
+        }
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted message %d, %d remaining", index, messages->size());
+        return true;
     }
 
     void saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage) {
         String message = newMessage;
-        if (typeMessage == 0 && lastMessageSaved != message) {   //APRS
-            File fileToAppendAPRS = SPIFFS.open("/aprsMessages.txt", FILE_APPEND);
+        message.trim();
+
+        // Check for duplicate using 30-second window
+        if (isDuplicateMessage(station, message)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Duplicate message ignored from %s", station.c_str());
+            return;
+        }
+
+        if (typeMessage == 0) {   //APRS
+            File fileToAppendAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
             if(!fileToAppendAPRS) {
                 Serial.println("There was an error opening the file for appending");
                 return;
             }
-            message.trim();
             if(!fileToAppendAPRS.println(station + "," + message)) {
                 Serial.println("File append failed");
             }
-            lastMessageSaved = message;
             numAPRSMessages++;
             fileToAppendAPRS.close();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "APRS msg saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
-        } else if (typeMessage == 1 && lastMessageSaved != message) {    //WLNK
-            File fileToAppendWLNK = SPIFFS.open("/winlinkMails.txt", FILE_APPEND);
+
+            // Check if sender is a new contact (only for personal messages, not system messages)
+            #ifdef USE_LVGL_UI
+            // Skip system/service callsigns
+            bool isSystemCallsign = station.startsWith("BLN") ||
+                                    station.startsWith("NWS") ||
+                                    station.startsWith("WX") ||
+                                    station.indexOf("-15") > 0 ||  // Query services
+                                    station == "WLNK-1";
+
+            if (!isSystemCallsign && STORAGE_Utils::isSDAvailable()) {
+                Contact* existingContact = STORAGE_Utils::findContact(station);
+                if (existingContact == nullptr) {
+                    // Unknown contact - show popup to ask user
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "New contact detected: %s", station.c_str());
+                    LVGL_UI::showAddContactPrompt(station.c_str());
+                }
+            }
+            #endif
+        } else if (typeMessage == 1) {    //WLNK
+            File fileToAppendWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", FILE_APPEND);
             if(!fileToAppendWLNK) {
                 Serial.println("There was an error opening the file for appending");
                 return;
             }
-            message.trim();
-            if(!fileToAppendWLNK.println(message)) {
+            if(!fileToAppendWLNK.println(station + "," + message)) {
                 Serial.println("File append failed");
             }
-            lastMessageSaved = message;
             numWLNKMessages++;
             fileToAppendWLNK.close();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Winlink mail saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
@@ -418,7 +553,7 @@ namespace MSG_Utils {
                     lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
                 }
 
-                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {            
+                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
@@ -523,19 +658,21 @@ namespace MSG_Utils {
                                 winlinkStatus = 0;
                             } else if ((winlinkStatus == 5) && (lastReceivedPacket.payload.indexOf("Log off successful") == -1) && (lastReceivedPacket.payload.indexOf("Login valid") == -1) && (lastReceivedPacket.payload.indexOf("Login [") == -1) && (lastReceivedPacket.payload.indexOf("ack") == -1)) {
                                 lastMsgRxTime = millis();
-                                displayShow("<WLNK Rx >", "", lastReceivedPacket.payload, 3000);
+                                #ifdef USE_LVGL_UI
+                                    LVGL_UI::showMessage("WLNK-1", lastReceivedPacket.payload.c_str());
+                                #else
+                                    displayShow("<WLNK Rx >", "", lastReceivedPacket.payload, 3000);
+                                #endif
                                 saveNewMessage(1, lastReceivedPacket.sender, lastReceivedPacket.payload);
                             } 
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
 
-                                #ifdef HAS_TFT
-                                    #if defined(HELTEC_WIRELESS_TRACKER)
-                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
-                                    #else   // T-Deck
-                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
-                                    #endif                                    
+                                #ifdef USE_LVGL_UI
+                                    LVGL_UI::showMessage(lastReceivedPacket.sender.c_str(), lastReceivedPacket.payload.c_str());
+                                #elif defined(HAS_TFT)
+                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
                                 #else
                                     displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , "", "", "", 3000);
                                 #endif

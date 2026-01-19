@@ -46,8 +46,8 @@ typedef void (*DirectionFunc)();
         }
 
         bool checkMenuDisplayToExitInterrupt(int menu) {
-            if (menu == 10 || menu == 120  || (menu >= 130 && menu <= 133) || menu == 200 || menu == 210 || menu == 1300 || menu == 1310 || (menu >= 2210 && menu <= 2212) || menu == 51 || (menu >= 50100 && menu <= 50101) || (menu >= 50110 && menu <= 50111) || menu == 9001) {
-                return true;    // read / delete/ callsignIndex / loraIndex / brightness x 3 / readW / readW / delete / enter WiFiAP
+            if (menu == 10 || menu == 120  || (menu >= 130 && menu <= 133) || menu == 200 || menu == 210 || menu == 1300 || menu == 1310 || (menu >= 2210 && menu <= 2212) || (menu >= 2510 && menu <= 2514) || menu == 51 || (menu >= 50100 && menu <= 50101) || (menu >= 50110 && menu <= 50111) || menu == 9001) {
+                return true;    // read / delete/ callsignIndex / loraIndex / brightness x 3 / volume x 5 / readW / readW / delete / enter WiFiAP
             } else {
                 return false;
             }

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoRa APRS Tracker - Web Installer</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    h1 {
+      color: #4CAF50;
+      text-align: center;
+    }
+    h2 {
+      color: #81C784;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+    .container {
+      background: #16213e;
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .install-btn {
+      --esp-tools-button-color: #4CAF50;
+      --esp-tools-button-text-color: #fff;
+      font-size: 1.2em;
+    }
+    .warning {
+      background: #ff980020;
+      border: 1px solid #ff9800;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .info {
+      background: #2196f320;
+      border: 1px solid #2196f3;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    ul {
+      text-align: left;
+      line-height: 1.8;
+    }
+    a {
+      color: #64B5F6;
+    }
+    .version {
+      color: #888;
+      font-size: 0.9em;
+    }
+    .features {
+      text-align: left;
+      columns: 2;
+    }
+    @media (max-width: 600px) {
+      .features { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h1>LoRa APRS Tracker</h1>
+  <p style="text-align:center" class="version">T-Deck Plus 433 MHz - LVGL UI Edition</p>
+
+  <div class="container">
+    <h2>Firmware Installation</h2>
+    <p>Connect your T-Deck Plus via USB and click the button:</p>
+
+    <esp-web-install-button class="install-btn" manifest="manifest.json">
+      <button slot="activate">Install Firmware</button>
+      <span slot="unsupported">Browser not supported. Use Chrome, Edge, or Chromium.</span>
+      <span slot="not-allowed">USB access not authorized.</span>
+    </esp-web-install-button>
+  </div>
+
+  <div class="warning">
+    <strong>Before installation:</strong>
+    <ul>
+      <li>Use <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>, or <strong>Chromium</strong> (Firefox not supported)</li>
+      <li>Connect the T-Deck Plus via USB</li>
+      <li>Close PlatformIO / Arduino IDE if open</li>
+      <li>If port is not detected, hold <strong>BOOT</strong> button while plugging USB</li>
+    </ul>
+  </div>
+
+  <h2>LVGL UI Features</h2>
+  <div class="features">
+    <ul>
+      <li>Full touchscreen interface</li>
+      <li>GPS, LoRa, WiFi, Battery dashboard</li>
+      <li>Complete Setup menu</li>
+      <li>APRS / Winlink messages</li>
+      <li>Contact management</li>
+      <li>Physical + virtual keyboard</li>
+      <li>SD card storage</li>
+      <li>APRS symbols</li>
+    </ul>
+  </div>
+
+  <div class="info">
+    <strong>After installation:</strong>
+    <ul>
+      <li>Configure your callsign via Setup menu or web interface</li>
+      <li>Connect to WiFi AP "LoRa-Tracker-AP" for configuration</li>
+      <li>Documentation: <a href="https://github.com/richonguzman/LoRa_APRS_Tracker">GitHub CA2RXU</a></li>
+    </ul>
+  </div>
+
+  <p style="text-align:center; color:#666; margin-top:40px;">
+    Fork by <a href="https://github.com/moricef/LoRa_APRS_Tracker">moricef</a>
+    | Original project <a href="https://github.com/richonguzman/LoRa_APRS_Tracker">CA2RXU</a>
+  </p>
+</body>
+</html>

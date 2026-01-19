@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_task_wdt.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
@@ -225,14 +226,21 @@ namespace POWER_Utils {
     }
 
     void externalPinSetup() {
-        if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
-            pinMode(Config.notification.buzzerPinTone, OUTPUT);
-            pinMode(Config.notification.buzzerPinVcc, OUTPUT);
-            if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
-        } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
-            while (1);
-        }
+        #ifdef HAS_I2S
+            // T-Deck Plus uses I2S speaker, no GPIO buzzer pins needed
+            if (Config.notification.buzzerActive && Config.notification.bootUpBeep) {
+                NOTIFICATION_Utils::start();
+            }
+        #else
+            if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
+                pinMode(Config.notification.buzzerPinTone, OUTPUT);
+                pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+                if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
+            } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
+                while (1);
+            }
+        #endif
 
         if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
             pinMode(Config.notification.ledTxPin, OUTPUT);
@@ -319,11 +327,7 @@ namespace POWER_Utils {
         #ifdef HAS_NO_GPS
             disableGPS = true;
         #else
-            if (Config.wifiAP.active) {
-                disableGPS = true;
-            } else {
-                disableGPS = Config.disableGPS;
-            }
+            disableGPS = Config.disableGPS;
         #endif
 
         #ifdef HAS_AXP192
@@ -422,6 +426,10 @@ namespace POWER_Utils {
     }
 
     void shutdown() {
+        // Disable watchdog before shutdown
+        esp_task_wdt_delete(NULL);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog disabled for shutdown");
+
         delay(3000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)

@@ -24,6 +24,10 @@
 #include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
+#include "station_utils.h"
+#ifdef USE_LVGL_UI
+#include "lvgl_ui.h"
+#endif
 
 extern logging::Logger  logger;
 extern Configuration    Config;
@@ -33,6 +37,12 @@ extern int              loraIndexSize;
 
 bool operationDone   = true;
 bool transmitFlag    = true;
+
+// Flags pour les changements de configuration à appliquer hors ISR
+bool pendingFrequencyChange = false;
+int pendingLoraIndex = -1;
+bool pendingDataRateChange = false;
+int pendingDataRate = -1;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -61,13 +71,185 @@ namespace LoRa_Utils {
         operationDone = true;
     }
 
-    void changeFreq() {
-        if(loraIndex >= (loraIndexSize - 1)) {
-            loraIndex = 0;
-        } else {
-            loraIndex++;
+    void requestFrequencyChange(int newLoraIndex) {
+        // Fonction sûre à appeler depuis ISR - positionne juste un flag
+        pendingLoraIndex = newLoraIndex;
+        pendingFrequencyChange = true;
+    }
+
+    void requestDataRateChange(int newDataRate) {
+        // Fonction sûre à appeler depuis ISR - positionne juste un flag
+        pendingDataRate = newDataRate;
+        pendingDataRateChange = true;
+    }
+
+    void processPendingChanges() {
+        // À appeler depuis la boucle principale (loop), pas depuis ISR
+        if (pendingFrequencyChange) {
+            pendingFrequencyChange = false;
+            if (pendingLoraIndex >= 0 && pendingLoraIndex < loraIndexSize) {
+                String loraCountryFreq;
+                switch (pendingLoraIndex) {
+                    case 0: loraCountryFreq = "EU/WORLD"; break;
+                    case 1: loraCountryFreq = "POLAND"; break;
+                    case 2: loraCountryFreq = "UK"; break;
+                    case 3: loraCountryFreq = "US"; break;
+                }
+
+                if (pendingLoraIndex != loraIndex) {
+                    loraIndex = pendingLoraIndex;
+                    #ifndef USE_LVGL_UI
+                        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+                    #else
+                        LVGL_UI::refreshLoRaInfo();
+                    #endif
+                    applyLoraConfig();
+                    STATION_Utils::saveIndex(1, loraIndex);
+                } else {
+                    // Already on this frequency, just show confirmation
+                    #ifndef USE_LVGL_UI
+                        displayShow("LORA FREQ>", "", "ALREADY ON: " + loraCountryFreq, "", "", "", 2000);
+                    #endif
+                }
+            }
         }
+
+        if (pendingDataRateChange) {
+            pendingDataRateChange = false;
+            if (pendingDataRate > 0) {
+                #ifndef USE_LVGL_UI
+                    displayShow("DATA RATE>", "", "CHANGED TO: " + String(pendingDataRate) + " bps", "", "", "", 2000);
+                #endif
+                setDataRate(pendingDataRate);
+                STATION_Utils::saveIndex(1, loraIndex);
+                #ifdef USE_LVGL_UI
+                    LVGL_UI::refreshLoRaInfo();
+                #endif
+            }
+        }
+    }
+
+    int calculateDataRate(int sf, int cr, int bw) {
+        // Simplified lookup table for BW=125kHz (most common)
+        // Based on actual LoRa specifications
+        if (bw == 125000) {
+            // Lookup table: [SF][CR-5] (CR stored as 5,6,7,8)
+            const int dataRates[13][4] = {
+                {0, 0, 0, 0},      // SF 0 (unused)
+                {0, 0, 0, 0},      // SF 1 (unused)
+                {0, 0, 0, 0},      // SF 2 (unused)
+                {0, 0, 0, 0},      // SF 3 (unused)
+                {0, 0, 0, 0},      // SF 4 (unused)
+                {0, 0, 0, 0},      // SF 5 (unused)
+                {0, 0, 0, 0},      // SF 6 (unused)
+                {5470, 4440, 3810, 3330},   // SF 7
+                {3125, 2540, 2180, 1910},   // SF 8
+                {1760, 1430, 1200, 1070},   // SF 9
+                {980, 800, 680, 610},       // SF 10
+                {540, 440, 380, 330},       // SF 11
+                {300, 244, 209, 183}        // SF 12
+            };
+
+            if (sf >= 7 && sf <= 12 && cr >= 5 && cr <= 8) {
+                return dataRates[sf][cr - 5];
+            }
+        }
+
+        // Fallback for other bandwidths or invalid values
+        return 0;
+    }
+
+    DataRateConfig getDataRateConfig(int dataRate) {
+        // Mapping des 6 vitesses vers leurs paramètres LoRa
+        const DataRateConfig configs[] = {
+            {300,  12, 5, 125000},  // SF12, CR4/5
+            {244,  12, 6, 125000},  // SF12, CR4/6
+            {209,  12, 7, 125000},  // SF12, CR4/7
+            {183,  12, 8, 125000},  // SF12, CR4/8
+            {610,  10, 8, 125000},  // SF10, CR4/8
+            {1200,  9, 7, 125000}   // SF9, CR4/7
+        };
+
+        for (int i = 0; i < 6; i++) {
+            if (configs[i].dataRate == dataRate) {
+                return configs[i];
+            }
+        }
+
+        // Valeur par défaut si non trouvé
+        return configs[0];  // 300 bps
+    }
+
+    int getNextDataRate(int currentDataRate) {
+        // Les 6 vitesses disponibles
+        const int dataRates[] = {300, 244, 209, 183, 610, 1200};
+
+        for (int i = 0; i < 6; i++) {
+            if (dataRates[i] == currentDataRate) {
+                return dataRates[(i + 1) % 6];  // Cycle à travers les 6 options
+            }
+        }
+
+        return 300;  // Valeur par défaut
+    }
+
+    void changeDataRate() {
+        int currentDataRate = Config.loraTypes[loraIndex].dataRate;
+        int nextDataRate = getNextDataRate(currentDataRate);
+        setDataRate(nextDataRate);
+    }
+
+    void setDataRate(int dataRate) {
+        DataRateConfig config = getDataRateConfig(dataRate);
+
+        // Mise à jour de la configuration
+        Config.loraTypes[loraIndex].dataRate = config.dataRate;
+        Config.loraTypes[loraIndex].spreadingFactor = config.spreadingFactor;
+        Config.loraTypes[loraIndex].codingRate4 = config.codingRate4;
+        Config.loraTypes[loraIndex].signalBandwidth = config.signalBandwidth;
+
         currentLoRaType = &Config.loraTypes[loraIndex];
+
+        // Reconfigurer la radio avec les nouveaux paramètres
+        radio.setSpreadingFactor(config.spreadingFactor);
+        radio.setCodingRate(config.codingRate4);
+        float signalBandwidth = config.signalBandwidth / 1000;
+        radio.setBandwidth(signalBandwidth);
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Data Rate changed to %d bps (SF%d, CR4/%d)",
+                   dataRate, config.spreadingFactor, config.codingRate4);
+        Config.writeFile();
+    }
+
+    void applyLoraConfig() {
+        // Apply current loraIndex configuration to radio
+        // Safety check: ensure loraIndex is valid
+        if (loraIndex < 0 || loraIndex >= loraIndexSize) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid loraIndex: %d (max: %d)", loraIndex, loraIndexSize);
+            loraIndex = 0;  // Reset to safe default
+        }
+
+        currentLoRaType = &Config.loraTypes[loraIndex];
+
+        // Validate frequency and bandwidth values
+        #if defined(LORA_FREQ_MIN) && defined(LORA_FREQ_MAX)
+            // Board-specific frequency validation
+            if (currentLoRaType->frequency < LORA_FREQ_MIN || currentLoRaType->frequency > LORA_FREQ_MAX) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Frequency %ld Hz out of range (%ld-%ld)",
+                    currentLoRaType->frequency, (long)LORA_FREQ_MIN, (long)LORA_FREQ_MAX);
+                return;
+            }
+        #else
+            // Generic frequency validation
+            if (currentLoRaType->frequency < 100000000 || currentLoRaType->frequency > 1000000000) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid frequency value: %ld", currentLoRaType->frequency);
+                return;
+            }
+        #endif
+        if (currentLoRaType->signalBandwidth < 1000 || currentLoRaType->signalBandwidth > 1000000) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid bandwidth value: %ld", currentLoRaType->signalBandwidth);
+            return;
+        }
 
         float freq = (float)currentLoRaType->frequency/1000000;
         radio.setFrequency(freq);
@@ -76,7 +258,7 @@ namespace LoRa_Utils {
         radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         #if (defined(HAS_SX1268) || defined(HAS_SX1262)) && !defined(HAS_1W_LORA)
-            radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
+            radio.setOutputPower(currentLoRaType->power + 2);
         #endif
         #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
@@ -97,9 +279,18 @@ namespace LoRa_Utils {
         currentLoRainfo += String(currentLoRaType->spreadingFactor);
         currentLoRainfo += " / CR: ";
         currentLoRainfo += String(currentLoRaType->codingRate4);
-        
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
-        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
+    }
+
+    void changeFreq() {
+        // Cycle to next frequency
+        if(loraIndex >= (loraIndexSize - 1)) {
+            loraIndex = 0;
+        } else {
+            loraIndex++;
+        }
+        applyLoraConfig();
     }
 
     void setup() {

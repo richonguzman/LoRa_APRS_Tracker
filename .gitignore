@@ -8,3 +8,8 @@
 installer/firmware
 installer/*.bin
 **/__pycache__/
+
+# Internal dev documentation
+CLAUDE.md
+LVGL_TODO.md
+LVGL_TODO.html
