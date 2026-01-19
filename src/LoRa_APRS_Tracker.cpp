@@ -153,6 +153,7 @@ void setup() {
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
+    STATION_Utils::mapStationsInit();
     #ifdef USE_LVGL_UI
         LVGL_UI::showSplashScreen(loraIndex, versionDate.c_str());
         LVGL_UI::showInitScreen();
@@ -307,6 +308,7 @@ void loop() {
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
     STATION_Utils::checkListenedStationsByTimeAndDelete();
+    STATION_Utils::cleanOldMapStations();
 
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {

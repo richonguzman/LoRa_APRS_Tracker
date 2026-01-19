@@ -44,7 +44,16 @@ namespace WIFI_Utils {
     // Forward declaration
     bool tryConnectToNetwork(const WiFi_AP& network);
 
+    static bool wifiInitialized = false;
+
     void checkWiFi() {
+        // Initialize WiFiUserDisabled from config on first call
+        if (!wifiInitialized) {
+            WiFiUserDisabled = !Config.wifiEnabled;
+            wifiInitialized = true;
+            Serial.printf("[WiFi] Initialized from config: %s\n", Config.wifiEnabled ? "enabled" : "disabled");
+        }
+
         // User disabled WiFi manually - do nothing
         if (WiFiUserDisabled) {
             return;

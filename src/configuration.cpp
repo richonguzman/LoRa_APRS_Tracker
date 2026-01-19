@@ -45,6 +45,7 @@ bool Configuration::writeFile() {
         data["wifi"]["autoAP"]["active"]            = wifiAutoAP.active;
         data["wifi"]["autoAP"]["password"]          = wifiAutoAP.password;
         data["wifi"]["autoAP"]["timeout"]           = wifiAutoAP.timeout;
+        data["wifi"]["enabled"]                     = wifiEnabled;
 
         for (int i = 0; i < beacons.size(); i++) {
             beacons[i].callsign.trim();
@@ -180,6 +181,7 @@ bool Configuration::readFile() {
         wifiAutoAP.active           = data["wifi"]["autoAP"]["active"] | false;
         wifiAutoAP.password         = data["wifi"]["autoAP"]["password"] | "1234567890";
         wifiAutoAP.timeout          = data["wifi"]["autoAP"]["timeout"] | 10;
+        wifiEnabled                 = data["wifi"]["enabled"] | true;  // Default to enabled
 
         JsonArray BeaconsArray = data["beacons"];
         for (int i = 0; i < BeaconsArray.size(); i++) {
@@ -389,6 +391,7 @@ void Configuration::setDefaultValues() {
     wifiAutoAP.active               = false;
     wifiAutoAP.password             = "1234567890";
     wifiAutoAP.timeout              = 10;
+    wifiEnabled                     = true;  // WiFi enabled by default
 
     for (int i = 0; i < 3; i++) {
         Beacon beacon;

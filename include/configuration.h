@@ -145,6 +145,7 @@ public:
 
     std::vector<WiFi_AP>    wifiAPs;
     WiFi_Auto_AP            wifiAutoAP;
+    bool                    wifiEnabled;
     std::vector<Beacon>     beacons;
     Display                 display;
     Battery                 battery;

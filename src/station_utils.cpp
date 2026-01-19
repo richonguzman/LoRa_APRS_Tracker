@@ -86,6 +86,9 @@ struct nearStation {
 
 nearStation nearbyStations[nearbyStationsSize];
 
+// Map stations for displaying on map
+MapStation mapStations[MAP_STATIONS_MAX];
+int mapStationsCount = 0;
 
 namespace STATION_Utils {
 
@@ -96,6 +99,103 @@ namespace STATION_Utils {
             nearbyStations[i].course      = 0;
             nearbyStations[i].lastTime    = 0;
         }
+    }
+
+    // Initialize map stations array
+    void mapStationsInit() {
+        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
+            mapStations[i].callsign  = "";
+            mapStations[i].latitude  = 0.0;
+            mapStations[i].longitude = 0.0;
+            mapStations[i].symbol    = "";
+            mapStations[i].overlay   = "";
+            mapStations[i].rssi      = 0;
+            mapStations[i].lastTime  = 0;
+            mapStations[i].valid     = false;
+        }
+        mapStationsCount = 0;
+    }
+
+    // Add or update a station for the map
+    void addMapStation(const String& callsign, float lat, float lon, const String& symbol, const String& overlay, int rssi) {
+        // Skip if no valid position
+        if (lat == 0.0 && lon == 0.0) return;
+
+        // Check if station already exists (update it)
+        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
+            if (mapStations[i].valid && mapStations[i].callsign == callsign) {
+                mapStations[i].latitude  = lat;
+                mapStations[i].longitude = lon;
+                mapStations[i].symbol    = symbol;
+                mapStations[i].overlay   = overlay;
+                mapStations[i].rssi      = rssi;
+                mapStations[i].lastTime  = millis();
+                return;
+            }
+        }
+
+        // Find empty slot or replace oldest
+        int oldestIndex = 0;
+        uint32_t oldestTime = UINT32_MAX;
+
+        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
+            if (!mapStations[i].valid) {
+                // Empty slot found
+                mapStations[i].callsign  = callsign;
+                mapStations[i].latitude  = lat;
+                mapStations[i].longitude = lon;
+                mapStations[i].symbol    = symbol;
+                mapStations[i].overlay   = overlay;
+                mapStations[i].rssi      = rssi;
+                mapStations[i].lastTime  = millis();
+                mapStations[i].valid     = true;
+                mapStationsCount++;
+                return;
+            }
+            if (mapStations[i].lastTime < oldestTime) {
+                oldestTime = mapStations[i].lastTime;
+                oldestIndex = i;
+            }
+        }
+
+        // Replace oldest station
+        mapStations[oldestIndex].callsign  = callsign;
+        mapStations[oldestIndex].latitude  = lat;
+        mapStations[oldestIndex].longitude = lon;
+        mapStations[oldestIndex].symbol    = symbol;
+        mapStations[oldestIndex].overlay   = overlay;
+        mapStations[oldestIndex].rssi      = rssi;
+        mapStations[oldestIndex].lastTime  = millis();
+        mapStations[oldestIndex].valid     = true;
+    }
+
+    // Clean old map stations (older than rememberStationTime)
+    void cleanOldMapStations() {
+        uint32_t timeout = Config.rememberStationTime * 60 * 1000;
+        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
+            if (mapStations[i].valid && (millis() - mapStations[i].lastTime > timeout)) {
+                mapStations[i].valid = false;
+                mapStations[i].callsign = "";
+                mapStationsCount--;
+            }
+        }
+    }
+
+    // Get station by index
+    MapStation* getMapStation(int index) {
+        if (index < 0 || index >= MAP_STATIONS_MAX) return nullptr;
+        if (!mapStations[index].valid) return nullptr;
+        return &mapStations[index];
+    }
+
+    // Find station by callsign
+    MapStation* findMapStation(const String& callsign) {
+        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
+            if (mapStations[i].valid && mapStations[i].callsign == callsign) {
+                return &mapStations[i];
+            }
+        }
+        return nullptr;
     }
 
     String getNearStation(uint8_t position) {

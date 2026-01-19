@@ -27,6 +27,7 @@
 #include "lora_utils.h"
 #include "ble_utils.h"
 #include "msg_utils.h"
+#include "station_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -685,6 +686,9 @@ namespace MSG_Utils {
                     } else {
                         if ((lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4) && !Config.simplifiedTrackerMode) {
                             GPS_Utils::calculateDistanceCourse(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude);
+                            // Store station for map display
+                            STATION_Utils::addMapStation(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude,
+                                                         lastReceivedPacket.symbol, lastReceivedPacket.overlay, lastReceivedPacket.rssi);
                         }
                         if (Config.notification.buzzerActive && Config.notification.stationBeep && !digipeaterActive) {
                             NOTIFICATION_Utils::stationHeardBeep();

@@ -37,6 +37,7 @@ static const char* INBOX_DIR = "/LoRa_Tracker/Messages/inbox";
 static const char* OUTBOX_DIR = "/LoRa_Tracker/Messages/outbox";
 static const char* CONTACTS_DIR = "/LoRa_Tracker/Contacts";
 static const char* CONTACTS_FILE = "/LoRa_Tracker/Contacts/contacts.json";
+static const char* MAPS_DIR = "/LoRa_Tracker/Maps";
 
 namespace STORAGE_Utils {
 
@@ -67,6 +68,12 @@ namespace STORAGE_Utils {
         if (!SD.exists(CONTACTS_DIR)) {
             SD.mkdir(CONTACTS_DIR);
             Serial.printf("[Storage] Created %s\n", CONTACTS_DIR);
+        }
+
+        // Create Maps directory for offline tiles
+        if (!SD.exists(MAPS_DIR)) {
+            SD.mkdir(MAPS_DIR);
+            Serial.printf("[Storage] Created %s\n", MAPS_DIR);
         }
     }
 
@@ -134,6 +141,10 @@ namespace STORAGE_Utils {
 
     String getContactsPath() {
         return sdAvailable ? String(CONTACTS_DIR) : "";
+    }
+
+    String getMapsPath() {
+        return sdAvailable ? String(MAPS_DIR) : "";
     }
 
     bool fileExists(const String& path) {

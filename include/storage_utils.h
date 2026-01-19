@@ -41,6 +41,7 @@ namespace STORAGE_Utils {
     String  getInboxPath();     // /LoRa_Tracker/Messages/inbox
     String  getOutboxPath();    // /LoRa_Tracker/Messages/outbox
     String  getContactsPath();  // /LoRa_Tracker/Contacts
+    String  getMapsPath();      // /LoRa_Tracker/Maps
 
     // File operations
     bool    fileExists(const String& path);

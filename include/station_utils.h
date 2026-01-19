@@ -21,6 +21,23 @@
 
 #include <Arduino.h>
 
+// Structure for stations to display on map
+#define MAP_STATIONS_MAX 20
+
+struct MapStation {
+    String   callsign;
+    float    latitude;
+    float    longitude;
+    String   symbol;
+    String   overlay;
+    int      rssi;
+    uint32_t lastTime;
+    bool     valid;
+};
+
+extern MapStation mapStations[MAP_STATIONS_MAX];
+extern int mapStationsCount;
+
 namespace STATION_Utils {
 
     void    nearStationInit();
@@ -34,6 +51,13 @@ namespace STATION_Utils {
     void    sendBeacon();
     void    saveIndex(uint8_t type, uint8_t index);
     void    loadIndex(uint8_t type);
+
+    // Map stations management
+    void    mapStationsInit();
+    void    addMapStation(const String& callsign, float lat, float lon, const String& symbol, const String& overlay, int rssi);
+    void    cleanOldMapStations();
+    MapStation* getMapStation(int index);
+    MapStation* findMapStation(const String& callsign);
 
 }
 
