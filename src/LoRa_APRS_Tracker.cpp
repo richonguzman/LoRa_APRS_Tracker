@@ -39,6 +39,7 @@ ____________________________________________________________________*/
 
 #include <BluetoothSerial.h>
 #include <APRSPacketLib.h>
+#include <esp_task_wdt.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
 #include <logger.h>
@@ -234,6 +235,11 @@ void setup() {
     #endif
     Serial.printf("[Memory] Heap: %u KB total, %u KB free\n", ESP.getHeapSize()/1024, ESP.getFreeHeap()/1024);
 
+    // Initialize watchdog timer (30 seconds timeout)
+    esp_task_wdt_init(30, true);  // 30 seconds, panic on timeout
+    esp_task_wdt_add(NULL);       // Add current task to watchdog
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog initialized (30s timeout)");
+
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
 }
@@ -346,6 +352,9 @@ void loop() {
     #ifdef USE_LVGL_UI
         LVGL_UI::loop();
     #endif
+
+    // Reset watchdog timer
+    esp_task_wdt_reset();
 
     yield();
 }

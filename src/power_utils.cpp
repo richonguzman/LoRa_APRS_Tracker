@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_task_wdt.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
@@ -425,6 +426,10 @@ namespace POWER_Utils {
     }
 
     void shutdown() {
+        // Disable watchdog before shutdown
+        esp_task_wdt_delete(NULL);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog disabled for shutdown");
+
         delay(3000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
