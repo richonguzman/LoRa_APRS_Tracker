@@ -176,7 +176,7 @@ namespace WEB_Utils {
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
 
         //  Display
-        Config.display.ecoMode                  = request->hasParam("display.alwaysOn", true);
+        Config.display.ecoMode                  = request->hasParam("display.ecoMode", true);
         if (!Config.display.ecoMode) {
             Config.display.timeout              = getParamIntSafe("display.timeout", Config.display.timeout);
         }
