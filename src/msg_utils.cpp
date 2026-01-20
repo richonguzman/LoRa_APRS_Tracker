@@ -60,12 +60,15 @@ extern bool                 SleepModeActive;
 
 String  lastMessageSaved        = "";
 int     numAPRSMessages         = 0;
+int     numSavedMessages         = 0;
 int     numWLNKMessages         = 0;
 bool    noAPRSMsgWarning        = false;
 bool    noWLNKMsgWarning        = false;
+bool    noSavedMsgWarning        = false;
 String  lastHeardTracker        = "NONE";
 
 std::vector<String>             loadedAPRSMessages;
+std::vector<String>             loadedSavedMessages;
 std::vector<String>             loadedWLNKMails;
 std::vector<String>             outputMessagesBuffer;
 std::vector<String>             outputAckRequestBuffer;
@@ -88,6 +91,10 @@ namespace MSG_Utils {
         return noAPRSMsgWarning;
     }
 
+    bool warnNoSavedMessages() {
+        return noSavedMsgWarning;
+    }
+
     bool warnNoWLNKMails() {
         return noWLNKMsgWarning;
     }
@@ -100,6 +107,10 @@ namespace MSG_Utils {
         return numAPRSMessages;
     }
 
+    int getNumSavedMessages() {
+        return numSavedMessages;
+    }
+
     int getNumWLNKMails() {
         return numWLNKMessages;
     }
@@ -110,20 +121,40 @@ namespace MSG_Utils {
             return;
         }
 
+        File fileToReadSavedMsg = SPIFFS.open("/savedMessages.txt");
+        if(!fileToReadSavedMsg) {
+            Serial.println("Failed to open APRS_Msg for reading");
+            return;
+        }
+
+        std::vector<String> v1;
+        while (fileToReadSavedMsg.available()) {
+            String linea = fileToReadSavedMsg.readStringUntil('\n');
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", linea.c_str());
+            v1.push_back(linea);
+        }
+        fileToReadSavedMsg.close();
+
+        numSavedMessages = 0;
+        for (String s1 : v1) {
+            numSavedMessages++;
+        }
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Number of Saved Messages : %s", String(numSavedMessages));
+
         File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
         if(!fileToReadAPRS) {
             Serial.println("Failed to open APRS_Msg for reading");
             return;
         }
 
-        std::vector<String> v1;
+        std::vector<String> v2;
         while (fileToReadAPRS.available()) {
-            v1.push_back(fileToReadAPRS.readStringUntil('\n'));
+            v2.push_back(fileToReadAPRS.readStringUntil('\n'));
         }
         fileToReadAPRS.close();
 
         numAPRSMessages = 0;
-        for (String s1 : v1) {
+        for (String s1 : v2) {
             numAPRSMessages++;
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
@@ -134,14 +165,14 @@ namespace MSG_Utils {
             return;
         }
 
-        std::vector<String> v2;
+        std::vector<String> v3;
         while (fileToReadWLNK.available()) {
-            v2.push_back(fileToReadWLNK.readStringUntil('\n'));
+            v3.push_back(fileToReadWLNK.readStringUntil('\n'));
         }
         fileToReadWLNK.close();
 
         numWLNKMessages = 0;
-        for (String s2 : v2) {
+        for (String s2 : v3) {
             numWLNKMessages++;
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
@@ -189,6 +220,48 @@ namespace MSG_Utils {
                 }
                 fileToRead.close();
             }
+        } else if (typeOfMessage == 2) { // Saved Messages
+            noSavedMsgWarning = false;
+            if (numSavedMessages == 0) {
+                noSavedMsgWarning = true;
+            } else {
+                loadedSavedMessages.clear();
+                fileToRead = SPIFFS.open("/savedMessages.txt");
+            }
+            if (noSavedMsgWarning) {
+                displayShow("   INFO", "", " NO MSG SAVED", 1500);
+            } else {
+                if(!fileToRead) {
+                    Serial.println("Failed to open file for reading");
+                    return;
+                }
+                while (fileToRead.available()) {
+                    loadedSavedMessages.push_back(fileToRead.readStringUntil('\n'));
+                }
+                fileToRead.close();
+            }
+        }
+    }
+
+    bool writeFileMessages(const String& destination, const String& messageText) {
+
+        Serial.println("Saving messages..");
+
+        File menssagesFile = SPIFFS.open("/savedMessages.txt", "a");
+
+        if (!menssagesFile) {
+            Serial.println("Error: Could not open config file for writing");
+            return false;
+        }
+
+        try {
+            menssagesFile.print(destination + "," + messageText + "\n");
+            menssagesFile.close();
+            return true;
+        } catch (...) {
+            Serial.println("Error: Exception occurred while saving menssages");
+            menssagesFile.close();
+            return false;
         }
     }
 
