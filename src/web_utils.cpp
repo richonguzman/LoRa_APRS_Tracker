@@ -64,7 +64,7 @@ namespace WEB_Utils {
     }
 
     void handleHome(AsyncWebServerRequest *request) {
-
+        Serial.printf("[WebServer] GET / from %s\n", request->client()->remoteIP().toString().c_str());
         AsyncWebServerResponse *response = request->beginResponse(200, "text/html", (const uint8_t*)web_index_html, web_index_html_len);
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
@@ -191,12 +191,21 @@ namespace WEB_Utils {
             Config.bluetooth.useKISS            = request->hasParam("bluetooth.useKISS", true);
         }
 
+        //  APRS-IS
+        Config.aprs_is.active                   = request->hasParam("aprs_is.active", true);
+        if (Config.aprs_is.active) {
+            Config.aprs_is.server               = getParamStringSafe("aprs_is.server", Config.aprs_is.server);
+            Config.aprs_is.port                 = getParamIntSafe("aprs_is.port", Config.aprs_is.port);
+            Config.aprs_is.passcode             = getParamStringSafe("aprs_is.passcode", Config.aprs_is.passcode);
+        }
+
         // LORA
         for (int i = 0; i < 4; i++) {
             Config.loraTypes[i].frequency       = getParamDoubleSafe("lora." + String(i) + ".frequency", Config.loraTypes[i].frequency);
             Config.loraTypes[i].spreadingFactor = getParamIntSafe("lora." + String(i) + ".spreadingFactor", Config.loraTypes[i].spreadingFactor);
             Config.loraTypes[i].codingRate4     = getParamIntSafe("lora." + String(i) + ".codingRate4", Config.loraTypes[i].codingRate4);
             Config.loraTypes[i].signalBandwidth = getParamIntSafe("lora." + String(i) + ".signalBandwidth", Config.loraTypes[i].signalBandwidth);
+            Config.loraTypes[i].dataRate        = getParamIntSafe("lora." + String(i) + ".dataRate", Config.loraTypes[i].dataRate);
         }
 
         //  Battery
@@ -218,9 +227,19 @@ namespace WEB_Utils {
         //  Winlink
         Config.winlink.password                 = getParamStringSafe("winlink.password", Config.winlink.password);
 
-        //  WiFi AP
-        Config.wifiAP.password                  = getParamStringSafe("wifiAP.password", Config.wifiAP.password);
-        Config.wifiAP.active                    = false; // when Configuration is finished Tracker returns to normal mode.
+        //  WiFi Network
+        while (Config.wifiAPs.size() < 2) {
+            WiFi_AP wifiap;
+            Config.wifiAPs.push_back(wifiap);
+        }
+        Config.wifiAPs[0].ssid                  = getParamStringSafe("wifi.AP.0.ssid", Config.wifiAPs[0].ssid);
+        Config.wifiAPs[0].password              = getParamStringSafe("wifi.AP.0.password", Config.wifiAPs[0].password);
+        Config.wifiAPs[1].ssid                  = getParamStringSafe("wifi.AP.1.ssid", Config.wifiAPs[1].ssid);
+        Config.wifiAPs[1].password              = getParamStringSafe("wifi.AP.1.password", Config.wifiAPs[1].password);
+
+        //  WiFi Auto AP
+        Config.wifiAutoAP.password              = getParamStringSafe("wifi.autoAP.password", Config.wifiAutoAP.password);
+        Config.wifiAutoAP.active                = false;    // Exit web-conf mode after validation
 
         //  Notification
         Config.notification.ledTx               = request->hasParam("notification.ledTx", true);
@@ -231,6 +250,7 @@ namespace WEB_Utils {
         if (Config.notification.buzzerActive) {
             Config.notification.buzzerPinTone   = getParamIntSafe("notification.buzzerPinTone", Config.notification.buzzerPinTone);
             Config.notification.buzzerPinVcc    = getParamIntSafe("notification.buzzerPinVcc", Config.notification.buzzerPinVcc);
+            Config.notification.volume          = getParamIntSafe("notification.volume", Config.notification.volume);
             Config.notification.bootUpBeep      = request->hasParam("notification.bootUpBeep", true);
             Config.notification.txBeep          = request->hasParam("notification.txBeep", true);
             Config.notification.messageRxBeep   = request->hasParam("notification.messageRxBeep", true);
@@ -329,7 +349,12 @@ namespace WEB_Utils {
 
         server.onNotFound(handleNotFound);
 
+        server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            Serial.printf("[WebServer] Body: %s %s (%d bytes)\n", request->methodToString(), request->url().c_str(), total);
+        });
+
         server.begin();
+        Serial.println("[WebServer] Started on port 80");
     }
 
 }

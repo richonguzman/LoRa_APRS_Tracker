@@ -144,12 +144,12 @@ function loadSettings(settings) {
                 </select>
             </div>
             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
-                 <input 
-                     type="text" 
-                     class="form-control form-control-sm" 
-                     name="beacons.${index}.status" 
-                     id="beacons.${index}.status" 
-                     value="${beacons.status}">
+                 <input
+                     type="text"
+                     class="form-control form-control-sm"
+                     name="beacons.${index}.status"
+                     id="beacons.${index}.status"
+                     value="${beacons.status || ''}">
                  <label for="beacons.${index}.status">Status</label>
              </div>
             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
@@ -158,7 +158,7 @@ function loadSettings(settings) {
                      class="form-control form-control-sm" 
                      name="beacons.${index}.profileLabel" 
                      id="beacons.${index}.profileLabel" 
-                     value="${beacons.profileLabel}">
+                     value="${beacons.profileLabel || ''}">
                  <label for="beacons.${index}.profileLabel">Profile Label</label>
              </div>
         `;
@@ -193,6 +193,16 @@ function loadSettings(settings) {
     BluetoothDeviceName.disabled    = !BluetoothActiveCheckbox.checked;
     BluetoothUseBle.disabled        = !BluetoothActiveCheckbox.checked;
     BluetoothUseKiss.disabled       = !BluetoothActiveCheckbox.checked;
+
+    // APRS-IS
+    document.getElementById("aprs_is.active").checked                   = settings.aprs_is.active;
+    document.getElementById("aprs_is.server").value                     = settings.aprs_is.server;
+    document.getElementById("aprs_is.port").value                       = settings.aprs_is.port;
+    document.getElementById("aprs_is.passcode").value                   = settings.aprs_is.passcode;
+    AprsIsActiveCheckbox.checked    = settings.aprs_is.active;
+    AprsIsServer.disabled           = !AprsIsActiveCheckbox.checked;
+    AprsIsPort.disabled             = !AprsIsActiveCheckbox.checked;
+    AprsIsPasscode.disabled         = !AprsIsActiveCheckbox.checked;
 
     // LORA
     const loraContainer = document.getElementById("lora-settings");
@@ -276,8 +286,18 @@ function loadSettings(settings) {
     // WINLINK
     document.getElementById("winlink.password").value                   = settings.winlink.password;
 
-    // WiFi AP
-    document.getElementById("wifiAP.password").value                    = settings.wifiAP.password;
+    // WiFi Network
+    if (settings.wifi && settings.wifi.AP && settings.wifi.AP[0]) {
+        document.getElementById("wifi.AP.0.ssid").value                 = settings.wifi.AP[0].ssid || "";
+        document.getElementById("wifi.AP.0.password").value             = settings.wifi.AP[0].password || "";
+    }
+    if (settings.wifi && settings.wifi.AP && settings.wifi.AP[1]) {
+        document.getElementById("wifi.AP.1.ssid").value                 = settings.wifi.AP[1].ssid || "";
+        document.getElementById("wifi.AP.1.password").value             = settings.wifi.AP[1].password || "";
+    }
+
+    // WiFi Auto AP
+    document.getElementById("wifi.autoAP.password").value               = settings.wifi.autoAP.password;
 
     // NOTIFICATION
     document.getElementById("notification.ledTx").checked               = settings.notification.ledTx;
@@ -293,6 +313,8 @@ function loadSettings(settings) {
     document.getElementById("notification.buzzerActive").checked        = settings.notification.buzzerActive;
     document.getElementById("notification.buzzerPinTone").value         = settings.notification.buzzerPinTone;
     document.getElementById("notification.buzzerPinVcc").value          = settings.notification.buzzerPinVcc;
+    document.getElementById("notification.volume").value                = settings.notification.volume || 50;
+    document.getElementById("volumeValue").textContent                  = settings.notification.volume || 50;
     document.getElementById("notification.bootUpBeep").checked          = settings.notification.bootUpBeep;
     document.getElementById("notification.txBeep").checked              = settings.notification.txBeep;
     document.getElementById("notification.messageRxBeep").checked       = settings.notification.messageRxBeep;
@@ -361,6 +383,17 @@ BluetoothActiveCheckbox.addEventListener("change", function () {
     BluetoothDeviceName.disabled    = !this.checked;
     BluetoothUseBle.disabled        = !this.checked;
     BluetoothUseKiss.disabled       = !this.checked;
+});
+
+// APRS-IS Switches
+const AprsIsActiveCheckbox      = document.querySelector('input[name="aprs_is.active"]');
+const AprsIsServer              = document.querySelector('input[name="aprs_is.server"]');
+const AprsIsPort                = document.querySelector('input[name="aprs_is.port"]');
+const AprsIsPasscode            = document.querySelector('input[name="aprs_is.passcode"]');
+AprsIsActiveCheckbox.addEventListener("change", function () {
+    AprsIsServer.disabled           = !this.checked;
+    AprsIsPort.disabled             = !this.checked;
+    AprsIsPasscode.disabled         = !this.checked;
 });
 
 // Battery Switches

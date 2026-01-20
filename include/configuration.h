@@ -23,10 +23,17 @@
 #include <vector>
 #include <FS.h>
 
-class WiFiAP {
+class WiFi_AP {
+public:
+    String  ssid;
+    String  password;
+};
+
+class WiFi_Auto_AP {
 public:
     bool    active;
     String  password;
+    int     timeout;
 };
 
 class Beacon {
@@ -83,6 +90,7 @@ public:
     bool    buzzerActive;
     int     buzzerPinTone;
     int     buzzerPinVcc;
+    int     volume;         // 0-100%
     bool    bootUpBeep;
     bool    txBeep;
     bool    messageRxBeep;
@@ -98,6 +106,12 @@ public:
     long    signalBandwidth;
     int     codingRate4;
     int     power;
+    int     dataRate;
+};
+
+class Lora {
+public:
+    bool    sendInfo;
 };
 
 class PTT {
@@ -117,21 +131,32 @@ public:
     bool    useKISS;
 };
 
+class APRS_IS {
+public:
+    bool    active;
+    String  server;
+    int     port;
+    String  passcode;
+};
+
 
 class Configuration {
 public:
 
-    WiFiAP                  wifiAP;
-    std::vector<Beacon>     beacons;  
+    std::vector<WiFi_AP>    wifiAPs;
+    WiFi_Auto_AP            wifiAutoAP;
+    std::vector<Beacon>     beacons;
     Display                 display;
     Battery                 battery;
     Winlink                 winlink;
     Telemetry               telemetry;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
+    Lora                    lora;
     PTT                     ptt;
     BLUETOOTH               bluetooth;
-    
+    APRS_IS                 aprs_is;
+
     bool    simplifiedTrackerMode;
     int     sendCommentAfterXBeacons;
     String  path;

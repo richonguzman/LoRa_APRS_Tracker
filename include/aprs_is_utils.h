@@ -16,20 +16,19 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef WIFI_UTILS_H_
-#define WIFI_UTILS_H_
+#ifndef APRS_IS_UTILS_H_
+#define APRS_IS_UTILS_H_
 
 #include <Arduino.h>
 
 
-namespace WIFI_Utils {
+namespace APRS_IS_Utils {
 
-    void checkWiFi();
-    void startBlockingWebConfig();
-    void startStationMode();
-    void setup();
-    bool isConnected();
-    String getStatusLine();
+    void    setup();
+    void    connect();
+    void    upload(const String& packet);
+    bool    isConnected();
+    void    checkConnection();
 
 }
 
