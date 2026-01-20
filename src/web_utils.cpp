@@ -177,7 +177,7 @@ namespace WEB_Utils {
 
         //  Display
         Config.display.ecoMode                  = request->hasParam("display.ecoMode", true);
-        if (!Config.display.ecoMode) {
+        if (Config.display.ecoMode) {
             Config.display.timeout              = getParamIntSafe("display.timeout", Config.display.timeout);
         }
         Config.display.turn180                  = request->hasParam("display.turn180", true);
