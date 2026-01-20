@@ -53,6 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2026-01-19 A few bugs fixes on screen timeout and other issues.
 - 2025-12-01 APRSPacketLib update.
 - 2025-11-26 Custom Status Selection.
 - 2025-08-11 New improved Battery Monitor for Heltec Boards. Thanks Tilen S54B.
