@@ -40,7 +40,7 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 ### Prerequisites
 - PlatformIO (VSCode extension recommended)
 - Lilygo T-Deck Plus board
-- SD card with map tiles (optional but recommended)
+- SD card with map tiles (optional but recommended) - **A1 class recommended** (e.g., SanDisk Extreme A1) for fast random read access required by tile loading
 
 ### Build
 ```bash
