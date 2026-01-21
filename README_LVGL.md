@@ -193,20 +193,9 @@ Edit `data/tracker.json` for advanced settings:
 - **Shift**: Toggle uppercase
 - **Sym**: Toggle symbol layer
 
-## APRS Symbol Reference
+## APRS Symbols
 
-The tracker supports the full APRS symbol set:
-- **Primary Table (/)**: Standard symbols
-- **Alternate Table (\)**: Extended symbols with overlays
-
-Common symbols:
-| Symbol | Code | Description |
-|--------|------|-------------|
-| Car    | />   | Primary car |
-| Car    | \>   | Alternate car (red) |
-| House  | /-   | House |
-| Digi   | /#   | Digipeater |
-| iGate  | /&   | iGate |
+**Note**: Symbol display on the map is functional but does not yet fully comply with the APRS standard. Some symbols may not be displayed correctly. A patch to the APRSPacketLib library is planned to fix this.
 
 ## Technical Details
 

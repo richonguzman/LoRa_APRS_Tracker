@@ -2754,7 +2754,11 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         lv_textarea_set_text(compose_msg_input, "");
         compose_screen_active = false;
         // Return to the screen we came from (map, messages, or dashboard)
+        Serial.printf("[LVGL-DEBUG] compose_return_screen=%p, valid=%d\n",
+                      compose_return_screen,
+                      compose_return_screen ? lv_obj_is_valid(compose_return_screen) : 0);
         if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
+            Serial.println("[LVGL-DEBUG] Returning to compose_return_screen");
             lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
         } else {
             lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
@@ -3968,7 +3972,7 @@ namespace LVGL_UI {
         (void)e;  // Unused parameter
         const char* btn_text = lv_msgbox_get_active_btn_text(add_contact_msgbox);
 
-        if (btn_text && strcmp(btn_text, "Oui") == 0) {
+        if (btn_text && strcmp(btn_text, "Yes") == 0) {
             // User confirmed - add contact
             Contact newContact;
             newContact.callsign = pending_contact_callsign;
@@ -3990,6 +3994,14 @@ namespace LVGL_UI {
             add_contact_msgbox = nullptr;
         }
         pending_contact_callsign = "";
+
+        // Navigate to Contacts tab
+        if (screen_msg && msg_tabview) {
+            lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+            lv_tabview_set_act(msg_tabview, 2, LV_ANIM_ON);  // 2 = Contacts tab
+            populate_contacts_list(list_contacts_global);
+            Serial.println("[LVGL] Navigated to Contacts tab");
+        }
     }
 
     void showAddContactPrompt(const char* callsign) {
@@ -4012,11 +4024,11 @@ namespace LVGL_UI {
 
         // Create message with callsign
         char msg[64];
-        snprintf(msg, sizeof(msg), "Nouveau contact:\n%s\n\nAjouter?", callsign);
+        snprintf(msg, sizeof(msg), "New contact:\n%s\n\nAdd to contacts?", callsign);
 
         // Create message box with Yes/No buttons
-        static const char* btns[] = {"Oui", "Non", ""};
-        add_contact_msgbox = lv_msgbox_create(lv_layer_top(), "Contact?", msg, btns, false);
+        static const char* btns[] = {"Yes", "No", ""};
+        add_contact_msgbox = lv_msgbox_create(lv_layer_top(), "New Contact", msg, btns, false);
         lv_obj_set_size(add_contact_msgbox, 220, 140);
         lv_obj_set_style_bg_color(add_contact_msgbox, lv_color_hex(0x1a1a2e), 0);
         lv_obj_set_style_bg_opa(add_contact_msgbox, LV_OPA_COVER, 0);
