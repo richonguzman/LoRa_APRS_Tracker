@@ -137,20 +137,8 @@ static lv_obj_t* screen_speed = nullptr;
 // UI Elements - Sound settings screen
 static lv_obj_t* screen_sound = nullptr;
 
-// Éléments d'interface utilisateur de l'écran de carte (déclarés extern dans ui_map_manager.h)
-lv_obj_t* UIMapManager::screen_map = nullptr;
-lv_obj_t* UIMapManager::map_canvas = nullptr;
-lv_color_t* UIMapManager::map_canvas_buf = nullptr;
-lv_obj_t* UIMapManager::map_title_label = nullptr;
-lv_obj_t* UIMapManager::map_container = nullptr;
-
-// Variables d'état de la carte (déclarées extern dans ui_map_manager.h)
-int UIMapManager::map_zoom_index = 0;
-int UIMapManager::map_current_zoom = 8; // Valeur par défaut, sera définie par UIMapManager::create_map_screen
-float UIMapManager::map_center_lat = 0.0f;
-float UIMapManager::map_center_lon = 0.0f;
-String UIMapManager::map_current_region = "";
-bool UIMapManager::map_follow_gps = true;
+// Les éléments d'interface utilisateur et les variables d'état de la carte sont maintenant définis dans ui_map_manager.cpp
+// et déclarés extern dans include/ui_map_manager.h.
 
 // UI Elements - WiFi settings screen
 static lv_obj_t* screen_wifi = nullptr;
