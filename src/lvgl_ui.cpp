@@ -47,6 +47,14 @@ const uint8_t* symbolsAPRS[] = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol,
                                        houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
                                        aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
 
+// Expose variables defined in this file to UIMapManager namespace
+namespace UIMapManager {
+    SemaphoreHandle_t& spiMutex = ::spiMutex;
+    const char* const* symbolArray = ::symbolArray;
+    const int& symbolArraySize = ::symbolArraySize;
+    const uint8_t* const* symbolsAPRS = ::symbolsAPRS;
+}
+
 // Sources de données externes
 extern Configuration Config;
 extern uint8_t myBeaconsIndex;

@@ -10,6 +10,11 @@
 #include <TFT_eSPI.h> // Pour les définitions de TFT_eSPI si elles sont nécessaires (ex: pour SCREEN_WIDTH/HEIGHT)
 #include <TinyGPS++.h>
 #include <JPEGDEC.h>
+// Undefine macros that conflict between PNGdec and JPEGDEC
+#undef INTELSHORT
+#undef INTELLONG
+#undef MOTOSHORT
+#undef MOTOLONG
 #include <PNGdec.h>
 #include <SD.h>
 #include <freertos/FreeRTOS.h>
@@ -24,18 +29,6 @@
 #include "lvgl_ui.h" // Pour appeler LVGL_UI::open_compose_with_callsign
 
 namespace UIMapManager {
-
-    // Sources de données externes de l'application principale
-    extern Configuration Config;
-    extern uint8_t myBeaconsIndex;
-    extern TinyGPSPlus gps;
-    extern SemaphoreHandle_t spiMutex; // Mutex pour le bus SPI
-    extern int mapStationsCount; // Compteur de stations utilisé pour la barre d'info
-
-    // Cartographie des symboles APRS (déclarés extern dans custom_characters.h)
-    extern const char* symbolArray[];
-    extern const int symbolArraySize;
-    extern const uint8_t* symbolsAPRS[];
 
     // Éléments d'interface utilisateur - Écran de carte
     lv_obj_t* screen_map = nullptr;
