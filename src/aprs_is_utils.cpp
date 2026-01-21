@@ -18,6 +18,7 @@
 
 #include <WiFi.h>
 #include <logger.h>
+#include <esp_task_wdt.h>
 #include "aprs_is_utils.h"
 #include "configuration.h"
 #include "wifi_utils.h"
@@ -51,6 +52,7 @@ namespace APRS_IS_Utils {
         uint8_t count = 0;
         while (!aprsIsClient.connect(Config.aprs_is.server.c_str(), Config.aprs_is.port) && count < 5) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "Connection attempt %d failed", count + 1);
+            esp_task_wdt_reset();  // Reset watchdog during connection attempts
             delay(1000);
             aprsIsClient.stop();
             aprsIsClient.flush();
@@ -78,6 +80,7 @@ namespace APRS_IS_Utils {
             // Wait for server response to validate passcode
             uint32_t startWait = millis();
             while (millis() - startWait < 5000) {
+                esp_task_wdt_reset();  // Reset watchdog during server response wait
                 if (aprsIsClient.available()) {
                     String response = aprsIsClient.readStringUntil('\n');
                     response.trim();
