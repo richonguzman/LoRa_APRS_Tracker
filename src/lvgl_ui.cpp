@@ -286,11 +286,13 @@ static void drawAPRSSymbol(const char* symbolChar) {
 // Button event callbacks
 static void btn_beacon_clicked(lv_event_t* e) {
     sendUpdate = true;
-    Serial.println("[LVGL] BEACON button pressed - sending beacon");
+    Serial.println("[LVGL] BEACON button pressed - requesting beacon");
+    LVGL_UI::showBeaconPending();  // Show orange "waiting for GPS" popup
 }
 
 static void btn_setup_clicked(lv_event_t* e) {
     Serial.println("[LVGL] SETUP button pressed");
+    LVGL_UI::closeAllPopups();
     if (!screen_setup) {
         create_setup_screen();
     }
@@ -299,6 +301,7 @@ static void btn_setup_clicked(lv_event_t* e) {
 
 static void btn_back_clicked(lv_event_t* e) {
     Serial.println("[LVGL] BACK button pressed");
+    LVGL_UI::closeAllPopups();
     lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
 }
 
@@ -319,6 +322,7 @@ static void btn_wifi_back_clicked(lv_event_t* e) {
 
 static void btn_msg_clicked(lv_event_t* e) {
     Serial.println("[LVGL] MSG button pressed");
+    LVGL_UI::closeAllPopups();
     if (!screen_msg) {
         create_msg_screen();
     }
@@ -327,13 +331,21 @@ static void btn_msg_clicked(lv_event_t* e) {
 
 static void btn_map_clicked(lv_event_t* e) {
     Serial.println("[LVGL] MAP button pressed");
+    Serial.printf("[LVGL-DEBUG] Free heap before MAP: %u bytes\n", ESP.getFreeHeap());
+    // Close any open popups before changing screen
+    LVGL_UI::closeAllPopups();
+    Serial.println("[LVGL-DEBUG] Popups closed");
     // Recreate map screen each time to update positions
     if (UIMapManager::screen_map) {
+        Serial.println("[LVGL-DEBUG] Deleting old screen_map");
         lv_obj_del(UIMapManager::screen_map);
         UIMapManager::screen_map = nullptr;
     }
+    Serial.println("[LVGL-DEBUG] Creating new map screen");
     UIMapManager::create_map_screen(); // Call the new map creation function
+    Serial.println("[LVGL-DEBUG] Map screen created, loading animation");
     lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    Serial.println("[LVGL-DEBUG] btn_map_clicked DONE");
 }
 
 // Create the main dashboard screen
@@ -2017,6 +2029,7 @@ static lv_obj_t* compose_msg_input = nullptr;
 static lv_obj_t* compose_keyboard = nullptr;
 static lv_obj_t* current_focused_input = nullptr;
 static bool compose_screen_active = false;
+static lv_obj_t* compose_return_screen = nullptr;  // Screen to return to after compose
 
 // Forward declaration
 static void create_compose_screen();
@@ -2025,6 +2038,9 @@ static void create_compose_screen();
 void LVGL_UI::open_compose_with_callsign(const String& callsign) {
     // Create compose screen if necessary
     create_compose_screen();
+
+    // Store current screen to return to after sending/canceling
+    compose_return_screen = lv_scr_act();
 
     // Pré-remplir la destination avec l'indicatif
     if (compose_to_input) {
@@ -2224,6 +2240,7 @@ static void btn_conversation_reply_clicked(lv_event_t* e) {
     if (current_conversation_callsign.length() > 0) {
         create_compose_screen();
         compose_screen_active = true;
+        compose_return_screen = lv_scr_act();  // Store current screen to return to
         lv_textarea_set_text(compose_to_input, current_conversation_callsign.c_str());
         current_focused_input = compose_msg_input;
         lv_keyboard_set_textarea(compose_keyboard, compose_msg_input);
@@ -2388,6 +2405,7 @@ static void contact_item_clicked(lv_event_t* e) {
     // Create compose screen and pre-fill recipient
     create_compose_screen();
     compose_screen_active = true;
+    compose_return_screen = lv_scr_act();  // Store current screen to return to
 
     // Pre-fill the To field with contact's callsign
     lv_textarea_set_text(compose_to_input, contact->callsign.c_str());
@@ -2735,13 +2753,23 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         lv_textarea_set_text(compose_to_input, "");
         lv_textarea_set_text(compose_msg_input, "");
         compose_screen_active = false;
-        lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        // Return to the screen we came from (map, messages, or dashboard)
+        if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
+            lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        } else {
+            lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        }
     }
 }
 
 static void btn_compose_back_clicked(lv_event_t* e) {
     compose_screen_active = false;
-    lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+    // Return to the screen we came from (map, messages, or dashboard)
+    if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
+        lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+    } else {
+        lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+    }
 }
 
 static void create_compose_screen() {
@@ -2997,7 +3025,12 @@ void handleComposeKeyboard(char key) {
                 lv_textarea_set_text(compose_to_input, "");
                 lv_textarea_set_text(compose_msg_input, "");
                 compose_screen_active = false;
-                lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+                // Return to the screen we came from (map, messages, or dashboard)
+                if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
+                    lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+                } else {
+                    lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+                }
             }
         }
     } else if (key >= 32 && key < 127) {  // Printable chars
@@ -3026,6 +3059,7 @@ static void btn_compose_clicked(lv_event_t* e) {
         // Messages tab - open compose message screen
         create_compose_screen();
         compose_screen_active = true;
+        compose_return_screen = lv_scr_act();  // Store current screen to return to
         current_focused_input = compose_to_input;
         lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
     }
@@ -3390,6 +3424,13 @@ namespace LVGL_UI {
         lv_tick_inc(elapsed);
         last_tick = now;
 
+        // Debug heartbeat every 5 seconds
+        static uint32_t lastHeartbeat = 0;
+        if (now - lastHeartbeat >= 5000) {
+            lastHeartbeat = now;
+            Serial.printf("[LVGL-HB] loop running, heap=%u\n", ESP.getFreeHeap());
+        }
+
         // Handle LVGL tasks
         lv_timer_handler();
 
@@ -3427,7 +3468,8 @@ namespace LVGL_UI {
                     gps.location.lng(),
                     gps.altitude.meters(),
                     gps.speed.kmph(),
-                    gps.satellites.value()
+                    gps.satellites.value(),
+                    gps.hdop.hdop()
                 );
             }
 
@@ -3478,13 +3520,24 @@ namespace LVGL_UI {
         }
     }
 
-    void updateGPS(double lat, double lng, double alt, double speed, int sats) {
+    void updateGPS(double lat, double lng, double alt, double speed, int sats, double hdop) {
         if (label_gps) {
             char buf[128];
             const char* locator = Utils::getMaidenheadLocator(lat, lng, 8);
+
+            // Determine HDOP quality indicator (same as original CA2RXU code)
+            const char* hdopState = "";
+            if (hdop > 5.0) {
+                hdopState = "X";  // Bad precision
+            } else if (hdop > 2.0 && hdop < 5.0) {
+                hdopState = "-";  // Medium precision
+            } else if (hdop <= 2.0) {
+                hdopState = "+";  // Good precision
+            }
+
             snprintf(buf, sizeof(buf),
-                "GPS: %d sat  Loc: %s\nLat: %.4f  Lon: %.4f\nAlt: %.0f m  Spd: %.0f km/h",
-                sats, locator, lat, lng, alt, speed);
+                "GPS: %d%s sat  Loc: %s\nLat: %.4f  Lon: %.4f\nAlt: %.0f m  Spd: %.0f km/h",
+                sats, hdopState, locator, lat, lng, alt, speed);
             lv_label_set_text(label_gps, buf);
         }
     }
@@ -3610,6 +3663,62 @@ namespace LVGL_UI {
         }
     }
 
+    // Beacon pending msgbox (orange) - shown immediately when BEACON button is pressed
+    static lv_obj_t* beacon_pending_msgbox = nullptr;
+    static lv_timer_t* beacon_pending_timer = nullptr;
+
+    static void hide_beacon_pending_popup(lv_timer_t* timer) {
+        if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
+            lv_obj_del(beacon_pending_msgbox);
+            beacon_pending_msgbox = nullptr;
+        }
+        beacon_pending_timer = nullptr;
+    }
+
+    void showBeaconPending() {
+        Serial.println("[LVGL] showBeaconPending called");
+
+        // Close existing beacon pending msgbox if any
+        if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
+            lv_obj_del(beacon_pending_msgbox);
+            beacon_pending_msgbox = nullptr;
+        }
+        if (beacon_pending_timer) {
+            lv_timer_del(beacon_pending_timer);
+            beacon_pending_timer = nullptr;
+        }
+
+        // Create message box on top layer (visible on all screens)
+        beacon_pending_msgbox = lv_msgbox_create(lv_layer_top(), "BEACON", "Waiting for GPS...", NULL, false);
+        lv_obj_set_size(beacon_pending_msgbox, 200, 80);
+        lv_obj_set_style_bg_color(beacon_pending_msgbox, lv_color_hex(0x332200), 0);  // Dark orange
+        lv_obj_set_style_bg_opa(beacon_pending_msgbox, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_color(beacon_pending_msgbox, lv_color_hex(0xaa6600), 0);  // Orange border
+        lv_obj_set_style_border_width(beacon_pending_msgbox, 3, 0);
+        lv_obj_set_style_text_color(beacon_pending_msgbox, lv_color_hex(0xffaa00), 0);  // Orange text
+        lv_obj_center(beacon_pending_msgbox);
+
+        // Force immediate refresh
+        lv_refr_now(NULL);
+
+        // Auto-close after 5 seconds (in case GPS never gets fix)
+        beacon_pending_timer = lv_timer_create(hide_beacon_pending_popup, 5000, NULL);
+        lv_timer_set_repeat_count(beacon_pending_timer, 1);
+
+        Serial.println("[LVGL] Beacon pending msgbox created");
+    }
+
+    void hideBeaconPending() {
+        if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
+            lv_obj_del(beacon_pending_msgbox);
+            beacon_pending_msgbox = nullptr;
+        }
+        if (beacon_pending_timer) {
+            lv_timer_del(beacon_pending_timer);
+            beacon_pending_timer = nullptr;
+        }
+    }
+
     // TX msgbox
     static lv_obj_t* tx_msgbox = nullptr;
     static lv_timer_t* tx_popup_timer = nullptr;
@@ -3622,8 +3731,37 @@ namespace LVGL_UI {
         tx_popup_timer = nullptr;
     }
 
+    // Close all popups (useful when changing screens)
+    void closeAllPopups() {
+        // Close beacon pending popup
+        hideBeaconPending();
+
+        // Close TX popup
+        if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
+            lv_obj_del(tx_msgbox);
+            tx_msgbox = nullptr;
+        }
+        if (tx_popup_timer) {
+            lv_timer_del(tx_popup_timer);
+            tx_popup_timer = nullptr;
+        }
+
+        // Close RX popup
+        if (rx_msgbox && lv_obj_is_valid(rx_msgbox)) {
+            lv_obj_del(rx_msgbox);
+            rx_msgbox = nullptr;
+        }
+        if (rx_popup_timer) {
+            lv_timer_del(rx_popup_timer);
+            rx_popup_timer = nullptr;
+        }
+    }
+
     void showTxPacket(const char* packet) {
         Serial.printf("[LVGL] showTxPacket called: %s\n", packet);
+
+        // Always close beacon pending popup when TX happens
+        hideBeaconPending();
 
         // Only show popup on dashboard
         if (lv_scr_act() != screen_main) {
@@ -4024,6 +4162,13 @@ namespace LVGL_UI {
             // Wait and reboot
             delay(5000);
             ESP.restart();
+        }
+    }
+
+    // Return to main dashboard screen
+    void return_to_dashboard() {
+        if (screen_main) {
+            lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
         }
     }
 

@@ -780,8 +780,10 @@ namespace MSG_Utils {
                         if ((lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4) && !Config.simplifiedTrackerMode) {
                             GPS_Utils::calculateDistanceCourse(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude);
                             // Store station for map display
+                            // Combine overlay (table: / or \) + symbol (char) for correct APRS symbol format
+                            String fullSymbol = lastReceivedPacket.overlay + lastReceivedPacket.symbol;
                             STATION_Utils::addMapStation(lastReceivedPacket.sender, lastReceivedPacket.latitude, lastReceivedPacket.longitude,
-                                                         lastReceivedPacket.symbol, lastReceivedPacket.overlay, lastReceivedPacket.rssi);
+                                                         fullSymbol, lastReceivedPacket.overlay, lastReceivedPacket.rssi);
                         }
                         if (Config.notification.buzzerActive && Config.notification.stationBeep && !digipeaterActive) {
                             NOTIFICATION_Utils::stationHeardBeep();
