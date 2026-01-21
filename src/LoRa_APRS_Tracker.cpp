@@ -48,6 +48,7 @@ ____________________________________________________________________*/
 #include "bluetooth_utils.h"
 #include "keyboard_utils.h"
 #include "joystick_utils.h"
+#include "sd_logger.h"
 #include "configuration.h"
 #include "battery_utils.h"
 #include "station_utils.h"
@@ -190,6 +191,10 @@ void setup() {
     #endif
     STORAGE_Utils::setup();
     MSG_Utils::loadNumMessages();
+
+    // Initialize SD logger for debugging reboots
+    SD_Logger::init();
+    SD_Logger::logBootInfo();
 
     #ifdef USE_LVGL_UI
         LVGL_UI::updateInitStatus("GPS...");
@@ -357,6 +362,13 @@ void loop() {
 
     // Reset watchdog timer
     esp_task_wdt_reset();
+
+    // Periodic SD log every 5 minutes to confirm system is running
+    static uint32_t lastHeartbeat = 0;
+    if (millis() - lastHeartbeat >= 300000) {  // 5 minutes
+        lastHeartbeat = millis();
+        SD_Logger::logf(SD_Logger::INFO, "LOOP", "Heartbeat - Free heap: %u KB", ESP.getFreeHeap() / 1024);
+    }
 
     yield();
 }

@@ -31,7 +31,8 @@
 #include "lora_aprs_bg.h"
 #include "storage_utils.h"
 #include <SD.h>
-#include <PNGdec.h>
+#include <JPEGDEC.h>
+#include "sd_logger.h"
 
 // APRS symbol mapping (same as display.cpp)
 static const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
@@ -219,6 +220,7 @@ static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
                 analogWrite(BOARD_BL_PIN, screenBrightness);
             #endif
             Serial.println("[LVGL] Screen woken up by touch");
+            SD_Logger::logScreenState(false);  // Log screen active
         }
 
         // Debug: print touch coordinates
@@ -1132,6 +1134,7 @@ static void eco_switch_changed(lv_event_t* e) {
             #ifdef BOARD_BL_PIN
                 analogWrite(BOARD_BL_PIN, screenBrightness);
             #endif
+            SD_Logger::logScreenState(false);  // Log screen active
         }
     }
 }
@@ -2046,22 +2049,29 @@ static int findCacheSlot() {
     return lruIndex;
 }
 
-// PNG decoder for map tiles
-static PNG png;
+// JPEG decoder for map tiles
+static JPEGDEC jpeg;
 
-// Context for PNG decoding to cache
-struct PNGCacheContext {
+// Context for JPEG decoding to cache
+struct JPEGCacheContext {
     uint16_t* cacheBuffer;  // Target cache buffer
     int tileWidth;
 };
 
-static PNGCacheContext pngCacheContext;
+static JPEGCacheContext jpegCacheContext;
 
-// PNGdec callback for decoding to cache - stores full tile
-static int pngCacheCallback(PNGDRAW* pDraw) {
-    // Store directly to cache buffer (full tile, no clipping)
-    png.getLineAsRGB565(pDraw, &pngCacheContext.cacheBuffer[pDraw->y * pngCacheContext.tileWidth],
-                        PNG_RGB565_LITTLE_ENDIAN, 0xffffffff);
+// JPEGDEC callback for decoding to cache - called for each MCU block
+static int jpegCacheCallback(JPEGDRAW* pDraw) {
+    uint16_t* src = pDraw->pPixels;
+    for (int y = 0; y < pDraw->iHeight; y++) {
+        int destY = pDraw->y + y;
+        if (destY >= MAP_TILE_SIZE) break;
+        for (int x = 0; x < pDraw->iWidth; x++) {
+            int destX = pDraw->x + x;
+            if (destX >= MAP_TILE_SIZE) break;
+            jpegCacheContext.cacheBuffer[destY * jpegCacheContext.tileWidth + destX] = src[y * pDraw->iWidth + x];
+        }
+    }
     return 1;
 }
 
@@ -2083,8 +2093,8 @@ static void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
     }
 }
 
-// Open PNG file from SD card - callback for PNGdec
-static void* pngOpenFile(const char* filename, int32_t* size) {
+// Open JPEG file from SD card - callback for JPEGDEC
+static void* jpegOpenFile(const char* filename, int32_t* size) {
     File* file = new File(SD.open(filename, FILE_READ));
     if (!file || !*file) {
         delete file;
@@ -2094,7 +2104,7 @@ static void* pngOpenFile(const char* filename, int32_t* size) {
     return file;
 }
 
-static void pngCloseFile(void* handle) {
+static void jpegCloseFile(void* handle) {
     File* file = (File*)handle;
     if (file) {
         file->close();
@@ -2102,12 +2112,12 @@ static void pngCloseFile(void* handle) {
     }
 }
 
-static int32_t pngReadFile(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+static int32_t jpegReadFile(JPEGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
     File* file = (File*)pFile->fHandle;
     return file->read(pBuf, iLen);
 }
 
-static int32_t pngSeekFile(PNGFILE* pFile, int32_t iPosition) {
+static int32_t jpegSeekFile(JPEGFILE* pFile, int32_t iPosition) {
     File* file = (File*)pFile->fHandle;
     return file->seek(iPosition);
 }
@@ -2484,22 +2494,11 @@ static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int
 
     for (const String& region : regions) {
         char tilePath[128];
-        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
+        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
                  mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
 
         if (STORAGE_Utils::fileExists(tilePath)) {
             Serial.printf("[MAP] Loading tile: %s\n", tilePath);
-
-            // Open PNG file
-            int rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
-            if (rc != PNG_SUCCESS) {
-                Serial.printf("[MAP] PNG open failed: %d\n", rc);
-                continue;
-            }
-
-            int pngWidth = png.getWidth();
-            int pngHeight = png.getHeight();
-            Serial.printf("[MAP] PNG size: %dx%d\n", pngWidth, pngHeight);
 
             // Find cache slot and allocate if needed
             int slot = findCacheSlot();
@@ -2507,21 +2506,27 @@ static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int
                 tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
                 if (!tileCache[slot].data) {
                     Serial.println("[MAP] Failed to allocate cache buffer");
-                    png.close();
                     continue;
                 }
             }
 
             // Setup cache context
-            pngCacheContext.cacheBuffer = tileCache[slot].data;
-            pngCacheContext.tileWidth = MAP_TILE_SIZE;
+            jpegCacheContext.cacheBuffer = tileCache[slot].data;
+            jpegCacheContext.tileWidth = MAP_TILE_SIZE;
 
-            // Decode PNG to cache
-            rc = png.decode(nullptr, 0);
-            png.close();
+            // Open and decode JPEG file
+            int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
+            if (!rc) {
+                Serial.println("[MAP] JPEG open failed");
+                continue;
+            }
 
-            if (rc != PNG_SUCCESS) {
-                Serial.printf("[MAP] PNG decode failed: %d\n", rc);
+            jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
+            rc = jpeg.decode(0, 0, 0);
+            jpeg.close();
+
+            if (!rc) {
+                Serial.println("[MAP] JPEG decode failed");
                 continue;
             }
 
@@ -4023,6 +4028,7 @@ namespace LVGL_UI {
                     analogWrite(BOARD_BL_PIN, 0);  // Turn off backlight
                 #endif
                 Serial.println("[LVGL] Screen dimmed (eco mode)");
+                SD_Logger::logScreenState(true);  // Log screen dimmed
             }
         }
 
