@@ -88,6 +88,16 @@ TinyGPSPlus                         gps;
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
 Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
+
+// Expose variables to UIMapManager namespace
+#ifdef USE_LVGL_UI
+namespace UIMapManager {
+    TinyGPSPlus& gps = ::gps;
+    Configuration& Config = ::Config;
+    uint8_t& myBeaconsIndex = ::myBeaconsIndex;
+}
+#endif
+
 uint8_t     loraIndex               = 0;
 int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];

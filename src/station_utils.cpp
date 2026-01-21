@@ -90,6 +90,13 @@ nearStation nearbyStations[nearbyStationsSize];
 MapStation mapStations[MAP_STATIONS_MAX];
 int mapStationsCount = 0;
 
+// Expose mapStationsCount to UIMapManager namespace
+#ifdef USE_LVGL_UI
+namespace UIMapManager {
+    int& mapStationsCount = ::mapStationsCount;
+}
+#endif
+
 namespace STATION_Utils {
 
     void nearStationInit() {

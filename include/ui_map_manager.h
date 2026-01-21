@@ -13,40 +13,48 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
+// Forward declarations
+class Configuration;
+
 // Dimensions de l'affichage
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
 
 namespace UIMapManager {
 
-    // Sources de données externes nécessaires de lvgl_ui.cpp (ou autres globales)
-    extern TinyGPSPlus gps;
-    extern Configuration Config;
-    extern uint8_t myBeaconsIndex;
-    extern int mapStationsCount;
-    extern SemaphoreHandle_t spiMutex; // Déclaré extern pour l'accès au mutex SPI
+    // External data sources from lvgl_ui.cpp and other global variables
+    extern TinyGPSPlus& gps;
+    extern Configuration& Config;
+    extern uint8_t& myBeaconsIndex;
+    extern int& mapStationsCount;
+    extern SemaphoreHandle_t& spiMutex; // Declared extern for SPI bus mutex access
 
-    // Constantes de la carte
+    // APRS symbol arrays
+    extern const char* const* symbolArray;
+    extern const int& symbolArraySize;
+    extern const uint8_t* const* symbolsAPRS;
+
+    // Map constants
     #define MAP_TILE_SIZE 256
     #define MAP_CANVAS_WIDTH 320
-    #define MAP_CANVAS_HEIGHT 200  // Écran moins la barre de titre et la barre de boutons
+    #define MAP_CANVAS_HEIGHT 200  // Screen minus title bar and button bar
 
-    // Éléments de l'interface utilisateur - Écran de carte
+    // UI elements - Map screen
     extern lv_obj_t* screen_map;
     extern lv_obj_t* map_canvas;
     extern lv_color_t* map_canvas_buf;
-    extern lv_obj_t* map_title_label;  // Label de titre pour mettre à jour le niveau de zoom
-    extern lv_obj_t* map_container;    // Conteneur pour le canevas et les boutons de station
+    extern lv_obj_t* map_title_label;  // Title label to update zoom level
+    extern lv_obj_t* map_container;    // Container for canvas and station buttons
 
-    // Variables d'état de la carte
-    extern int map_zoom_index;  // Index dans map_available_zooms (commence au zoom 8)
+    // Map state variables
+    extern int map_zoom_index;  // Index in map_available_zooms (starts at zoom 8)
     extern int map_current_zoom;
     extern float map_center_lat;
     extern float map_center_lon;
     extern String map_current_region;
-    extern bool map_follow_gps;  // Suivre le GPS ou mode de panoramique libre
+    extern bool map_follow_gps;  // Follow GPS or free panning mode
 
-    // Déclarations des fonctions
+    // Function declarations
     void initTileCache();
     int findCachedTile(int zoom, int tileX, int tileY);
     int findCacheSlot();

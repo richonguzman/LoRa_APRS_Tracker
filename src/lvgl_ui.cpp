@@ -29,7 +29,7 @@
 #include "wifi_utils.h"
 #include "lora_aprs_logo.h"
 #include "lora_aprs_bg.h"
-#include <SD.h> // Ajouté car utilisé pour les messages envoyés
+#include <SD.h> // Added because used for sent messages
 #include "storage_utils.h"
 #include "sd_logger.h"
 #include <freertos/FreeRTOS.h>
@@ -39,7 +39,7 @@
 
 SemaphoreHandle_t spiMutex = NULL;
 
-// APRS symbol mapping (définies une seule fois ici pour les déclarations extern dans custom_characters.h)
+// APRS symbol mapping (defined once here for extern declarations in custom_characters.h)
 const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                      "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
 const int symbolArraySize = sizeof(symbolArray)/sizeof(symbolArray[0]);
@@ -48,7 +48,15 @@ const uint8_t* symbolsAPRS[] = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol,
                                        houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
                                        aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
 
-// Sources de données externes
+// Expose variables defined in this file to UIMapManager namespace
+namespace UIMapManager {
+    SemaphoreHandle_t& spiMutex = ::spiMutex;
+    const char* const* symbolArray = ::symbolArray;
+    const int& symbolArraySize = ::symbolArraySize;
+    const uint8_t* const* symbolsAPRS = ::symbolsAPRS;
+}
+
+// External data sources
 extern Configuration Config;
 extern uint8_t myBeaconsIndex;
 extern int myBeaconsSize;
@@ -172,7 +180,7 @@ static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t*
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
     
-    // Vérifier si le Mutex existe ET le prendre
+    // Check if Mutex exists AND take it
     if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
         tft.startWrite();
         tft.setAddrWindow(area->x1, area->y1, w, h);
@@ -181,8 +189,8 @@ static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t*
         xSemaphoreGiveRecursive(spiMutex);
     } 
     else if (spiMutex == NULL) {
-        // Si le mutex n'existe pas encore (très tôt au boot), 
-        // on écrit quand même pour ne pas bloquer l'affichage
+        // If mutex doesn't exist yet (very early at boot), 
+        // we write anyway to not block the display
         tft.startWrite();
         tft.setAddrWindow(area->x1, area->y1, w, h);
         tft.pushColors((uint16_t*)&color_p->full, w * h, true);
@@ -257,7 +265,7 @@ static void drawAPRSSymbol(const char* symbolChar) {
     // Effacer le canevas avec un fond transparent/sombre
     lv_canvas_fill_bg(aprs_symbol_canvas, lv_color_hex(0x16213e), LV_OPA_COVER);
 
-    if (symbolIndex < 0) return;  // Symbole non trouvé
+    if (symbolIndex < 0) return;  // Symbol not found
 
     const uint8_t* bitMap = symbolsAPRS[symbolIndex];
     lv_color_t white = lv_color_hex(0xffffff);  // Blanc comme l'indicatif
@@ -319,12 +327,12 @@ static void btn_msg_clicked(lv_event_t* e) {
 
 static void btn_map_clicked(lv_event_t* e) {
     Serial.println("[LVGL] MAP button pressed");
-    // Recrée l'écran de la carte à chaque fois pour mettre à jour les positions
+    // Recreate map screen each time to update positions
     if (UIMapManager::screen_map) {
         lv_obj_del(UIMapManager::screen_map);
         UIMapManager::screen_map = nullptr;
     }
-    UIMapManager::create_map_screen(); // Appelle la nouvelle fonction de création de carte
+    UIMapManager::create_map_screen(); // Call the new map creation function
     lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
 }
 
@@ -1988,9 +1996,9 @@ static bool compose_screen_active = false;
 // Forward declaration
 static void create_compose_screen();
 
-// Ouvrir l'écran de composition avec un indicatif pré-rempli (maintenant fonction publique)
+// Open compose screen with prefilled callsign (now public function)
 void LVGL_UI::open_compose_with_callsign(const String& callsign) {
-    // Créer l'écran de composition si nécessaire
+    // Create compose screen if necessary
     create_compose_screen();
 
     // Pré-remplir la destination avec l'indicatif
