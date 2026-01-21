@@ -1999,6 +1999,9 @@ static lv_obj_t* compose_keyboard = nullptr;
 static lv_obj_t* current_focused_input = nullptr;
 static bool compose_screen_active = false;
 
+// Forward declaration
+static void create_compose_screen();
+
 // Ouvrir l'écran de composition avec un indicatif pré-rempli (maintenant fonction publique)
 void LVGL_UI::open_compose_with_callsign(const String& callsign) {
     // Créer l'écran de composition si nécessaire
