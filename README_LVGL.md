@@ -99,12 +99,37 @@ Create the following directory structure on your SD card.
 ```
 
 #### Download Map Tiles
+
+**Option 1: Using the included Python script**
+```bash
+cd tools/
+python download_tiles.py --region france --zoom 8 10 12 14 --output /path/to/sd/LoRa_Tracker/Maps
+```
+See `python download_tiles.py --help` for all options.
+
+**Option 2: Using MOBAC**
 Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/) to download OpenStreetMap tiles:
 1. Select your region on the map
-2. Choose "OSM4uMaps (OpenStreetMap)" as tile source
+2. Choose a tile source (e.g., "OpenStreetMap")
 3. Select zoom levels: **8, 10, 12, 14**
-4. Choose output format: **OSMTracker tile storage (JPEG)**
+4. Choose output format: **OSMTracker tile storage** (exports PNG tiles)
 5. Create the atlas and copy tiles to SD card
+
+#### Convert PNG to JPEG (Recommended)
+
+PNG tiles work fine but JPEG is recommended for smaller file size (3-5x smaller). Use the included conversion script:
+
+```bash
+cd tools/
+python convert_to_jpeg.py /path/to/tiles -j 16 -q 85
+```
+
+Options:
+- `-j 16`: Use 16 parallel threads for faster conversion
+- `-q 85`: JPEG quality (85 is a good balance between size and quality)
+- `--keep-png`: Keep original PNG files after conversion
+
+**Note**: The tracker supports PNG, JPEG, and RGB565 RAW formats. PNG requires no conversion but uses more space.
 
 #### APRS Symbols
 The tracker uses 24x24 PNG images for APRS symbols. You need to provide them on the SD card.
