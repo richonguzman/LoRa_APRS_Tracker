@@ -64,28 +64,47 @@ pio run -e ttgo_t_deck_plus_433 -t uploadfs
 ### SD Card Setup
 
 #### Map Tiles
-Create the following directory structure on your SD card:
+Create the following directory structure on your SD card.
+
+**Supported zoom levels: 8, 10, 12, 14** (you need tiles for each zoom level you want to use)
+
+**Tile format: JPEG (.jpg) recommended** - PNG also supported but JPEG loads faster and uses less space
+
 ```
 /LoRa_Tracker/
 ├── Maps/
-│   └── YourRegion/
-│       └── 8/           # Zoom level
-│           ├── 127/     # X tile
-│           │   └── 93.jpg
-│           └── 128/
-│               └── 93.jpg
+│   └── YourRegion/       # Region name (e.g., "France", "Europe")
+│       ├── 8/            # Zoom level 8 (country view)
+│       │   ├── 127/      # X tile coordinate
+│       │   │   ├── 93.jpg
+│       │   │   └── 94.jpg
+│       │   └── 128/
+│       │       └── 93.jpg
+│       ├── 10/           # Zoom level 10 (region view)
+│       │   └── ...
+│       ├── 12/           # Zoom level 12 (city view)
+│       │   └── ...
+│       └── 14/           # Zoom level 14 (street view)
+│           └── ...
 └── Symbols/
-    ├── primary/         # Primary APRS symbols (/)
-    │   ├── 21.png      # ! symbol
-    │   ├── 23.png      # # symbol
+    ├── primary/          # Primary APRS symbols (/)
+    │   ├── 21.png        # ! symbol (hex 21)
+    │   ├── 23.png        # # symbol (hex 23)
+    │   ├── 26.png        # & symbol (iGate)
+    │   ├── 3E.png        # > symbol (car)
     │   └── ...
-    └── alternate/       # Alternate APRS symbols (\)
-        ├── 21.png
+    └── alternate/        # Alternate APRS symbols (\)
+        ├── 3E.png        # > symbol (red car)
         └── ...
 ```
 
 #### Download Map Tiles
-You can use tools like [Mobile Atlas Creator](https://mobac.sourceforge.io/) to download OpenStreetMap tiles for your region.
+Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/) to download OpenStreetMap tiles:
+1. Select your region on the map
+2. Choose "OSM4uMaps (OpenStreetMap)" as tile source
+3. Select zoom levels: **8, 10, 12, 14**
+4. Choose output format: **OSMTracker tile storage (JPEG)**
+5. Create the atlas and copy tiles to SD card
 
 ## Configuration
 
