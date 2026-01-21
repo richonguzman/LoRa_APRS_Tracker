@@ -196,7 +196,15 @@ namespace STORAGE_Utils {
 
     bool mkdir(const String& path) {
         if (sdAvailable) {
-            return SD.mkdir(path);
+            String sdPath;
+            // If path starts with /LoRa_Tracker, use it as-is
+            if (path.startsWith("/LoRa_Tracker")) {
+                sdPath = path;
+            } else {
+                // Prepend messages path for relative paths
+                sdPath = String(MESSAGES_DIR) + path;
+            }
+            return SD.mkdir(sdPath);
         }
         return true;  // SPIFFS doesn't need directories
     }

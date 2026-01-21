@@ -40,6 +40,7 @@ namespace MSG_Utils {
     std::vector<String>& getLoadedAPRSMessages();
     std::vector<String>& getLoadedWLNKMails();
     std::vector<String> getMessagesForContact(const String& callsign);
+    std::vector<String> getConversationsList();  // Get list of callsigns with conversations
     void    loadMessagesFromMemory(uint8_t typeOfMessage);
     void    ledNotification();
     void    deleteFile(uint8_t typeOfFile);

@@ -349,7 +349,8 @@ void loop() {
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main",
+            // Log only in debug mode to avoid spam
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main",
                        "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon",
                        gps.satellites.value(), gps.hdop.hdop());
         }

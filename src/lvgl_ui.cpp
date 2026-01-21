@@ -1112,9 +1112,34 @@ static lv_obj_t* eco_switch = nullptr;
 static lv_obj_t* brightness_slider = nullptr;
 static lv_obj_t* brightness_label = nullptr;
 
-// Brightness range
+// Brightness range (PWM values)
 static const uint8_t BRIGHT_MIN = 50;
 static const uint8_t BRIGHT_MAX = 255;
+static const float GAMMA = 2.2;
+
+// Convert percentage (5-100) to PWM with gamma correction
+static uint8_t percentToPWM(int percent) {
+    if (percent < 5) percent = 5;
+    if (percent > 100) percent = 100;
+    // Normalize to 0-1 range
+    float normalized = (percent - 5) / 95.0;
+    // Apply gamma correction
+    float corrected = pow(normalized, GAMMA);
+    // Scale to PWM range
+    return BRIGHT_MIN + (uint8_t)(corrected * (BRIGHT_MAX - BRIGHT_MIN));
+}
+
+// Convert PWM to percentage (5-100) with inverse gamma
+static int pwmToPercent(uint8_t pwm) {
+    if (pwm < BRIGHT_MIN) pwm = BRIGHT_MIN;
+    if (pwm > BRIGHT_MAX) pwm = BRIGHT_MAX;
+    // Normalize PWM to 0-1 range
+    float normalized = (pwm - BRIGHT_MIN) / (float)(BRIGHT_MAX - BRIGHT_MIN);
+    // Apply inverse gamma
+    float corrected = pow(normalized, 1.0 / GAMMA);
+    // Scale to percentage (5-100)
+    return 5 + (int)(corrected * 95);
+}
 
 static void eco_switch_changed(lv_event_t* e) {
     lv_obj_t* sw = lv_event_get_target(e);
@@ -1141,7 +1166,10 @@ static void eco_switch_changed(lv_event_t* e) {
 
 static void brightness_slider_changed(lv_event_t* e) {
     lv_obj_t* slider = lv_event_get_target(e);
-    screenBrightness = (uint8_t)lv_slider_get_value(slider);
+    int percent = (int)lv_slider_get_value(slider);
+
+    // Convert percentage to PWM with gamma correction
+    screenBrightness = percentToPWM(percent);
 
     #ifdef BOARD_BL_PIN
         analogWrite(BOARD_BL_PIN, screenBrightness);
@@ -1149,9 +1177,8 @@ static void brightness_slider_changed(lv_event_t* e) {
 
     // Update label with percentage
     if (brightness_label) {
-        int pct = (screenBrightness - BRIGHT_MIN) * 100 / (BRIGHT_MAX - BRIGHT_MIN);
-        char buf[8];
-        snprintf(buf, sizeof(buf), "%d%%", pct);
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d%%", percent);
         lv_label_set_text(brightness_label, buf);
     }
 }
@@ -1241,25 +1268,23 @@ static void create_display_screen() {
     lv_obj_set_style_text_font(bright_title, &lv_font_montserrat_14, 0);
     lv_obj_set_pos(bright_title, 0, 0);
 
-    // Value label (percentage)
+    // Value label (percentage - 5% to 100% range with gamma correction)
     brightness_label = lv_label_create(bright_row);
-    int pct = (screenBrightness - BRIGHT_MIN) * 100 / (BRIGHT_MAX - BRIGHT_MIN);
-    if (pct < 0) pct = 0;
-    if (pct > 100) pct = 100;
-    char buf[8];
+    int pct = pwmToPercent(screenBrightness);
+    char buf[16];
     snprintf(buf, sizeof(buf), "%d%%", pct);
     lv_label_set_text(brightness_label, buf);
     lv_obj_set_style_text_color(brightness_label, lv_color_hex(0xffd700), 0);
     lv_obj_set_style_text_font(brightness_label, &lv_font_montserrat_14, 0);
     lv_obj_align(brightness_label, LV_ALIGN_TOP_RIGHT, 0, 0);
 
-    // Slider (reduced width to fit within frame with knob)
+    // Slider (percentage range 5-100 with gamma correction)
     brightness_slider = lv_slider_create(bright_row);
     lv_obj_set_size(brightness_slider, lv_pct(80), 20);
     lv_obj_align(brightness_slider, LV_ALIGN_TOP_MID, 0, 30);
     lv_obj_set_style_pad_all(brightness_slider, 5, LV_PART_KNOB);  // Smaller knob padding
-    lv_slider_set_range(brightness_slider, BRIGHT_MIN, BRIGHT_MAX);
-    lv_slider_set_value(brightness_slider, screenBrightness, LV_ANIM_OFF);
+    lv_slider_set_range(brightness_slider, 5, 100);  // Percentage range
+    lv_slider_set_value(brightness_slider, pct, LV_ANIM_OFF);
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x444466), LV_PART_MAIN);  // Visible track
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0x0000cc), LV_PART_INDICATOR);  // Cyan filled
     lv_obj_set_style_bg_color(brightness_slider, lv_color_hex(0xffffff), LV_PART_KNOB);  // White knob
@@ -2098,6 +2123,28 @@ static void msg_item_clicked(lv_event_t* e) {
     }
 }
 
+// Conversation screen variables
+static lv_obj_t* screen_conversation = nullptr;
+static lv_obj_t* conversation_list = nullptr;
+static String current_conversation_callsign = "";
+
+// Forward declaration for conversation screen
+static void create_conversation_screen(const String& callsign);
+
+// Conversation item clicked - open conversation screen
+static void conversation_item_clicked(lv_event_t* e) {
+    if (msg_longpress_handled) {
+        msg_longpress_handled = false;
+        return;
+    }
+
+    const char* callsign = (const char*)lv_event_get_user_data(e);
+    if (!callsign) return;
+
+    Serial.printf("[LVGL] Conversation clicked: %s\n", callsign);
+    create_conversation_screen(String(callsign));
+}
+
 // Message item long-press - delete single message
 static void msg_item_longpress(lv_event_t* e) {
     int msg_index = (int)(intptr_t)lv_event_get_user_data(e);
@@ -2106,28 +2153,48 @@ static void msg_item_longpress(lv_event_t* e) {
     show_delete_confirmation("Delete this message?", msg_index);
 }
 
-// Populate message list
+// Populate message list - now shows conversations instead of all messages
 static void populate_msg_list(lv_obj_t* list, int type) {
     lv_obj_clean(list);
 
     if (type == 0) {
-        // APRS messages
-        MSG_Utils::loadMessagesFromMemory(0);
-        std::vector<String>& messages = MSG_Utils::getLoadedAPRSMessages();
+        // APRS messages - show conversations
+        std::vector<String> conversations = MSG_Utils::getConversationsList();
 
-        if (messages.size() == 0) {
+        if (conversations.size() == 0) {
             lv_obj_t* empty = lv_label_create(list);
-            lv_label_set_text(empty, "No APRS messages");
+            lv_label_set_text(empty, "No conversations");
             lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
         } else {
-            for (size_t i = 0; i < messages.size(); i++) {
-                lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, messages[i].c_str());
-                lv_obj_add_event_cb(btn, msg_item_clicked, LV_EVENT_CLICKED, NULL);
-                lv_obj_add_event_cb(btn, msg_item_longpress, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
+            for (size_t i = 0; i < conversations.size(); i++) {
+                // Get last message preview
+                std::vector<String> messages = MSG_Utils::getMessagesForContact(conversations[i]);
+                String preview = conversations[i];
+                if (messages.size() > 0) {
+                    // Parse last message: timestamp,direction,content
+                    String lastMsg = messages[messages.size() - 1];
+                    int firstComma = lastMsg.indexOf(',');
+                    int secondComma = lastMsg.indexOf(',', firstComma + 1);
+                    if (secondComma > 0) {
+                        String msgContent = lastMsg.substring(secondComma + 1);
+                        if (msgContent.length() > 30) {
+                            msgContent = msgContent.substring(0, 27) + "...";
+                        }
+                        preview += "\n" + msgContent;
+                    }
+                }
+
+                // Store callsign as user data (must persist)
+                static std::vector<String> callsign_storage;
+                callsign_storage.push_back(conversations[i]);
+
+                lv_obj_t* btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());
+                lv_obj_add_event_cb(btn, conversation_item_clicked, LV_EVENT_CLICKED,
+                                   (void*)callsign_storage[callsign_storage.size()-1].c_str());
             }
         }
     } else {
-        // Winlink messages
+        // Winlink messages - keep old behavior for now
         MSG_Utils::loadMessagesFromMemory(1);
         std::vector<String>& messages = MSG_Utils::getLoadedWLNKMails();
 
@@ -2143,6 +2210,147 @@ static void populate_msg_list(lv_obj_t* list, int type) {
             }
         }
     }
+}
+
+// Back button callback for conversation screen
+static void btn_conversation_back_clicked(lv_event_t* e) {
+    if (screen_msg) {
+        lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+    }
+}
+
+// Reply button callback for conversation screen
+static void btn_conversation_reply_clicked(lv_event_t* e) {
+    if (current_conversation_callsign.length() > 0) {
+        create_compose_screen();
+        compose_screen_active = true;
+        lv_textarea_set_text(compose_to_input, current_conversation_callsign.c_str());
+        current_focused_input = compose_msg_input;
+        lv_keyboard_set_textarea(compose_keyboard, compose_msg_input);
+        lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    }
+}
+
+// Create conversation screen
+static void create_conversation_screen(const String& callsign) {
+    current_conversation_callsign = callsign;
+
+    // Delete old screen if exists
+    if (screen_conversation) {
+        lv_obj_del(screen_conversation);
+        screen_conversation = nullptr;
+    }
+
+    screen_conversation = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_conversation, lv_color_hex(0x1a1a2e), 0);
+
+    // Title bar
+    lv_obj_t* title_bar = lv_obj_create(screen_conversation);
+    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_clear_flag(title_bar, LV_OBJ_FLAG_SCROLLABLE);
+
+    // Back button
+    lv_obj_t* btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 50, 28);
+    lv_obj_align(btn_back, LV_ALIGN_LEFT_MID, 5, 0);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x82aaff), 0);
+    lv_obj_add_event_cb(btn_back, btn_conversation_back_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, LV_SYMBOL_LEFT);
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t* title = lv_label_create(title_bar);
+    lv_label_set_text(title, callsign.c_str());
+    lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+
+    // Reply button
+    lv_obj_t* btn_reply = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_reply, 50, 28);
+    lv_obj_align(btn_reply, LV_ALIGN_RIGHT_MID, -5, 0);
+    lv_obj_set_style_bg_color(btn_reply, lv_color_hex(0x89ddff), 0);
+    lv_obj_add_event_cb(btn_reply, btn_conversation_reply_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t* lbl_reply = lv_label_create(btn_reply);
+    lv_label_set_text(lbl_reply, LV_SYMBOL_EDIT);
+    lv_obj_center(lbl_reply);
+
+    // Chat container
+    conversation_list = lv_obj_create(screen_conversation);
+    lv_obj_set_size(conversation_list, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 45);
+    lv_obj_set_pos(conversation_list, 5, 38);
+    lv_obj_set_style_bg_color(conversation_list, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_width(conversation_list, 0, 0);
+    lv_obj_set_style_pad_all(conversation_list, 5, 0);
+    lv_obj_set_flex_flow(conversation_list, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(conversation_list, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+    // Load and display messages
+    std::vector<String> messages = MSG_Utils::getMessagesForContact(callsign);
+
+    if (messages.size() == 0) {
+        lv_obj_t* empty = lv_label_create(conversation_list);
+        lv_label_set_text(empty, "No messages");
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
+    } else {
+        for (size_t i = 0; i < messages.size(); i++) {
+            // Parse: timestamp,direction,content
+            String msg = messages[i];
+            int firstComma = msg.indexOf(',');
+            int secondComma = msg.indexOf(',', firstComma + 1);
+
+            if (secondComma > 0) {
+                String direction = msg.substring(firstComma + 1, secondComma);
+                String content = msg.substring(secondComma + 1);
+                bool isOutgoing = (direction == "OUT");
+
+                // Message bubble container
+                lv_obj_t* bubble_container = lv_obj_create(conversation_list);
+                lv_obj_set_width(bubble_container, lv_pct(100));
+                lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
+                lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
+                lv_obj_set_style_border_width(bubble_container, 0, 0);
+                lv_obj_set_style_pad_all(bubble_container, 2, 0);
+                lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
+
+                // Message bubble
+                lv_obj_t* bubble = lv_obj_create(bubble_container);
+                lv_obj_set_width(bubble, lv_pct(75));
+                lv_obj_set_height(bubble, LV_SIZE_CONTENT);
+                lv_obj_set_style_pad_all(bubble, 8, 0);
+                lv_obj_set_style_radius(bubble, 10, 0);
+                lv_obj_set_style_border_width(bubble, 0, 0);
+
+                if (isOutgoing) {
+                    // Outgoing message - align right, blue
+                    lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
+                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
+                } else {
+                    // Incoming message - align left, gray
+                    lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
+                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
+                }
+
+                // Message text
+                lv_obj_t* msg_label = lv_label_create(bubble);
+                lv_label_set_text(msg_label, content.c_str());
+                lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+                lv_obj_set_width(msg_label, lv_pct(100));
+                lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
+            }
+        }
+    }
+
+    // Scroll to bottom to show latest messages
+    lv_obj_scroll_to_y(conversation_list, LV_COORD_MAX, LV_ANIM_OFF);
+
+    lv_scr_load_anim(screen_conversation, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    Serial.printf("[LVGL] Conversation screen created for %s with %d messages\n", callsign.c_str(), messages.size());
 }
 
 // Contact add/edit screen variables
@@ -2443,20 +2651,28 @@ static void show_contact_edit_screen(const Contact* contact) {
 // Tab changed callback
 static void msg_tab_changed(lv_event_t* e) {
     lv_obj_t* tabview = lv_event_get_target(e);
-    uint16_t tab_idx = lv_tabview_get_tab_act(tabview);
 
-    // Validate tab index (only 0, 1, 2 are valid)
-    if (tab_idx > 2) {
-        Serial.printf("[LVGL] Invalid tab index %d, ignoring\n", tab_idx);
+    // Verify this is actually the tabview object
+    if (!tabview || tabview != msg_tabview) {
         return;
     }
 
-    current_msg_type = (int)tab_idx;
-    Serial.printf("[LVGL] Messages tab changed to %d\n", current_msg_type);
+    uint16_t tab_idx = lv_tabview_get_tab_act(tabview);
 
-    // Refresh contacts list when tab is selected
-    if (current_msg_type == 2 && list_contacts_global) {
-        populate_contacts_list(list_contacts_global);
+    // Validate tab index (only 0, 1, 2 are valid)
+    if (tab_idx > 2 || tab_idx == 0xFFFF) {
+        return;  // Invalid index, silently ignore
+    }
+
+    // Only process if the tab actually changed
+    if (current_msg_type != (int)tab_idx) {
+        current_msg_type = (int)tab_idx;
+        Serial.printf("[LVGL] Messages tab changed to %d\n", current_msg_type);
+
+        // Refresh contacts list when tab is selected
+        if (current_msg_type == 2 && list_contacts_global) {
+            populate_contacts_list(list_contacts_global);
+        }
     }
 }
 

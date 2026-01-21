@@ -155,29 +155,111 @@ namespace MSG_Utils {
         return loadedWLNKMails;
     }
 
-    std::vector<String> getMessagesForContact(const String& callsign) {
-        std::vector<String> result;
-
-        // Load APRS messages if not loaded
-        loadMessagesFromMemory(0);
-
-        // Filter messages by callsign
-        String upperCallsign = callsign;
-        upperCallsign.toUpperCase();
-
-        for (const String& msg : loadedAPRSMessages) {
-            // Message format: "CALLSIGN,message content"
-            int commaPos = msg.indexOf(',');
-            if (commaPos > 0) {
-                String msgCallsign = msg.substring(0, commaPos);
-                msgCallsign.toUpperCase();
-                if (msgCallsign == upperCallsign) {
-                    result.push_back(msg);
-                }
+    // Save message to conversation file (per-contact)
+    // Format: TIMESTAMP,DIRECTION,MESSAGE
+    static void saveToConversation(const String& callsign, const String& message, bool outgoing) {
+        // Ensure /conversations directory exists
+        if (!STORAGE_Utils::fileExists("/conversations")) {
+            bool created = STORAGE_Utils::mkdir("/conversations");
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Created /conversations directory: %s", created ? "OK" : "FAILED");
+            if (!created) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Failed to create /conversations directory");
+                return;
+            }
+            // Verify directory was created
+            if (!STORAGE_Utils::fileExists("/conversations")) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Directory /conversations not found after creation");
+                return;
             }
         }
 
-        Serial.printf("[MSG] Found %d messages for %s\n", result.size(), callsign.c_str());
+        // Sanitize callsign for filename (remove SSID dashes, etc)
+        String filename = "/conversations/" + callsign + ".txt";
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Attempting to save to: %s", filename.c_str());
+
+        // Build message line: timestamp,direction,content
+        uint32_t timestamp = millis() / 1000;  // Unix timestamp in seconds
+        String direction = outgoing ? "OUT" : "IN";
+        String line = String(timestamp) + "," + direction + "," + message;
+
+        // Use "a" mode (append) which creates file if it doesn't exist
+        File conversationFile = STORAGE_Utils::openFile(filename, "a");
+        if (!conversationFile) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Failed to open conversation file: %s", filename.c_str());
+            return;
+        }
+
+        conversationFile.println(line);
+        conversationFile.close();
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Saved %s message to %s", direction.c_str(), filename.c_str());
+    }
+
+    // Get list of callsigns with active conversations
+    std::vector<String> getConversationsList() {
+        std::vector<String> callsigns;
+
+        if (!STORAGE_Utils::fileExists("/conversations")) {
+            Serial.println("[MSG] No /conversations directory found");
+            return callsigns;
+        }
+
+        File dir = STORAGE_Utils::openFile("/conversations", "r");
+        if (!dir || !dir.isDirectory()) {
+            Serial.println("[MSG] Failed to open /conversations directory");
+            return callsigns;
+        }
+
+        File entry = dir.openNextFile();
+        while (entry) {
+            if (!entry.isDirectory()) {
+                String filename = String(entry.name());
+                // Remove path prefix if present (SD library may return full path)
+                int lastSlash = filename.lastIndexOf('/');
+                if (lastSlash >= 0) {
+                    filename = filename.substring(lastSlash + 1);
+                }
+                // Remove .txt extension
+                if (filename.endsWith(".txt")) {
+                    String callsign = filename.substring(0, filename.length() - 4);
+                    callsigns.push_back(callsign);
+                    Serial.printf("[MSG] Found conversation: %s\n", callsign.c_str());
+                }
+            }
+            entry.close();
+            entry = dir.openNextFile();
+        }
+        dir.close();
+
+        Serial.printf("[MSG] Found %d conversations\n", callsigns.size());
+        return callsigns;
+    }
+
+    std::vector<String> getMessagesForContact(const String& callsign) {
+        std::vector<String> result;
+
+        // Read from conversation file
+        String filename = "/conversations/" + callsign + ".txt";
+        if (!STORAGE_Utils::fileExists(filename)) {
+            Serial.printf("[MSG] No conversation file for %s\n", callsign.c_str());
+            return result;
+        }
+
+        File conversationFile = STORAGE_Utils::openFile(filename, "r");
+        if (!conversationFile) {
+            Serial.printf("[MSG] Failed to open conversation file for %s\n", callsign.c_str());
+            return result;
+        }
+
+        while (conversationFile.available()) {
+            String line = conversationFile.readStringUntil('\n');
+            line.trim();
+            if (line.length() > 0) {
+                result.push_back(line);
+            }
+        }
+        conversationFile.close();
+
+        Serial.printf("[MSG] Loaded %d messages for %s\n", result.size(), callsign.c_str());
         return result;
     }
 
@@ -342,6 +424,7 @@ namespace MSG_Utils {
         }
 
         if (typeMessage == 0) {   //APRS
+            // Save to global messages file (backward compatibility)
             File fileToAppendAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
             if(!fileToAppendAPRS) {
                 Serial.println("There was an error opening the file for appending");
@@ -352,6 +435,10 @@ namespace MSG_Utils {
             }
             numAPRSMessages++;
             fileToAppendAPRS.close();
+
+            // Also save to per-contact conversation file
+            saveToConversation(station, message, false);  // false = incoming
+
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "APRS msg saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
@@ -405,6 +492,12 @@ namespace MSG_Utils {
             displayShow((station == "WLNK-1") ? "WINLINK Tx" : " MSG Tx >", "", newPacket, 100);
         }
         LoRa_Utils::sendNewPacket(newPacket);
+
+        // Save outgoing message to conversation file (skip ACKs)
+        if (textMessage.indexOf("ack") != 0) {
+            saveToConversation(station, textMessage, true);  // true = outgoing
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Saved outgoing message to %s", station.c_str());
+        }
     }
 
     String getAckRequestNumber() {

@@ -261,7 +261,46 @@ namespace UIMapManager {
         *pixelY = MAP_CANVAS_HEIGHT / 2 + (int)(((targetTileY - centerTileY) + (subY - centerSubY)) * MAP_TILE_SIZE);
     }
 
-    // Get standard APRS color for symbol
+    // Get symbol color based on SSID and APRS symbol
+    lv_color_t getSymbolColor(const String& ssid, const char* aprsSymbol) {
+        // Extract symbol character
+        char symbolChar = ' ';
+        if (aprsSymbol && strlen(aprsSymbol) >= 2 && (aprsSymbol[0] == '/' || aprsSymbol[0] == '\\')) {
+            symbolChar = aprsSymbol[1];
+        } else if (aprsSymbol && strlen(aprsSymbol) >= 1) {
+            symbolChar = aprsSymbol[0];
+        }
+
+        // Check symbol first for special cases
+        switch (symbolChar) {
+            case '&':  // iGate
+                return lv_color_hex(0xff0000);  // Rouge
+            case '#':  // Digipeater
+                return lv_color_hex(0x0f9600);  // Vert
+            case '_':  // Weather station (standard APRS weather symbol)
+                return lv_color_hex(0x00007f);  // Bleu foncé
+        }
+
+        // Extract SSID suffix for color by SSID
+        int dashPos = ssid.lastIndexOf('-');
+        int ssidNum = -1;
+        if (dashPos >= 0 && dashPos < ssid.length() - 1) {
+            ssidNum = ssid.substring(dashPos + 1).toInt();
+        }
+
+        // Color by SSID number
+        switch (ssidNum) {
+            case 7:   // Mobile
+            case 9:   // Handheld
+                return lv_color_hex(0xff0000);  // Rouge
+            case 13:  // Weather station (custom SSID)
+                return lv_color_hex(0x00007f);  // Bleu foncé
+            default:
+                return lv_color_hex(0xffff00);  // Jaune
+        }
+    }
+
+    // Get standard APRS color for symbol (deprecated, use getColorFromSSID instead)
     lv_color_t getAPRSSymbolColor(const char* symbol) {
         if (!symbol || strlen(symbol) < 1) return lv_color_hex(0xffff00);  // Yellow by default
 
@@ -304,7 +343,112 @@ namespace UIMapManager {
         }
     }
 
-    // Draw APRS symbol on map at specified position
+    // Forward declaration
+    void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbolChar, lv_color_t color);
+
+    // Draw custom symbol for special types (iGate, digipeater, weather)
+    void drawCustomSymbol(lv_obj_t* canvas, int x, int y, const String& ssid, const char* aprsSymbol, lv_color_t color) {
+        // Extract symbol character
+        char symbolChar = ' ';
+        if (aprsSymbol && strlen(aprsSymbol) >= 2 && (aprsSymbol[0] == '/' || aprsSymbol[0] == '\\')) {
+            symbolChar = aprsSymbol[1];
+        } else if (aprsSymbol && strlen(aprsSymbol) >= 1) {
+            symbolChar = aprsSymbol[0];
+        }
+
+        // Extract SSID suffix
+        int dashPos = ssid.lastIndexOf('-');
+        int ssidNum = -1;
+        if (dashPos >= 0 && dashPos < ssid.length() - 1) {
+            ssidNum = ssid.substring(dashPos + 1).toInt();
+        }
+
+        lv_draw_rect_dsc_t rect_dsc;
+        lv_draw_rect_dsc_init(&rect_dsc);
+        lv_draw_label_dsc_t lbl_dsc;
+        lv_draw_label_dsc_init(&lbl_dsc);
+
+        // Check for iGate symbol (&)
+        if (symbolChar == '&') {
+            // iGate - Red diamond/square with white "L"
+            rect_dsc.bg_color = lv_color_hex(0xff0000);  // Rouge
+            rect_dsc.bg_opa = LV_OPA_COVER;
+            rect_dsc.border_width = 0;
+            lv_canvas_draw_rect(canvas, x - 6, y - 6, 12, 12, &rect_dsc);
+
+            lbl_dsc.color = lv_color_hex(0xffffff);  // White
+            lbl_dsc.font = &lv_font_montserrat_10;
+            lv_canvas_draw_text(canvas, x - 3, y - 5, 10, &lbl_dsc, "L");
+            return;
+        }
+
+        // Check for Digipeater symbol (#)
+        if (symbolChar == '#') {
+            // Digipeater - Green star/square with white "L"
+            rect_dsc.bg_color = lv_color_hex(0x0f9600);  // Vert
+            rect_dsc.bg_opa = LV_OPA_COVER;
+            rect_dsc.border_width = 0;
+            lv_canvas_draw_rect(canvas, x - 6, y - 6, 12, 12, &rect_dsc);
+
+            lbl_dsc.color = lv_color_hex(0xffffff);  // White
+            lbl_dsc.font = &lv_font_montserrat_10;
+            lv_canvas_draw_text(canvas, x - 3, y - 5, 10, &lbl_dsc, "L");
+            return;
+        }
+
+        // Check for Weather SSID-13 or symbol _
+        if (ssidNum == 13 || symbolChar == '_') {
+            // Weather - Blue circle with white "Wx"
+            rect_dsc.bg_color = lv_color_hex(0x00007f);  // Bleu foncé
+            rect_dsc.bg_opa = LV_OPA_COVER;
+            rect_dsc.border_width = 0;
+            rect_dsc.radius = 6;
+            lv_canvas_draw_rect(canvas, x - 6, y - 6, 12, 12, &rect_dsc);
+
+            lbl_dsc.color = lv_color_hex(0xffffff);  // White
+            lbl_dsc.font = &lv_font_montserrat_10;
+            lv_canvas_draw_text(canvas, x - 6, y - 5, 12, &lbl_dsc, "Wx");
+            return;
+        }
+    }
+
+    // Draw station on map: symbol + SSID label
+    void drawStationOnMap(lv_obj_t* canvas, int x, int y, const String& ssid, const char* aprsSymbol) {
+        // Get symbol color based on SSID and APRS symbol
+        lv_color_t symbolColor = getSymbolColor(ssid, aprsSymbol);
+
+        // Extract symbol character to check if we need custom rendering
+        char symbolChar = ' ';
+        if (aprsSymbol && strlen(aprsSymbol) >= 2 && (aprsSymbol[0] == '/' || aprsSymbol[0] == '\\')) {
+            symbolChar = aprsSymbol[1];
+        } else if (aprsSymbol && strlen(aprsSymbol) >= 1) {
+            symbolChar = aprsSymbol[0];
+        }
+
+        // Extract SSID suffix
+        int dashPos = ssid.lastIndexOf('-');
+        int ssidNum = -1;
+        if (dashPos >= 0 && dashPos < ssid.length() - 1) {
+            ssidNum = ssid.substring(dashPos + 1).toInt();
+        }
+
+        // Draw custom symbol for iGate (&), Digipeater (#), or Weather (SSID-13 or _)
+        if (symbolChar == '&' || symbolChar == '#' || ssidNum == 13 || symbolChar == '_') {
+            drawCustomSymbol(canvas, x, y, ssid, aprsSymbol, symbolColor);
+        } else {
+            // Draw standard APRS symbol
+            drawMapSymbol(canvas, x, y, aprsSymbol, symbolColor);
+        }
+
+        // Draw SSID label below symbol in BLACK
+        lv_draw_label_dsc_t lbl_dsc;
+        lv_draw_label_dsc_init(&lbl_dsc);
+        lbl_dsc.color = lv_color_hex(0x000000);  // Noir
+        lbl_dsc.font = &lv_font_montserrat_10;
+        lv_canvas_draw_text(canvas, x - 20, y + 8, 40, &lbl_dsc, ssid.c_str());
+    }
+
+    // Draw APRS symbol on map at specified position (low-level function)
     void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbolChar, lv_color_t color) {
         // Find symbol index
         int symbolIndex = -1;
@@ -365,8 +509,11 @@ namespace UIMapManager {
     void btn_map_back_clicked(lv_event_t* e) {
         Serial.println("[LVGL] MAP BACK button pressed");
         map_follow_gps = true;  // Reset to follow GPS when leaving map
-        // The parent of the map screen is the main screen, need to retrieve it
-        lv_scr_load_anim(lv_obj_get_parent(lv_obj_get_parent(screen_map)), LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        // Return to main dashboard screen
+        extern lv_obj_t* screen_main;  // Defined in lvgl_ui.cpp
+        if (screen_main) {
+            lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        }
     }
 
     // Map recenter button handler - return to GPS position
@@ -460,7 +607,7 @@ namespace UIMapManager {
                           map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
             if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-                drawMapSymbol(map_canvas, myX, myY, currentBeacon->symbol.c_str(), getAPRSSymbolColor(currentBeacon->symbol.c_str()));
+                drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, currentBeacon->symbol.c_str());
             }
         }
 
@@ -827,7 +974,7 @@ namespace UIMapManager {
                 if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
                     // Obtenir le symbole du balise actuelle
                     Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-                    drawMapSymbol(map_canvas, myX, myY, currentBeacon->symbol.c_str(), getAPRSSymbolColor(currentBeacon->symbol.c_str()));
+                    drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, currentBeacon->symbol.c_str());
                 }
             }
 
@@ -841,17 +988,8 @@ namespace UIMapManager {
                                   map_center_lat, map_center_lon, map_current_zoom, &stX, &stY);
 
                     if (stX >= 0 && stX < MAP_CANVAS_WIDTH && stY >= 0 && stY < MAP_CANVAS_HEIGHT) {
-                        // Couleur basée sur la norme de symbole APRS
-                        lv_color_t stationColor = getAPRSSymbolColor(station->symbol.c_str());
-
-                        drawMapSymbol(map_canvas, stX, stY, station->symbol.c_str(), stationColor);
-
-                        // Dessiner le label de l'indicatif avec le SSID complet
-                        lv_draw_label_dsc_t lbl_dsc;
-                        lv_draw_label_dsc_init(&lbl_dsc);
-                        lbl_dsc.color = stationColor;
-                        lbl_dsc.font = &lv_font_montserrat_14;
-                        lv_canvas_draw_text(map_canvas, stX - 30, stY + 10, 80, &lbl_dsc, station->callsign.c_str());
+                        // Dessiner la station avec symbole + SSID
+                        drawStationOnMap(map_canvas, stX, stY, station->callsign, station->symbol.c_str());
 
                         // Créer un bouton cliquable invisible au-dessus de la station
                         lv_obj_t* btn_station = lv_btn_create(map_container);
