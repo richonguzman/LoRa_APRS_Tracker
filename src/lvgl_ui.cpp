@@ -29,6 +29,7 @@
 #include "wifi_utils.h"
 #include "lora_aprs_logo.h"
 #include "lora_aprs_bg.h"
+#include <SD.h> // Ajouté car utilisé pour les messages envoyés
 #include "storage_utils.h"
 #include "sd_logger.h"
 #include <freertos/FreeRTOS.h>
@@ -38,7 +39,7 @@
 
 SemaphoreHandle_t spiMutex = NULL;
 
-// APRS symbol mapping (maintenant déclarés extern dans custom_characters.h)
+// APRS symbol mapping (définies une seule fois ici pour les déclarations extern dans custom_characters.h)
 const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                      "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
 const int symbolArraySize = sizeof(symbolArray)/sizeof(symbolArray[0]);
@@ -46,14 +47,6 @@ const uint8_t* symbolsAPRS[] = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol,
                                        truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
                                        houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
                                        aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
-
-// Expose variables defined in this file to UIMapManager namespace
-namespace UIMapManager {
-    SemaphoreHandle_t& spiMutex = ::spiMutex;
-    const char* const* symbolArray = ::symbolArray;
-    const int& symbolArraySize = ::symbolArraySize;
-    const uint8_t* const* symbolsAPRS = ::symbolsAPRS;
-}
 
 // Sources de données externes
 extern Configuration Config;
@@ -144,9 +137,6 @@ static lv_obj_t* screen_speed = nullptr;
 
 // UI Elements - Sound settings screen
 static lv_obj_t* screen_sound = nullptr;
-
-// Les éléments d'interface utilisateur et les variables d'état de la carte sont maintenant définis dans ui_map_manager.cpp
-// et déclarés extern dans include/ui_map_manager.h.
 
 // UI Elements - WiFi settings screen
 static lv_obj_t* screen_wifi = nullptr;
