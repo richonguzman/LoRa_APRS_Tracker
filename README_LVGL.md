@@ -1,0 +1,176 @@
+# LoRa APRS Tracker - LVGL UI Edition (T-Deck Plus)
+
+This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) with a modern graphical user interface using **LVGL 8.4** specifically designed for the **Lilygo T-Deck Plus** with its 320x240 color touchscreen.
+
+![T-Deck Plus](https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/OledScreen2.jpeg)
+
+## Features
+
+### Modern Touch Interface
+- **Dashboard**: Main screen with real-time GPS, LoRa, WiFi status and quick access buttons
+- **Interactive Map**: Offline tile-based map with GPS tracking and station display
+- **Messaging**: Full APRS messaging with conversation view, contacts management
+- **Setup**: Touch-friendly configuration screens
+
+### Map Features
+- **Offline Tiles**: JPEG/PNG tile support stored on SD card (OpenStreetMap format)
+- **Multi-zoom**: Support for zoom levels 1-18
+- **Station Display**: Clickable APRS stations with symbols on map
+- **GPS Tracking**: Auto-follow GPS position with manual pan mode
+- **APRS Symbols**: Full symbol set with primary and alternate tables
+
+### Messaging
+- **Conversation View**: Threaded message display per contact
+- **Quick Reply**: Click on station (map or list) to compose message
+- **Contact Management**: Add, edit, delete contacts
+- **Message History**: Persistent storage on SD card
+
+### Hardware Support
+- **Display**: 320x240 IPS touchscreen with brightness control
+- **Touch**: Capacitive touch with gesture support
+- **Keyboard**: Physical QWERTY keyboard with symbol layer
+- **GPS**: Internal GPS module
+- **LoRa**: SX1262 module (433MHz or 868MHz variants)
+- **Storage**: SD card for maps, messages, and configuration
+- **WiFi**: Web configuration interface
+- **Bluetooth**: BLE support for external apps
+
+## Installation
+
+### Prerequisites
+- PlatformIO (VSCode extension recommended)
+- Lilygo T-Deck Plus board
+- SD card with map tiles (optional but recommended)
+
+### Build
+```bash
+# Clone the repository
+git clone https://github.com/moricef/LoRa_APRS_Tracker.git
+cd LoRa_APRS_Tracker
+
+# Build for T-Deck Plus 433MHz
+pio run -e ttgo_t_deck_plus_433
+
+# Or for 868MHz variant
+pio run -e ttgo_t_deck_plus_868
+
+# Upload firmware
+pio run -e ttgo_t_deck_plus_433 -t upload
+
+# Upload filesystem (configuration files)
+pio run -e ttgo_t_deck_plus_433 -t uploadfs
+```
+
+### SD Card Setup
+
+#### Map Tiles
+Create the following directory structure on your SD card:
+```
+/LoRa_Tracker/
+├── Maps/
+│   └── YourRegion/
+│       └── 8/           # Zoom level
+│           ├── 127/     # X tile
+│           │   └── 93.jpg
+│           └── 128/
+│               └── 93.jpg
+└── Symbols/
+    ├── primary/         # Primary APRS symbols (/)
+    │   ├── 21.png      # ! symbol
+    │   ├── 23.png      # # symbol
+    │   └── ...
+    └── alternate/       # Alternate APRS symbols (\)
+        ├── 21.png
+        └── ...
+```
+
+#### Download Map Tiles
+You can use tools like [Mobile Atlas Creator](https://mobac.sourceforge.io/) to download OpenStreetMap tiles for your region.
+
+## Configuration
+
+### Web Interface
+1. On first boot, the device creates a WiFi access point
+2. Connect to `LoRa_Tracker_XXXXXX` network
+3. Open `http://192.168.4.1` in your browser
+4. Configure your callsign, APRS settings, and preferences
+
+### Configuration File
+Edit `data/tracker.json` for advanced settings:
+```json
+{
+  "callsign": "YOURCALL",
+  "ssid": 9,
+  "symbol": ">",
+  "overlay": "/",
+  "comment": "LoRa APRS Tracker"
+}
+```
+
+## Usage
+
+### Dashboard
+- **BEACON**: Send position beacon immediately
+- **MSG**: Open messaging screen
+- **MAP**: Open interactive map
+- **SETUP**: Open configuration
+
+### Map Navigation
+- **Pan**: Touch and drag to move the map
+- **Zoom**: Use +/- buttons
+- **Recenter**: Press GPS button to return to current position
+- **Station Info**: Tap on a station to send a message
+
+### Keyboard Shortcuts
+- **Enter**: Send message / Confirm
+- **Escape**: Back / Cancel
+- **Shift**: Toggle uppercase
+- **Sym**: Toggle symbol layer
+
+## APRS Symbol Reference
+
+The tracker supports the full APRS symbol set:
+- **Primary Table (/)**: Standard symbols
+- **Alternate Table (\)**: Extended symbols with overlays
+
+Common symbols:
+| Symbol | Code | Description |
+|--------|------|-------------|
+| Car    | />   | Primary car |
+| Car    | \>   | Alternate car (red) |
+| House  | /-   | House |
+| Digi   | /#   | Digipeater |
+| iGate  | /&   | iGate |
+
+## Technical Details
+
+### Memory Usage
+- PSRAM: Used for map tile cache and symbol cache
+- Heap: ~88KB free during normal operation
+- SD Card: Required for maps and message storage
+
+### Power Management
+- Display eco mode: Auto-dim after timeout
+- WiFi eco mode: Periodic sleep
+- BLE eco mode: Auto-disable after 5 minutes of inactivity
+- GPS eco mode: Sleep between beacons
+
+## Credits
+
+- **Original Firmware**: [CA2RXU - Ricardo](https://github.com/richonguzman/LoRa_APRS_Tracker)
+- **LVGL Library**: [LVGL](https://lvgl.io/)
+- **APRSPacketLib**: CA2RXU
+- **LVGL UI Development**: F4MLV / Claude AI
+
+## License
+
+This project is licensed under the same terms as the original CA2RXU LoRa APRS Tracker.
+
+## Support
+
+For issues specific to the LVGL interface, please open an issue on this fork.
+For general LoRa APRS Tracker issues, refer to the [original project](https://github.com/richonguzman/LoRa_APRS_Tracker).
+
+---
+
+73! F4MLV
