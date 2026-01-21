@@ -332,7 +332,18 @@ void loop() {
             STATION_Utils::checkStandingUpdateTime();
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();
-        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon();
+
+        // Only send beacon if GPS has good quality fix
+        // Require: at least 4 satellites AND HDOP <= 2 (good precision)
+        bool gpsQualityOk = (gps.satellites.value() >= 4) && (gps.hdop.hdop() <= 2.0);
+        if (sendUpdate && gps_loc_update && gpsQualityOk) {
+            STATION_Utils::sendBeacon();
+        } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main",
+                       "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon",
+                       gps.satellites.value(), gps.hdop.hdop());
+        }
+
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {

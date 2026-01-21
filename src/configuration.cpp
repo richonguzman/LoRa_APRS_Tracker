@@ -503,7 +503,7 @@ void Configuration::setDefaultValues() {
     path                            = "WIDE1-1";
     nonSmartBeaconRate              = 15;
     rememberStationTime             = 30;
-    standingUpdateTime              = 15;
+    standingUpdateTime              = 30;  // 30 minutes between beacons when stationary
     sendAltitude                    = true;
     disableGPS                      = false;
     email                           = "";

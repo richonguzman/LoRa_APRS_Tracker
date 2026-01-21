@@ -32,6 +32,11 @@
 #include "storage_utils.h"
 #include <SD.h>
 #include <JPEGDEC.h>
+// Undefine macros that conflict between PNGdec and JPEGDEC
+#undef INTELSHORT
+#undef INTELLONG
+#undef MOTOSHORT
+#undef MOTOLONG
 #include <PNGdec.h>
 #include "sd_logger.h"
 #include <freertos/FreeRTOS.h>
@@ -185,7 +190,6 @@ static uint32_t last_tick = 0;
 static bool lvgl_display_initialized = false;
 
 // Display flush callback
-static bool first_flush = true;
 static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
@@ -2181,49 +2185,12 @@ static void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
     }
 }
 
-// Open JPEG file from SD card - callback for JPEGDEC
-static void* jpegOpenFile(const char* filename, int32_t* size) {
-    File* file = new File(SD.open(filename, FILE_READ));
-    if (!file || !*file) {
-        delete file;
-        return nullptr;
-    }
-    *size = file->size();
-    return file;
-}
-
-static void jpegCloseFile(void* handle) {
-    File* file = (File*)handle;
-    if (file) {
-        file->close();
-        delete file;
-    }
-}
-
-static int32_t jpegReadFile(JPEGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
-    File* file = (File*)pFile->fHandle;
-    return file->read(pBuf, iLen);
-}
-
-static int32_t jpegSeekFile(JPEGFILE* pFile, int32_t iPosition) {
-    File* file = (File*)pFile->fHandle;
-    return file->seek(iPosition);
-}
-
 // Convert lat/lon to tile coordinates
 static void latLonToTile(float lat, float lon, int zoom, int* tileX, int* tileY) {
     int n = 1 << zoom;
     *tileX = (int)((lon + 180.0f) / 360.0f * n);
     float latRad = lat * PI / 180.0f;
     *tileY = (int)((1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n);
-}
-
-// Convert tile coordinates to lat/lon (NW corner)
-static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon) {
-    int n = 1 << zoom;
-    *lon = (float)tileX / n * 360.0f - 180.0f;
-    float latRad = atan(sinh(PI * (1.0f - 2.0f * tileY / n)));
-    *lat = latRad * 180.0f / PI;
 }
 
 // Convert lat/lon to pixel position on screen (relative to center)
