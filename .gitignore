@@ -13,3 +13,4 @@ installer/*.bin
 CLAUDE.md
 LVGL_TODO.md
 LVGL_TODO.html
+.aider*

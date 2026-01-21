@@ -32,7 +32,12 @@
 #include "storage_utils.h"
 #include <SD.h>
 #include <JPEGDEC.h>
+#include <PNGdec.h>
 #include "sd_logger.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
+SemaphoreHandle_t spiMutex = NULL;
 
 // APRS symbol mapping (same as display.cpp)
 static const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
@@ -184,16 +189,23 @@ static bool first_flush = true;
 static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
-
-    if (first_flush) {
-        Serial.printf("[LVGL] First flush: %dx%d at (%d,%d)\n", w, h, area->x1, area->y1);
-        first_flush = false;
+    
+    // Vérifier si le Mutex existe ET le prendre
+    if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
+        tft.startWrite();
+        tft.setAddrWindow(area->x1, area->y1, w, h);
+        tft.pushColors((uint16_t*)&color_p->full, w * h, true);
+        tft.endWrite();
+        xSemaphoreGiveRecursive(spiMutex);
+    } 
+    else if (spiMutex == NULL) {
+        // Si le mutex n'existe pas encore (très tôt au boot), 
+        // on écrit quand même pour ne pas bloquer l'affichage
+        tft.startWrite();
+        tft.setAddrWindow(area->x1, area->y1, w, h);
+        tft.pushColors((uint16_t*)&color_p->full, w * h, true);
+        tft.endWrite();
     }
-
-    tft.startWrite();
-    tft.setAddrWindow(area->x1, area->y1, w, h);
-    tft.pushColors((uint16_t*)&color_p->full, w * h, true);
-    tft.endWrite();
 
     lv_disp_flush_ready(drv);
 }
@@ -2075,6 +2087,82 @@ static int jpegCacheCallback(JPEGDRAW* pDraw) {
     return 1;
 }
 
+// PNG decoder for map tiles
+static PNG png;
+
+// Context for PNG decoding to cache
+struct PNGCacheContext {
+    uint16_t* cacheBuffer;  // Target cache buffer
+    int tileWidth;
+};
+
+static PNGCacheContext pngCacheContext;
+
+// PNGdec callback for decoding to cache
+static int pngCacheCallback(PNGDRAW* pDraw) {
+    png.getLineAsRGB565(pDraw, &pngCacheContext.cacheBuffer[pDraw->y * pngCacheContext.tileWidth],
+                        PNG_RGB565_LITTLE_ENDIAN, 0xffffffff);
+    return 1;
+}
+
+// PNG file callbacks
+static void* pngOpenFile(const char* filename, int32_t* size) {
+    File* file = new File(SD.open(filename, FILE_READ));
+    if (!file || !*file) {
+        delete file;
+        return nullptr;
+    }
+    *size = file->size();
+    return file;
+}
+
+static void pngCloseFile(void* handle) {
+    File* file = (File*)handle;
+    if (file) {
+        file->close();
+        delete file;
+    }
+}
+
+static int32_t pngReadFile(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+    File* file = (File*)pFile->fHandle;
+    return file->read(pBuf, iLen);
+}
+
+static int32_t pngSeekFile(PNGFILE* pFile, int32_t iPosition) {
+    File* file = (File*)pFile->fHandle;
+    return file->seek(iPosition);
+}
+
+// JPEG file callbacks
+static void* jpegOpenFile(const char* filename, int32_t* size) {
+    File* file = new File(SD.open(filename, FILE_READ));
+    if (!file || !*file) {
+        delete file;
+        return nullptr;
+    }
+    *size = file->size();
+    return file;
+}
+
+static void jpegCloseFile(void* handle) {
+    File* file = (File*)handle;
+    if (file) {
+        file->close();
+        delete file;
+    }
+}
+
+static int32_t jpegReadFile(JPEGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+    File* file = (File*)pFile->fHandle;
+    return file->read(pBuf, iLen);
+}
+
+static int32_t jpegSeekFile(JPEGFILE* pFile, int32_t iPosition) {
+    File* file = (File*)pFile->fHandle;
+    return file->seek(iPosition);
+}
+
 // Copy cached tile to canvas with offset and clipping
 static void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
                              int offsetX, int offsetY, int canvasWidth, int canvasHeight) {
@@ -2484,67 +2572,96 @@ static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int
     }
 
     // Cache miss - need to load from SD
-    if (!STORAGE_Utils::isSDAvailable()) {
-        Serial.println("[MAP] SD not available");
-        return false;
-    }
+    bool success = false;
 
-    String mapsPath = STORAGE_Utils::getMapsPath();
-    std::vector<String> regions = STORAGE_Utils::listDirs(mapsPath);
+    if (xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
 
-    for (const String& region : regions) {
-        char tilePath[128];
-        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
-                 mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
+        if (STORAGE_Utils::isSDAvailable()) {
+            String mapsPath = STORAGE_Utils::getMapsPath();
+            std::vector<String> regions = STORAGE_Utils::listDirs(mapsPath);
 
-        if (STORAGE_Utils::fileExists(tilePath)) {
-            Serial.printf("[MAP] Loading tile: %s\n", tilePath);
+            for (const String& region : regions) {
+                char tilePath[128];
 
-            // Find cache slot and allocate if needed
-            int slot = findCacheSlot();
-            if (tileCache[slot].data == nullptr) {
-                tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
-                if (!tileCache[slot].data) {
-                    Serial.println("[MAP] Failed to allocate cache buffer");
-                    continue;
+                // Try JPEG first (priority - faster decode)
+                snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
+                         mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
+
+                if (STORAGE_Utils::fileExists(tilePath)) {
+                    Serial.printf("[MAP] Loading JPEG tile: %s\n", tilePath);
+
+                    int slot = findCacheSlot();
+                    if (tileCache[slot].data == nullptr) {
+                        tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
+                    }
+
+                    if (tileCache[slot].data) {
+                        jpegCacheContext.cacheBuffer = tileCache[slot].data;
+                        jpegCacheContext.tileWidth = MAP_TILE_SIZE;
+
+                        int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
+                        if (rc) {
+                            jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
+                            rc = jpeg.decode(0, 0, 0);
+                            jpeg.close();
+
+                            if (rc) {
+                                tileCache[slot].zoom = zoom;
+                                tileCache[slot].tileX = tileX;
+                                tileCache[slot].tileY = tileY;
+                                tileCache[slot].lastAccess = ++tileCacheAccessCounter;
+                                tileCache[slot].valid = true;
+                                copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
+                                success = true;
+                            }
+                        }
+                    }
                 }
+
+                // Try PNG fallback if JPEG not found
+                if (!success) {
+                    snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
+                             mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
+
+                    if (STORAGE_Utils::fileExists(tilePath)) {
+                        Serial.printf("[MAP] Loading PNG tile: %s\n", tilePath);
+
+                        int slot = findCacheSlot();
+                        if (tileCache[slot].data == nullptr) {
+                            tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
+                        }
+
+                        if (tileCache[slot].data) {
+                            pngCacheContext.cacheBuffer = tileCache[slot].data;
+                            pngCacheContext.tileWidth = MAP_TILE_SIZE;
+
+                            int rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
+                            if (rc == PNG_SUCCESS) {
+                                rc = png.decode(nullptr, 0);
+                                png.close();
+
+                                if (rc == PNG_SUCCESS) {
+                                    tileCache[slot].zoom = zoom;
+                                    tileCache[slot].tileX = tileX;
+                                    tileCache[slot].tileY = tileY;
+                                    tileCache[slot].lastAccess = ++tileCacheAccessCounter;
+                                    tileCache[slot].valid = true;
+                                    copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
+                                    success = true;
+                                }
+                            } else {
+                                png.close();
+                            }
+                        }
+                    }
+                }
+
+                if (success) break;
             }
-
-            // Setup cache context
-            jpegCacheContext.cacheBuffer = tileCache[slot].data;
-            jpegCacheContext.tileWidth = MAP_TILE_SIZE;
-
-            // Open and decode JPEG file
-            int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
-            if (!rc) {
-                Serial.println("[MAP] JPEG open failed");
-                continue;
-            }
-
-            jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
-            rc = jpeg.decode(0, 0, 0);
-            jpeg.close();
-
-            if (!rc) {
-                Serial.println("[MAP] JPEG decode failed");
-                continue;
-            }
-
-            // Update cache entry
-            tileCache[slot].zoom = zoom;
-            tileCache[slot].tileX = tileX;
-            tileCache[slot].tileY = tileY;
-            tileCache[slot].lastAccess = ++tileCacheAccessCounter;
-            tileCache[slot].valid = true;
-
-            // Copy to canvas
-            copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY,
-                             MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-
-            return true;
         }
+        xSemaphoreGiveRecursive(spiMutex);
     }
-    return false;
+    return success;
 }
 
 // Create the map screen
@@ -3345,6 +3462,7 @@ static void btn_send_msg_clicked(lv_event_t* e) {
 
         // Save sent message to aprsMessages.txt (same format as received messages)
         // Format: "TO_CALLSIGN,>message" (> prefix indicates sent message)
+        if (xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
         File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
         if (msgFile) {
             String sentMsg = String(to) + ",>" + String(msg);
@@ -3355,6 +3473,8 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         } else {
             Serial.println("[LVGL] Failed to save sent message");
         }
+        xSemaphoreGiveRecursive(spiMutex); // On rend l'accès au bus SPI
+    }
 
         // Show confirmation popup
         LVGL_UI::showTxPacket(msg);
@@ -3760,6 +3880,9 @@ namespace LVGL_UI {
     static lv_obj_t* init_status_label = nullptr;
 
     void initLvglDisplay() {
+         if (spiMutex == NULL) {
+        spiMutex = xSemaphoreCreateRecursiveMutex();
+        }
         // Turn off backlight during init to avoid garbage display
         #ifdef BOARD_BL_PIN
             pinMode(BOARD_BL_PIN, OUTPUT);
