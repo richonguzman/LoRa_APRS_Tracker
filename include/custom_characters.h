@@ -21,6 +21,20 @@
 
 #include <Arduino.h>
 
+// Dimensions communes des symboles
+#define SYMBOL_WIDTH 16
+#define SYMBOL_HEIGHT 14
+
+// Déclarations externes des tableaux de symboles et de leur taille
+extern const char* symbolArray[];
+extern const int symbolArraySize;
+extern const uint8_t* symbolsAPRS[];
+
+// Définitions des bitmaps de symboles (les données brutes)
+// Celles-ci restent statiques ou peuvent être déclarées ici si elles sont seulement des tableaux
+// de données (et non des mappings dynamiques).
+
+// Exemple :
 static const unsigned char bluetoothSymbol[] PROGMEM = {
     0b00001100, 0b00000000,
     0b00001111, 0b00000000,
@@ -445,22 +459,5 @@ static const unsigned char wheelchairSymbol[] PROGMEM = {
     0b00111000, 0b11100100,
     0b00001111, 0b10000000
 };
-
-/*static const unsigned char noSymbol[] PROGMEM = {
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000,
-    0b00000000, 0b00000000
-};*/
 
 #endif

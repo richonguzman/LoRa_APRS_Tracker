@@ -30,32 +30,24 @@
 #include "lora_aprs_logo.h"
 #include "lora_aprs_bg.h"
 #include "storage_utils.h"
-#include <SD.h>
-#include <JPEGDEC.h>
-// Undefine macros that conflict between PNGdec and JPEGDEC
-#undef INTELSHORT
-#undef INTELLONG
-#undef MOTOSHORT
-#undef MOTOLONG
-#include <PNGdec.h>
 #include "sd_logger.h"
 #include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
+#include <freertos/semphr.h> 
+
+#include "ui_map_manager.h" // Inclure le nouveau gestionnaire de carte
 
 SemaphoreHandle_t spiMutex = NULL;
 
-// APRS symbol mapping (same as display.cpp)
-static const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
+// APRS symbol mapping (maintenant déclarés extern dans custom_characters.h)
+const char* symbolArray[] = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                      "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
-static const int symbolArraySize = sizeof(symbolArray)/sizeof(symbolArray[0]);
-static const uint8_t* symbolsAPRS[] = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol,
+const int symbolArraySize = sizeof(symbolArray)/sizeof(symbolArray[0]);
+const uint8_t* symbolsAPRS[] = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol,
                                        truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
                                        houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
                                        aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
-#define SYMBOL_WIDTH 16
-#define SYMBOL_HEIGHT 14
 
-// External data sources
+// Sources de données externes
 extern Configuration Config;
 extern uint8_t myBeaconsIndex;
 extern int myBeaconsSize;
@@ -72,6 +64,7 @@ extern uint8_t loraIndex;
 extern int loraIndexSize;
 extern bool displayEcoMode;
 extern uint8_t screenBrightness;
+extern int mapStationsCount; // Compteur de stations pour la barre d'information de la carte
 
 // Display dimensions
 #define SCREEN_WIDTH  320
@@ -144,21 +137,20 @@ static lv_obj_t* screen_speed = nullptr;
 // UI Elements - Sound settings screen
 static lv_obj_t* screen_sound = nullptr;
 
-// UI Elements - Map screen
-static lv_obj_t* screen_map = nullptr;
-static lv_obj_t* map_canvas = nullptr;
-static lv_color_t* map_canvas_buf = nullptr;
-static lv_obj_t* map_title_label = nullptr;  // Title label to update zoom level
-static lv_obj_t* map_container = nullptr;    // Container for canvas and station buttons
-// Available zoom levels (only levels with tiles on SD card)
-static const int map_available_zooms[] = {8, 10, 12, 14};
-static const int map_zoom_count = sizeof(map_available_zooms) / sizeof(map_available_zooms[0]);
-static int map_zoom_index = 0;  // Index into map_available_zooms (start at zoom 8)
-static int map_current_zoom = 8;
-static float map_center_lat = 0.0f;
-static float map_center_lon = 0.0f;
-static String map_current_region = "";
-static bool map_follow_gps = true;  // Follow GPS or free pan mode
+// Éléments d'interface utilisateur de l'écran de carte (déclarés extern dans ui_map_manager.h)
+lv_obj_t* UIMapManager::screen_map = nullptr;
+lv_obj_t* UIMapManager::map_canvas = nullptr;
+lv_color_t* UIMapManager::map_canvas_buf = nullptr;
+lv_obj_t* UIMapManager::map_title_label = nullptr;
+lv_obj_t* UIMapManager::map_container = nullptr;
+
+// Variables d'état de la carte (déclarées extern dans ui_map_manager.h)
+int UIMapManager::map_zoom_index = 0;
+int UIMapManager::map_current_zoom = 8; // Valeur par défaut, sera définie par UIMapManager::create_map_screen
+float UIMapManager::map_center_lat = 0.0f;
+float UIMapManager::map_center_lon = 0.0f;
+String UIMapManager::map_current_region = "";
+bool UIMapManager::map_follow_gps = true;
 
 // UI Elements - WiFi settings screen
 static lv_obj_t* screen_wifi = nullptr;
@@ -259,17 +251,15 @@ static void create_speed_screen();
 static void create_sound_screen();
 static void create_wifi_screen();
 static void create_bluetooth_screen();
-static void create_map_screen();
 
-// Draw APRS symbol on canvas
-// Symbol size: 16x14 pixels (no scaling to keep it compact)
+// Dessine le symbole APRS sur le canevas du tableau de bord
 #define APRS_CANVAS_WIDTH SYMBOL_WIDTH
 #define APRS_CANVAS_HEIGHT SYMBOL_HEIGHT
 
 static void drawAPRSSymbol(const char* symbolChar) {
     if (!aprs_symbol_canvas || !aprs_symbol_buf) return;
 
-    // Find symbol index
+    // Trouver l'index du symbole
     int symbolIndex = -1;
     for (int i = 0; i < symbolArraySize; i++) {
         if (strcmp(symbolChar, symbolArray[i]) == 0) {
@@ -278,15 +268,15 @@ static void drawAPRSSymbol(const char* symbolChar) {
         }
     }
 
-    // Clear canvas with transparent/dark background
+    // Effacer le canevas avec un fond transparent/sombre
     lv_canvas_fill_bg(aprs_symbol_canvas, lv_color_hex(0x16213e), LV_OPA_COVER);
 
-    if (symbolIndex < 0) return;  // Symbol not found
+    if (symbolIndex < 0) return;  // Symbole non trouvé
 
     const uint8_t* bitMap = symbolsAPRS[symbolIndex];
-    lv_color_t white = lv_color_hex(0xffffff);  // White like callsign
+    lv_color_t white = lv_color_hex(0xffffff);  // Blanc comme l'indicatif
 
-    // Draw bitmap 1:1
+    // Dessiner le bitmap 1:1
     for (int y = 0; y < SYMBOL_HEIGHT; y++) {
         for (int x = 0; x < SYMBOL_WIDTH; x++) {
             int byteIndex = (y * ((SYMBOL_WIDTH + 7) / 8)) + (x / 8);
@@ -343,13 +333,13 @@ static void btn_msg_clicked(lv_event_t* e) {
 
 static void btn_map_clicked(lv_event_t* e) {
     Serial.println("[LVGL] MAP button pressed");
-    // Recreate map screen each time to update positions
-    if (screen_map) {
-        lv_obj_del(screen_map);
-        screen_map = nullptr;
+    // Recrée l'écran de la carte à chaque fois pour mettre à jour les positions
+    if (UIMapManager::screen_map) {
+        lv_obj_del(UIMapManager::screen_map);
+        UIMapManager::screen_map = nullptr;
     }
-    create_map_screen();
-    lv_scr_load_anim(screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    UIMapManager::create_map_screen(); // Appelle la nouvelle fonction de création de carte
+    lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
 }
 
 // Create the main dashboard screen
@@ -1991,921 +1981,6 @@ static void create_bluetooth_screen() {
 }
 
 // ============================================================================
-// MAP SCREEN - Offline OSM tiles display with stations
-// ============================================================================
-
-// Map constants
-#define MAP_TILE_SIZE 256
-#define MAP_CANVAS_WIDTH 320
-#define MAP_CANVAS_HEIGHT 200  // Screen minus title bar and button bar
-
-// Tile cache in PSRAM
-#define TILE_CACHE_SIZE 12  // Number of tiles to cache (~1.5MB in PSRAM)
-#define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
-
-struct CachedTile {
-    int zoom;
-    int tileX;
-    int tileY;
-    uint16_t* data;      // Decoded tile pixels in PSRAM
-    uint32_t lastAccess; // For LRU eviction
-    bool valid;
-};
-
-static CachedTile tileCache[TILE_CACHE_SIZE];
-static uint32_t tileCacheAccessCounter = 0;
-static bool tileCacheInitialized = false;
-
-// Initialize tile cache
-static void initTileCache() {
-    if (tileCacheInitialized) return;
-    for (int i = 0; i < TILE_CACHE_SIZE; i++) {
-        tileCache[i].data = nullptr;
-        tileCache[i].valid = false;
-        tileCache[i].zoom = -1;
-        tileCache[i].tileX = -1;
-        tileCache[i].tileY = -1;
-        tileCache[i].lastAccess = 0;
-    }
-    tileCacheInitialized = true;
-    Serial.println("[MAP] Tile cache initialized");
-}
-
-// Find cached tile, returns index or -1
-static int findCachedTile(int zoom, int tileX, int tileY) {
-    for (int i = 0; i < TILE_CACHE_SIZE; i++) {
-        if (tileCache[i].valid &&
-            tileCache[i].zoom == zoom &&
-            tileCache[i].tileX == tileX &&
-            tileCache[i].tileY == tileY) {
-            tileCache[i].lastAccess = ++tileCacheAccessCounter;
-            return i;
-        }
-    }
-    return -1;
-}
-
-// Find slot for new tile (empty or LRU)
-static int findCacheSlot() {
-    // First look for empty slot
-    for (int i = 0; i < TILE_CACHE_SIZE; i++) {
-        if (!tileCache[i].valid || tileCache[i].data == nullptr) {
-            return i;
-        }
-    }
-    // Find LRU (oldest access)
-    int lruIndex = 0;
-    uint32_t oldestAccess = tileCache[0].lastAccess;
-    for (int i = 1; i < TILE_CACHE_SIZE; i++) {
-        if (tileCache[i].lastAccess < oldestAccess) {
-            oldestAccess = tileCache[i].lastAccess;
-            lruIndex = i;
-        }
-    }
-    return lruIndex;
-}
-
-// JPEG decoder for map tiles
-static JPEGDEC jpeg;
-
-// Context for JPEG decoding to cache
-struct JPEGCacheContext {
-    uint16_t* cacheBuffer;  // Target cache buffer
-    int tileWidth;
-};
-
-static JPEGCacheContext jpegCacheContext;
-
-// JPEGDEC callback for decoding to cache - called for each MCU block
-static int jpegCacheCallback(JPEGDRAW* pDraw) {
-    uint16_t* src = pDraw->pPixels;
-    for (int y = 0; y < pDraw->iHeight; y++) {
-        int destY = pDraw->y + y;
-        if (destY >= MAP_TILE_SIZE) break;
-        for (int x = 0; x < pDraw->iWidth; x++) {
-            int destX = pDraw->x + x;
-            if (destX >= MAP_TILE_SIZE) break;
-            jpegCacheContext.cacheBuffer[destY * jpegCacheContext.tileWidth + destX] = src[y * pDraw->iWidth + x];
-        }
-    }
-    return 1;
-}
-
-// PNG decoder for map tiles
-static PNG png;
-
-// Context for PNG decoding to cache
-struct PNGCacheContext {
-    uint16_t* cacheBuffer;  // Target cache buffer
-    int tileWidth;
-};
-
-static PNGCacheContext pngCacheContext;
-
-// PNGdec callback for decoding to cache
-static int pngCacheCallback(PNGDRAW* pDraw) {
-    png.getLineAsRGB565(pDraw, &pngCacheContext.cacheBuffer[pDraw->y * pngCacheContext.tileWidth],
-                        PNG_RGB565_LITTLE_ENDIAN, 0xffffffff);
-    return 1;
-}
-
-// PNG file callbacks
-static void* pngOpenFile(const char* filename, int32_t* size) {
-    File* file = new File(SD.open(filename, FILE_READ));
-    if (!file || !*file) {
-        delete file;
-        return nullptr;
-    }
-    *size = file->size();
-    return file;
-}
-
-static void pngCloseFile(void* handle) {
-    File* file = (File*)handle;
-    if (file) {
-        file->close();
-        delete file;
-    }
-}
-
-static int32_t pngReadFile(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
-    File* file = (File*)pFile->fHandle;
-    return file->read(pBuf, iLen);
-}
-
-static int32_t pngSeekFile(PNGFILE* pFile, int32_t iPosition) {
-    File* file = (File*)pFile->fHandle;
-    return file->seek(iPosition);
-}
-
-// JPEG file callbacks
-static void* jpegOpenFile(const char* filename, int32_t* size) {
-    File* file = new File(SD.open(filename, FILE_READ));
-    if (!file || !*file) {
-        delete file;
-        return nullptr;
-    }
-    *size = file->size();
-    return file;
-}
-
-static void jpegCloseFile(void* handle) {
-    File* file = (File*)handle;
-    if (file) {
-        file->close();
-        delete file;
-    }
-}
-
-static int32_t jpegReadFile(JPEGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
-    File* file = (File*)pFile->fHandle;
-    return file->read(pBuf, iLen);
-}
-
-static int32_t jpegSeekFile(JPEGFILE* pFile, int32_t iPosition) {
-    File* file = (File*)pFile->fHandle;
-    return file->seek(iPosition);
-}
-
-// Copy cached tile to canvas with offset and clipping
-static void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
-                             int offsetX, int offsetY, int canvasWidth, int canvasHeight) {
-    for (int ty = 0; ty < MAP_TILE_SIZE; ty++) {
-        int cy = offsetY + ty;
-        if (cy < 0 || cy >= canvasHeight) continue;
-
-        for (int tx = 0; tx < MAP_TILE_SIZE; tx++) {
-            int cx = offsetX + tx;
-            if (cx < 0 || cx >= canvasWidth) continue;
-
-            int canvasIdx = cy * canvasWidth + cx;
-            int tileIdx = ty * MAP_TILE_SIZE + tx;
-            canvasBuffer[canvasIdx].full = tileData[tileIdx];
-        }
-    }
-}
-
-// Convert lat/lon to tile coordinates
-static void latLonToTile(float lat, float lon, int zoom, int* tileX, int* tileY) {
-    int n = 1 << zoom;
-    *tileX = (int)((lon + 180.0f) / 360.0f * n);
-    float latRad = lat * PI / 180.0f;
-    *tileY = (int)((1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n);
-}
-
-// Convert lat/lon to pixel position on screen (relative to center)
-static void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* pixelX, int* pixelY) {
-    int centerTileX, centerTileY;
-    latLonToTile(centerLat, centerLon, zoom, &centerTileX, &centerTileY);
-
-    int targetTileX, targetTileY;
-    latLonToTile(lat, lon, zoom, &targetTileX, &targetTileY);
-
-    // Calculate sub-tile position
-    int n = 1 << zoom;
-    float subX = ((lon + 180.0f) / 360.0f * n) - targetTileX;
-    float subY = ((1.0f - log(tan(lat * PI / 180.0f) + 1.0f / cos(lat * PI / 180.0f)) / PI) / 2.0f * n) - targetTileY;
-
-    float centerSubX = ((centerLon + 180.0f) / 360.0f * n) - centerTileX;
-    float centerSubY = ((1.0f - log(tan(centerLat * PI / 180.0f) + 1.0f / cos(centerLat * PI / 180.0f)) / PI) / 2.0f * n) - centerTileY;
-
-    *pixelX = MAP_CANVAS_WIDTH / 2 + (int)(((targetTileX - centerTileX) + (subX - centerSubX)) * MAP_TILE_SIZE);
-    *pixelY = MAP_CANVAS_HEIGHT / 2 + (int)(((targetTileY - centerTileY) + (subY - centerSubY)) * MAP_TILE_SIZE);
-}
-
-// Get APRS standard color for symbol
-static lv_color_t getAPRSSymbolColor(const char* symbol) {
-    if (!symbol || strlen(symbol) < 1) return lv_color_hex(0xffff00);  // Yellow default
-
-    // Symbol can be single char "[" or with table "/["
-    char symbolChar;
-    if (strlen(symbol) >= 2 && (symbol[0] == '/' || symbol[0] == '\\')) {
-        symbolChar = symbol[1];
-    } else {
-        symbolChar = symbol[0];
-    }
-
-    switch (symbolChar) {
-        case '[':  // Human/Jogger
-        case 'b':  // Bike
-            return lv_color_hex(0xff0000);  // Red
-        case '>':  // Car
-        case 'U':  // Bus
-        case 'j':  // Jeep
-        case 'k':  // Truck
-        case '<':  // Motorcycle
-            return lv_color_hex(0x0000ff);  // Blue
-        case 's':  // Ship/boat
-        case 'Y':  // Yacht
-            return lv_color_hex(0x00ffff);  // Cyan
-        case '-':  // House
-        case 'y':  // House with yagi
-            return lv_color_hex(0x00ff00);  // Green
-        case 'a':  // Ambulance
-        case 'f':  // Fire truck
-        case 'u':  // Fire station
-            return lv_color_hex(0xff6600);  // Orange
-        case '^':  // Aircraft
-        case '\'': // Small aircraft
-        case 'X':  // Helicopter
-            return lv_color_hex(0x00ffff);  // Cyan
-        case '&':  // iGate
-            return lv_color_hex(0x800080);  // Purple
-        default:
-            return lv_color_hex(0xffff00);  // Yellow
-    }
-}
-
-// Draw APRS symbol on map at specified position
-static void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbolChar, lv_color_t color) {
-    // Find symbol index
-    int symbolIndex = -1;
-    for (int i = 0; i < symbolArraySize; i++) {
-        if (strcmp(symbolChar, symbolArray[i]) == 0) {
-            symbolIndex = i;
-            break;
-        }
-    }
-
-    if (symbolIndex < 0) {
-        // Unknown symbol - draw a circle
-        lv_draw_rect_dsc_t rect_dsc;
-        lv_draw_rect_dsc_init(&rect_dsc);
-        rect_dsc.bg_color = color;
-        rect_dsc.radius = 4;
-        lv_canvas_draw_rect(canvas, x - 4, y - 4, 8, 8, &rect_dsc);
-        return;
-    }
-
-    const uint8_t* bitMap = symbolsAPRS[symbolIndex];
-
-    // Draw bitmap centered on x,y
-    int startX = x - SYMBOL_WIDTH / 2;
-    int startY = y - SYMBOL_HEIGHT / 2;
-
-    for (int sy = 0; sy < SYMBOL_HEIGHT; sy++) {
-        for (int sx = 0; sx < SYMBOL_WIDTH; sx++) {
-            int px = startX + sx;
-            int py = startY + sy;
-            if (px >= 0 && px < MAP_CANVAS_WIDTH && py >= 0 && py < MAP_CANVAS_HEIGHT) {
-                int byteIndex = (sy * ((SYMBOL_WIDTH + 7) / 8)) + (sx / 8);
-                int bitIndex = 7 - (sx % 8);
-                if (bitMap[byteIndex] & (1 << bitIndex)) {
-                    lv_canvas_set_px_color(canvas, px, py, color);
-                }
-            }
-        }
-    }
-}
-
-// Station click tracking for map - stores callsign to pre-fill in compose screen
-static String map_prefill_callsign = "";
-
-// Forward declaration for navigation
-static void open_compose_with_callsign(const String& callsign);
-
-// Station click handler - opens compose screen with callsign pre-filled
-static void map_station_clicked(lv_event_t* e) {
-    int stationIndex = (int)(intptr_t)lv_event_get_user_data(e);
-    MapStation* station = STATION_Utils::getMapStation(stationIndex);
-
-    if (station && station->valid && station->callsign.length() > 0) {
-        Serial.printf("[MAP] Station clicked: %s\n", station->callsign.c_str());
-        map_prefill_callsign = station->callsign;
-        open_compose_with_callsign(station->callsign);
-    }
-}
-
-// Map back button handler
-static void btn_map_back_clicked(lv_event_t* e) {
-    Serial.println("[LVGL] MAP BACK button pressed");
-    map_follow_gps = true;  // Reset to follow GPS when leaving map
-    lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
-}
-
-// Forward declaration for async reload
-// Forward declaration
-static void schedule_map_reload();
-
-// Map recenter button handler - return to GPS position
-static void btn_map_recenter_clicked(lv_event_t* e) {
-    Serial.println("[MAP] Recenter to GPS");
-    map_follow_gps = true;
-    if (gps.location.isValid()) {
-        map_center_lat = gps.location.lat();
-        map_center_lon = gps.location.lng();
-        Serial.printf("[MAP] Recentered to GPS: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    } else {
-        // No GPS - return to default Ariège position
-        map_center_lat = 42.9667f;
-        map_center_lon = 1.6053f;
-        Serial.printf("[MAP] No GPS, recentered to default: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    }
-    schedule_map_reload();
-}
-
-// Forward declarations
-static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offsetX, int offsetY);
-static void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbol, lv_color_t color);
-static lv_color_t getAPRSSymbolColor(const char* symbol);
-static void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* x, int* y);
-
-// Redraw just the canvas content without recreating the screen (for zoom)
-static void redraw_map_canvas() {
-    Serial.println("[MAP-DEBUG] redraw_map_canvas START");
-
-    if (!map_canvas || !map_canvas_buf || !map_title_label) {
-        Serial.println("[MAP-DEBUG] Canvas or title not initialized, doing full reload");
-        screen_map = nullptr;
-        create_map_screen();
-        lv_disp_load_scr(screen_map);
-        return;
-    }
-
-    // Update title with new zoom level
-    char title_text[32];
-    snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
-    lv_label_set_text(map_title_label, title_text);
-    Serial.printf("[MAP-DEBUG] Title updated to: %s\n", title_text);
-
-    // Clear canvas
-    lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
-
-    // Recalculate tile positions
-    int centerTileX, centerTileY;
-    latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-    int n = 1 << map_current_zoom;
-    float tileXf = (map_center_lon + 180.0f) / 360.0f * n;
-    float latRad = map_center_lat * PI / 180.0f;
-    float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
-
-    float fracX = tileXf - centerTileX;
-    float fracY = tileYf - centerTileY;
-    int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
-    int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
-
-    Serial.printf("[MAP] Center tile: %d/%d, sub-offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
-
-    // Load tiles
-    bool hasTiles = false;
-    if (STORAGE_Utils::isSDAvailable()) {
-        for (int dy = -1; dy <= 1; dy++) {
-            for (int dx = -1; dx <= 1; dx++) {
-                int tileX = centerTileX + dx;
-                int tileY = centerTileY + dy;
-                int offsetX = MAP_CANVAS_WIDTH / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
-                int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
-
-                if (dx == 0 && dy == 0) {
-                    Serial.printf("[MAP] Center tile offset: %d,%d\n", offsetX, offsetY);
-                }
-
-                if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
-                    hasTiles = true;
-                }
-            }
-        }
-    }
-
-    if (!hasTiles) {
-        lv_draw_label_dsc_t label_dsc;
-        lv_draw_label_dsc_init(&label_dsc);
-        label_dsc.color = lv_color_hex(0xaaaaaa);
-        label_dsc.font = &lv_font_montserrat_14;
-        lv_canvas_draw_text(map_canvas, 40, MAP_CANVAS_HEIGHT / 2 - 30, 240, &label_dsc,
-            "No offline tiles available.");
-    }
-
-    // Draw own position
-    if (gps.location.isValid()) {
-        int myX, myY;
-        latLonToPixel(gps.location.lat(), gps.location.lng(),
-                      map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
-        if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
-            Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-            drawMapSymbol(map_canvas, myX, myY, currentBeacon->symbol.c_str(), getAPRSSymbolColor(currentBeacon->symbol.c_str()));
-        }
-    }
-
-    // Force canvas update
-    lv_obj_invalidate(map_canvas);
-    Serial.println("[MAP-DEBUG] redraw_map_canvas END");
-}
-
-// Timer callback to reload map screen (for pan/recenter)
-static void map_reload_timer_cb(lv_timer_t* timer) {
-    Serial.println("[MAP-DEBUG] Timer callback START");
-    lv_timer_del(timer);
-    screen_map = nullptr;
-    create_map_screen();
-    lv_disp_load_scr(screen_map);
-    Serial.println("[MAP-DEBUG] Timer callback END");
-}
-
-// Helper to schedule map reload with delay
-static void schedule_map_reload() {
-    Serial.println("[MAP-DEBUG] Scheduling reload timer (20ms)");
-    lv_timer_t* t = lv_timer_create(map_reload_timer_cb, 20, NULL);
-    lv_timer_set_repeat_count(t, 1);
-    Serial.println("[MAP-DEBUG] Timer created");
-}
-
-// Map zoom in handler
-static void btn_map_zoomin_clicked(lv_event_t* e) {
-    Serial.println("[MAP-DEBUG] === ZOOM IN HANDLER CALLED ===");
-    if (map_zoom_index < map_zoom_count - 1) {
-        map_zoom_index++;
-        map_current_zoom = map_available_zooms[map_zoom_index];
-        Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
-        redraw_map_canvas();  // Just redraw canvas, don't recreate screen
-    } else {
-        Serial.println("[MAP-DEBUG] Already at max zoom");
-    }
-    Serial.println("[MAP-DEBUG] === ZOOM IN HANDLER END ===");
-}
-
-// Map zoom out handler
-static void btn_map_zoomout_clicked(lv_event_t* e) {
-    Serial.println("[MAP-DEBUG] === ZOOM OUT HANDLER CALLED ===");
-    if (map_zoom_index > 0) {
-        map_zoom_index--;
-        map_current_zoom = map_available_zooms[map_zoom_index];
-        Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
-        redraw_map_canvas();  // Just redraw canvas, don't recreate screen
-    } else {
-        Serial.println("[MAP-DEBUG] Already at min zoom");
-    }
-    Serial.println("[MAP-DEBUG] === ZOOM OUT HANDLER END ===");
-}
-
-// Calculate pan step based on zoom level (pixels to degrees)
-static float getMapPanStep() {
-    int n = 1 << map_current_zoom;
-    // Move by ~50 pixels worth at current zoom
-    return 50.0f / MAP_TILE_SIZE / n * 360.0f;
-}
-
-// Map pan handlers
-static void btn_map_up_clicked(lv_event_t* e) {
-    map_follow_gps = false;
-    float step = getMapPanStep();
-    map_center_lat += step;
-    Serial.printf("[MAP] Pan up: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    schedule_map_reload();
-}
-
-static void btn_map_down_clicked(lv_event_t* e) {
-    map_follow_gps = false;
-    float step = getMapPanStep();
-    map_center_lat -= step;
-    Serial.printf("[MAP] Pan down: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    schedule_map_reload();
-}
-
-static void btn_map_left_clicked(lv_event_t* e) {
-    map_follow_gps = false;
-    float step = getMapPanStep();
-    map_center_lon -= step;
-    Serial.printf("[MAP] Pan left: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    schedule_map_reload();
-}
-
-static void btn_map_right_clicked(lv_event_t* e) {
-    map_follow_gps = false;
-    float step = getMapPanStep();
-    map_center_lon += step;
-    Serial.printf("[MAP] Pan right: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    schedule_map_reload();
-}
-
-// Load a tile from SD card (with caching) and copy to canvas
-static bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offsetX, int offsetY) {
-    // Initialize cache on first use
-    initTileCache();
-
-    // Get canvas buffer
-    lv_img_dsc_t* dsc = lv_canvas_get_img(canvas);
-    lv_color_t* canvasBuffer = (lv_color_t*)dsc->data;
-
-    // Check cache first
-    int cacheIdx = findCachedTile(zoom, tileX, tileY);
-    if (cacheIdx >= 0) {
-        // Cache hit! Copy from cache to canvas
-        Serial.printf("[MAP] Cache hit: %d/%d/%d\n", zoom, tileX, tileY);
-        copyTileToCanvas(tileCache[cacheIdx].data, canvasBuffer, offsetX, offsetY,
-                         MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-        return true;
-    }
-
-    // Cache miss - need to load from SD
-    bool success = false;
-
-    if (xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
-
-        if (STORAGE_Utils::isSDAvailable()) {
-            String mapsPath = STORAGE_Utils::getMapsPath();
-            std::vector<String> regions = STORAGE_Utils::listDirs(mapsPath);
-
-            for (const String& region : regions) {
-                char tilePath[128];
-
-                // Try JPEG first (priority - faster decode)
-                snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
-                         mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
-
-                if (STORAGE_Utils::fileExists(tilePath)) {
-                    Serial.printf("[MAP] Loading JPEG tile: %s\n", tilePath);
-
-                    int slot = findCacheSlot();
-                    if (tileCache[slot].data == nullptr) {
-                        tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
-                    }
-
-                    if (tileCache[slot].data) {
-                        jpegCacheContext.cacheBuffer = tileCache[slot].data;
-                        jpegCacheContext.tileWidth = MAP_TILE_SIZE;
-
-                        int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
-                        if (rc) {
-                            jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
-                            rc = jpeg.decode(0, 0, 0);
-                            jpeg.close();
-
-                            if (rc) {
-                                tileCache[slot].zoom = zoom;
-                                tileCache[slot].tileX = tileX;
-                                tileCache[slot].tileY = tileY;
-                                tileCache[slot].lastAccess = ++tileCacheAccessCounter;
-                                tileCache[slot].valid = true;
-                                copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-                                success = true;
-                            }
-                        }
-                    }
-                }
-
-                // Try PNG fallback if JPEG not found
-                if (!success) {
-                    snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
-                             mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
-
-                    if (STORAGE_Utils::fileExists(tilePath)) {
-                        Serial.printf("[MAP] Loading PNG tile: %s\n", tilePath);
-
-                        int slot = findCacheSlot();
-                        if (tileCache[slot].data == nullptr) {
-                            tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
-                        }
-
-                        if (tileCache[slot].data) {
-                            pngCacheContext.cacheBuffer = tileCache[slot].data;
-                            pngCacheContext.tileWidth = MAP_TILE_SIZE;
-
-                            int rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
-                            if (rc == PNG_SUCCESS) {
-                                rc = png.decode(nullptr, 0);
-                                png.close();
-
-                                if (rc == PNG_SUCCESS) {
-                                    tileCache[slot].zoom = zoom;
-                                    tileCache[slot].tileX = tileX;
-                                    tileCache[slot].tileY = tileY;
-                                    tileCache[slot].lastAccess = ++tileCacheAccessCounter;
-                                    tileCache[slot].valid = true;
-                                    copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-                                    success = true;
-                                }
-                            } else {
-                                png.close();
-                            }
-                        }
-                    }
-                }
-
-                if (success) break;
-            }
-        }
-        xSemaphoreGiveRecursive(spiMutex);
-    }
-    return success;
-}
-
-// Create the map screen
-static void create_map_screen() {
-    screen_map = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(screen_map, lv_color_hex(0x1a1a2e), 0);
-
-    // Use current GPS position as center if in follow mode
-    if (map_follow_gps && gps.location.isValid()) {
-        map_center_lat = gps.location.lat();
-        map_center_lon = gps.location.lng();
-        Serial.printf("[MAP] Using GPS position: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    } else if (map_center_lat == 0.0f && map_center_lon == 0.0f) {
-        // Default to Ariège (Foix) if no GPS - matches OCC tiles
-        map_center_lat = 42.9667f;
-        map_center_lon = 1.6053f;
-        Serial.printf("[MAP] No GPS, using default Ariège: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    } else {
-        Serial.printf("[MAP] Using pan position: %.4f, %.4f\n", map_center_lat, map_center_lon);
-    }
-
-    // Title bar (green for map)
-    lv_obj_t* title_bar = lv_obj_create(screen_map);
-    lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
-    lv_obj_set_pos(title_bar, 0, 0);
-    lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x009933), 0);
-    lv_obj_set_style_border_width(title_bar, 0, 0);
-    lv_obj_set_style_radius(title_bar, 0, 0);
-    lv_obj_set_style_pad_all(title_bar, 5, 0);
-
-    // Back button
-    lv_obj_t* btn_back = lv_btn_create(title_bar);
-    lv_obj_set_size(btn_back, 60, 25);
-    lv_obj_set_style_bg_color(btn_back, lv_color_hex(0x16213e), 0);
-    lv_obj_add_event_cb(btn_back, btn_map_back_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_back = lv_label_create(btn_back);
-    lv_label_set_text(lbl_back, "< BACK");
-    lv_obj_center(lbl_back);
-
-    // Title with zoom level (keep reference for updates)
-    map_title_label = lv_label_create(title_bar);
-    char title_text[32];
-    snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
-    lv_label_set_text(map_title_label, title_text);
-    lv_obj_set_style_text_color(map_title_label, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_text_font(map_title_label, &lv_font_montserrat_18, 0);
-    lv_obj_align(map_title_label, LV_ALIGN_CENTER, -30, 0);
-
-    // Zoom buttons on right
-    lv_obj_t* btn_zoomin = lv_btn_create(title_bar);
-    lv_obj_set_size(btn_zoomin, 30, 25);
-    lv_obj_set_style_bg_color(btn_zoomin, lv_color_hex(0x16213e), 0);
-    lv_obj_align(btn_zoomin, LV_ALIGN_RIGHT_MID, -70, 0);
-    lv_obj_add_event_cb(btn_zoomin, btn_map_zoomin_clicked, LV_EVENT_RELEASED, NULL);
-    lv_obj_t* lbl_zoomin = lv_label_create(btn_zoomin);
-    lv_label_set_text(lbl_zoomin, "+");
-    lv_obj_center(lbl_zoomin);
-
-    lv_obj_t* btn_zoomout = lv_btn_create(title_bar);
-    lv_obj_set_size(btn_zoomout, 30, 25);
-    lv_obj_set_style_bg_color(btn_zoomout, lv_color_hex(0x16213e), 0);
-    lv_obj_align(btn_zoomout, LV_ALIGN_RIGHT_MID, -35, 0);
-    lv_obj_add_event_cb(btn_zoomout, btn_map_zoomout_clicked, LV_EVENT_RELEASED, NULL);
-    lv_obj_t* lbl_zoomout = lv_label_create(btn_zoomout);
-    lv_label_set_text(lbl_zoomout, "-");
-    lv_obj_center(lbl_zoomout);
-
-    // Recenter button (GPS icon) - shows different color when not following GPS
-    lv_obj_t* btn_recenter = lv_btn_create(title_bar);
-    lv_obj_set_size(btn_recenter, 30, 25);
-    lv_obj_set_style_bg_color(btn_recenter, map_follow_gps ? lv_color_hex(0x16213e) : lv_color_hex(0xff6600), 0);
-    lv_obj_align(btn_recenter, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_obj_add_event_cb(btn_recenter, btn_map_recenter_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_recenter = lv_label_create(btn_recenter);
-    lv_label_set_text(lbl_recenter, LV_SYMBOL_GPS);
-    lv_obj_center(lbl_recenter);
-
-    // Map canvas area
-    map_container = lv_obj_create(screen_map);
-    lv_obj_set_size(map_container, SCREEN_WIDTH, MAP_CANVAS_HEIGHT);
-    lv_obj_set_pos(map_container, 0, 35);
-    lv_obj_set_style_bg_color(map_container, lv_color_hex(0x2F4F4F), 0);  // Dark slate gray
-    lv_obj_set_style_border_width(map_container, 0, 0);
-    lv_obj_set_style_radius(map_container, 0, 0);
-    lv_obj_set_style_pad_all(map_container, 0, 0);
-
-    // Create canvas for map drawing
-    // Free old buffer if exists (memory leak prevention)
-    if (map_canvas_buf) {
-        heap_caps_free(map_canvas_buf);
-        map_canvas_buf = nullptr;
-    }
-    map_canvas_buf = (lv_color_t*)heap_caps_malloc(MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    if (map_canvas_buf) {
-        map_canvas = lv_canvas_create(map_container);
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-        lv_obj_set_pos(map_canvas, 0, 0);
-
-        // Fill with background color
-        lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
-
-        // Calculate center tile and fractional position within tile
-        int centerTileX, centerTileY;
-        latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-        // Calculate sub-tile offset (where within the tile is our center point)
-        int n = 1 << map_current_zoom;
-        float tileXf = (map_center_lon + 180.0f) / 360.0f * n;
-        float latRad = map_center_lat * PI / 180.0f;
-        float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
-
-        // Fractional part (0.0 to 1.0) represents position within tile
-        float fracX = tileXf - centerTileX;
-        float fracY = tileYf - centerTileY;
-
-        // Convert to pixel offset (how many pixels to shift tiles)
-        int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
-        int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
-
-        Serial.printf("[MAP] Center tile: %d/%d, sub-offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
-
-        // Try to load tiles from SD card
-        bool hasTiles = false;
-        if (STORAGE_Utils::isSDAvailable()) {
-            // Load center tile and surrounding tiles (3x3 grid, or more if needed)
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    int tileX = centerTileX + dx;
-                    int tileY = centerTileY + dy;
-                    // Apply sub-tile offset so center point is at screen center
-                    int offsetX = MAP_CANVAS_WIDTH / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
-                    int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
-
-                    if (dx == 0 && dy == 0) {
-                        Serial.printf("[MAP] Center tile offset: %d,%d\n", offsetX, offsetY);
-                    }
-
-                    if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
-                        hasTiles = true;
-                    }
-                }
-            }
-        }
-
-        if (!hasTiles) {
-            // No tiles - show message
-            lv_draw_label_dsc_t label_dsc;
-            lv_draw_label_dsc_init(&label_dsc);
-            label_dsc.color = lv_color_hex(0xaaaaaa);
-            label_dsc.font = &lv_font_montserrat_14;
-            lv_canvas_draw_text(map_canvas, 40, MAP_CANVAS_HEIGHT / 2 - 30, 240, &label_dsc,
-                "No offline tiles available.\nDownload OSM tiles and copy to:\nSD:/LoRa_Tracker/Maps/REGION/z/x/y.png");
-        }
-
-        // Draw own position (if GPS valid)
-        if (gps.location.isValid()) {
-            int myX, myY;
-            latLonToPixel(gps.location.lat(), gps.location.lng(),
-                          map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
-
-            if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
-                // Get current beacon symbol
-                Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-                drawMapSymbol(map_canvas, myX, myY, currentBeacon->symbol.c_str(), getAPRSSymbolColor(currentBeacon->symbol.c_str()));
-            }
-        }
-
-        // Draw received stations
-        STATION_Utils::cleanOldMapStations();
-        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
-            MapStation* station = STATION_Utils::getMapStation(i);
-            if (station && station->valid && station->latitude != 0.0f && station->longitude != 0.0f) {
-                int stX, stY;
-                latLonToPixel(station->latitude, station->longitude,
-                              map_center_lat, map_center_lon, map_current_zoom, &stX, &stY);
-
-                if (stX >= 0 && stX < MAP_CANVAS_WIDTH && stY >= 0 && stY < MAP_CANVAS_HEIGHT) {
-                    // Color based on APRS symbol standard
-                    lv_color_t stationColor = getAPRSSymbolColor(station->symbol.c_str());
-
-                    drawMapSymbol(map_canvas, stX, stY, station->symbol.c_str(), stationColor);
-
-                    // Draw callsign label with full SSID
-                    lv_draw_label_dsc_t lbl_dsc;
-                    lv_draw_label_dsc_init(&lbl_dsc);
-                    lbl_dsc.color = stationColor;
-                    lbl_dsc.font = &lv_font_montserrat_14;
-                    lv_canvas_draw_text(map_canvas, stX - 30, stY + 10, 80, &lbl_dsc, station->callsign.c_str());
-
-                    // Create invisible clickable button over the station
-                    lv_obj_t* btn_station = lv_btn_create(map_container);
-                    lv_obj_set_size(btn_station, 50, 40);  // Touch area around station
-                    lv_obj_set_pos(btn_station, stX - 25, stY - 15);  // Center on station
-                    lv_obj_set_style_bg_opa(btn_station, LV_OPA_TRANSP, 0);  // Transparent
-                    lv_obj_set_style_border_width(btn_station, 0, 0);
-                    lv_obj_set_style_shadow_width(btn_station, 0, 0);
-                    lv_obj_add_event_cb(btn_station, map_station_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
-                }
-            }
-        }
-
-        // Force canvas redraw after direct buffer writes
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-        lv_obj_invalidate(map_canvas);
-    }
-
-    // Arrow buttons for panning (bottom left corner, d-pad layout)
-    int arrow_size = 28;
-    int arrow_x = 5;
-    int arrow_y = MAP_CANVAS_HEIGHT - 105;  // Above info bar
-    lv_color_t arrow_color = lv_color_hex(0x444444);
-
-    // Up button
-    lv_obj_t* btn_up = lv_btn_create(map_container);
-    lv_obj_set_size(btn_up, arrow_size, arrow_size);
-    lv_obj_set_pos(btn_up, arrow_x + arrow_size, arrow_y);
-    lv_obj_set_style_bg_color(btn_up, arrow_color, 0);
-    lv_obj_set_style_bg_opa(btn_up, LV_OPA_70, 0);
-    lv_obj_add_event_cb(btn_up, btn_map_up_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_up = lv_label_create(btn_up);
-    lv_label_set_text(lbl_up, LV_SYMBOL_UP);
-    lv_obj_center(lbl_up);
-
-    // Down button
-    lv_obj_t* btn_down = lv_btn_create(map_container);
-    lv_obj_set_size(btn_down, arrow_size, arrow_size);
-    lv_obj_set_pos(btn_down, arrow_x + arrow_size, arrow_y + arrow_size * 2);
-    lv_obj_set_style_bg_color(btn_down, arrow_color, 0);
-    lv_obj_set_style_bg_opa(btn_down, LV_OPA_70, 0);
-    lv_obj_add_event_cb(btn_down, btn_map_down_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_down = lv_label_create(btn_down);
-    lv_label_set_text(lbl_down, LV_SYMBOL_DOWN);
-    lv_obj_center(lbl_down);
-
-    // Left button
-    lv_obj_t* btn_left = lv_btn_create(map_container);
-    lv_obj_set_size(btn_left, arrow_size, arrow_size);
-    lv_obj_set_pos(btn_left, arrow_x, arrow_y + arrow_size);
-    lv_obj_set_style_bg_color(btn_left, arrow_color, 0);
-    lv_obj_set_style_bg_opa(btn_left, LV_OPA_70, 0);
-    lv_obj_add_event_cb(btn_left, btn_map_left_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_left = lv_label_create(btn_left);
-    lv_label_set_text(lbl_left, LV_SYMBOL_LEFT);
-    lv_obj_center(lbl_left);
-
-    // Right button
-    lv_obj_t* btn_right = lv_btn_create(map_container);
-    lv_obj_set_size(btn_right, arrow_size, arrow_size);
-    lv_obj_set_pos(btn_right, arrow_x + arrow_size * 2, arrow_y + arrow_size);
-    lv_obj_set_style_bg_color(btn_right, arrow_color, 0);
-    lv_obj_set_style_bg_opa(btn_right, LV_OPA_70, 0);
-    lv_obj_add_event_cb(btn_right, btn_map_right_clicked, LV_EVENT_CLICKED, NULL);
-    lv_obj_t* lbl_right = lv_label_create(btn_right);
-    lv_label_set_text(lbl_right, LV_SYMBOL_RIGHT);
-    lv_obj_center(lbl_right);
-
-    // Info bar at bottom
-    lv_obj_t* info_bar = lv_obj_create(screen_map);
-    lv_obj_set_size(info_bar, SCREEN_WIDTH, 25);
-    lv_obj_set_pos(info_bar, 0, SCREEN_HEIGHT - 25);
-    lv_obj_set_style_bg_color(info_bar, lv_color_hex(0x16213e), 0);
-    lv_obj_set_style_border_width(info_bar, 0, 0);
-    lv_obj_set_style_radius(info_bar, 0, 0);
-    lv_obj_set_style_pad_all(info_bar, 2, 0);
-
-    // Show coordinates
-    lv_obj_t* lbl_coords = lv_label_create(info_bar);
-    char coords_text[64];
-    snprintf(coords_text, sizeof(coords_text), "Center: %.4f, %.4f  Stations: %d",
-             map_center_lat, map_center_lon, mapStationsCount);
-    lv_label_set_text(lbl_coords, coords_text);
-    lv_obj_set_style_text_color(lbl_coords, lv_color_hex(0xaaaaaa), 0);
-    lv_obj_set_style_text_font(lbl_coords, &lv_font_montserrat_14, 0);
-    lv_obj_center(lbl_coords);
-
-    Serial.println("[LVGL] Map screen created");
-}
 
 // ============================================================================
 
@@ -2924,22 +1999,19 @@ static lv_obj_t* compose_keyboard = nullptr;
 static lv_obj_t* current_focused_input = nullptr;
 static bool compose_screen_active = false;
 
-// Forward declaration
-static void create_compose_screen();
-
-// Open compose screen with a pre-filled callsign (called from map)
-static void open_compose_with_callsign(const String& callsign) {
-    // Create compose screen if needed
+// Ouvrir l'écran de composition avec un indicatif pré-rempli (maintenant fonction publique)
+void LVGL_UI::open_compose_with_callsign(const String& callsign) {
+    // Créer l'écran de composition si nécessaire
     create_compose_screen();
 
-    // Pre-fill the destination with the callsign
+    // Pré-remplir la destination avec l'indicatif
     if (compose_to_input) {
         lv_textarea_set_text(compose_to_input, callsign.c_str());
     }
 
-    // Navigate to compose screen
+    // Naviguer vers l'écran de composition
     lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
-    Serial.printf("[LVGL] Opening compose for: %s\n", callsign.c_str());
+    Serial.printf("[LVGL] Ouverture de la composition pour : %s\n", callsign.c_str());
 }
 
 // Show message detail popup

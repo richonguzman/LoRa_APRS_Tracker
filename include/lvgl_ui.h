@@ -31,6 +31,7 @@ namespace LVGL_UI {
     void showCapsLockPopup(bool active);  // Display Caps Lock status popup
     void showBootWebConfig();  // Show web-conf screen at boot (blocking, LVGL-based)
     void showAddContactPrompt(const char* callsign);  // Prompt to add unknown sender as contact
+    void open_compose_with_callsign(const String& callsign); // Open compose screen with pre-filled callsign
 }
 
 #endif // USE_LVGL_UI
