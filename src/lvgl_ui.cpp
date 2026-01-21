@@ -250,8 +250,17 @@ static void create_bluetooth_screen();
 #define APRS_CANVAS_WIDTH SYMBOL_WIDTH
 #define APRS_CANVAS_HEIGHT SYMBOL_HEIGHT
 
-static void drawAPRSSymbol(const char* symbolChar) {
+static void drawAPRSSymbol(const char* symbolStr) {
     if (!aprs_symbol_canvas || !aprs_symbol_buf) return;
+
+    // Extract symbol character from full format (e.g., "/>" or "\>" or ">")
+    // Symbol is always second char in 2-char format, first char in 1-char format
+    char symbolChar[2] = {0, 0};
+    if (symbolStr && strlen(symbolStr) >= 2) {
+        symbolChar[0] = symbolStr[1];  // Second character is the symbol
+    } else if (symbolStr && strlen(symbolStr) >= 1) {
+        symbolChar[0] = symbolStr[0];
+    }
 
     // Trouver l'index du symbole
     int symbolIndex = -1;
@@ -377,9 +386,10 @@ static void create_dashboard() {
         aprs_symbol_canvas = lv_canvas_create(status_bar);
         lv_canvas_set_buffer(aprs_symbol_canvas, aprs_symbol_buf, APRS_CANVAS_WIDTH, APRS_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_set_size(aprs_symbol_canvas, APRS_CANVAS_WIDTH, APRS_CANVAS_HEIGHT);
-        // Draw initial symbol from current beacon
+        // Draw initial symbol from current beacon (overlay + symbol)
         Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-        drawAPRSSymbol(currentBeacon->symbol.c_str());
+        String fullSymbol = currentBeacon->overlay + currentBeacon->symbol;
+        drawAPRSSymbol(fullSymbol.c_str());
     }
 
     // Date/Time label (right)
@@ -1037,8 +1047,9 @@ static void callsign_item_clicked(lv_event_t* e) {
     STATION_Utils::saveIndex(0, myBeaconsIndex);
     // Update the callsign label on main screen
     lv_label_set_text(label_callsign, Config.beacons[myBeaconsIndex].callsign.c_str());
-    // Update APRS symbol for new beacon
-    drawAPRSSymbol(Config.beacons[myBeaconsIndex].symbol.c_str());
+    // Update APRS symbol for new beacon (overlay + symbol)
+    String fullSymbol = Config.beacons[myBeaconsIndex].overlay + Config.beacons[myBeaconsIndex].symbol;
+    drawAPRSSymbol(fullSymbol.c_str());
 
     // Reset previous selection to black
     if (current_callsign_btn && current_callsign_btn != btn) {
@@ -3461,8 +3472,9 @@ namespace LVGL_UI {
             if (currentBeacon->callsign != last_callsign) {
                 last_callsign = currentBeacon->callsign;
                 updateCallsign(last_callsign.c_str());
-                // Update APRS symbol when beacon changes
-                drawAPRSSymbol(currentBeacon->symbol.c_str());
+                // Update APRS symbol when beacon changes (overlay + symbol)
+                String fullSymbol = currentBeacon->overlay + currentBeacon->symbol;
+                drawAPRSSymbol(fullSymbol.c_str());
             }
 
             // Update GPS data

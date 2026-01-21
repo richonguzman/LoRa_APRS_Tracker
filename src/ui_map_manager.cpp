@@ -498,10 +498,11 @@ namespace UIMapManager {
 
     // Get symbol color based on SSID and APRS symbol
     lv_color_t getSymbolColor(const String& ssid, const char* aprsSymbol) {
-        // Extract symbol character
+        // Extract symbol character (always second char in 2-char format)
+        // Format: "/X" or "\X" or "OX" where O is overlay
         char symbolChar = ' ';
-        if (aprsSymbol && strlen(aprsSymbol) >= 2 && (aprsSymbol[0] == '/' || aprsSymbol[0] == '\\')) {
-            symbolChar = aprsSymbol[1];
+        if (aprsSymbol && strlen(aprsSymbol) >= 2) {
+            symbolChar = aprsSymbol[1];  // Symbol is always second character
         } else if (aprsSymbol && strlen(aprsSymbol) >= 1) {
             symbolChar = aprsSymbol[0];
         }
@@ -539,10 +540,11 @@ namespace UIMapManager {
     lv_color_t getAPRSSymbolColor(const char* symbol) {
         if (!symbol || strlen(symbol) < 1) return lv_color_hex(0xffff00);  // Yellow by default
 
-        // The symbol can be a single character "[" or with a table "/["
+        // The symbol can be a single character "[" or with a table "/[" or overlay "O["
+        // Symbol is always second character in 2-char format
         char symbolChar;
-        if (strlen(symbol) >= 2 && (symbol[0] == '/' || symbol[0] == '\\')) {
-            symbolChar = symbol[1];
+        if (strlen(symbol) >= 2) {
+            symbolChar = symbol[1];  // Symbol is always second character
         } else {
             symbolChar = symbol[0];
         }
@@ -623,9 +625,10 @@ namespace UIMapManager {
         lv_color_t symbolColor = getSymbolColor(ssid, aprsSymbol);
 
         // Extract symbol character to check if we need custom rendering
+        // Format: "/X" or "\X" or "OX" - symbol is always second character
         char symbolChar = ' ';
-        if (aprsSymbol && strlen(aprsSymbol) >= 2 && (aprsSymbol[0] == '/' || aprsSymbol[0] == '\\')) {
-            symbolChar = aprsSymbol[1];
+        if (aprsSymbol && strlen(aprsSymbol) >= 2) {
+            symbolChar = aprsSymbol[1];  // Symbol is always second character
         } else if (aprsSymbol && strlen(aprsSymbol) >= 1) {
             symbolChar = aprsSymbol[0];
         }
@@ -685,13 +688,30 @@ namespace UIMapManager {
 
     // Draw APRS symbol on map at specified position (low-level function)
     void drawMapSymbol(lv_obj_t* canvas, int x, int y, const char* symbolChar, lv_color_t color) {
-        // Parse table and symbol from symbolChar (e.g., "/[" or "\&")
+        // Parse table, symbol and overlay from symbolChar
+        // APRS symbol format:
+        //   "/X" = primary table, symbol X, no overlay
+        //   "\X" = alternate table, symbol X, no overlay
+        //   "OX" = alternate table, symbol X, with overlay character O (A-Z, 0-9)
         char table = '/';  // default primary table
         char symbol = ' ';
+        char overlay = 0;  // overlay character to draw on top (0 = none)
 
-        if (symbolChar && strlen(symbolChar) >= 2 && (symbolChar[0] == '/' || symbolChar[0] == '\\')) {
-            table = symbolChar[0];
-            symbol = symbolChar[1];
+        if (symbolChar && strlen(symbolChar) >= 2) {
+            if (symbolChar[0] == '/') {
+                // Primary table, no overlay
+                table = '/';
+                symbol = symbolChar[1];
+            } else if (symbolChar[0] == '\\') {
+                // Alternate table, no overlay
+                table = '\\';
+                symbol = symbolChar[1];
+            } else {
+                // Overlay character + symbol = alternate table with overlay
+                table = '\\';  // Alternate table
+                overlay = symbolChar[0];  // Overlay character (A-Z, 0-9)
+                symbol = symbolChar[1];   // Symbol character
+            }
         } else if (symbolChar && strlen(symbolChar) >= 1) {
             symbol = symbolChar[0];
         }
@@ -726,6 +746,17 @@ namespace UIMapManager {
                         }
                     }
                 }
+            }
+
+            // Draw overlay character on top of symbol if present
+            if (overlay != 0) {
+                char overlayStr[2] = {overlay, '\0'};
+                lv_draw_label_dsc_t lbl_dsc;
+                lv_draw_label_dsc_init(&lbl_dsc);
+                lbl_dsc.color = lv_color_hex(0xffffff);  // White text
+                lbl_dsc.font = &lv_font_montserrat_14;
+                // Center the overlay character on the symbol
+                lv_canvas_draw_text(canvas, x - 4, y - 7, 12, &lbl_dsc, overlayStr);
             }
         } else {
             // Fallback: draw simple circle if symbol not found
@@ -781,10 +812,7 @@ namespace UIMapManager {
 
     // Redraw only canvas content without recreating screen (for zoom)
     void redraw_map_canvas() {
-        Serial.println("[MAP-DEBUG] redraw_map_canvas DÉBUT");
-
         if (!map_canvas || !map_canvas_buf || !map_title_label) {
-            Serial.println("[MAP-DEBUG] Canvas or title not initialized, full reload");
             screen_map = nullptr; // Force recreation
             create_map_screen();
             lv_disp_load_scr(screen_map);
@@ -795,7 +823,6 @@ namespace UIMapManager {
         char title_text[32];
         snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
         lv_label_set_text(map_title_label, title_text);
-        Serial.printf("[MAP-DEBUG] Title updated : %s\n", title_text);
 
         // Clean up old station buttons before redrawing
         cleanup_station_buttons();
@@ -849,14 +876,15 @@ namespace UIMapManager {
                 "No offline tiles available.");
         }
 
-        // Draw own position
+        // Draw own position (overlay + symbol for correct APRS symbol)
         if (gps.location.isValid()) {
             int myX, myY;
             latLonToPixel(gps.location.lat(), gps.location.lng(),
                           map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
             if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-                drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, currentBeacon->symbol.c_str());
+                String fullSymbol = currentBeacon->overlay + currentBeacon->symbol;
+                drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, fullSymbol.c_str());
             }
         }
 
@@ -865,51 +893,38 @@ namespace UIMapManager {
 
         // Force canvas update
         lv_obj_invalidate(map_canvas);
-        Serial.println("[MAP-DEBUG] redraw_map_canvas FIN");
     }
 
     // Timer callback to reload map screen (for panning/recentering)
     void map_reload_timer_cb(lv_timer_t* timer) {
-        Serial.println("[MAP-DEBUG] Callback du timer DÉBUT");
         lv_timer_del(timer);
         redraw_map_canvas(); // Only canvas is redrawn, no need to recreate screen_map
-        Serial.println("[MAP-DEBUG] Callback du timer FIN");
     }
 
     // Helper function to schedule map reload with delay
     void schedule_map_reload() {
-        Serial.println("[MAP-DEBUG] Scheduling reload timer (20ms)");
         lv_timer_t* t = lv_timer_create(map_reload_timer_cb, 20, NULL);
         lv_timer_set_repeat_count(t, 1);
-        Serial.println("[MAP-DEBUG] Timer created");
     }
 
     // Map zoom in handler
     void btn_map_zoomin_clicked(lv_event_t* e) {
-        Serial.println("[MAP-DEBUG] === GESTIONNAIRE DE ZOOM AVANT APPELÉ ===");
         if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
-            Serial.printf("[MAP] Zoom avant : %d\n", map_current_zoom);
+            Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
             redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-        } else {
-            Serial.println("[MAP-DEBUG] Déjà au zoom maximum");
         }
-        Serial.println("[MAP-DEBUG] === GESTIONNAIRE DE ZOOM AVANT TERMINÉ ===");
     }
 
     // Map zoom out handler
     void btn_map_zoomout_clicked(lv_event_t* e) {
-        Serial.println("[MAP-DEBUG] === GESTIONNAIRE DE ZOOM ARRIÈRE APPELÉ ===");
         if (map_zoom_index > 0) {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
-            Serial.printf("[MAP] Zoom arrière : %d\n", map_current_zoom);
+            Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
             redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-        } else {
-            Serial.println("[MAP-DEBUG] Déjà au zoom minimum");
         }
-        Serial.println("[MAP-DEBUG] === GESTIONNAIRE DE ZOOM ARRIÈRE TERMINÉ ===");
     }
 
     // Calculate pan step based on zoom level (pixels to degrees)
@@ -1220,16 +1235,17 @@ namespace UIMapManager {
                     "No offline tiles available.\nDownload OSM tiles and copy to:\nSD:/LoRa_Tracker/Maps/REGION/z/x/y.png");
             }
 
-            // Draw own position (if GPS is valid)
+            // Draw own position (if GPS is valid) - overlay + symbol for correct APRS symbol
             if (gps.location.isValid()) {
                 int myX, myY;
                 latLonToPixel(gps.location.lat(), gps.location.lng(),
                               map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
 
                 if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
-                    // Get current beacon symbol
+                    // Get current beacon symbol (overlay + symbol)
                     Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
-                    drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, currentBeacon->symbol.c_str());
+                    String fullSymbol = currentBeacon->overlay + currentBeacon->symbol;
+                    drawStationOnMap(map_canvas, myX, myY, currentBeacon->callsign, fullSymbol.c_str());
                 }
             }
 

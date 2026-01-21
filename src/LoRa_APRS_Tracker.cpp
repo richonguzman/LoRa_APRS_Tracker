@@ -257,6 +257,7 @@ void setup() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog initialized (30s timeout)");
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+
     menuDisplay = 0;
 }
 
