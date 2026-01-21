@@ -344,8 +344,8 @@ void loop() {
         SMARTBEACON_Utils::checkFixedBeaconTime();
 
         // Only send beacon if GPS has good quality fix
-        // Require: at least 4 satellites AND HDOP <= 2 (good precision)
-        bool gpsQualityOk = (gps.satellites.value() >= 4) && (gps.hdop.hdop() <= 2.0);
+        // Require: at least 4 satellites AND HDOP <= 5 (acceptable precision)
+        bool gpsQualityOk = (gps.satellites.value() >= 4) && (gps.hdop.hdop() <= 5.0);
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
