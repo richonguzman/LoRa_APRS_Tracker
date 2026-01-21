@@ -2,7 +2,7 @@
 
 This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) with a modern graphical user interface using **LVGL 8.4** specifically designed for the **Lilygo T-Deck Plus** with its 320x240 color touchscreen.
 
-![T-Deck Plus](https://github.com/richonguzman/LoRa_APRS_Tracker/blob/main/images/OledScreen2.jpeg)
+<!-- TODO: Add T-Deck Plus screenshot -->
 
 ## Features
 
@@ -14,7 +14,7 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 
 ### Map Features
 - **Offline Tiles**: JPEG/PNG tile support stored on SD card (OpenStreetMap format)
-- **Multi-zoom**: Support for zoom levels 1-18
+- **Multi-zoom**: Support for zoom levels **8, 10, 12, 14**
 - **Station Display**: Clickable APRS stations with symbols on map
 - **GPS Tracking**: Auto-follow GPS position with manual pan mode
 - **APRS Symbols**: Full symbol set with primary and alternate tables
@@ -106,6 +106,28 @@ Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/) to download Op
 4. Choose output format: **OSMTracker tile storage (JPEG)**
 5. Create the atlas and copy tiles to SD card
 
+#### APRS Symbols
+The tracker uses 24x24 PNG images for APRS symbols. You need to provide them on the SD card.
+
+**Symbol file naming**: Use the hexadecimal ASCII code of the symbol character.
+- Example: `>` (car) = ASCII 62 = hex `3E` → filename: `3E.png`
+- Example: `#` (digipeater) = ASCII 35 = hex `23` → filename: `23.png`
+
+**Where to get symbols**:
+- Extract from [APRS symbol sets](http://www.aprs.org/symbols.html) and convert to 24x24 PNG
+- Use image editing software to create custom symbols
+- Each symbol should be 24x24 pixels with transparency (PNG format)
+
+### Operation Without SD Card
+
+The tracker can operate without an SD card in **degraded mode**:
+- **Map**: Displays gray background instead of tiles
+- **Symbols**: Displays red circles instead of APRS symbols
+- **Messages**: Cannot be saved persistently
+- **Configuration**: Uses default settings from SPIFFS
+
+**Recommendation**: Use an SD card for full functionality.
+
 ## Configuration
 
 ### Web Interface
@@ -166,7 +188,7 @@ Common symbols:
 ### Memory Usage
 - PSRAM: Used for map tile cache and symbol cache
 - Heap: ~88KB free during normal operation
-- SD Card: Required for maps and message storage
+- SD Card: Recommended for maps, symbols, and message storage (see "Operation Without SD Card")
 
 ### Power Management
 - Display eco mode: Auto-dim after timeout
