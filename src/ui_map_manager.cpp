@@ -51,6 +51,7 @@ namespace UIMapManager {
     static bool mapsPathCached = false;     // Flag to check if path is cached
     bool map_follow_gps = true;  // Follow GPS or free panning mode
 
+
     // Tile cache in PSRAM
     #define TILE_CACHE_SIZE 40  // Number of tiles to cache (~5MB in PSRAM)
     #define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
@@ -1153,11 +1154,7 @@ namespace UIMapManager {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
-            redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-            // DISABLED FOR TESTING
-            // int centerX, centerY;
-            // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
-            // queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
+            redraw_map_canvas();
         }
     }
 
@@ -1167,11 +1164,7 @@ namespace UIMapManager {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
-            redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-            // DISABLED FOR TESTING
-            // int centerX, centerY;
-            // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
-            // queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
+            redraw_map_canvas();
         }
     }
 
