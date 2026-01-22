@@ -36,8 +36,11 @@ namespace UIMapManager {
 
     // Map constants
     #define MAP_TILE_SIZE 256
-    #define MAP_CANVAS_WIDTH 320
-    #define MAP_CANVAS_HEIGHT 200  // Screen minus title bar and button bar
+    #define MAP_CANVAS_WIDTH 576   // 320 + 256 (one tile margin for smooth panning)
+    #define MAP_CANVAS_HEIGHT 456  // 200 + 256
+    #define MAP_VISIBLE_WIDTH 320  // Visible area on screen
+    #define MAP_VISIBLE_HEIGHT 200
+    #define MAP_CANVAS_MARGIN 128  // Margin on each side (half tile)
 
     // UI elements - Map screen
     extern lv_obj_t* screen_map;

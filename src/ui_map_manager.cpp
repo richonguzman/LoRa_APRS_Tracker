@@ -1278,9 +1278,34 @@ namespace UIMapManager {
                 }
             }
 
-            // Live preview: move canvas visually while dragging
+            // Live preview: move canvas within margin bounds
             if (touch_dragging && map_canvas) {
-                lv_obj_set_pos(map_canvas, dx, dy);
+                // Canvas starts at (-MARGIN, -MARGIN), so new position is (-MARGIN + dx, -MARGIN + dy)
+                lv_coord_t new_x = -MAP_CANVAS_MARGIN + dx;
+                lv_coord_t new_y = -MAP_CANVAS_MARGIN + dy;
+
+                // Check if we're approaching margin limits - if so, trigger redraw and recenter
+                if (abs(dx) > MAP_CANVAS_MARGIN - 20 || abs(dy) > MAP_CANVAS_MARGIN - 20) {
+                    // Update coordinates incrementally
+                    int n = 1 << map_current_zoom;
+                    float degrees_per_pixel = 360.0f / n / MAP_TILE_SIZE;
+                    map_center_lon = drag_start_lon - (dx * degrees_per_pixel);
+                    map_center_lat = drag_start_lat + (dy * degrees_per_pixel);
+
+                    // Reset drag start to current position
+                    drag_start_lat = map_center_lat;
+                    drag_start_lon = map_center_lon;
+                    touch_start_x = point.x;
+                    touch_start_y = point.y;
+
+                    // Recenter canvas and redraw
+                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+                    redraw_map_canvas();
+                    Serial.println("[MAP] Margin limit reached - redraw triggered");
+                } else {
+                    // Normal panning within margin
+                    lv_obj_set_pos(map_canvas, new_x, new_y);
+                }
             }
         }
         else if (code == LV_EVENT_RELEASED) {
@@ -1288,28 +1313,26 @@ namespace UIMapManager {
             if (touch_dragging) {
                 touch_dragging = false;
 
-                // Calculate final displacement
+                // Calculate final displacement from last drag_start position
                 lv_coord_t dx = point.x - touch_start_x;
                 lv_coord_t dy = point.y - touch_start_y;
 
                 // Convert pixel movement to lat/lon change
                 int n = 1 << map_current_zoom;
-                float degrees_per_tile = 360.0f / n;
-                float degrees_per_pixel = degrees_per_tile / MAP_TILE_SIZE;
+                float degrees_per_pixel = 360.0f / n / MAP_TILE_SIZE;
 
                 // Update map center (drag right = view moves right = lon increases)
                 map_center_lon = drag_start_lon - (dx * degrees_per_pixel);
                 map_center_lat = drag_start_lat + (dy * degrees_per_pixel);
 
-                Serial.printf("[MAP] Touch pan: start=%.4f,%.4f dx=%d dy=%d deg/px=%.6f -> end=%.4f,%.4f\n",
-                              drag_start_lat, drag_start_lon, dx, dy, degrees_per_pixel,
-                              map_center_lat, map_center_lon);
+                Serial.printf("[MAP] Touch pan end: %.4f,%.4f -> %.4f,%.4f\n",
+                              drag_start_lat, drag_start_lon, map_center_lat, map_center_lon);
 
-                // Reset canvas position before redraw
-                lv_obj_set_pos(map_canvas, 0, 0);
+                // Reset canvas to centered position with margin
+                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
 
-                // Redraw map at new position
-                redraw_map_canvas();
+                // Schedule redraw (gives LVGL time to process position change)
+                schedule_map_reload();
             }
         }
     }
@@ -1514,14 +1537,15 @@ namespace UIMapManager {
         lv_label_set_text(lbl_recenter, LV_SYMBOL_GPS);
         lv_obj_center(lbl_recenter);
 
-        // Map canvas area
+        // Map canvas area (container clips the larger canvas to visible area)
         map_container = lv_obj_create(screen_map);
-        lv_obj_set_size(map_container, SCREEN_WIDTH, MAP_CANVAS_HEIGHT);
+        lv_obj_set_size(map_container, SCREEN_WIDTH, MAP_VISIBLE_HEIGHT);
         lv_obj_set_pos(map_container, 0, 35);
         lv_obj_set_style_bg_color(map_container, lv_color_hex(0x2F4F4F), 0);  // Dark slate gray
         lv_obj_set_style_border_width(map_container, 0, 0);
         lv_obj_set_style_radius(map_container, 0, 0);
         lv_obj_set_style_pad_all(map_container, 0, 0);
+        lv_obj_set_style_clip_corner(map_container, true, 0);  // Clip children to container bounds
 
         // Enable touch pan on map container
         lv_obj_add_flag(map_container, LV_OBJ_FLAG_CLICKABLE);
@@ -1539,7 +1563,8 @@ namespace UIMapManager {
         if (map_canvas_buf) {
             map_canvas = lv_canvas_create(map_container);
             lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-            lv_obj_set_pos(map_canvas, 0, 0);
+            // Position canvas with negative margin so visible area is centered
+            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
 
             // Fill with background color
             lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
@@ -1628,7 +1653,7 @@ namespace UIMapManager {
         // Arrow buttons for panning (bottom left corner, D-pad layout)
         int arrow_size = 28;
         int arrow_x = 5;
-        int arrow_y = MAP_CANVAS_HEIGHT - 105;  // Above info bar
+        int arrow_y = MAP_VISIBLE_HEIGHT - 105;  // Above info bar
         lv_color_t arrow_color = lv_color_hex(0x444444);
 
         // Up button
