@@ -1545,7 +1545,7 @@ namespace UIMapManager {
         lv_obj_set_style_border_width(map_container, 0, 0);
         lv_obj_set_style_radius(map_container, 0, 0);
         lv_obj_set_style_pad_all(map_container, 0, 0);
-        lv_obj_set_style_clip_corner(map_container, true, 0);  // Clip children to container bounds
+        lv_obj_clear_flag(map_container, LV_OBJ_FLAG_SCROLLABLE);  // Force clipping of children
 
         // Enable touch pan on map container
         lv_obj_add_flag(map_container, LV_OBJ_FLAG_CLICKABLE);
