@@ -51,6 +51,13 @@ namespace UIMapManager {
     static bool mapsPathCached = false;     // Flag to check if path is cached
     bool map_follow_gps = true;  // Follow GPS or free panning mode
 
+    // Touch pan state
+    static bool touch_dragging = false;
+    static lv_coord_t touch_start_x = 0;
+    static lv_coord_t touch_start_y = 0;
+    static float drag_start_lat = 0.0f;
+    static float drag_start_lon = 0.0f;
+    #define PAN_THRESHOLD 10  // Minimum pixels to trigger pan
 
     // Tile cache in PSRAM
     #define TILE_CACHE_SIZE 40  // Number of tiles to cache (~5MB in PSRAM)
@@ -297,6 +304,7 @@ namespace UIMapManager {
     static void pngCloseFile(void* handle);
     static int32_t pngReadFile(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen);
     static int32_t pngSeekFile(PNGFILE* pFile, int32_t iPosition);
+    static bool pngFileOpened = false;  // Track if PNG file actually opened
 
     // PNG draw callback for symbols - stores alpha channel info
     static uint16_t* symbolDecodeBuffer = nullptr;
@@ -354,7 +362,7 @@ namespace UIMapManager {
 
         // Decode PNG using PNGdec
         int rc = symbolPNG.open(path.c_str(), pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngSymbolCallback);
-        if (rc == PNG_SUCCESS) {
+        if (rc == PNG_SUCCESS && pngFileOpened) {
             rc = symbolPNG.decode(nullptr, 0);
             symbolPNG.close();
 
@@ -541,12 +549,14 @@ namespace UIMapManager {
 
     // PNG file callbacks
     static void* pngOpenFile(const char* filename, int32_t* size) {
+        pngFileOpened = false;
         File* file = new File(SD.open(filename, FILE_READ));
         if (!file || !*file) {
             delete file;
             return nullptr;
         }
         *size = file->size();
+        pngFileOpened = true;
         return file;
     }
 
@@ -652,7 +662,7 @@ namespace UIMapManager {
                         pngCacheContext.tileWidth = MAP_TILE_SIZE;
 
                         rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
-                        if (rc == PNG_SUCCESS) {
+                        if (rc == PNG_SUCCESS && pngFileOpened) {
                             rc = png.decode(nullptr, 0);
                             png.close();
 
@@ -1129,8 +1139,8 @@ namespace UIMapManager {
         // Draw received stations and create clickable buttons
         create_station_buttons();
 
-        // Force canvas update
-        lv_obj_invalidate(map_canvas);
+        // Force container update (needed for touch pan to work)
+        lv_obj_invalidate(map_container);
 
         // Resume async preloading
         mainThreadLoading = false;
@@ -1206,6 +1216,72 @@ namespace UIMapManager {
         map_center_lon += step;
         Serial.printf("[MAP] Pan right: %.4f, %.4f\n", map_center_lat, map_center_lon);
         schedule_map_reload();
+    }
+
+    // Touch pan handler for finger drag on map
+    void map_touch_event_cb(lv_event_t* e) {
+        lv_event_code_t code = lv_event_get_code(e);
+        lv_indev_t* indev = lv_indev_get_act();
+        if (!indev) return;
+
+        lv_point_t point;
+        lv_indev_get_point(indev, &point);
+
+        if (code == LV_EVENT_PRESSED) {
+            // Finger down - start tracking
+            touch_start_x = point.x;
+            touch_start_y = point.y;
+            drag_start_lat = map_center_lat;
+            drag_start_lon = map_center_lon;
+            touch_dragging = false;
+            Serial.printf("[MAP] Touch PRESSED at %d,%d - start pos: %.4f, %.4f\n",
+                          point.x, point.y, drag_start_lat, drag_start_lon);
+        }
+        else if (code == LV_EVENT_PRESSING) {
+            // Finger moving - check if we should pan
+            lv_coord_t dx = point.x - touch_start_x;
+            lv_coord_t dy = point.y - touch_start_y;
+
+            // Only start dragging if moved beyond threshold
+            if (!touch_dragging && (abs(dx) > PAN_THRESHOLD || abs(dy) > PAN_THRESHOLD)) {
+                touch_dragging = true;
+                map_follow_gps = false;
+                Serial.println("[MAP] Touch pan started");
+            }
+
+            // Just track dragging state, no live preview (avoids visual glitches)
+        }
+        else if (code == LV_EVENT_RELEASED) {
+            // Finger up - finish pan
+            if (touch_dragging) {
+                touch_dragging = false;
+
+                // Calculate final displacement (limited to ~1/2 tile)
+                lv_coord_t dx = point.x - touch_start_x;
+                lv_coord_t dy = point.y - touch_start_y;
+                lv_coord_t max_pan = MAP_TILE_SIZE / 2;  // 128 pixels max
+                if (dx > max_pan) dx = max_pan;
+                if (dx < -max_pan) dx = -max_pan;
+                if (dy > max_pan) dy = max_pan;
+                if (dy < -max_pan) dy = -max_pan;
+
+                // Convert pixel movement to lat/lon change
+                int n = 1 << map_current_zoom;
+                float degrees_per_tile = 360.0f / n;
+                float degrees_per_pixel = degrees_per_tile / MAP_TILE_SIZE;
+
+                // Update map center (drag right = view moves right = lon increases)
+                map_center_lon = drag_start_lon - (dx * degrees_per_pixel);
+                map_center_lat = drag_start_lat + (dy * degrees_per_pixel);
+
+                Serial.printf("[MAP] Touch pan: start=%.4f,%.4f dx=%d dy=%d deg/px=%.6f -> end=%.4f,%.4f\n",
+                              drag_start_lat, drag_start_lon, dx, dy, degrees_per_pixel,
+                              map_center_lat, map_center_lon);
+
+                // Redraw map directly (not via timer)
+                redraw_map_canvas();
+            }
+        }
     }
 
     // Load a tile from SD card (with caching) and copy it to canvas
@@ -1291,7 +1367,7 @@ namespace UIMapManager {
                             pngCacheContext.tileWidth = MAP_TILE_SIZE;
 
                             rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
-                            if (rc == PNG_SUCCESS) {
+                            if (rc == PNG_SUCCESS && pngFileOpened) {
                                 Serial.printf("[MAP] Loading PNG: %d/%d/%d\n", zoom, tileX, tileY);
                                 rc = png.decode(nullptr, 0);
                                 png.close();
@@ -1308,6 +1384,15 @@ namespace UIMapManager {
                             } else {
                                 png.close();
                             }
+                        }
+
+                        // If tile not found, mark slot as invalid and clear coordinates
+                        if (!success) {
+                            Serial.printf("[MAP] Tile not found: %d/%d/%d\n", zoom, tileX, tileY);
+                            tileCache[slot].valid = false;
+                            tileCache[slot].zoom = -1;
+                            tileCache[slot].tileX = -1;
+                            tileCache[slot].tileY = -1;
                         }
                     }
                 }
@@ -1407,6 +1492,12 @@ namespace UIMapManager {
         lv_obj_set_style_border_width(map_container, 0, 0);
         lv_obj_set_style_radius(map_container, 0, 0);
         lv_obj_set_style_pad_all(map_container, 0, 0);
+
+        // Enable touch pan on map container
+        lv_obj_add_flag(map_container, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_PRESSED, NULL);
+        lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_PRESSING, NULL);
+        lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_RELEASED, NULL);
 
         // Create canvas for map drawing
         // Free old buffer if it exists (memory leak prevention)
