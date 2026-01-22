@@ -57,7 +57,7 @@ namespace UIMapManager {
     static lv_coord_t touch_start_y = 0;
     static float drag_start_lat = 0.0f;
     static float drag_start_lon = 0.0f;
-    #define PAN_THRESHOLD 10  // Minimum pixels to trigger pan
+    #define PAN_THRESHOLD 5  // Minimum pixels to trigger pan
 
     // Tile cache in PSRAM
     #define TILE_CACHE_SIZE 40  // Number of tiles to cache (~5MB in PSRAM)
