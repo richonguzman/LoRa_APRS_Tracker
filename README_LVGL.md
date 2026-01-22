@@ -2,7 +2,7 @@
 
 This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) with a modern graphical user interface using **LVGL 8.4** specifically designed for the **Lilygo T-Deck Plus** with its 320x240 color touchscreen.
 
-<!-- TODO: Add T-Deck Plus screenshot -->
+![T-Deck Plus Map Screen](docs/tdeck_map_screenshot.jpg)
 
 ## Features
 
@@ -63,15 +63,12 @@ pio run -e ttgo_t_deck_plus_433 -t uploadfs
 
 ### SD Card Setup
 
-#### Map Tiles
-Create the following directory structure on your SD card.
+#### Directory Structure
 
-**Supported zoom levels: 8, 10, 12, 14** (you need tiles for each zoom level you want to use)
-
-**Tile format: JPEG (.jpg) recommended** - PNG also supported but JPEG loads faster and uses less space
+Create the following directory structure on your SD card:
 
 ```
-/LoRa_Tracker/
+LoRa_Tracker/
 ├── Maps/
 │   └── YourRegion/       # Region name (e.g., "France", "Europe")
 │       ├── 8/            # Zoom level 8 (country view)
@@ -81,11 +78,8 @@ Create the following directory structure on your SD card.
 │       │   └── 128/
 │       │       └── 93.jpg
 │       ├── 10/           # Zoom level 10 (region view)
-│       │   └── ...
 │       ├── 12/           # Zoom level 12 (city view)
-│       │   └── ...
 │       └── 14/           # Zoom level 14 (street view)
-│           └── ...
 └── Symbols/
     ├── primary/          # Primary APRS symbols (/)
     │   ├── 21.png        # ! symbol (hex 21)
@@ -98,16 +92,36 @@ Create the following directory structure on your SD card.
         └── ...
 ```
 
+**How to create folders:**
+- **Windows**: Open File Explorer, navigate to SD card, right-click → New → Folder
+- **macOS**: Finder → right-click → New Folder
+- **Linux**: Use your file manager or terminal: `mkdir -p`
+
+> **Note**: A future firmware version will automatically create this structure on first boot.
+
+#### Map Tiles
+
+**Supported zoom levels**: 8, 10, 12, 14 (you need tiles for each zoom level you want to use)
+
+**Tile format**: JPEG (.jpg) recommended - PNG also supported but JPEG loads faster and uses less space
+
 #### Download Map Tiles
 
-**Option 1: Using the included Python script**
+**Option 1: Using the included Python script (all platforms)**
 ```bash
 cd tools/
-python download_tiles.py --region france --zoom 8 10 12 14 --output /path/to/sd/LoRa_Tracker/Maps
+python download_tiles.py --region france --zoom 8 10 12 14 --output SD_CARD_PATH/LoRa_Tracker/Maps
 ```
+
+Replace `SD_CARD_PATH` with your SD card path:
+- **Windows**: `D:\` or `E:\` (drive letter assigned to your SD card)
+- **macOS**: `/Volumes/SD_CARD_NAME`
+- **Linux**: `/media/USERNAME/SD_CARD_NAME` or `/mnt/sdcard`
+
 See `python download_tiles.py --help` for all options.
 
-**Option 2: Using MOBAC**
+**Option 2: Using MOBAC (graphical interface, all platforms)**
+
 Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/) to download OpenStreetMap tiles:
 1. Select your region on the map
 2. Choose a tile source (e.g., "OpenStreetMap")
@@ -121,12 +135,12 @@ PNG tiles work fine but JPEG is recommended for smaller file size (3-5x smaller)
 
 ```bash
 cd tools/
-python convert_to_jpeg.py /path/to/tiles -j 16 -q 85
+python convert_to_jpeg.py SD_CARD_PATH/LoRa_Tracker/Maps -q 85
 ```
 
 Options:
-- `-j 16`: Use 16 parallel threads for faster conversion
 - `-q 85`: JPEG quality (85 is a good balance between size and quality)
+- `-j N`: Number of parallel threads (default: 4, increase for faster conversion on multi-core CPUs)
 - `--keep-png`: Keep original PNG files after conversion
 
 **Note**: The tracker supports PNG, JPEG, and RGB565 RAW formats. PNG requires no conversion but uses more space.
