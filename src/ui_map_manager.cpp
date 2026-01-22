@@ -1247,46 +1247,40 @@ namespace UIMapManager {
                 touch_dragging = true;
                 map_follow_gps = false;
                 Serial.println("[MAP] Touch pan started");
+
+                // Immediate preload: queue tiles in direction of movement
+                if (tilePreloadQueue != nullptr) {
+                    // Get current center tile
+                    int centerTileX, centerTileY;
+                    latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
+
+                    // Determine direction (drag left = need tiles on right, etc.)
+                    int dir_x = (dx < 0) ? 1 : (dx > 0) ? -1 : 0;
+                    int dir_y = (dy < 0) ? 1 : (dy > 0) ? -1 : 0;
+
+                    TileRequest req;
+                    req.zoom = map_current_zoom;
+
+                    // Queue tiles in movement direction
+                    for (int i = -1; i <= 1; i++) {
+                        if (dir_x != 0) {
+                            req.tileX = centerTileX + dir_x * 2;
+                            req.tileY = centerTileY + i;
+                            xQueueSend(tilePreloadQueue, &req, 0);
+                        }
+                        if (dir_y != 0) {
+                            req.tileX = centerTileX + i;
+                            req.tileY = centerTileY + dir_y * 2;
+                            xQueueSend(tilePreloadQueue, &req, 0);
+                        }
+                    }
+                    Serial.printf("[MAP] Preload queued for direction dx=%d dy=%d\n", dir_x, dir_y);
+                }
             }
 
             // Live preview: move canvas visually while dragging
             if (touch_dragging && map_canvas) {
                 lv_obj_set_pos(map_canvas, dx, dy);
-
-                // Predictive preload: queue tiles in the direction of movement
-                if (tilePreloadQueue != nullptr && (abs(dx) > 50 || abs(dy) > 50)) {
-                    // Calculate predicted new center
-                    int n = 1 << map_current_zoom;
-                    float degrees_per_pixel = 360.0f / n / MAP_TILE_SIZE;
-                    float predicted_lon = drag_start_lon - (dx * degrees_per_pixel);
-                    float predicted_lat = drag_start_lat + (dy * degrees_per_pixel);
-
-                    // Convert to tile coordinates
-                    int centerTileX, centerTileY;
-                    latLonToTile(predicted_lat, predicted_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-                    // Queue tiles in direction of movement
-                    int dir_x = (dx < -50) ? 1 : (dx > 50) ? -1 : 0;  // Drag left = need tiles on right
-                    int dir_y = (dy < -50) ? 1 : (dy > 50) ? -1 : 0;  // Drag up = need tiles below
-
-                    if (dir_x != 0 || dir_y != 0) {
-                        TileRequest req;
-                        req.zoom = map_current_zoom;
-                        // Preload edge tiles in movement direction
-                        for (int i = -1; i <= 1; i++) {
-                            if (dir_x != 0) {
-                                req.tileX = centerTileX + dir_x * 2;
-                                req.tileY = centerTileY + i;
-                                xQueueSend(tilePreloadQueue, &req, 0);
-                            }
-                            if (dir_y != 0) {
-                                req.tileX = centerTileX + i;
-                                req.tileY = centerTileY + dir_y * 2;
-                                xQueueSend(tilePreloadQueue, &req, 0);
-                            }
-                        }
-                    }
-                }
             }
         }
         else if (code == LV_EVENT_RELEASED) {
