@@ -1139,6 +1139,9 @@ namespace UIMapManager {
         // Draw received stations and create clickable buttons
         create_station_buttons();
 
+        // Recenter canvas after drawing new tiles (avoids visual jump)
+        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+
         // Force container update (needed for touch pan to work)
         lv_obj_invalidate(map_container);
 
@@ -1328,10 +1331,7 @@ namespace UIMapManager {
                 Serial.printf("[MAP] Touch pan end: %.4f,%.4f -> %.4f,%.4f\n",
                               drag_start_lat, drag_start_lon, map_center_lat, map_center_lon);
 
-                // Reset canvas to centered position with margin
-                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
-
-                // Schedule redraw (gives LVGL time to process position change)
+                // Schedule redraw (canvas will be recentered after new tiles are drawn)
                 schedule_map_reload();
             }
         }
