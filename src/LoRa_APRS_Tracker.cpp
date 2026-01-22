@@ -143,6 +143,10 @@ extern bool gpsIsActive;
 void setup() {
     Serial.begin(115200);
 
+    // Boost CPU to 240MHz for fast init
+    setCpuFrequencyMhz(240);
+    Serial.printf("[Boot] CPU frequency: %d MHz\n", getCpuFrequencyMhz());
+
     // Turn off backlight immediately to avoid garbage display during init
     #if defined(USE_LVGL_UI) && defined(BOARD_BL_PIN)
         pinMode(BOARD_BL_PIN, OUTPUT);
@@ -158,8 +162,6 @@ void setup() {
         displaySetup();  // Skip for LVGL - it does its own TFT init
     #endif
     POWER_Utils::externalPinSetup();
-
-    POWER_Utils::lowerCpuFrequency();
 
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
@@ -257,6 +259,10 @@ void setup() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog initialized (30s timeout)");
 
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+
+    // Lower CPU frequency for power saving in normal operation
+    // Map screen will boost back to 240MHz when needed
+    POWER_Utils::lowerCpuFrequency();
 
     menuDisplay = 0;
 }

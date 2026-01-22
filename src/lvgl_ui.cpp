@@ -2160,9 +2160,138 @@ static void msg_item_clicked(lv_event_t* e) {
 static lv_obj_t* screen_conversation = nullptr;
 static lv_obj_t* conversation_list = nullptr;
 static String current_conversation_callsign = "";
+static int pending_conversation_msg_delete = -1;  // Index of message to delete in conversation
+static bool conversation_msg_longpress_handled = false;
+static lv_obj_t* conversation_confirm_msgbox = nullptr;
 
-// Forward declaration for conversation screen
+// Forward declarations for conversation screen
 static void create_conversation_screen(const String& callsign);
+static void conversation_msg_clicked(lv_event_t* e);
+static void conversation_msg_longpress(lv_event_t* e);
+
+// Refresh only the message list content (not the whole screen)
+static void refresh_conversation_messages() {
+    if (!conversation_list) return;
+
+    // Clear all children of the list
+    lv_obj_clean(conversation_list);
+
+    // Reload messages
+    std::vector<String> messages = MSG_Utils::getMessagesForContact(current_conversation_callsign);
+
+    if (messages.size() == 0) {
+        lv_obj_t* empty = lv_label_create(conversation_list);
+        lv_label_set_text(empty, "No messages");
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
+    } else {
+        for (size_t i = 0; i < messages.size(); i++) {
+            String msg = messages[i];
+            int firstComma = msg.indexOf(',');
+            int secondComma = msg.indexOf(',', firstComma + 1);
+
+            if (secondComma > 0) {
+                String direction = msg.substring(firstComma + 1, secondComma);
+                String content = msg.substring(secondComma + 1);
+                bool isOutgoing = (direction == "OUT");
+
+                // Message bubble container
+                lv_obj_t* bubble_container = lv_obj_create(conversation_list);
+                lv_obj_set_width(bubble_container, lv_pct(100));
+                lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
+                lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
+                lv_obj_set_style_border_width(bubble_container, 0, 0);
+                lv_obj_set_style_pad_all(bubble_container, 2, 0);
+                lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
+
+                // Message bubble
+                lv_obj_t* bubble = lv_obj_create(bubble_container);
+                lv_obj_set_width(bubble, lv_pct(75));
+                lv_obj_set_height(bubble, LV_SIZE_CONTENT);
+                lv_obj_set_style_pad_all(bubble, 8, 0);
+                lv_obj_set_style_radius(bubble, 10, 0);
+                lv_obj_set_style_border_width(bubble, 0, 0);
+
+                // Make bubble clickable for long-press delete
+                lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
+
+                if (isOutgoing) {
+                    lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
+                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
+                } else {
+                    lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
+                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
+                }
+
+                // Message text
+                lv_obj_t* msg_label = lv_label_create(bubble);
+                lv_label_set_text(msg_label, content.c_str());
+                lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+                lv_obj_set_width(msg_label, lv_pct(100));
+                lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
+            }
+        }
+    }
+
+    lv_obj_scroll_to_y(conversation_list, LV_COORD_MAX, LV_ANIM_OFF);
+    Serial.printf("[LVGL] Conversation messages refreshed: %d messages\n", messages.size());
+}
+
+// Confirmation callback for conversation message deletion
+static void confirm_conversation_delete_cb(lv_event_t* e) {
+    (void)e;
+    const char* btn_text = lv_msgbox_get_active_btn_text(conversation_confirm_msgbox);
+
+    bool shouldRefresh = false;
+    if (btn_text && strcmp(btn_text, "Yes") == 0) {
+        Serial.printf("[LVGL] Confirmed: Delete message %d from conversation with %s\n",
+                      pending_conversation_msg_delete, current_conversation_callsign.c_str());
+        MSG_Utils::deleteMessageFromConversation(current_conversation_callsign, pending_conversation_msg_delete);
+        shouldRefresh = true;
+    }
+
+    // Delete msgbox AND its modal background (parent)
+    lv_obj_t* bg = lv_obj_get_parent(conversation_confirm_msgbox);
+    lv_obj_del(bg);  // Deletes background + msgbox child
+    conversation_confirm_msgbox = nullptr;
+    pending_conversation_msg_delete = -1;
+
+    // Refresh message list (not the whole screen)
+    if (shouldRefresh) {
+        refresh_conversation_messages();
+    }
+}
+
+// Show delete confirmation for conversation message
+static void show_conversation_delete_confirmation(int msg_index) {
+    pending_conversation_msg_delete = msg_index;
+
+    static const char* btns[] = {"Yes", "No", ""};
+    conversation_confirm_msgbox = lv_msgbox_create(NULL, "Delete message?", "Delete this message?", btns, false);
+    lv_obj_set_style_bg_color(conversation_confirm_msgbox, lv_color_hex(0x1a1a2e), 0);
+    lv_obj_set_style_text_color(conversation_confirm_msgbox, lv_color_hex(0xffffff), LV_PART_MAIN);
+    lv_obj_set_width(conversation_confirm_msgbox, 240);
+    lv_obj_center(conversation_confirm_msgbox);
+    lv_obj_add_event_cb(conversation_confirm_msgbox, confirm_conversation_delete_cb, LV_EVENT_VALUE_CHANGED, NULL);
+}
+
+// Long-press callback for conversation message bubble
+static void conversation_msg_longpress(lv_event_t* e) {
+    int msg_index = (int)(intptr_t)lv_event_get_user_data(e);
+    Serial.printf("[LVGL] Conversation message long-press: index %d\n", msg_index);
+    conversation_msg_longpress_handled = true;
+    show_conversation_delete_confirmation(msg_index);
+}
+
+// Click callback for conversation message bubble (to prevent action after long-press)
+static void conversation_msg_clicked(lv_event_t* e) {
+    if (conversation_msg_longpress_handled) {
+        conversation_msg_longpress_handled = false;
+        return;
+    }
+    // No action on simple click for now
+}
 
 // Conversation item clicked - open conversation screen
 static void conversation_item_clicked(lv_event_t* e) {
@@ -2269,11 +2398,9 @@ static void btn_conversation_reply_clicked(lv_event_t* e) {
 static void create_conversation_screen(const String& callsign) {
     current_conversation_callsign = callsign;
 
-    // Delete old screen if exists
-    if (screen_conversation) {
-        lv_obj_del(screen_conversation);
-        screen_conversation = nullptr;
-    }
+    // Check if we're refreshing the same screen (for delete message case)
+    bool isRefresh = (screen_conversation != nullptr && lv_scr_act() == screen_conversation);
+    lv_obj_t* old_screen = screen_conversation;
 
     screen_conversation = lv_obj_create(NULL);
     lv_obj_set_style_bg_color(screen_conversation, lv_color_hex(0x1a1a2e), 0);
@@ -2360,6 +2487,11 @@ static void create_conversation_screen(const String& callsign) {
                 lv_obj_set_style_radius(bubble, 10, 0);
                 lv_obj_set_style_border_width(bubble, 0, 0);
 
+                // Make bubble clickable for long-press delete
+                lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
+
                 if (isOutgoing) {
                     // Outgoing message - align right, blue
                     lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
@@ -2383,7 +2515,19 @@ static void create_conversation_screen(const String& callsign) {
     // Scroll to bottom to show latest messages
     lv_obj_scroll_to_y(conversation_list, LV_COORD_MAX, LV_ANIM_OFF);
 
-    lv_scr_load_anim(screen_conversation, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    if (isRefresh) {
+        // Refreshing same screen - no animation, just swap
+        lv_disp_load_scr(screen_conversation);
+        if (old_screen) {
+            lv_obj_del(old_screen);
+        }
+    } else {
+        // Opening from another screen - use animation
+        if (old_screen) {
+            lv_obj_del(old_screen);
+        }
+        lv_scr_load_anim(screen_conversation, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    }
     Serial.printf("[LVGL] Conversation screen created for %s with %d messages\n", callsign.c_str(), messages.size());
 }
 

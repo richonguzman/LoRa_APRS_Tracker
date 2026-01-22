@@ -413,6 +413,44 @@ namespace MSG_Utils {
         return true;
     }
 
+    bool deleteMessageFromConversation(const String& callsign, int index) {
+        // Load messages from conversation file
+        String filename = "/conversations/" + callsign + ".txt";
+
+        if (!STORAGE_Utils::fileExists(filename)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Conversation file not found for %s", callsign.c_str());
+            return false;
+        }
+
+        // Load all messages
+        std::vector<String> messages = getMessagesForContact(callsign);
+
+        if (index < 0 || index >= (int)messages.size()) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Invalid message index %d for %s", index, callsign.c_str());
+            return false;
+        }
+
+        // Remove message at index
+        messages.erase(messages.begin() + index);
+
+        // Rewrite the file
+        STORAGE_Utils::removeFile(filename);
+
+        if (messages.size() > 0) {
+            File file = STORAGE_Utils::openFile(filename, FILE_WRITE);
+            if (file) {
+                for (const String& msg : messages) {
+                    file.println(msg);
+                }
+                file.close();
+            }
+        }
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted message %d from conversation with %s, %d remaining",
+                   index, callsign.c_str(), messages.size());
+        return true;
+    }
+
     void saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage) {
         String message = newMessage;
         message.trim();

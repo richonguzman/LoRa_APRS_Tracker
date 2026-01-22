@@ -419,9 +419,9 @@ namespace POWER_Utils {
 
     void lowerCpuFrequency() {
         if (setCpuFrequencyMhz(80)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "CPU frequency set to 80MHz");
+            Serial.printf("[Power] CPU frequency lowered to %d MHz\n", getCpuFrequencyMhz());
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "CPU frequency unchanged");
+            Serial.println("[Power] CPU frequency unchanged");
         }
     }
 
