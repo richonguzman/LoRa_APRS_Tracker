@@ -272,9 +272,10 @@ namespace UIMapManager {
 
                     // Create clickable transparent button over station
                     // Zone covers symbol (24x24) + SSID (label below)
+                    // Adjust position for canvas margin offset
                     station_buttons[i] = lv_btn_create(map_container);
                     lv_obj_set_size(station_buttons[i], 60, 45);  // Touch zone: symbol + SSID + margin
-                    lv_obj_set_pos(station_buttons[i], stX - 30, stY - 12);  // Center on symbol + SSID
+                    lv_obj_set_pos(station_buttons[i], stX - 30 - MAP_CANVAS_MARGIN, stY - 12 - MAP_CANVAS_MARGIN);
                     lv_obj_set_style_bg_opa(station_buttons[i], LV_OPA_TRANSP, 0);  // Transparent
                     lv_obj_set_style_border_width(station_buttons[i], 0, 0);
                     lv_obj_set_style_shadow_width(station_buttons[i], 0, 0);

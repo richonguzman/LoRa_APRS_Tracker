@@ -2,7 +2,7 @@
 
 This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) with a modern graphical user interface using **LVGL 8.4** specifically designed for the **Lilygo T-Deck Plus** with its 320x240 color touchscreen.
 
-![T-Deck Plus Map Screen](docs/tdeck_map_screenshot.jpg)
+<img src="docs/tdeck_map_screenshot.jpg" width="400" alt="T-Deck Plus Map Screen">
 
 ## Features
 
