@@ -90,7 +90,7 @@ namespace STORAGE_Utils {
             // SD card uses the same SPI as display/LoRa on T-Deck Plus
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
 
-            if (SD.begin(BOARD_SDCARD_CS, SPI, 4000000)) {
+            if (SD.begin(BOARD_SDCARD_CS, SPI, 20000000)) {  // 20 MHz (was 4 MHz)
                 sdAvailable = true;
                 uint8_t cardType = SD.cardType();
 

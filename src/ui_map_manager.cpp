@@ -19,6 +19,8 @@
 #include <SD.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
 
 #include "ui_map_manager.h"
 #include "configuration.h"
@@ -45,10 +47,13 @@ namespace UIMapManager {
     float map_center_lat = 0.0f;
     float map_center_lon = 0.0f;
     String map_current_region = "";
+    static String cachedMapsPath = "";      // Cached maps path (avoid repeated SD access)
+    static bool mapsPathCached = false;     // Flag to check if path is cached
     bool map_follow_gps = true;  // Follow GPS or free panning mode
 
+
     // Tile cache in PSRAM
-    #define TILE_CACHE_SIZE 12  // Number of tiles to cache (~1.5MB in PSRAM)
+    #define TILE_CACHE_SIZE 40  // Number of tiles to cache (~5MB in PSRAM)
     #define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
 
     struct CachedTile {
@@ -88,6 +93,148 @@ namespace UIMapManager {
 
     // Station clickable buttons tracking (MAP_STATIONS_MAX defined in station_utils.h)
     static lv_obj_t* station_buttons[MAP_STATIONS_MAX] = {nullptr};
+
+    // Periodic refresh timer for stations
+    static lv_timer_t* map_refresh_timer = nullptr;
+    #define MAP_REFRESH_INTERVAL 10000  // 10 seconds
+
+    // Timer callback for periodic map refresh (stations update)
+    static void map_refresh_timer_cb(lv_timer_t* timer) {
+        if (screen_map && lv_scr_act() == screen_map) {
+            Serial.println("[MAP] Periodic refresh (stations)");
+            redraw_map_canvas();
+        }
+    }
+
+    // ============ ASYNC TILE PRELOADING (Core 1) ============
+    // Structure for tile preload request
+    struct TileRequest {
+        int tileX;
+        int tileY;
+        int zoom;
+    };
+
+    static QueueHandle_t tilePreloadQueue = nullptr;
+    static TaskHandle_t tilePreloadTask = nullptr;
+    static bool preloadTaskRunning = false;
+    static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads
+    #define TILE_PRELOAD_QUEUE_SIZE 20
+
+    // Forward declaration
+    bool preloadTileToCache(int tileX, int tileY, int zoom);
+
+    // Task running on Core 1 to preload tiles in background
+    static void tilePreloadTaskFunc(void* param) {
+        Serial.println("[MAP] Tile preload task started on Core 1");
+        TileRequest req;
+
+        while (preloadTaskRunning) {
+            // Wait while main thread is loading tiles (avoid SD contention)
+            if (mainThreadLoading) {
+                vTaskDelay(pdMS_TO_TICKS(50));
+                continue;
+            }
+
+            // Wait for tile request (100ms timeout to check if task should stop)
+            if (xQueueReceive(tilePreloadQueue, &req, pdMS_TO_TICKS(100)) == pdTRUE) {
+                // Re-check flag after queue receive
+                if (mainThreadLoading) continue;
+
+                // Check if tile already in cache
+                int cacheIdx = findCachedTile(req.zoom, req.tileX, req.tileY);
+                if (cacheIdx < 0) {
+                    // Not in cache - preload it
+                    Serial.printf("[MAP-ASYNC] Preloading tile %d/%d/%d\n", req.zoom, req.tileX, req.tileY);
+                    preloadTileToCache(req.tileX, req.tileY, req.zoom);
+                }
+            }
+        }
+
+        Serial.println("[MAP] Tile preload task stopped");
+        vTaskDelete(NULL);
+    }
+
+    // Start the preload task
+    void startTilePreloadTask() {
+        if (tilePreloadTask != nullptr) return;  // Already running
+
+        // Create queue
+        if (tilePreloadQueue == nullptr) {
+            tilePreloadQueue = xQueueCreate(TILE_PRELOAD_QUEUE_SIZE, sizeof(TileRequest));
+        }
+
+        preloadTaskRunning = true;
+        xTaskCreatePinnedToCore(
+            tilePreloadTaskFunc,
+            "TilePreload",
+            4096,
+            NULL,
+            1,  // Low priority
+            &tilePreloadTask,
+            1   // Core 1
+        );
+    }
+
+    // Stop the preload task
+    void stopTilePreloadTask() {
+        if (tilePreloadTask == nullptr) return;
+
+        preloadTaskRunning = false;
+        vTaskDelay(pdMS_TO_TICKS(200));  // Wait for task to finish
+        tilePreloadTask = nullptr;
+    }
+
+    // Queue tiles from adjacent zoom levels for preloading
+    void queueAdjacentZoomTiles(int centerTileX, int centerTileY, int currentZoom) {
+        if (tilePreloadQueue == nullptr) return;
+
+        TileRequest req;
+
+        // Get adjacent zoom levels
+        int prevZoom = -1, nextZoom = -1;
+        for (int i = 0; i < map_zoom_count; i++) {
+            if (map_available_zooms[i] == currentZoom) {
+                if (i > 0) prevZoom = map_available_zooms[i - 1];
+                if (i < map_zoom_count - 1) nextZoom = map_available_zooms[i + 1];
+                break;
+            }
+        }
+
+        // Queue tiles for previous zoom (zoom out = tiles cover larger area)
+        if (prevZoom > 0) {
+            int scale = 1 << (currentZoom - prevZoom);  // e.g., zoom 12->10 = scale 4
+            int prevTileX = centerTileX / scale;
+            int prevTileY = centerTileY / scale;
+
+            // Queue 3x3 grid around the corresponding tile
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    req.tileX = prevTileX + dx;
+                    req.tileY = prevTileY + dy;
+                    req.zoom = prevZoom;
+                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
+                }
+            }
+        }
+
+        // Queue tiles for next zoom (zoom in = tiles cover smaller area)
+        if (nextZoom > 0) {
+            int scale = 1 << (nextZoom - currentZoom);  // e.g., zoom 12->14 = scale 4
+            int nextTileX = centerTileX * scale;
+            int nextTileY = centerTileY * scale;
+
+            // Queue 3x3 grid around the corresponding tile
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    req.tileX = nextTileX + dx;
+                    req.tileY = nextTileY + dy;
+                    req.zoom = nextZoom;
+                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
+                }
+            }
+        }
+    }
+    // ============ END ASYNC TILE PRELOADING ============
 
     // Clean up old station buttons
     void cleanup_station_buttons() {
@@ -450,6 +597,84 @@ namespace UIMapManager {
         return file->seek(iPosition);
     }
 
+    // Preload a tile into cache (no canvas drawing) - called from Core 1 task
+    bool preloadTileToCache(int tileX, int tileY, int zoom) {
+        initTileCache();
+
+        // Check if already in cache
+        if (findCachedTile(zoom, tileX, tileY) >= 0) {
+            return true;  // Already cached
+        }
+
+        bool success = false;
+
+        // Protect SPI bus access with mutex
+        if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
+
+            if (STORAGE_Utils::isSDAvailable() && mapsPathCached && map_current_region.length() > 0) {
+                char tilePath[128];
+                int slot = findCacheSlot();
+
+                if (tileCache[slot].data == nullptr) {
+                    tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
+                }
+
+                if (tileCache[slot].data) {
+                    // Try JPEG first
+                    snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
+                             cachedMapsPath.c_str(), map_current_region.c_str(), zoom, tileX, tileY);
+
+                    jpegCacheContext.cacheBuffer = tileCache[slot].data;
+                    jpegCacheContext.tileWidth = MAP_TILE_SIZE;
+
+                    int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
+                    if (rc) {
+                        jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
+                        rc = jpeg.decode(0, 0, 0);
+                        jpeg.close();
+
+                        if (rc) {
+                            tileCache[slot].zoom = zoom;
+                            tileCache[slot].tileX = tileX;
+                            tileCache[slot].tileY = tileY;
+                            tileCache[slot].lastAccess = ++tileCacheAccessCounter;
+                            tileCache[slot].valid = true;
+                            success = true;
+                        }
+                    }
+
+                    // Try PNG as fallback
+                    if (!success) {
+                        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
+                                 cachedMapsPath.c_str(), map_current_region.c_str(), zoom, tileX, tileY);
+
+                        pngCacheContext.cacheBuffer = tileCache[slot].data;
+                        pngCacheContext.tileWidth = MAP_TILE_SIZE;
+
+                        rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
+                        if (rc == PNG_SUCCESS) {
+                            rc = png.decode(nullptr, 0);
+                            png.close();
+
+                            if (rc == PNG_SUCCESS) {
+                                tileCache[slot].zoom = zoom;
+                                tileCache[slot].tileX = tileX;
+                                tileCache[slot].tileY = tileY;
+                                tileCache[slot].lastAccess = ++tileCacheAccessCounter;
+                                tileCache[slot].valid = true;
+                                success = true;
+                            }
+                        } else {
+                            png.close();
+                        }
+                    }
+                }
+            }
+            xSemaphoreGiveRecursive(spiMutex);
+        }
+        return success;
+    }
+
     // Copy cached tile to canvas with offset and clipping
     void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
                                  int offsetX, int offsetY, int canvasWidth, int canvasHeight) {
@@ -789,6 +1014,16 @@ namespace UIMapManager {
         Serial.println("[LVGL] MAP BACK button pressed");
         cleanup_station_buttons();  // Clean up station buttons when leaving map
         map_follow_gps = true;  // Reset to follow GPS when leaving map
+        // Stop periodic refresh timer
+        if (map_refresh_timer) {
+            lv_timer_del(map_refresh_timer);
+            map_refresh_timer = nullptr;
+        }
+        // Stop tile preload task
+        stopTilePreloadTask();
+        // Return CPU to 80 MHz for power saving
+        setCpuFrequencyMhz(80);
+        Serial.printf("[MAP] CPU reduced to %d MHz\n", getCpuFrequencyMhz());
         // Return to main dashboard screen
         LVGL_UI::return_to_dashboard();
     }
@@ -818,6 +1053,9 @@ namespace UIMapManager {
             lv_disp_load_scr(screen_map);
             return;
         }
+
+        // Pause async preloading while we load tiles (avoid SD contention)
+        mainThreadLoading = true;
 
         // Update title with new zoom level
         char title_text[32];
@@ -893,6 +1131,9 @@ namespace UIMapManager {
 
         // Force canvas update
         lv_obj_invalidate(map_canvas);
+
+        // Resume async preloading
+        mainThreadLoading = false;
     }
 
     // Timer callback to reload map screen (for panning/recentering)
@@ -913,7 +1154,7 @@ namespace UIMapManager {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
-            redraw_map_canvas();  // Redraw only canvas, do not recreate screen
+            redraw_map_canvas();
         }
     }
 
@@ -923,7 +1164,7 @@ namespace UIMapManager {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
-            redraw_map_canvas();  // Redraw only canvas, do not recreate screen
+            redraw_map_canvas();
         }
     }
 
@@ -993,35 +1234,69 @@ namespace UIMapManager {
         if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
 
             if (STORAGE_Utils::isSDAvailable()) {
-                String mapsPath = STORAGE_Utils::getMapsPath();
-                std::vector<String> regions = STORAGE_Utils::listDirs(mapsPath);
+                // Cache maps path and region on first access (avoid repeated SD directory listing)
+                if (!mapsPathCached) {
+                    cachedMapsPath = STORAGE_Utils::getMapsPath();
+                    std::vector<String> regions = STORAGE_Utils::listDirs(cachedMapsPath);
+                    if (!regions.empty()) {
+                        map_current_region = regions[0];  // Use first region found
+                    }
+                    mapsPathCached = true;
+                    Serial.printf("[MAP] Cached maps path: %s, region: %s\n",
+                                  cachedMapsPath.c_str(), map_current_region.c_str());
+                }
 
-                for (const String& region : regions) {
+                if (map_current_region.length() > 0) {
                     char tilePath[128];
+                    int slot = findCacheSlot();
 
-                    // Try JPEG first (priority - faster decoding)
-                    snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
-                             mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
+                    // Allocate cache slot if needed
+                    if (tileCache[slot].data == nullptr) {
+                        tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
+                    }
 
-                    if (STORAGE_Utils::fileExists(tilePath)) {
-                        Serial.printf("[MAP] Loading JPEG tile: %s\n", tilePath);
+                    if (tileCache[slot].data) {
+                        // Try JPEG first (priority - faster decoding)
+                        // No fileExists() - just try to open directly
+                        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.jpg",
+                                 cachedMapsPath.c_str(), map_current_region.c_str(), zoom, tileX, tileY);
 
-                        int slot = findCacheSlot();
-                        if (tileCache[slot].data == nullptr) {
-                            tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
+                        jpegCacheContext.cacheBuffer = tileCache[slot].data;
+                        jpegCacheContext.tileWidth = MAP_TILE_SIZE;
+
+                        int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
+                        if (rc) {
+                            Serial.printf("[MAP] Loading JPEG: %d/%d/%d\n", zoom, tileX, tileY);
+                            jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
+                            rc = jpeg.decode(0, 0, 0);
+                            jpeg.close();
+
+                            if (rc) {
+                                tileCache[slot].zoom = zoom;
+                                tileCache[slot].tileX = tileX;
+                                tileCache[slot].tileY = tileY;
+                                tileCache[slot].lastAccess = ++tileCacheAccessCounter;
+                                tileCache[slot].valid = true;
+                                copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
+                                success = true;
+                            }
                         }
 
-                        if (tileCache[slot].data) {
-                            jpegCacheContext.cacheBuffer = tileCache[slot].data;
-                            jpegCacheContext.tileWidth = MAP_TILE_SIZE;
+                        // Try PNG as fallback if JPEG not found
+                        if (!success) {
+                            snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
+                                     cachedMapsPath.c_str(), map_current_region.c_str(), zoom, tileX, tileY);
 
-                            int rc = jpeg.open(tilePath, jpegOpenFile, jpegCloseFile, jpegReadFile, jpegSeekFile, jpegCacheCallback);
-                            if (rc) {
-                                jpeg.setPixelType(RGB565_LITTLE_ENDIAN);
-                                rc = jpeg.decode(0, 0, 0);
-                                jpeg.close();
+                            pngCacheContext.cacheBuffer = tileCache[slot].data;
+                            pngCacheContext.tileWidth = MAP_TILE_SIZE;
 
-                                if (rc) {
+                            rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
+                            if (rc == PNG_SUCCESS) {
+                                Serial.printf("[MAP] Loading PNG: %d/%d/%d\n", zoom, tileX, tileY);
+                                rc = png.decode(nullptr, 0);
+                                png.close();
+
+                                if (rc == PNG_SUCCESS) {
                                     tileCache[slot].zoom = zoom;
                                     tileCache[slot].tileX = tileX;
                                     tileCache[slot].tileY = tileY;
@@ -1030,49 +1305,11 @@ namespace UIMapManager {
                                     copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
                                     success = true;
                                 }
+                            } else {
+                                png.close();
                             }
                         }
                     }
-
-                    // Try PNG as fallback if JPEG not found
-                    if (!success) {
-                        snprintf(tilePath, sizeof(tilePath), "%s/%s/%d/%d/%d.png",
-                                 mapsPath.c_str(), region.c_str(), zoom, tileX, tileY);
-
-                        if (STORAGE_Utils::fileExists(tilePath)) {
-                            Serial.printf("[MAP] Loading PNG tile: %s\n", tilePath);
-
-                            int slot = findCacheSlot();
-                            if (tileCache[slot].data == nullptr) {
-                                tileCache[slot].data = (uint16_t*)heap_caps_malloc(TILE_DATA_SIZE, MALLOC_CAP_SPIRAM);
-                            }
-
-                            if (tileCache[slot].data) {
-                                pngCacheContext.cacheBuffer = tileCache[slot].data;
-                                pngCacheContext.tileWidth = MAP_TILE_SIZE;
-
-                                int rc = png.open(tilePath, pngOpenFile, pngCloseFile, pngReadFile, pngSeekFile, pngCacheCallback);
-                                if (rc == PNG_SUCCESS) {
-                                    rc = png.decode(nullptr, 0);
-                                    png.close();
-
-                                    if (rc == PNG_SUCCESS) {
-                                        tileCache[slot].zoom = zoom;
-                                        tileCache[slot].tileX = tileX;
-                                        tileCache[slot].tileY = tileY;
-                                        tileCache[slot].lastAccess = ++tileCacheAccessCounter;
-                                        tileCache[slot].valid = true;
-                                        copyTileToCanvas(tileCache[slot].data, canvasBuffer, offsetX, offsetY, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT);
-                                        success = true;
-                                    }
-                                } else {
-                                    png.close();
-                                }
-                            }
-                        }
-                    }
-
-                    if (success) break; // If a tile is found in a region, stop searching
                 }
             }
             xSemaphoreGiveRecursive(spiMutex); // Release SPI mutex
@@ -1082,6 +1319,10 @@ namespace UIMapManager {
 
     // Create map screen
     void create_map_screen() {
+        // Boost CPU to 240 MHz for smooth map rendering
+        setCpuFrequencyMhz(240);
+        Serial.printf("[MAP] CPU boosted to %d MHz\n", getCpuFrequencyMhz());
+
         // Clean up old station buttons if screen is being recreated
         cleanup_station_buttons();
 
@@ -1202,6 +1443,9 @@ namespace UIMapManager {
 
             Serial.printf("[MAP] Center tile: %d/%d, sub-tile offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
+            // Pause async preloading while we load tiles (avoid SD contention)
+            mainThreadLoading = true;
+
             // Try to load tiles from SD card
             bool hasTiles = false;
             if (STORAGE_Utils::isSDAvailable()) {
@@ -1255,6 +1499,9 @@ namespace UIMapManager {
             // Force canvas redraw after direct buffer writes
             lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
             lv_obj_invalidate(map_canvas);
+
+            // Resume async preloading
+            mainThreadLoading = false;
         }
 
         // Arrow buttons for panning (bottom left corner, D-pad layout)
@@ -1325,6 +1572,19 @@ namespace UIMapManager {
         lv_obj_set_style_text_color(lbl_coords, lv_color_hex(0xaaaaaa), 0);
         lv_obj_set_style_text_font(lbl_coords, &lv_font_montserrat_14, 0);
         lv_obj_center(lbl_coords);
+
+        // Create periodic refresh timer for stations (10 seconds)
+        if (map_refresh_timer) {
+            lv_timer_del(map_refresh_timer);
+        }
+        map_refresh_timer = lv_timer_create(map_refresh_timer_cb, MAP_REFRESH_INTERVAL, NULL);
+
+        // Start tile preload task on Core 1 and queue adjacent zoom tiles
+        // DISABLED FOR TESTING - checking if preload causes slowdown
+        // startTilePreloadTask();
+        // int preloadCenterX, preloadCenterY;
+        // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &preloadCenterX, &preloadCenterY);
+        // queueAdjacentZoomTiles(preloadCenterX, preloadCenterY, map_current_zoom);
 
         Serial.println("[LVGL] Map screen created");
     }
