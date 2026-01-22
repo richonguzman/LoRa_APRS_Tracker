@@ -1249,7 +1249,10 @@ namespace UIMapManager {
                 Serial.println("[MAP] Touch pan started");
             }
 
-            // Just track dragging state, no live preview (avoids visual glitches)
+            // Live preview: move canvas visually while dragging
+            if (touch_dragging && map_canvas) {
+                lv_obj_set_pos(map_canvas, dx, dy);
+            }
         }
         else if (code == LV_EVENT_RELEASED) {
             // Finger up - finish pan
@@ -1273,7 +1276,10 @@ namespace UIMapManager {
                               drag_start_lat, drag_start_lon, dx, dy, degrees_per_pixel,
                               map_center_lat, map_center_lon);
 
-                // Redraw map directly (not via timer)
+                // Reset canvas position before redraw
+                lv_obj_set_pos(map_canvas, 0, 0);
+
+                // Redraw map at new position
                 redraw_map_canvas();
             }
         }
