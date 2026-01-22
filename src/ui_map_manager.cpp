@@ -1256,14 +1256,9 @@ namespace UIMapManager {
             if (touch_dragging) {
                 touch_dragging = false;
 
-                // Calculate final displacement (limited to ~1/2 tile)
+                // Calculate final displacement
                 lv_coord_t dx = point.x - touch_start_x;
                 lv_coord_t dy = point.y - touch_start_y;
-                lv_coord_t max_pan = MAP_TILE_SIZE / 2;  // 128 pixels max
-                if (dx > max_pan) dx = max_pan;
-                if (dx < -max_pan) dx = -max_pan;
-                if (dy > max_pan) dy = max_pan;
-                if (dy < -max_pan) dy = -max_pan;
 
                 // Convert pixel movement to lat/lon change
                 int n = 1 << map_current_zoom;
