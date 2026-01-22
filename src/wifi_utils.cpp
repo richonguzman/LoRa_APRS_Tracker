@@ -19,6 +19,7 @@
 #include <logger.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+#include <esp_task_wdt.h>
 #include "configuration.h"
 #include "wifi_utils.h"
 #include "web_utils.h"
@@ -149,6 +150,7 @@ namespace WIFI_Utils {
         while (WiFi.status() != WL_CONNECTED) {
             delay(500);
             Serial.print('.');
+            esp_task_wdt_reset();  // Reset watchdog during connection attempts
             delay(500);
             if ((millis() - start) > 15000) {
                 // Timeout - properly stop this connection attempt
@@ -225,9 +227,10 @@ namespace WIFI_Utils {
 
         #ifdef USE_LVGL_UI
             // Pour LVGL, on laisse le main gérer le web-conf après init LVGL
-            if (!needsWebConfig()) {
+            if (Config.wifiEnabled && !needsWebConfig()) {
                 startStationMode();
             }
+            WiFiUserDisabled = !Config.wifiEnabled;
             // Si needsWebConfig(), le main affichera l'écran LVGL web-conf
         #else
             // Mode web-conf bloquant si activé, callsign NOCALL, ou pas de réseau WiFi configuré
@@ -235,8 +238,11 @@ namespace WIFI_Utils {
                 startBlockingWebConfig();
                 // Ne revient jamais ici - reboot après config
             }
-            // Mode Station: connexion au réseau WiFi configuré
-            startStationMode();
+            // Mode Station: connexion au réseau WiFi configuré (si activé)
+            WiFiUserDisabled = !Config.wifiEnabled;
+            if (Config.wifiEnabled) {
+                startStationMode();
+            }
         #endif
     }
 

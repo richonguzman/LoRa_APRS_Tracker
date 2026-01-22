@@ -1552,6 +1552,12 @@ static void wifi_switch_changed(lv_event_t* e) {
         WiFiConnected = false;
         WiFiEcoMode = false;  // Not eco mode, completely off
 
+        // Verify WiFi is really off
+        wifi_mode_t mode;
+        if (esp_wifi_get_mode(&mode) == ESP_OK) {
+            Serial.printf("[LVGL] WiFi hardware mode: %d (0=OFF)\n", mode);
+        }
+
         if (wifi_status_label) {
             lv_label_set_text(wifi_status_label, "OFF (disabled)");
             lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff6b6b), 0);
