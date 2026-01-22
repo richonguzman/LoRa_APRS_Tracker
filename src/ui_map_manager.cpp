@@ -116,6 +116,7 @@ namespace UIMapManager {
     static QueueHandle_t tilePreloadQueue = nullptr;
     static TaskHandle_t tilePreloadTask = nullptr;
     static bool preloadTaskRunning = false;
+    static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads
     #define TILE_PRELOAD_QUEUE_SIZE 20
 
     // Forward declaration
@@ -127,8 +128,17 @@ namespace UIMapManager {
         TileRequest req;
 
         while (preloadTaskRunning) {
+            // Wait while main thread is loading tiles (avoid SD contention)
+            if (mainThreadLoading) {
+                vTaskDelay(pdMS_TO_TICKS(50));
+                continue;
+            }
+
             // Wait for tile request (100ms timeout to check if task should stop)
             if (xQueueReceive(tilePreloadQueue, &req, pdMS_TO_TICKS(100)) == pdTRUE) {
+                // Re-check flag after queue receive
+                if (mainThreadLoading) continue;
+
                 // Check if tile already in cache
                 int cacheIdx = findCachedTile(req.zoom, req.tileX, req.tileY);
                 if (cacheIdx < 0) {
@@ -1043,6 +1053,9 @@ namespace UIMapManager {
             return;
         }
 
+        // Pause async preloading while we load tiles (avoid SD contention)
+        mainThreadLoading = true;
+
         // Update title with new zoom level
         char title_text[32];
         snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
@@ -1117,6 +1130,9 @@ namespace UIMapManager {
 
         // Force canvas update
         lv_obj_invalidate(map_canvas);
+
+        // Resume async preloading
+        mainThreadLoading = false;
     }
 
     // Timer callback to reload map screen (for panning/recentering)
@@ -1138,10 +1154,10 @@ namespace UIMapManager {
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
             redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-            // Queue tiles for adjacent zoom levels (preload in background)
-            int centerX, centerY;
-            latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
-            queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
+            // DISABLED FOR TESTING
+            // int centerX, centerY;
+            // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
+            // queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
         }
     }
 
@@ -1152,10 +1168,10 @@ namespace UIMapManager {
             map_current_zoom = map_available_zooms[map_zoom_index];
             Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
             redraw_map_canvas();  // Redraw only canvas, do not recreate screen
-            // Queue tiles for adjacent zoom levels (preload in background)
-            int centerX, centerY;
-            latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
-            queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
+            // DISABLED FOR TESTING
+            // int centerX, centerY;
+            // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerX, &centerY);
+            // queueAdjacentZoomTiles(centerX, centerY, map_current_zoom);
         }
     }
 
@@ -1434,6 +1450,9 @@ namespace UIMapManager {
 
             Serial.printf("[MAP] Center tile: %d/%d, sub-tile offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
+            // Pause async preloading while we load tiles (avoid SD contention)
+            mainThreadLoading = true;
+
             // Try to load tiles from SD card
             bool hasTiles = false;
             if (STORAGE_Utils::isSDAvailable()) {
@@ -1487,6 +1506,9 @@ namespace UIMapManager {
             // Force canvas redraw after direct buffer writes
             lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
             lv_obj_invalidate(map_canvas);
+
+            // Resume async preloading
+            mainThreadLoading = false;
         }
 
         // Arrow buttons for panning (bottom left corner, D-pad layout)
@@ -1565,10 +1587,11 @@ namespace UIMapManager {
         map_refresh_timer = lv_timer_create(map_refresh_timer_cb, MAP_REFRESH_INTERVAL, NULL);
 
         // Start tile preload task on Core 1 and queue adjacent zoom tiles
-        startTilePreloadTask();
-        int preloadCenterX, preloadCenterY;
-        latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &preloadCenterX, &preloadCenterY);
-        queueAdjacentZoomTiles(preloadCenterX, preloadCenterY, map_current_zoom);
+        // DISABLED FOR TESTING - checking if preload causes slowdown
+        // startTilePreloadTask();
+        // int preloadCenterX, preloadCenterY;
+        // latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &preloadCenterX, &preloadCenterY);
+        // queueAdjacentZoomTiles(preloadCenterX, preloadCenterY, map_current_zoom);
 
         Serial.println("[LVGL] Map screen created");
     }
