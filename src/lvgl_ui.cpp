@@ -2098,43 +2098,67 @@ static void populate_msg_list(lv_obj_t* list, int type);
 
 // Confirmation popup for delete operations
 static lv_obj_t* confirm_msgbox = nullptr;
+static lv_obj_t* confirm_msgbox_to_delete = nullptr;
 static int pending_delete_msg_index = -1;  // Index of message to delete (-1 = all)
 static bool msg_longpress_handled = false;
+static bool need_aprs_list_refresh = false;
 
-static void confirm_delete_cb(lv_event_t* e) {
-    (void)e;  // Unused parameter
-    const char* btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
+// Timer callback for deferred confirm_msgbox deletion
+static void delete_confirm_msgbox_timer_cb(lv_timer_t* timer) {
+    if (confirm_msgbox_to_delete && lv_obj_is_valid(confirm_msgbox_to_delete)) {
+        lv_obj_del(confirm_msgbox_to_delete);
+    }
+    confirm_msgbox_to_delete = nullptr;
 
-    if (btn_text && strcmp(btn_text, "Yes") == 0) {
-        if (pending_delete_msg_index == -1) {
-            // Delete all messages
-            Serial.printf("[LVGL] Confirmed: Delete all messages type %d\n", current_msg_type);
-            MSG_Utils::deleteFile(current_msg_type);
-        } else {
-            // Delete single message
-            Serial.printf("[LVGL] Confirmed: Delete message %d type %d\n", pending_delete_msg_index, current_msg_type);
-            MSG_Utils::deleteMessageByIndex(current_msg_type, pending_delete_msg_index);
-        }
+    lv_obj_invalidate(lv_layer_top());
+    lv_refr_now(NULL);
 
-        // Refresh the current list
-        if (current_msg_type == 0 && list_aprs_global) {
+    if (need_aprs_list_refresh) {
+        // Refresh both lists to be safe
+        if (list_aprs_global) {
             populate_msg_list(list_aprs_global, 0);
-        } else if (current_msg_type == 1 && list_wlnk_global) {
+        }
+        if (list_wlnk_global) {
             populate_msg_list(list_wlnk_global, 1);
         }
+        need_aprs_list_refresh = false;
     }
 
-    lv_msgbox_close(confirm_msgbox);
+    lv_timer_del(timer);
+}
+
+static void confirm_delete_cb(lv_event_t* e) {
+    (void)e;
+    if (!confirm_msgbox) return;
+
+    const char* btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
+
+    need_aprs_list_refresh = false;
+    if (btn_text && strcmp(btn_text, "Yes") == 0) {
+        if (pending_delete_msg_index == -1) {
+            MSG_Utils::deleteFile(current_msg_type);
+        } else {
+            MSG_Utils::deleteMessageByIndex(current_msg_type, pending_delete_msg_index);
+        }
+        need_aprs_list_refresh = true;
+    }
+
+    // Schedule deletion via timer
+    confirm_msgbox_to_delete = confirm_msgbox;
     confirm_msgbox = nullptr;
     pending_delete_msg_index = -1;
+    lv_timer_create(delete_confirm_msgbox_timer_cb, 10, NULL);
 }
 
 static void show_delete_confirmation(const char* message, int msg_index) {
+    if (confirm_msgbox != nullptr) return;
+
     pending_delete_msg_index = msg_index;
 
     static const char* btns[] = {"Yes", "No", ""};
-    confirm_msgbox = lv_msgbox_create(NULL, "Confirmation", message, btns, false);
+    confirm_msgbox = lv_msgbox_create(lv_layer_top(), "Confirmation", message, btns, false);
     lv_obj_set_style_bg_color(confirm_msgbox, lv_color_hex(0x1a1a2e), 0);
+    lv_obj_set_style_bg_opa(confirm_msgbox, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(confirm_msgbox, lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_set_width(confirm_msgbox, 220);
     lv_obj_center(confirm_msgbox);
@@ -2163,6 +2187,29 @@ static String current_conversation_callsign = "";
 static int pending_conversation_msg_delete = -1;  // Index of message to delete in conversation
 static bool conversation_msg_longpress_handled = false;
 static lv_obj_t* conversation_confirm_msgbox = nullptr;
+static lv_obj_t* msgbox_to_delete = nullptr;  // For deferred deletion
+static bool need_conversation_refresh = false;
+
+// Forward declaration
+static void refresh_conversation_messages();
+
+// Timer callback for deferred msgbox deletion
+static void delete_msgbox_timer_cb(lv_timer_t* timer) {
+    if (msgbox_to_delete && lv_obj_is_valid(msgbox_to_delete)) {
+        lv_obj_del(msgbox_to_delete);
+    }
+    msgbox_to_delete = nullptr;
+
+    lv_obj_invalidate(lv_layer_top());
+    lv_refr_now(NULL);
+
+    if (need_conversation_refresh) {
+        refresh_conversation_messages();
+        need_conversation_refresh = false;
+    }
+
+    lv_timer_del(timer);
+}
 
 // Forward declarations for conversation screen
 static void create_conversation_screen(const String& callsign);
@@ -2241,35 +2288,34 @@ static void refresh_conversation_messages() {
 // Confirmation callback for conversation message deletion
 static void confirm_conversation_delete_cb(lv_event_t* e) {
     (void)e;
+    if (!conversation_confirm_msgbox) return;
+
     const char* btn_text = lv_msgbox_get_active_btn_text(conversation_confirm_msgbox);
 
-    bool shouldRefresh = false;
+    need_conversation_refresh = false;
     if (btn_text && strcmp(btn_text, "Yes") == 0) {
-        Serial.printf("[LVGL] Confirmed: Delete message %d from conversation with %s\n",
-                      pending_conversation_msg_delete, current_conversation_callsign.c_str());
         MSG_Utils::deleteMessageFromConversation(current_conversation_callsign, pending_conversation_msg_delete);
-        shouldRefresh = true;
+        need_conversation_refresh = true;
     }
 
-    // Delete msgbox AND its modal background (parent)
-    lv_obj_t* bg = lv_obj_get_parent(conversation_confirm_msgbox);
-    lv_obj_del(bg);  // Deletes background + msgbox child
+    // Schedule deletion via timer (can't delete object during its own event)
+    msgbox_to_delete = conversation_confirm_msgbox;
     conversation_confirm_msgbox = nullptr;
     pending_conversation_msg_delete = -1;
-
-    // Refresh message list (not the whole screen)
-    if (shouldRefresh) {
-        refresh_conversation_messages();
-    }
+    lv_timer_create(delete_msgbox_timer_cb, 10, NULL);
 }
 
 // Show delete confirmation for conversation message
 static void show_conversation_delete_confirmation(int msg_index) {
+    // Prevent creating duplicate msgbox if one already exists
+    if (conversation_confirm_msgbox != nullptr) return;
+
     pending_conversation_msg_delete = msg_index;
 
     static const char* btns[] = {"Yes", "No", ""};
-    conversation_confirm_msgbox = lv_msgbox_create(NULL, "Delete message?", "Delete this message?", btns, false);
+    conversation_confirm_msgbox = lv_msgbox_create(lv_layer_top(), "Delete message?", "Delete this message?", btns, false);
     lv_obj_set_style_bg_color(conversation_confirm_msgbox, lv_color_hex(0x1a1a2e), 0);
+    lv_obj_set_style_bg_opa(conversation_confirm_msgbox, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(conversation_confirm_msgbox, lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_set_width(conversation_confirm_msgbox, 240);
     lv_obj_center(conversation_confirm_msgbox);
@@ -2894,18 +2940,18 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         // Save sent message to aprsMessages.txt (same format as received messages)
         // Format: "TO_CALLSIGN,>message" (> prefix indicates sent message)
         if (xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
-        File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
-        if (msgFile) {
-            String sentMsg = String(to) + ",>" + String(msg);
-            msgFile.println(sentMsg);
-            msgFile.close();
-            MSG_Utils::loadNumMessages();  // Update message counter
-            Serial.printf("[LVGL] Sent message saved: %s\n", sentMsg.c_str());
-        } else {
-            Serial.println("[LVGL] Failed to save sent message");
+            File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
+            if (msgFile) {
+                String sentMsg = String(to) + ",>" + String(msg);
+                msgFile.println(sentMsg);
+                msgFile.close();
+                MSG_Utils::loadNumMessages();
+            }
+            xSemaphoreGiveRecursive(spiMutex);
         }
-        xSemaphoreGiveRecursive(spiMutex); // On rend l'accès au bus SPI
-    }
+
+        // Save to conversation file
+        MSG_Utils::saveToConversation(String(to), String(msg), true);
 
         // Show confirmation popup
         LVGL_UI::showTxPacket(msg);
@@ -2914,12 +2960,13 @@ static void btn_send_msg_clicked(lv_event_t* e) {
         lv_textarea_set_text(compose_to_input, "");
         lv_textarea_set_text(compose_msg_input, "");
         compose_screen_active = false;
-        // Return to the screen we came from (map, messages, or dashboard)
-        Serial.printf("[LVGL-DEBUG] compose_return_screen=%p, valid=%d\n",
-                      compose_return_screen,
-                      compose_return_screen ? lv_obj_is_valid(compose_return_screen) : 0);
+
+        // Return to the screen we came from
         if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
-            Serial.println("[LVGL-DEBUG] Returning to compose_return_screen");
+            // If returning to conversation screen, refresh messages
+            if (compose_return_screen == screen_conversation) {
+                refresh_conversation_messages();
+            }
             lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
         } else {
             lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
@@ -3178,20 +3225,26 @@ void handleComposeKeyboard(char key) {
                 MSG_Utils::addToOutputBuffer(1, String(to), String(msg));
 
                 // Save sent message to aprsMessages.txt (same format as received messages)
-                // Format: "TO_CALLSIGN,>message" (> prefix indicates sent message)
                 File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
                 if (msgFile) {
                     String sentMsg = String(to) + ",>" + String(msg);
                     msgFile.println(sentMsg);
                     msgFile.close();
-                    MSG_Utils::loadNumMessages();  // Update message counter
+                    MSG_Utils::loadNumMessages();
                 }
+
+                // Save to conversation file
+                MSG_Utils::saveToConversation(String(to), String(msg), true);
 
                 lv_textarea_set_text(compose_to_input, "");
                 lv_textarea_set_text(compose_msg_input, "");
                 compose_screen_active = false;
-                // Return to the screen we came from (map, messages, or dashboard)
+
+                // Return to the screen we came from
                 if (compose_return_screen && lv_obj_is_valid(compose_return_screen)) {
+                    if (compose_return_screen == screen_conversation) {
+                        refresh_conversation_messages();
+                    }
                     lv_scr_load_anim(compose_return_screen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
                 } else {
                     lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);

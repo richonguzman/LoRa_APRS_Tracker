@@ -46,6 +46,7 @@ namespace MSG_Utils {
     void    deleteFile(uint8_t typeOfFile);
     bool    deleteMessageByIndex(uint8_t typeOfMessage, int index);
     bool    deleteMessageFromConversation(const String& callsign, int index);
+    void    saveToConversation(const String& callsign, const String& message, bool outgoing);
     void    saveNewMessage(uint8_t typeMessage, const String& station, const String& newMessage);
     void    sendMessage(const String& station, const String& textMessage);
     void    addToOutputBuffer(uint8_t typeOfMessage, const String& station, const String& textMessage);

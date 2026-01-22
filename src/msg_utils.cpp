@@ -157,7 +157,7 @@ namespace MSG_Utils {
 
     // Save message to conversation file (per-contact)
     // Format: TIMESTAMP,DIRECTION,MESSAGE
-    static void saveToConversation(const String& callsign, const String& message, bool outgoing) {
+    void saveToConversation(const String& callsign, const String& message, bool outgoing) {
         // Ensure /conversations directory exists
         if (!STORAGE_Utils::fileExists("/conversations")) {
             bool created = STORAGE_Utils::mkdir("/conversations");
@@ -356,6 +356,20 @@ namespace MSG_Utils {
     void deleteFile(uint8_t typeOfFile) {
         if (typeOfFile == 0) {  //APRS
             STORAGE_Utils::removeFile("/aprsMessages.txt");
+            // Also delete all conversation files
+            if (STORAGE_Utils::fileExists("/conversations")) {
+                File dir = STORAGE_Utils::openFile("/conversations", "r");
+                if (dir && dir.isDirectory()) {
+                    File file = dir.openNextFile();
+                    while (file) {
+                        String path = String("/conversations/") + file.name();
+                        file.close();
+                        STORAGE_Utils::removeFile(path.c_str());
+                        file = dir.openNextFile();
+                    }
+                    dir.close();
+                }
+            }
             numAPRSMessages = 0;
             loadedAPRSMessages.clear();
         } else if (typeOfFile == 1) {   //WLNK
