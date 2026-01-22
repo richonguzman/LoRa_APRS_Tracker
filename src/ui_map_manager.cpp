@@ -1650,7 +1650,8 @@ namespace UIMapManager {
             mainThreadLoading = false;
         }
 
-        // Arrow buttons for panning (bottom left corner, D-pad layout)
+        // Arrow buttons for panning - hidden since touch pan is now available
+#if 0
         int arrow_size = 28;
         int arrow_x = 5;
         int arrow_y = MAP_VISIBLE_HEIGHT - 105;  // Above info bar
@@ -1699,6 +1700,7 @@ namespace UIMapManager {
         lv_obj_t* lbl_right = lv_label_create(btn_right);
         lv_label_set_text(lbl_right, LV_SYMBOL_RIGHT);
         lv_obj_center(lbl_right);
+#endif
 
         // Info bar at bottom
         lv_obj_t* info_bar = lv_obj_create(screen_map);
