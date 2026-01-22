@@ -1651,8 +1651,8 @@ namespace UIMapManager {
             mainThreadLoading = false;
         }
 
-        // Arrow buttons for panning - hidden since touch pan is now available
-#if 0
+        // Arrow buttons for panning (touch pan still unstable)
+#if 1
         int arrow_size = 28;
         int arrow_x = 5;
         int arrow_y = MAP_VISIBLE_HEIGHT - 105;  // Above info bar
@@ -1663,7 +1663,7 @@ namespace UIMapManager {
         lv_obj_set_size(btn_up, arrow_size, arrow_size);
         lv_obj_set_pos(btn_up, arrow_x + arrow_size, arrow_y);
         lv_obj_set_style_bg_color(btn_up, arrow_color, 0);
-        lv_obj_set_style_bg_opa(btn_up, LV_OPA_70, 0);
+        lv_obj_set_style_bg_opa(btn_up, 90, 0);  // 45% opacity
         lv_obj_add_event_cb(btn_up, btn_map_up_clicked, LV_EVENT_CLICKED, NULL);
         lv_obj_t* lbl_up = lv_label_create(btn_up);
         lv_label_set_text(lbl_up, LV_SYMBOL_UP);
@@ -1674,7 +1674,7 @@ namespace UIMapManager {
         lv_obj_set_size(btn_down, arrow_size, arrow_size);
         lv_obj_set_pos(btn_down, arrow_x + arrow_size, arrow_y + arrow_size * 2);
         lv_obj_set_style_bg_color(btn_down, arrow_color, 0);
-        lv_obj_set_style_bg_opa(btn_down, LV_OPA_70, 0);
+        lv_obj_set_style_bg_opa(btn_down, 90, 0);  // 45% opacity
         lv_obj_add_event_cb(btn_down, btn_map_down_clicked, LV_EVENT_CLICKED, NULL);
         lv_obj_t* lbl_down = lv_label_create(btn_down);
         lv_label_set_text(lbl_down, LV_SYMBOL_DOWN);
@@ -1685,7 +1685,7 @@ namespace UIMapManager {
         lv_obj_set_size(btn_left, arrow_size, arrow_size);
         lv_obj_set_pos(btn_left, arrow_x, arrow_y + arrow_size);
         lv_obj_set_style_bg_color(btn_left, arrow_color, 0);
-        lv_obj_set_style_bg_opa(btn_left, LV_OPA_70, 0);
+        lv_obj_set_style_bg_opa(btn_left, 90, 0);  // 45% opacity
         lv_obj_add_event_cb(btn_left, btn_map_left_clicked, LV_EVENT_CLICKED, NULL);
         lv_obj_t* lbl_left = lv_label_create(btn_left);
         lv_label_set_text(lbl_left, LV_SYMBOL_LEFT);
@@ -1696,7 +1696,7 @@ namespace UIMapManager {
         lv_obj_set_size(btn_right, arrow_size, arrow_size);
         lv_obj_set_pos(btn_right, arrow_x + arrow_size * 2, arrow_y + arrow_size);
         lv_obj_set_style_bg_color(btn_right, arrow_color, 0);
-        lv_obj_set_style_bg_opa(btn_right, LV_OPA_70, 0);
+        lv_obj_set_style_bg_opa(btn_right, 90, 0);  // 45% opacity
         lv_obj_add_event_cb(btn_right, btn_map_right_clicked, LV_EVENT_CLICKED, NULL);
         lv_obj_t* lbl_right = lv_label_create(btn_right);
         lv_label_set_text(lbl_right, LV_SYMBOL_RIGHT);
