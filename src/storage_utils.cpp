@@ -524,9 +524,15 @@ namespace STORAGE_Utils {
     static LinkStats linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
     static std::vector<DigiStats> digiStats;
 
+    // History buffers for charts
+    static std::vector<int> rssiHistory;
+    static std::vector<float> snrHistory;
+
     void resetStats() {
         linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
         digiStats.clear();
+        rssiHistory.clear();
+        snrHistory.clear();
         Serial.println("[Storage] Stats reset");
     }
 
@@ -538,6 +544,24 @@ namespace STORAGE_Utils {
         linkStats.snrTotal += snr;
         if (snr < linkStats.snrMin) linkStats.snrMin = snr;
         if (snr > linkStats.snrMax) linkStats.snrMax = snr;
+
+        // Add to history (circular buffer)
+        rssiHistory.push_back(rssi);
+        snrHistory.push_back(snr);
+        if (rssiHistory.size() > HISTORY_SIZE) {
+            rssiHistory.erase(rssiHistory.begin());
+        }
+        if (snrHistory.size() > HISTORY_SIZE) {
+            snrHistory.erase(snrHistory.begin());
+        }
+    }
+
+    std::vector<int> getRssiHistory() {
+        return rssiHistory;
+    }
+
+    std::vector<float> getSnrHistory() {
+        return snrHistory;
     }
 
     void updateTxStats() {

@@ -2745,6 +2745,15 @@ static void populate_frames_list(lv_obj_t* list) {
 
 // Populate stats display
 static void populate_stats(lv_obj_t* cont) {
+    // Check available heap - skip if too low to avoid memory issues
+    uint32_t freeHeap = ESP.getFreeHeap();
+    if (freeHeap < 8000) {
+        #ifdef DEBUG
+            Serial.printf("[LVGL] Stats update skipped - low memory (%u bytes)\n", freeHeap);
+        #endif
+        return;  // Don't update if memory is critically low
+    }
+
     lv_obj_clean(cont);
 
     LinkStats stats = STORAGE_Utils::getStats();
@@ -2786,6 +2795,66 @@ static void populate_stats(lv_obj_t* cont) {
     lv_obj_t* lbl_snr = lv_label_create(cont);
     lv_label_set_text(lbl_snr, buf);
     lv_obj_set_style_text_color(lbl_snr, lv_color_hex(0x759a9e), 0);
+
+    // RSSI/SNR Charts
+    std::vector<int> rssiHist = STORAGE_Utils::getRssiHistory();
+    std::vector<float> snrHist = STORAGE_Utils::getSnrHistory();
+
+    if (rssiHist.size() > 1) {
+        // RSSI Chart legend (with spacing)
+        lv_obj_t* rssi_legend = lv_label_create(cont);
+        lv_label_set_text(rssi_legend, "\nRSSI (dBm)");
+        lv_obj_set_style_text_color(rssi_legend, lv_color_hex(0x00BFFF), 0);
+
+        // RSSI Chart
+        lv_obj_t* rssi_chart = lv_chart_create(cont);
+        lv_obj_set_size(rssi_chart, 280, 50);
+        lv_chart_set_type(rssi_chart, LV_CHART_TYPE_LINE);
+        lv_chart_set_point_count(rssi_chart, rssiHist.size());
+        lv_obj_set_style_bg_color(rssi_chart, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_line_color(rssi_chart, lv_color_hex(0x333344), LV_PART_MAIN);
+        lv_chart_set_div_line_count(rssi_chart, 3, 0);
+
+        // Find RSSI range for scaling
+        int rssiMin = -120, rssiMax = -40;
+        for (int v : rssiHist) {
+            if (v < rssiMin) rssiMin = v;
+            if (v > rssiMax) rssiMax = v;
+        }
+        lv_chart_set_range(rssi_chart, LV_CHART_AXIS_PRIMARY_Y, rssiMin - 5, rssiMax + 5);
+
+        lv_chart_series_t* rssi_ser = lv_chart_add_series(rssi_chart, lv_color_hex(0x00BFFF), LV_CHART_AXIS_PRIMARY_Y);
+        for (size_t i = 0; i < rssiHist.size(); i++) {
+            lv_chart_set_next_value(rssi_chart, rssi_ser, rssiHist[i]);
+        }
+
+        // SNR Chart legend
+        lv_obj_t* snr_legend = lv_label_create(cont);
+        lv_label_set_text(snr_legend, "SNR (dB)");
+        lv_obj_set_style_text_color(snr_legend, lv_color_hex(0x00FF7F), 0);
+
+        // SNR Chart
+        lv_obj_t* snr_chart = lv_chart_create(cont);
+        lv_obj_set_size(snr_chart, 280, 50);
+        lv_chart_set_type(snr_chart, LV_CHART_TYPE_LINE);
+        lv_chart_set_point_count(snr_chart, snrHist.size());
+        lv_obj_set_style_bg_color(snr_chart, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_line_color(snr_chart, lv_color_hex(0x333344), LV_PART_MAIN);
+        lv_chart_set_div_line_count(snr_chart, 3, 0);
+
+        // Find SNR range for scaling
+        float snrMinF = -10, snrMaxF = 15;
+        for (float v : snrHist) {
+            if (v < snrMinF) snrMinF = v;
+            if (v > snrMaxF) snrMaxF = v;
+        }
+        lv_chart_set_range(snr_chart, LV_CHART_AXIS_PRIMARY_Y, (int)(snrMinF - 2), (int)(snrMaxF + 2));
+
+        lv_chart_series_t* snr_ser = lv_chart_add_series(snr_chart, lv_color_hex(0x00FF7F), LV_CHART_AXIS_PRIMARY_Y);
+        for (size_t i = 0; i < snrHist.size(); i++) {
+            lv_chart_set_next_value(snr_chart, snr_ser, (int)(snrHist[i] * 10) / 10);
+        }
+    }
 
     // Digipeaters section
     lv_obj_t* digi_title = lv_label_create(cont);
@@ -3057,15 +3126,16 @@ static void msg_tab_changed(lv_event_t* e) {
         current_msg_type = (int)tab_idx;
         Serial.printf("[LVGL] Messages tab changed to %d\n", current_msg_type);
 
-        // Refresh contacts list when tab is selected
+        // Lazy load each tab when first selected
+        if (current_msg_type == 1 && list_wlnk_global) {
+            populate_msg_list(list_wlnk_global, 1);
+        }
         if (current_msg_type == 2 && list_contacts_global) {
             populate_contacts_list(list_contacts_global);
         }
-        // Refresh frames list when tab is selected
         if (current_msg_type == 3 && list_frames_global) {
             populate_frames_list(list_frames_global);
         }
-        // Refresh stats when tab is selected
         if (current_msg_type == 4 && cont_stats_global) {
             populate_stats(cont_stats_global);
         }
@@ -3553,6 +3623,10 @@ static void create_msg_screen() {
     lv_obj_set_style_bg_color(msg_tabview, lv_color_hex(0x0f0f23), 0);
     lv_obj_add_event_cb(msg_tabview, msg_tab_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
+    // Get tab bar and set equal width for all tabs
+    lv_obj_t* tab_bar = lv_tabview_get_tab_btns(msg_tabview);
+    lv_obj_set_style_pad_column(tab_bar, 2, 0);  // Small gap between tabs
+
     // APRS Tab
     lv_obj_t* tab_aprs = lv_tabview_add_tab(msg_tabview, "APRS");
     lv_obj_set_style_bg_color(tab_aprs, lv_color_hex(0x0f0f23), 0);
@@ -3573,7 +3647,7 @@ static void create_msg_screen() {
     lv_obj_set_size(list_wlnk_global, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(list_wlnk_global, lv_color_hex(0x0f0f23), 0);
     lv_obj_set_style_border_width(list_wlnk_global, 0, 0);
-    populate_msg_list(list_wlnk_global, 1);
+    // Don't populate here - lazy load when tab is selected
 
     // Contacts Tab
     lv_obj_t* tab_contacts = lv_tabview_add_tab(msg_tabview, "Contacts");
@@ -3584,7 +3658,7 @@ static void create_msg_screen() {
     lv_obj_set_size(list_contacts_global, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(list_contacts_global, lv_color_hex(0x0f0f23), 0);
     lv_obj_set_style_border_width(list_contacts_global, 0, 0);
-    populate_contacts_list(list_contacts_global);
+    // Don't populate here - lazy load when tab is selected
 
     // Frames Tab (raw LoRa frames log)
     lv_obj_t* tab_frames = lv_tabview_add_tab(msg_tabview, "Frames");
@@ -3595,7 +3669,7 @@ static void create_msg_screen() {
     lv_obj_set_size(list_frames_global, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(list_frames_global, lv_color_hex(0x0f0f23), 0);
     lv_obj_set_style_border_width(list_frames_global, 0, 0);
-    populate_frames_list(list_frames_global);
+    // Don't populate here - lazy load when tab is selected
 
     // Stats Tab (link statistics)
     lv_obj_t* tab_stats = lv_tabview_add_tab(msg_tabview, "Stats");
@@ -3609,7 +3683,7 @@ static void create_msg_screen() {
     lv_obj_set_flex_flow(cont_stats_global, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(cont_stats_global, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
     lv_obj_set_style_pad_row(cont_stats_global, 4, 0);
-    populate_stats(cont_stats_global);
+    // Don't populate here - lazy load when tab is selected
 
     Serial.println("[LVGL] Messages screen created with tabs");
 }
@@ -3887,12 +3961,15 @@ namespace LVGL_UI {
         lv_tick_inc(elapsed);
         last_tick = now;
 
-        // Debug heartbeat every 5 seconds
-        static uint32_t lastHeartbeat = 0;
-        if (now - lastHeartbeat >= 5000) {
-            lastHeartbeat = now;
-            Serial.printf("[LVGL-HB] loop running, heap=%u\n", ESP.getFreeHeap());
-        }
+        #ifdef DEBUG
+            // Debug heartbeat every 5 seconds
+            static uint32_t lastHeartbeat = 0;
+            if (now - lastHeartbeat >= 5000) {
+                lastHeartbeat = now;
+                Serial.printf("[LVGL-HB] heap=%u eco=%d dimmed=%d bright=%d\n",
+                    ESP.getFreeHeap(), displayEcoMode ? 1 : 0, screenDimmed ? 1 : 0, screenBrightness);
+            }
+        #endif
 
         // Handle LVGL tasks
         lv_timer_handler();

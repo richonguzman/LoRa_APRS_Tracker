@@ -100,6 +100,11 @@ namespace STORAGE_Utils {
     LinkStats getStats();
     std::vector<DigiStats> getDigiStats();
 
+    // History for charts (last 50 values)
+    const int HISTORY_SIZE = 50;
+    std::vector<int> getRssiHistory();
+    std::vector<float> getSnrHistory();
+
 }
 
 #endif
