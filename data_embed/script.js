@@ -179,6 +179,8 @@ function loadSettings(settings) {
     // DISPLAY
     document.getElementById("display.turn180").checked                  = settings.display.turn180;
     document.getElementById("display.showSymbol").checked               = settings.display.showSymbol;
+    document.getElementById("display.ecoMode").checked                  = settings.display.ecoMode;
+    document.getElementById("display.timeout").value                    = settings.display.timeout || 10;
 
     // BLUETOOTH
     document.getElementById("bluetooth.active").checked                 = settings.bluetooth.active;

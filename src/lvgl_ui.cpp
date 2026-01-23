@@ -108,7 +108,7 @@ static lv_disp_drv_t disp_drv;
 static lv_indev_drv_t indev_drv;
 
 // Display eco mode (screen dimming after inactivity)
-static const uint32_t ECO_TIMEOUT_MS = 10000;  // 10 seconds of inactivity
+// Timeout is configured via Config.display.timeout (in seconds)
 static uint32_t lastActivityTime = 0;
 static bool screenDimmed = false;
 
@@ -3700,7 +3700,8 @@ namespace LVGL_UI {
         // Use fresh millis() value since lastActivityTime may have been updated during lv_timer_handler()
         if (displayEcoMode && !screenDimmed) {
             uint32_t currentTime = millis();
-            if (currentTime - lastActivityTime >= ECO_TIMEOUT_MS) {
+            uint32_t ecoTimeoutMs = Config.display.timeout * 1000;  // Config is in seconds
+            if (currentTime - lastActivityTime >= ecoTimeoutMs) {
                 screenDimmed = true;
                 #ifdef BOARD_BL_PIN
                     analogWrite(BOARD_BL_PIN, 0);  // Turn off backlight
