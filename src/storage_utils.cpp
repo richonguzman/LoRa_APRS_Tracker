@@ -21,6 +21,7 @@
 #include <SPI.h>
 #include <vector>
 #include <ArduinoJson.h>
+#include <TimeLib.h>
 #include "board_pinout.h"
 #include "storage_utils.h"
 
@@ -428,6 +429,93 @@ namespace STORAGE_Utils {
             loadContacts();
         }
         return contactsCache.size();
+    }
+
+    // ========== Raw Frames Logging ==========
+
+    static const char* FRAMES_FILE = "/LoRa_Tracker/frames.log";
+    static const char* FRAMES_OLD_FILE = "/LoRa_Tracker/frames.old";
+    static const uint32_t MAX_FRAMES_SIZE = 5 * 1024 * 1024;  // 5 MB
+
+    void checkFramesLogRotation() {
+        if (!sdAvailable) return;
+
+        File file = SD.open(FRAMES_FILE, FILE_READ);
+        if (!file) return;
+
+        size_t fileSize = file.size();
+        file.close();
+
+        if (fileSize >= MAX_FRAMES_SIZE) {
+            Serial.printf("[Storage] Rotating frames log (%u bytes)...\n", fileSize);
+            // Remove old backup if exists
+            if (SD.exists(FRAMES_OLD_FILE)) {
+                SD.remove(FRAMES_OLD_FILE);
+            }
+            // Rename current to old
+            SD.rename(FRAMES_FILE, FRAMES_OLD_FILE);
+            Serial.println("[Storage] Frames log rotated");
+        }
+    }
+
+    bool logRawFrame(const String& frame, int rssi, float snr) {
+        if (!sdAvailable) {
+            return false;
+        }
+
+        // Check rotation before writing
+        checkFramesLogRotation();
+
+        File file = SD.open(FRAMES_FILE, FILE_APPEND);
+        if (!file) {
+            Serial.println("[Storage] Failed to open frames log for writing");
+            return false;
+        }
+
+        // Get current time from GPS (via TimeLib) - format: YYYY-MM-DD HH:MM:SS
+        char timestamp[64];
+        if (year() > 2000) {
+            snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d",
+                year(), month(), day(), hour(), minute(), second());
+        } else {
+            // Fallback if no time available (GPS not synced yet)
+            snprintf(timestamp, sizeof(timestamp), "----/--/-- --:--:--");
+        }
+
+        // Write line: timestamp GMT: frame
+        file.printf("%s GMT: %s\n", timestamp, frame.c_str());
+        file.close();
+
+        return true;
+    }
+
+    std::vector<String> getLastFrames(int count) {
+        std::vector<String> frames;
+        if (!sdAvailable) return frames;
+
+        File file = SD.open(FRAMES_FILE, FILE_READ);
+        if (!file) {
+            return frames;
+        }
+
+        // Read all lines into a vector (we'll keep only the last N)
+        std::vector<String> allLines;
+        while (file.available()) {
+            String line = file.readStringUntil('\n');
+            line.trim();
+            if (line.length() > 0) {
+                allLines.push_back(line);
+            }
+        }
+        file.close();
+
+        // Return last 'count' lines
+        int startIdx = (allLines.size() > (size_t)count) ? allLines.size() - count : 0;
+        for (size_t i = startIdx; i < allLines.size(); i++) {
+            frames.push_back(allLines[i]);
+        }
+
+        return frames;
     }
 
 }

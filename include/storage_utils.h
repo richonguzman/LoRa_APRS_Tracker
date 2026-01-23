@@ -67,6 +67,11 @@ namespace STORAGE_Utils {
     Contact* findContact(const String& callsign);
     int getContactCount();
 
+    // Raw frames logging
+    bool logRawFrame(const String& frame, int rssi, float snr);
+    std::vector<String> getLastFrames(int count);
+    void checkFramesLogRotation();
+
 }
 
 #endif

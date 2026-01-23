@@ -23,6 +23,11 @@ See `VERSIONING.md` for full details and history.
 - `docs/index.html` - Web flasher (update version here)
 - `docs/firmware/` - Compiled binaries for web flasher
 
+## Rôles
+
+- **Claude** : Écriture et modification du code uniquement
+- **Utilisateur** : Compilation (`pio run`) et upload (`pio run -t upload`)
+
 ## Workflow
 
 1. Code changes → compile → test

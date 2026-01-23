@@ -2070,7 +2070,8 @@ static lv_obj_t* msg_tabview = nullptr;
 // list_aprs_global declared at top of file
 static lv_obj_t* list_wlnk_global = nullptr;
 static lv_obj_t* list_contacts_global = nullptr;
-static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts
+static lv_obj_t* list_frames_global = nullptr;
+static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts, 3 = Frames
 
 // Compose screen variables (declared early for use in callbacks)
 static lv_obj_t* screen_compose = nullptr;
@@ -2705,6 +2706,42 @@ static void populate_contacts_list(lv_obj_t* list) {
     }
 }
 
+// Populate frames list (raw LoRa frames log)
+static void populate_frames_list(lv_obj_t* list) {
+    lv_obj_clean(list);
+
+    std::vector<String> frames = STORAGE_Utils::getLastFrames(50);
+
+    if (frames.size() == 0) {
+        lv_obj_t* empty = lv_label_create(list);
+        lv_label_set_text(empty, "No frames recorded\n(Requires SD card)");
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
+        lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
+    } else {
+        // Display frames in reverse order (newest first)
+        for (int i = frames.size() - 1; i >= 0; i--) {
+            // Create container for each frame
+            lv_obj_t* cont = lv_obj_create(list);
+            lv_obj_set_width(cont, lv_pct(100));
+            lv_obj_set_height(cont, LV_SIZE_CONTENT);
+            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);  // Darker background
+            lv_obj_set_style_pad_all(cont, 4, 0);
+            lv_obj_set_style_border_width(cont, 1, 0);
+            lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
+            lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, 0);
+            lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+
+            // Create label with word wrap
+            lv_obj_t* label = lv_label_create(cont);
+            lv_label_set_text(label, frames[i].c_str());
+            lv_obj_set_width(label, lv_pct(100));
+            lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);  // Word wrap
+            lv_obj_set_style_text_color(label, lv_color_hex(0x759a9e), 0);
+            lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
+        }
+    }
+}
+
 // Contact edit screen callbacks
 static void contact_edit_input_focused(lv_event_t* e) {
     lv_obj_t* ta = lv_event_get_target(e);
@@ -2932,8 +2969,8 @@ static void msg_tab_changed(lv_event_t* e) {
 
     uint16_t tab_idx = lv_tabview_get_tab_act(tabview);
 
-    // Validate tab index (only 0, 1, 2 are valid)
-    if (tab_idx > 2 || tab_idx == 0xFFFF) {
+    // Validate tab index (only 0, 1, 2, 3 are valid)
+    if (tab_idx > 3 || tab_idx == 0xFFFF) {
         return;  // Invalid index, silently ignore
     }
 
@@ -2946,6 +2983,10 @@ static void msg_tab_changed(lv_event_t* e) {
         if (current_msg_type == 2 && list_contacts_global) {
             populate_contacts_list(list_contacts_global);
         }
+        // Refresh frames list when tab is selected
+        if (current_msg_type == 3 && list_frames_global) {
+            populate_frames_list(list_frames_global);
+        }
     }
 }
 
@@ -2953,8 +2994,8 @@ static void msg_tab_changed(lv_event_t* e) {
 static void btn_delete_msgs_clicked(lv_event_t* e) {
     Serial.printf("[LVGL] Delete all button pressed, type %d\n", current_msg_type);
 
-    // Don't delete contacts with this button
-    if (current_msg_type == 2) {
+    // Don't delete contacts or frames with this button
+    if (current_msg_type == 2 || current_msg_type == 3) {
         return;
     }
 
@@ -3462,6 +3503,17 @@ static void create_msg_screen() {
     lv_obj_set_style_bg_color(list_contacts_global, lv_color_hex(0x0f0f23), 0);
     lv_obj_set_style_border_width(list_contacts_global, 0, 0);
     populate_contacts_list(list_contacts_global);
+
+    // Frames Tab (raw LoRa frames log)
+    lv_obj_t* tab_frames = lv_tabview_add_tab(msg_tabview, "Frames");
+    lv_obj_set_style_bg_color(tab_frames, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_pad_all(tab_frames, 5, 0);
+
+    list_frames_global = lv_list_create(tab_frames);
+    lv_obj_set_size(list_frames_global, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(list_frames_global, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_width(list_frames_global, 0, 0);
+    populate_frames_list(list_frames_global);
 
     Serial.println("[LVGL] Messages screen created with tabs");
 }
@@ -4495,6 +4547,16 @@ namespace LVGL_UI {
     void return_to_dashboard() {
         if (screen_main) {
             lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+        }
+    }
+
+    // Refresh frames list if visible (called when new frame received)
+    void refreshFramesList() {
+        // Only refresh if on messages screen and Frames tab is active
+        if (lv_scr_act() == screen_msg && current_msg_type == 3 && list_frames_global) {
+            populate_frames_list(list_frames_global);
+            // Scroll to top to show newest frame
+            lv_obj_scroll_to_y(list_frames_global, 0, LV_ANIM_ON);
         }
     }
 

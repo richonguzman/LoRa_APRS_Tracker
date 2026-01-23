@@ -36,6 +36,7 @@ namespace LVGL_UI {
     void showAddContactPrompt(const char* callsign);  // Prompt to add unknown sender as contact
     void open_compose_with_callsign(const String& callsign); // Open compose screen with pre-filled callsign
     void return_to_dashboard();  // Return to main dashboard screen
+    void refreshFramesList();  // Refresh frames list if visible
 }
 
 #endif // USE_LVGL_UI

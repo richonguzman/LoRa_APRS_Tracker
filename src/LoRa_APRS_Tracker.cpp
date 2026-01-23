@@ -307,6 +307,14 @@ void loop() {
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
+    // Log raw frame to SD card (if packet received)
+    if (!packet.text.isEmpty()) {
+        STORAGE_Utils::logRawFrame(packet.text.substring(3), packet.rssi, packet.snr);
+        #ifdef USE_LVGL_UI
+            LVGL_UI::refreshFramesList();  // Update display if Frames tab is visible
+        #endif
+    }
+
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();
