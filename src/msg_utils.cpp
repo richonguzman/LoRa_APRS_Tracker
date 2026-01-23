@@ -175,11 +175,44 @@ namespace MSG_Utils {
 
         // Sanitize callsign for filename (remove SSID dashes, etc)
         String filename = "/conversations/" + callsign + ".txt";
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Attempting to save to: %s", filename.c_str());
+        String direction = outgoing ? "OUT" : "IN";
+
+        // Deduplication: check if last message is identical (same direction + content)
+        // This prevents saving duplicate messages from retransmissions (up to 10 per APRS spec)
+        if (STORAGE_Utils::fileExists(filename)) {
+            File readFile = STORAGE_Utils::openFile(filename, "r");
+            if (readFile) {
+                String lastLine = "";
+                while (readFile.available()) {
+                    String line = readFile.readStringUntil('\n');
+                    line.trim();
+                    if (line.length() > 0) {
+                        lastLine = line;
+                    }
+                }
+                readFile.close();
+
+                // Parse last line: TIMESTAMP,DIRECTION,MESSAGE
+                if (lastLine.length() > 0) {
+                    int firstComma = lastLine.indexOf(',');
+                    int secondComma = lastLine.indexOf(',', firstComma + 1);
+                    if (firstComma > 0 && secondComma > firstComma) {
+                        String lastDirection = lastLine.substring(firstComma + 1, secondComma);
+                        String lastMessage = lastLine.substring(secondComma + 1);
+
+                        if (lastDirection == direction && lastMessage == message) {
+                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Duplicate message skipped for %s", callsign.c_str());
+                            return;  // Skip duplicate
+                        }
+                    }
+                }
+            }
+        }
+
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Saving to: %s", filename.c_str());
 
         // Build message line: timestamp,direction,content
-        uint32_t timestamp = millis() / 1000;  // Unix timestamp in seconds
-        String direction = outgoing ? "OUT" : "IN";
+        uint32_t timestamp = millis() / 1000;  // Uptime in seconds
         String line = String(timestamp) + "," + direction + "," + message;
 
         // Use "a" mode (append) which creates file if it doesn't exist

@@ -139,6 +139,8 @@ static lv_obj_t* screen_display = nullptr;
 
 // UI Elements - Messages screen
 static lv_obj_t* screen_msg = nullptr;
+static lv_obj_t* list_aprs_global = nullptr;
+static void populate_msg_list(lv_obj_t* list, int type);  // Forward declaration
 
 // UI Elements - LoRa Speed screen
 static lv_obj_t* screen_speed = nullptr;
@@ -221,7 +223,13 @@ static void touch_read_cb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
             #ifdef BOARD_BL_PIN
                 analogWrite(BOARD_BL_PIN, screenBrightness);
             #endif
-            Serial.println("[LVGL] Screen woken up by touch");
+            // Boost CPU to 240 MHz if on map screen
+            if (lv_scr_act() == UIMapManager::screen_map) {
+                setCpuFrequencyMhz(240);
+                Serial.printf("[LVGL] Screen woken up, CPU boosted to %d MHz (map)\n", getCpuFrequencyMhz());
+            } else {
+                Serial.println("[LVGL] Screen woken up by touch");
+            }
             SD_Logger::logScreenState(false);  // Log screen active
         }
 
@@ -334,6 +342,11 @@ static void btn_msg_clicked(lv_event_t* e) {
     LVGL_UI::closeAllPopups();
     if (!screen_msg) {
         create_msg_screen();
+    } else {
+        // Refresh conversations list when returning to screen
+        if (list_aprs_global) {
+            populate_msg_list(list_aprs_global, 0);
+        }
     }
     lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
 }
@@ -1182,6 +1195,11 @@ static void eco_switch_changed(lv_event_t* e) {
             #ifdef BOARD_BL_PIN
                 analogWrite(BOARD_BL_PIN, screenBrightness);
             #endif
+            // Boost CPU to 240 MHz if on map screen
+            if (lv_scr_act() == UIMapManager::screen_map) {
+                setCpuFrequencyMhz(240);
+                Serial.printf("[LVGL] Eco mode disabled, CPU boosted to %d MHz (map)\n", getCpuFrequencyMhz());
+            }
             SD_Logger::logScreenState(false);  // Log screen active
         }
     }
@@ -1544,13 +1562,15 @@ static void wifi_switch_changed(lv_event_t* e) {
         }
     } else {
         // Turn WiFi OFF (user disabled manually - no retry)
+        // Non-blocking: just set flags, let main loop handle actual disconnect
         Serial.println("[LVGL] WiFi: User disabled");
         WiFiUserDisabled = true;
-        esp_wifi_disconnect();
-        delay(100);
-        esp_wifi_stop();
         WiFiConnected = false;
         WiFiEcoMode = false;  // Not eco mode, completely off
+
+        // Schedule WiFi stop (non-blocking)
+        esp_wifi_disconnect();
+        esp_wifi_stop();
 
         // Verify WiFi is really off
         wifi_mode_t mode;
@@ -1843,34 +1863,47 @@ static void btn_bluetooth_back_clicked(lv_event_t* e) {
     lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
 }
 
+// Timer callbacks for deferred BLE operations (non-blocking UI)
+static void ble_setup_timer_cb(lv_timer_t* timer) {
+    if (Config.bluetooth.useBLE) {
+        BLE_Utils::setup();
+        Serial.println("[LVGL] BLE setup completed (deferred)");
+    }
+    lv_timer_del(timer);
+}
+
+static void ble_stop_timer_cb(lv_timer_t* timer) {
+    if (Config.bluetooth.useBLE) {
+        BLE_Utils::stop();
+        Serial.println("[LVGL] BLE stop completed (deferred)");
+    }
+    lv_timer_del(timer);
+}
+
 // Bluetooth switch callback
 static void bluetooth_switch_changed(lv_event_t* e) {
     lv_obj_t* sw = lv_event_get_target(e);
     bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
 
     if (is_on) {
-        // Turn Bluetooth ON
-        Serial.println("[LVGL] Bluetooth: Turning ON");
+        // Turn Bluetooth ON (deferred to avoid blocking UI)
+        Serial.println("[LVGL] Bluetooth: Scheduling ON");
         bluetoothActive = true;
-        if (Config.bluetooth.useBLE) {
-            BLE_Utils::setup();
-        }
+        lv_timer_create(ble_setup_timer_cb, 50, NULL);
 
         if (bluetooth_status_label) {
-            lv_label_set_text(bluetooth_status_label, "ON (waiting)");
+            lv_label_set_text(bluetooth_status_label, "Starting...");
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
         }
     } else {
-        // Turn Bluetooth OFF
-        Serial.println("[LVGL] Bluetooth: Turning OFF");
+        // Turn Bluetooth OFF (deferred to avoid blocking UI)
+        Serial.println("[LVGL] Bluetooth: Scheduling OFF");
         bluetoothActive = false;
-        if (Config.bluetooth.useBLE) {
-            BLE_Utils::stop();
-        }
+        lv_timer_create(ble_stop_timer_cb, 50, NULL);
 
         if (bluetooth_status_label) {
-            lv_label_set_text(bluetooth_status_label, "OFF");
-            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xff6b6b), 0);
+            lv_label_set_text(bluetooth_status_label, "Stopping...");
+            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
         }
     }
 }
@@ -2034,7 +2067,7 @@ static void create_bluetooth_screen() {
 
 // Messages screen variables
 static lv_obj_t* msg_tabview = nullptr;
-static lv_obj_t* list_aprs_global = nullptr;
+// list_aprs_global declared at top of file
 static lv_obj_t* list_wlnk_global = nullptr;
 static lv_obj_t* list_contacts_global = nullptr;
 static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts
@@ -2105,17 +2138,21 @@ static bool need_aprs_list_refresh = false;
 
 // Timer callback for deferred confirm_msgbox deletion
 static void delete_confirm_msgbox_timer_cb(lv_timer_t* timer) {
+    Serial.println("[LVGL] delete_confirm_msgbox_timer_cb called");
     if (confirm_msgbox_to_delete && lv_obj_is_valid(confirm_msgbox_to_delete)) {
         lv_obj_del(confirm_msgbox_to_delete);
+        Serial.println("[LVGL] Msgbox deleted");
     }
     confirm_msgbox_to_delete = nullptr;
 
     lv_obj_invalidate(lv_layer_top());
     lv_refr_now(NULL);
 
+    Serial.printf("[LVGL] need_aprs_list_refresh=%d, list_aprs_global=%p\n", need_aprs_list_refresh, list_aprs_global);
     if (need_aprs_list_refresh) {
         // Refresh both lists to be safe
         if (list_aprs_global) {
+            Serial.println("[LVGL] Refreshing APRS list after delete");
             populate_msg_list(list_aprs_global, 0);
         }
         if (list_wlnk_global) {
@@ -2132,15 +2169,18 @@ static void confirm_delete_cb(lv_event_t* e) {
     if (!confirm_msgbox) return;
 
     const char* btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
+    Serial.printf("[LVGL] confirm_delete_cb: btn=%s, pending_index=%d\n", btn_text ? btn_text : "NULL", pending_delete_msg_index);
 
     need_aprs_list_refresh = false;
     if (btn_text && strcmp(btn_text, "Yes") == 0) {
         if (pending_delete_msg_index == -1) {
+            Serial.printf("[LVGL] Deleting ALL messages type %d\n", current_msg_type);
             MSG_Utils::deleteFile(current_msg_type);
         } else {
             MSG_Utils::deleteMessageByIndex(current_msg_type, pending_delete_msg_index);
         }
         need_aprs_list_refresh = true;
+        Serial.println("[LVGL] need_aprs_list_refresh set to true");
     }
 
     // Schedule deletion via timer
@@ -2423,6 +2463,10 @@ static void populate_msg_list(lv_obj_t* list, int type) {
 // Back button callback for conversation screen
 static void btn_conversation_back_clicked(lv_event_t* e) {
     if (screen_msg) {
+        // Refresh the conversations list before going back
+        if (list_aprs_global) {
+            populate_msg_list(list_aprs_global, 0);
+        }
         lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
     }
 }
@@ -3661,7 +3705,13 @@ namespace LVGL_UI {
                 #ifdef BOARD_BL_PIN
                     analogWrite(BOARD_BL_PIN, 0);  // Turn off backlight
                 #endif
-                Serial.println("[LVGL] Screen dimmed (eco mode)");
+                // Reduce CPU to 80 MHz if on map screen
+                if (lv_scr_act() == UIMapManager::screen_map) {
+                    setCpuFrequencyMhz(80);
+                    Serial.printf("[LVGL] Screen dimmed (eco mode), CPU reduced to %d MHz (map)\n", getCpuFrequencyMhz());
+                } else {
+                    Serial.println("[LVGL] Screen dimmed (eco mode)");
+                }
                 SD_Logger::logScreenState(true);  // Log screen dimmed
             }
         }
@@ -4187,7 +4237,9 @@ namespace LVGL_UI {
         (void)e;  // Unused parameter
         const char* btn_text = lv_msgbox_get_active_btn_text(add_contact_msgbox);
 
-        if (btn_text && strcmp(btn_text, "Yes") == 0) {
+        bool accepted = (btn_text && strcmp(btn_text, "Yes") == 0);
+
+        if (accepted) {
             // User confirmed - add contact
             Contact newContact;
             newContact.callsign = pending_contact_callsign;
@@ -4210,8 +4262,8 @@ namespace LVGL_UI {
         }
         pending_contact_callsign = "";
 
-        // Navigate to Contacts tab
-        if (screen_msg && msg_tabview) {
+        // Navigate to Contacts tab only if accepted
+        if (accepted && screen_msg && msg_tabview) {
             lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
             lv_tabview_set_act(msg_tabview, 2, LV_ANIM_ON);  // 2 = Contacts tab
             populate_contacts_list(list_contacts_global);
@@ -4343,7 +4395,7 @@ namespace LVGL_UI {
             lv_obj_set_style_text_font(lbl_ip, &lv_font_montserrat_18, 0);
 
             lv_obj_t* lbl_info = lv_label_create(content);
-            lv_label_set_text(lbl_info, "Connect to WiFi AP\nthen open http://192.168.4.1\nto configure your callsign");
+            lv_label_set_text(lbl_info, "Connect to WiFi AP\nthen open http://192.168.4.1\nto configure callsign & WiFi");
             lv_obj_set_style_text_color(lbl_info, lv_color_hex(0xaaaaaa), 0);
             lv_obj_set_style_text_font(lbl_info, &lv_font_montserrat_14, 0);
             lv_obj_set_style_text_align(lbl_info, LV_TEXT_ALIGN_CENTER, 0);

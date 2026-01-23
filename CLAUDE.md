@@ -34,3 +34,19 @@ See `VERSIONING.md` for full details and history.
 
 - `origin` = upstream (richonguzman/LoRa_APRS_Tracker)
 - `fork` = user fork (moricef/LoRa_APRS_Tracker) ← push here
+
+## TODO - Refactoring
+
+### Modulariser lvgl_ui.cpp (~4500 lignes)
+
+Extraire en modules séparés :
+- `ui_messaging.cpp` - Messages, conversations, contacts
+- `ui_settings.cpp` - Écrans de configuration (callsign, display, sound, wifi, speed)
+- `ui_popups.cpp` - Popups TX/RX/notifications
+- `ui_dashboard.cpp` - Écran principal dashboard
+- `ui_compose.cpp` - Écran de composition de messages
+
+Garder dans `lvgl_ui.cpp` :
+- Initialisation LVGL
+- Navigation principale
+- Variables globales partagées
