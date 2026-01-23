@@ -38,15 +38,26 @@ uint32_t    previousWiFiMillis      = 0;
 uint32_t    lastWiFiDebug           = 0;
 uint32_t    lastWiFiRetry           = 0;
 const uint32_t WIFI_RETRY_INTERVAL  = 30 * 60 * 1000;  // 30 minutes (battery saving)
-const uint32_t WIFI_CONNECT_TIMEOUT = 30 * 1000;       // 30 seconds per network (was 15s)
+const uint32_t WIFI_CONNECT_TIMEOUT = 10 * 1000;       // 10 seconds per network at boot (non-blocking)
+const uint32_t WIFI_RECONNECT_TIMEOUT = 30 * 1000;    // 30 seconds for reconnection attempts
 const int      WIFI_MAX_RETRIES     = 3;               // Retry 3 times before eco mode
 int            wifiRetryCount       = 0;               // Current retry counter
+
+// Non-blocking connection state
+bool        wifiConnecting          = false;    // Currently trying to connect
+uint32_t    wifiConnectStartTime    = 0;        // When current attempt started
+size_t      wifiCurrentNetworkIndex = 0;        // Which network we're trying
+bool        wifiIsReconnecting      = false;    // True if this is a reconnect (uses longer timeout)
 
 
 namespace WIFI_Utils {
 
-    // Forward declaration
+    // Forward declarations
     bool tryConnectToNetwork(const WiFi_AP& network);
+    void startConnectionAttempt(size_t networkIndex);
+    void handleConnectionTimeout();
+    void onConnectionSuccess();
+    void onAllNetworksFailed();
 
     static bool wifiInitialized = false;
 
@@ -63,12 +74,28 @@ namespace WIFI_Utils {
             return;
         }
 
+        // Handle non-blocking connection in progress
+        if (wifiConnecting) {
+            uint32_t timeout = wifiIsReconnecting ? WIFI_RECONNECT_TIMEOUT : WIFI_CONNECT_TIMEOUT;
+
+            if (WiFi.status() == WL_CONNECTED) {
+                // Connection succeeded!
+                wifiConnecting = false;
+                onConnectionSuccess();
+            } else if ((millis() - wifiConnectStartTime) >= timeout) {
+                // Timeout - try next network or give up
+                handleConnectionTimeout();
+            }
+            return;
+        }
+
         // Eco mode: WiFi is off, waiting for periodic retry
         if (WiFiEcoMode && WiFiStationMode) {
             uint32_t elapsed = millis() - lastWiFiRetry;
             if (elapsed >= WIFI_RETRY_INTERVAL) {
                 Serial.printf("[WiFi] Eco mode: retrying after %u ms\n", elapsed);
                 WiFiEcoMode = false;
+                wifiIsReconnecting = true;
                 startStationMode();
                 lastWiFiRetry = millis();
             }
@@ -84,35 +111,83 @@ namespace WIFI_Utils {
                 wifiRetryCount++;
                 Serial.printf("[WiFi] Connection lost, reconnecting (attempt %d/%d)...\n", wifiRetryCount, WIFI_MAX_RETRIES);
                 WiFi.disconnect();
-                // Try each configured network
-                bool reconnected = false;
-                for (size_t i = 0; i < Config.wifiAPs.size(); i++) {
-                    if (Config.wifiAPs[i].ssid != "" && tryConnectToNetwork(Config.wifiAPs[i])) {
-                        reconnected = true;
-                        break;
-                    }
-                }
-                if (reconnected) {
-                    WiFiConnected = true;
-                    WiFiEcoMode = false;
-                    wifiRetryCount = 0;  // Reset on success
-                    Serial.printf("[WiFi] Reconnected! RSSI=%d dBm\n", WiFi.RSSI());
-                } else if (wifiRetryCount >= WIFI_MAX_RETRIES) {
-                    // All retries exhausted - enter eco mode
-                    WiFiConnected = false;
-                    WiFiEcoMode = true;
-                    wifiRetryCount = 0;
-                    lastWiFiRetry = millis();
-                    Serial.println("[WiFi] Max retries reached, entering eco mode (retry in 30 min)");
-                    // Proper WiFi shutdown sequence using ESP-IDF API
-                    esp_wifi_disconnect();
-                    delay(100);
-                    esp_wifi_stop();
-                    delay(100);
-                }
-                // If retries remaining, will retry on next checkWiFi() call
-                previousWiFiMillis = millis();
+                wifiIsReconnecting = true;
+                wifiCurrentNetworkIndex = 0;
+                startConnectionAttempt(0);
+                return;  // Will be handled in non-blocking section above
             }
+        }
+    }
+
+    // Start a non-blocking connection attempt to a specific network
+    void startConnectionAttempt(size_t networkIndex) {
+        // Find next valid network
+        while (networkIndex < Config.wifiAPs.size() && Config.wifiAPs[networkIndex].ssid == "") {
+            networkIndex++;
+        }
+
+        if (networkIndex >= Config.wifiAPs.size()) {
+            // No more networks to try
+            onAllNetworksFailed();
+            return;
+        }
+
+        wifiCurrentNetworkIndex = networkIndex;
+        wifiConnecting = true;
+        wifiConnectStartTime = millis();
+
+        const WiFi_AP& network = Config.wifiAPs[networkIndex];
+        uint32_t timeout = wifiIsReconnecting ? WIFI_RECONNECT_TIMEOUT : WIFI_CONNECT_TIMEOUT;
+        Serial.printf("[WiFi] Connecting to '%s' (timeout %ds, non-blocking)...\n",
+            network.ssid.c_str(), timeout / 1000);
+        WiFi.begin(network.ssid.c_str(), network.password.c_str());
+    }
+
+    // Called when connection timeout occurs
+    void handleConnectionTimeout() {
+        Serial.printf("[WiFi] Timeout connecting to '%s'\n",
+            Config.wifiAPs[wifiCurrentNetworkIndex].ssid.c_str());
+        esp_wifi_disconnect();
+
+        // Try next network
+        startConnectionAttempt(wifiCurrentNetworkIndex + 1);
+    }
+
+    // Called when connection succeeds
+    void onConnectionSuccess() {
+        WiFiConnected = true;
+        WiFiEcoMode = false;
+        wifiRetryCount = 0;
+        wifiIsReconnecting = false;
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);  // Enable modem sleep for coexistence
+        Serial.printf("[WiFi] Connected to '%s'! IP=%s RSSI=%d dBm\n",
+            Config.wifiAPs[wifiCurrentNetworkIndex].ssid.c_str(),
+            WiFi.localIP().toString().c_str(), WiFi.RSSI());
+        WEB_Utils::setup();
+    }
+
+    // Called when all networks failed to connect
+    void onAllNetworksFailed() {
+        wifiConnecting = false;
+        wifiRetryCount++;
+        Serial.printf("[WiFi] All networks failed (attempt %d/%d)\n", wifiRetryCount, WIFI_MAX_RETRIES);
+
+        if (wifiRetryCount >= WIFI_MAX_RETRIES) {
+            WiFiConnected = false;
+            WiFiEcoMode = true;
+            wifiRetryCount = 0;
+            lastWiFiRetry = millis();
+            Serial.println("[WiFi] Max retries reached, entering eco mode (retry in 30 min)");
+            #ifdef USE_LVGL_UI
+                LVGL_UI::showWiFiEcoMode();
+            #else
+                displayShow("", " WiFi Eco Mode", "  Retry in 30 min", "", "", "", 1000);
+            #endif
+            esp_wifi_stop();
+        } else {
+            // Retry from first network
+            wifiCurrentNetworkIndex = 0;
+            startConnectionAttempt(0);
         }
     }
 
@@ -184,55 +259,14 @@ namespace WIFI_Utils {
 
         // Force clean WiFi restart (needed after esp_wifi_stop in eco mode)
         WiFi.mode(WIFI_OFF);
-        delay(100);
+        delay(50);  // Reduced delay for faster boot
         WiFi.mode(WIFI_STA);
         WiFi.setHostname(hostName.c_str());
-        delay(100);
+        delay(50);  // Reduced delay for faster boot
 
-        // Try each configured network
-        bool connected = false;
-        for (size_t i = 0; i < Config.wifiAPs.size() && !connected; i++) {
-            if (Config.wifiAPs[i].ssid != "") {
-                connected = tryConnectToNetwork(Config.wifiAPs[i]);
-            }
-        }
-
-        if (connected) {
-            WiFiConnected = true;
-            WiFiEcoMode = false;
-            wifiRetryCount = 0;  // Reset retry counter on success
-            // Enable modem sleep for WiFi/BLE coexistence (required for coex to work)
-            esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
-            Serial.print("\n[WiFi] Connected as ");
-            Serial.print(WiFi.localIP());
-            Serial.print(" / MAC: ");
-            Serial.println(WiFi.macAddress());
-            WEB_Utils::setup();
-        } else {
-            wifiRetryCount++;
-            Serial.printf("[WiFi] Connection failed (attempt %d/%d)\n", wifiRetryCount, WIFI_MAX_RETRIES);
-
-            if (wifiRetryCount >= WIFI_MAX_RETRIES) {
-                // All retries exhausted - enter eco mode
-                WiFiConnected = false;
-                WiFiEcoMode = true;
-                wifiRetryCount = 0;  // Reset for next eco mode wake
-                lastWiFiRetry = millis();
-                Serial.println("[WiFi] Max retries reached, entering eco mode (retry in 30 min)");
-                #ifdef USE_LVGL_UI
-                    LVGL_UI::showWiFiEcoMode();
-                #else
-                    displayShow("", " WiFi Eco Mode", "  Retry in 30 min", "", "", "", 1000);
-                #endif
-                // Proper WiFi shutdown
-                esp_wifi_stop();
-            } else {
-                // Retry immediately
-                Serial.printf("[WiFi] Retrying in 5 seconds...\n");
-                delay(5000);
-                startStationMode();  // Recursive retry
-            }
-        }
+        // Start non-blocking connection attempt
+        wifiCurrentNetworkIndex = 0;
+        startConnectionAttempt(0);
     }
 
     bool needsWebConfig() {
