@@ -67,99 +67,67 @@ pio run -e ttgo_t_deck_plus_433 -t uploadfs
 
 ### SD Card Setup
 
-#### Directory Structure
+#### Automatic Directory Creation
 
-Create the following directory structure on your SD card:
+On first boot, the firmware automatically creates the following directories on your SD card:
 
 ```
 LoRa_Tracker/
-├── Maps/
-│   └── YourRegion/       # Region name (e.g., "France", "Europe")
-│       ├── 8/            # Zoom level 8 (country view)
-│       │   ├── 127/      # X tile coordinate
-│       │   │   ├── 93.jpg
-│       │   │   └── 94.jpg
-│       │   └── 128/
-│       │       └── 93.jpg
-│       ├── 10/           # Zoom level 10 (region view)
-│       ├── 12/           # Zoom level 12 (city view)
-│       └── 14/           # Zoom level 14 (street view)
-└── Symbols/
-    ├── primary/          # Primary APRS symbols (/)
-    │   ├── 21.png        # ! symbol (hex 21)
-    │   ├── 23.png        # # symbol (hex 23)
-    │   ├── 26.png        # & symbol (iGate)
-    │   ├── 3E.png        # > symbol (car)
-    │   └── ...
-    └── alternate/        # Alternate APRS symbols (\)
-        ├── 3E.png        # > symbol (red car)
-        └── ...
+├── Maps/              # For offline map tiles
+├── Symbols/           # For APRS symbols
+├── Messages/
+│   ├── inbox/
+│   └── outbox/
+└── Contacts/
 ```
 
-**How to create folders:**
-- **Windows**: Open File Explorer, navigate to SD card, right-click → New → Folder
-- **macOS**: Finder → right-click → New Folder
-- **Linux**: Use your file manager or terminal: `mkdir -p`
-
-> **Note**: A future firmware version will automatically create this structure on first boot.
+You only need to add the **map tiles** and **APRS symbols** files.
 
 #### Map Tiles
 
-**Supported zoom levels**: 8, 10, 12, 14 (you need tiles for each zoom level you want to use)
+**Supported zoom levels**: 8, 10, 12, 14
 
-**Tile format**: JPEG (.jpg) recommended - PNG also supported but JPEG loads faster and uses less space
+**Tile format**: JPEG (.jpg) recommended - PNG also supported but JPEG loads faster
 
-#### Download Map Tiles
-
-**Option 1: Using the included Python script (all platforms)**
+**Option 1: Using the included Python script**
 ```bash
 cd tools/
-python download_tiles.py --region france --zoom 8 10 12 14 --output SD_CARD_PATH/LoRa_Tracker/Maps
+python download_tiles.py --region france --zoom 8 10 12 14
 ```
 
-Replace `SD_CARD_PATH` with your SD card path:
-- **Windows**: `D:\` or `E:\` (drive letter assigned to your SD card)
-- **macOS**: `/Volumes/SD_CARD_NAME`
-- **Linux**: `/media/USERNAME/SD_CARD_NAME` or `/mnt/sdcard`
+Tiles are downloaded to `tools/tiles/`. Copy this folder content to your SD card:
+```
+tools/tiles/*  →  SD_CARD/LoRa_Tracker/Maps/
+```
 
-See `python download_tiles.py --help` for all options.
+**Option 2: Using MOBAC (graphical interface)**
 
-**Option 2: Using MOBAC (graphical interface, all platforms)**
-
-Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/) to download OpenStreetMap tiles:
+Use [Mobile Atlas Creator (MOBAC)](https://mobac.sourceforge.io/):
 1. Select your region on the map
-2. Choose a tile source (e.g., "OpenStreetMap")
+2. Choose tile source: "OpenStreetMap"
 3. Select zoom levels: **8, 10, 12, 14**
-4. Choose output format: **OSMTracker tile storage** (exports PNG tiles)
-5. Create the atlas and copy tiles to SD card
+4. Output format: **OSMTracker tile storage**
+5. Copy the generated tiles folder to `SD_CARD/LoRa_Tracker/Maps/`
 
-#### Convert PNG to JPEG (Recommended)
-
-PNG tiles work fine but JPEG is recommended for smaller file size (3-5x smaller). Use the included conversion script:
+#### Convert PNG to JPEG (Optional)
 
 ```bash
 cd tools/
 python convert_to_jpeg.py SD_CARD_PATH/LoRa_Tracker/Maps -q 85
 ```
 
-Options:
-- `-q 85`: JPEG quality (85 is a good balance between size and quality)
-- `-j N`: Number of parallel threads (default: 4, increase for faster conversion on multi-core CPUs)
-- `--keep-png`: Keep original PNG files after conversion
-
-**Note**: The tracker supports PNG, JPEG, and RGB565 RAW formats. PNG requires no conversion but uses more space.
-
 #### APRS Symbols
-The tracker uses 24x24 PNG images for APRS symbols. You need to provide them on the SD card.
 
-**Symbol file naming**: Use the hexadecimal ASCII code of the symbol character.
-- Example: `>` (car) = ASCII 62 = hex `3E` → filename: `3E.png`
-- Example: `#` (digipeater) = ASCII 35 = hex `23` → filename: `23.png`
+**Download ready-to-use symbols**: [APRS Symbols Pack (Mega)](https://mega.nz/folder/6FUi3DDD#cSdv5-zt18KTWeooz7ZvlA)
 
-**Where to get symbols**:
-- Extract from [APRS symbol sets](http://www.aprs.org/symbols.html) and convert to 24x24 PNG
-- Use image editing software to create custom symbols
-- Each symbol should be 24x24 pixels with transparency (PNG format)
+Extract to your SD card so you have:
+```
+LoRa_Tracker/Symbols/
+├── primary/     # Primary symbols (/)
+└── alternate/   # Alternate symbols (\)
+```
+
+Each symbol is a 24x24 PNG file named with the hex ASCII code (e.g., `3E.png` for the car symbol `>`).
 
 ### Operation Without SD Card
 

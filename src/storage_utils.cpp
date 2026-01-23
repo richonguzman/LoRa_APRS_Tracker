@@ -39,6 +39,7 @@ static const char* OUTBOX_DIR = "/LoRa_Tracker/Messages/outbox";
 static const char* CONTACTS_DIR = "/LoRa_Tracker/Contacts";
 static const char* CONTACTS_FILE = "/LoRa_Tracker/Contacts/contacts.json";
 static const char* MAPS_DIR = "/LoRa_Tracker/Maps";
+static const char* SYMBOLS_DIR = "/LoRa_Tracker/Symbols";
 
 namespace STORAGE_Utils {
 
@@ -75,6 +76,12 @@ namespace STORAGE_Utils {
         if (!SD.exists(MAPS_DIR)) {
             SD.mkdir(MAPS_DIR);
             Serial.printf("[Storage] Created %s\n", MAPS_DIR);
+        }
+
+        // Create Symbols directory for APRS symbols
+        if (!SD.exists(SYMBOLS_DIR)) {
+            SD.mkdir(SYMBOLS_DIR);
+            Serial.printf("[Storage] Created %s\n", SYMBOLS_DIR);
         }
     }
 
