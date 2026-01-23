@@ -25,6 +25,7 @@
 #include "lora_utils.h"
 #include "display.h"
 #include "station_utils.h"
+#include "storage_utils.h"
 #ifdef USE_LVGL_UI
 #include "lvgl_ui.h"
 #endif
@@ -378,7 +379,7 @@ namespace LoRa_Utils {
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
         if (state == RADIOLIB_ERR_NONE) {
-            //Serial.println(F("success!"));
+            STORAGE_Utils::updateTxStats();
         } else {
             Serial.print(F("Tx failed, code "));
             Serial.println(state);

@@ -521,7 +521,7 @@ namespace STORAGE_Utils {
     // ========== Link Statistics ==========
 
     // Initialize with inverted min/max so first value always updates them
-    static LinkStats linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
+    static LinkStats linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
     static std::vector<DigiStats> digiStats;
 
     // History buffers for charts
@@ -529,7 +529,7 @@ namespace STORAGE_Utils {
     static std::vector<float> snrHistory;
 
     void resetStats() {
-        linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
+        linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
         digiStats.clear();
         rssiHistory.clear();
         snrHistory.clear();
