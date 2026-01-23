@@ -283,7 +283,9 @@ void loop() {
     SMARTBEACON_Utils::checkState();
 
     BATTERY_Utils::monitor();
-    Utils::checkDisplayEcoMode();
+    #ifndef USE_LVGL_UI
+        Utils::checkDisplayEcoMode();
+    #endif
     WIFI_Utils::checkWiFi();
     APRS_IS_Utils::checkConnection();
 
