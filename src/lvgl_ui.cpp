@@ -2915,6 +2915,10 @@ static void show_contact_edit_screen(const Contact* contact) {
     }
 
     lv_scr_load(screen_contact_edit);
+
+    // Set focus to first input for physical keyboard
+    lv_obj_add_state(contact_callsign_input, LV_STATE_FOCUSED);
+    contact_current_input = contact_callsign_input;
 }
 
 // Tab changed callback
@@ -3176,9 +3180,36 @@ static char getSymbolChar(char key) {
     }
 }
 
-// Handle physical keyboard input for compose screen
+// Handle physical keyboard input for compose screen and contact edit
 void handleComposeKeyboard(char key) {
-    if (!compose_screen_active || !current_focused_input) return;
+    // Update activity time for eco mode
+    lastActivityTime = millis();
+
+    // Wake up screen if dimmed
+    if (screenDimmed) {
+        screenDimmed = false;
+        #ifdef BOARD_BL_PIN
+            analogWrite(BOARD_BL_PIN, screenBrightness);
+        #endif
+        // Boost CPU to 240 MHz if on map screen
+        if (lv_scr_act() == UIMapManager::screen_map) {
+            setCpuFrequencyMhz(240);
+            Serial.printf("[LVGL] Screen woken up by keyboard, CPU boosted to %d MHz (map)\n", getCpuFrequencyMhz());
+        } else {
+            Serial.println("[LVGL] Screen woken up by keyboard");
+        }
+    }
+
+    // Determine which input to use
+    lv_obj_t* target_input = nullptr;
+
+    if (compose_screen_active && current_focused_input) {
+        target_input = current_focused_input;
+    } else if (lv_scr_act() == screen_contact_edit && contact_current_input) {
+        target_input = contact_current_input;
+    }
+
+    if (!target_input) return;
 
     // Debug: print key code
     Serial.printf("[KB] Key: %d (0x%02X) '%c'\n", key, key, (key >= 32 && key < 127) ? key : '?');
@@ -3254,14 +3285,16 @@ void handleComposeKeyboard(char key) {
     }
 
     if (key == 0x08 || key == 0x7F) {  // Backspace
-        lv_textarea_del_char(current_focused_input);
+        lv_textarea_del_char(target_input);
     } else if (key == 0x0D || key == 0x0A) {  // Enter
-        // Switch between inputs or send
-        if (current_focused_input == compose_to_input) {
-            lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
-            lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
-            current_focused_input = compose_msg_input;
-        } else {
+        // Handle Enter differently for compose vs contact edit
+        if (compose_screen_active) {
+            // Compose screen: switch between inputs or send
+            if (current_focused_input == compose_to_input) {
+                lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
+                current_focused_input = compose_msg_input;
+            } else {
             // Send message
             const char* to = lv_textarea_get_text(compose_to_input);
             const char* msg = lv_textarea_get_text(compose_msg_input);
@@ -3294,6 +3327,19 @@ void handleComposeKeyboard(char key) {
                     lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
                 }
             }
+            }
+        } else if (lv_scr_act() == screen_contact_edit) {
+            // Contact edit screen: switch between fields
+            if (contact_current_input == contact_callsign_input) {
+                lv_obj_clear_state(contact_callsign_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_name_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_name_input;
+            } else if (contact_current_input == contact_name_input) {
+                lv_obj_clear_state(contact_name_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_comment_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_comment_input;
+            }
+            // On last field, Enter does nothing (user uses Save button)
         }
     } else if (key >= 32 && key < 127) {  // Printable chars
         char outputKey = key;
@@ -3307,7 +3353,7 @@ void handleComposeKeyboard(char key) {
             outputKey = key - 32;  // Convert to uppercase
         }
 
-        lv_textarea_add_char(current_focused_input, outputKey);
+        lv_textarea_add_char(target_input, outputKey);
     }
 }
 
