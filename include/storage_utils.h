@@ -88,7 +88,7 @@ namespace STORAGE_Utils {
 
     // Raw frames logging
     bool logRawFrame(const String& frame, int rssi, float snr);
-    std::vector<String> getLastFrames(int count);
+    const std::vector<String>& getLastFrames(int count);
     void checkFramesLogRotation();
 
     // Link statistics
@@ -98,12 +98,12 @@ namespace STORAGE_Utils {
     void updateAckStats();
     void updateDigiStats(const String& path);
     LinkStats getStats();
-    std::vector<DigiStats> getDigiStats();
+    const std::vector<DigiStats>& getDigiStats();
 
     // History for charts (last 50 values)
     const int HISTORY_SIZE = 50;
-    std::vector<int> getRssiHistory();
-    std::vector<float> getSnrHistory();
+    const std::vector<int>& getRssiHistory();
+    const std::vector<float>& getSnrHistory();
 
 }
 

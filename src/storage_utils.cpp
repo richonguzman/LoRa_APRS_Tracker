@@ -465,64 +465,50 @@ namespace STORAGE_Utils {
         }
     }
 
+    // Memory cache for frames - fixed circular buffer
+    static const int FRAMES_CACHE_SIZE = 50;
+    static String framesCache[FRAMES_CACHE_SIZE];
+    static int framesCacheHead = 0;
+    static int framesCacheCount = 0;
+    static std::vector<String> framesCacheOrdered;  // For returning ordered list
+
     bool logRawFrame(const String& frame, int rssi, float snr) {
-        if (!sdAvailable) {
-            return false;
-        }
-
-        // Check rotation before writing
-        checkFramesLogRotation();
-
-        File file = SD.open(FRAMES_FILE, FILE_APPEND);
-        if (!file) {
-            Serial.println("[Storage] Failed to open frames log for writing");
-            return false;
-        }
-
         // Get current time from GPS (via TimeLib) - format: YYYY-MM-DD HH:MM:SS
         char timestamp[64];
         if (year() > 2000) {
             snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d",
                 year(), month(), day(), hour(), minute(), second());
         } else {
-            // Fallback if no time available (GPS not synced yet)
             snprintf(timestamp, sizeof(timestamp), "----/--/-- --:--:--");
         }
 
-        // Write line: timestamp GMT: frame
-        file.printf("%s GMT: %s\n", timestamp, frame.c_str());
-        file.close();
+        // Build formatted line and store in circular buffer (no reallocation)
+        framesCache[framesCacheHead] = String(timestamp) + " GMT: " + frame;
+        framesCacheHead = (framesCacheHead + 1) % FRAMES_CACHE_SIZE;
+        if (framesCacheCount < FRAMES_CACHE_SIZE) framesCacheCount++;
+
+        // Also write to SD for persistence
+        if (sdAvailable) {
+            checkFramesLogRotation();
+            File file = SD.open(FRAMES_FILE, FILE_APPEND);
+            if (file) {
+                file.println(framesCache[(framesCacheHead - 1 + FRAMES_CACHE_SIZE) % FRAMES_CACHE_SIZE]);
+                file.close();
+            }
+        }
 
         return true;
     }
 
-    std::vector<String> getLastFrames(int count) {
-        std::vector<String> frames;
-        if (!sdAvailable) return frames;
-
-        File file = SD.open(FRAMES_FILE, FILE_READ);
-        if (!file) {
-            return frames;
+    const std::vector<String>& getLastFrames(int count) {
+        // Rebuild ordered vector from circular buffer (only when UI requests)
+        framesCacheOrdered.clear();
+        framesCacheOrdered.reserve(framesCacheCount);
+        int start = (framesCacheCount < FRAMES_CACHE_SIZE) ? 0 : framesCacheHead;
+        for (int i = 0; i < framesCacheCount; i++) {
+            framesCacheOrdered.push_back(framesCache[(start + i) % FRAMES_CACHE_SIZE]);
         }
-
-        // Read all lines into a vector (we'll keep only the last N)
-        std::vector<String> allLines;
-        while (file.available()) {
-            String line = file.readStringUntil('\n');
-            line.trim();
-            if (line.length() > 0) {
-                allLines.push_back(line);
-            }
-        }
-        file.close();
-
-        // Return last 'count' lines
-        int startIdx = (allLines.size() > (size_t)count) ? allLines.size() - count : 0;
-        for (size_t i = startIdx; i < allLines.size(); i++) {
-            frames.push_back(allLines[i]);
-        }
-
-        return frames;
+        return framesCacheOrdered;
     }
 
     // ========== Link Statistics ==========
@@ -531,15 +517,23 @@ namespace STORAGE_Utils {
     static LinkStats linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
     static std::vector<DigiStats> digiStats;
 
-    // History buffers for charts
-    static std::vector<int> rssiHistory;
-    static std::vector<float> snrHistory;
+    // History buffers for charts - fixed size circular buffer
+    static int rssiHistory[HISTORY_SIZE];
+    static float snrHistory[HISTORY_SIZE];
+    static int historyCount = 0;  // Number of valid entries
+    static int historyHead = 0;   // Next write position
+
+    // Ordered vectors for returning to UI (rebuilt on request)
+    static std::vector<int> rssiHistoryOrdered;
+    static std::vector<float> snrHistoryOrdered;
 
     void resetStats() {
         linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
         digiStats.clear();
-        rssiHistory.clear();
-        snrHistory.clear();
+        historyCount = 0;
+        historyHead = 0;
+        rssiHistoryOrdered.clear();
+        snrHistoryOrdered.clear();
         Serial.println("[Storage] Stats reset");
     }
 
@@ -552,23 +546,33 @@ namespace STORAGE_Utils {
         if (snr < linkStats.snrMin) linkStats.snrMin = snr;
         if (snr > linkStats.snrMax) linkStats.snrMax = snr;
 
-        // Add to history (circular buffer)
-        rssiHistory.push_back(rssi);
-        snrHistory.push_back(snr);
-        if (rssiHistory.size() > HISTORY_SIZE) {
-            rssiHistory.erase(rssiHistory.begin());
-        }
-        if (snrHistory.size() > HISTORY_SIZE) {
-            snrHistory.erase(snrHistory.begin());
-        }
+        // Add to circular buffer (no memory allocation)
+        rssiHistory[historyHead] = rssi;
+        snrHistory[historyHead] = snr;
+        historyHead = (historyHead + 1) % HISTORY_SIZE;
+        if (historyCount < HISTORY_SIZE) historyCount++;
     }
 
-    std::vector<int> getRssiHistory() {
-        return rssiHistory;
+    const std::vector<int>& getRssiHistory() {
+        // Rebuild ordered vector from circular buffer
+        rssiHistoryOrdered.clear();
+        rssiHistoryOrdered.reserve(historyCount);
+        int start = (historyCount < HISTORY_SIZE) ? 0 : historyHead;
+        for (int i = 0; i < historyCount; i++) {
+            rssiHistoryOrdered.push_back(rssiHistory[(start + i) % HISTORY_SIZE]);
+        }
+        return rssiHistoryOrdered;
     }
 
-    std::vector<float> getSnrHistory() {
-        return snrHistory;
+    const std::vector<float>& getSnrHistory() {
+        // Rebuild ordered vector from circular buffer
+        snrHistoryOrdered.clear();
+        snrHistoryOrdered.reserve(historyCount);
+        int start = (historyCount < HISTORY_SIZE) ? 0 : historyHead;
+        for (int i = 0; i < historyCount; i++) {
+            snrHistoryOrdered.push_back(snrHistory[(start + i) % HISTORY_SIZE]);
+        }
+        return snrHistoryOrdered;
     }
 
     void updateTxStats() {
@@ -653,7 +657,7 @@ namespace STORAGE_Utils {
         return linkStats;
     }
 
-    std::vector<DigiStats> getDigiStats() {
+    const std::vector<DigiStats>& getDigiStats() {
         return digiStats;
     }
 

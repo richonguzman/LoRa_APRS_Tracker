@@ -2711,7 +2711,7 @@ static void populate_contacts_list(lv_obj_t* list) {
 static void populate_frames_list(lv_obj_t* list) {
     lv_obj_clean(list);
 
-    std::vector<String> frames = STORAGE_Utils::getLastFrames(50);
+    const std::vector<String>& frames = STORAGE_Utils::getLastFrames(50);
 
     if (frames.size() == 0) {
         lv_obj_t* empty = lv_label_create(list);
@@ -2757,7 +2757,7 @@ static void populate_stats(lv_obj_t* cont) {
     lv_obj_clean(cont);
 
     LinkStats stats = STORAGE_Utils::getStats();
-    std::vector<DigiStats> digis = STORAGE_Utils::getDigiStats();
+    const std::vector<DigiStats>& digis = STORAGE_Utils::getDigiStats();
 
     // Link statistics section
     lv_obj_t* title = lv_label_create(cont);
@@ -2797,8 +2797,8 @@ static void populate_stats(lv_obj_t* cont) {
     lv_obj_set_style_text_color(lbl_snr, lv_color_hex(0x759a9e), 0);
 
     // RSSI/SNR Charts
-    std::vector<int> rssiHist = STORAGE_Utils::getRssiHistory();
-    std::vector<float> snrHist = STORAGE_Utils::getSnrHistory();
+    const std::vector<int>& rssiHist = STORAGE_Utils::getRssiHistory();
+    const std::vector<float>& snrHist = STORAGE_Utils::getSnrHistory();
 
     if (rssiHist.size() > 1) {
         // RSSI Chart legend (with spacing)
@@ -2867,21 +2867,22 @@ static void populate_stats(lv_obj_t* cont) {
         lv_label_set_text(no_digi, "No digipeaters seen yet");
         lv_obj_set_style_text_color(no_digi, lv_color_hex(0x888888), 0);
     } else {
-        // Sort by count (descending) - simple bubble sort for small list
-        for (size_t i = 0; i < digis.size(); i++) {
-            for (size_t j = i + 1; j < digis.size(); j++) {
-                if (digis[j].count > digis[i].count) {
-                    DigiStats tmp = digis[i];
-                    digis[i] = digis[j];
-                    digis[j] = tmp;
+        // Copy and sort by count (descending)
+        std::vector<DigiStats> sortedDigis = digis;
+        for (size_t i = 0; i < sortedDigis.size(); i++) {
+            for (size_t j = i + 1; j < sortedDigis.size(); j++) {
+                if (sortedDigis[j].count > sortedDigis[i].count) {
+                    DigiStats tmp = sortedDigis[i];
+                    sortedDigis[i] = sortedDigis[j];
+                    sortedDigis[j] = tmp;
                 }
             }
         }
 
         // Show top digis (limit to 10)
-        int showCount = (digis.size() > 10) ? 10 : digis.size();
+        int showCount = (sortedDigis.size() > 10) ? 10 : sortedDigis.size();
         for (int i = 0; i < showCount; i++) {
-            snprintf(buf, sizeof(buf), "%s: %lu", digis[i].callsign.c_str(), (unsigned long)digis[i].count);
+            snprintf(buf, sizeof(buf), "%s: %lu", sortedDigis[i].callsign.c_str(), (unsigned long)sortedDigis[i].count);
             lv_obj_t* lbl_digi = lv_label_create(cont);
             lv_label_set_text(lbl_digi, buf);
             lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
