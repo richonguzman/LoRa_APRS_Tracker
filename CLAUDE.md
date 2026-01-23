@@ -12,7 +12,7 @@ LoRa APRS Tracker - Fork with LVGL touchscreen UI for T-Deck Plus
 - MINOR: New features
 - PATCH: Bug fixes
 
-Current: **v1.3.0**
+Current: **v1.4.0**
 
 See `VERSIONING.md` for full details and history.
 
