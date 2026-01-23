@@ -3615,13 +3615,20 @@ namespace LVGL_UI {
         lv_obj_set_style_text_color(freq_label, lv_color_hex(0x0033cc), 0);  // Blue to match LoRa logo
         lv_obj_align(freq_label, LV_ALIGN_CENTER, 0, 40);
 
-        // Author and version
+        // Original author and version
         char verBuf[48];
         snprintf(verBuf, sizeof(verBuf), "CA2RXU  %s", version);
         lv_obj_t* ver_label = lv_label_create(screen_splash);
         lv_label_set_text(ver_label, verBuf);
         lv_obj_set_style_text_color(ver_label, lv_color_hex(0xcc0000), 0);  // Red to match APRS logo
-        lv_obj_align(ver_label, LV_ALIGN_BOTTOM_MID, 0, -30);
+        lv_obj_align(ver_label, LV_ALIGN_BOTTOM_MID, 0, -50);
+
+        // UI fork credit
+        lv_obj_t* ui_label = lv_label_create(screen_splash);
+        lv_label_set_text(ui_label, "F4MLV LVGL UI Edition");
+        lv_obj_set_style_text_color(ui_label, lv_color_hex(0x0066cc), 0);  // Blue
+        lv_obj_set_style_text_font(ui_label, &lv_font_montserrat_12, 0);
+        lv_obj_align(ui_label, LV_ALIGN_BOTTOM_MID, 0, -32);
 
         // Load and display
         lv_scr_load(screen_splash);
