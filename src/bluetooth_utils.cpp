@@ -27,7 +27,6 @@
 
 
 extern Configuration    Config;
-extern Beacon           *currentBeacon;
 extern BluetoothSerial  SerialBT;
 extern logging::Logger  logger;
 extern TinyGPSPlus      gps;

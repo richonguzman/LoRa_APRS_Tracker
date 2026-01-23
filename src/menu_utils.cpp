@@ -735,9 +735,13 @@ namespace MENU_Utils {
                     const auto time_now = now();
                     secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
-                        thirdRowMainMenu = String(gps.location.lat(), 4);
-                        thirdRowMainMenu += " ";
-                        thirdRowMainMenu += String(gps.location.lng(), 4);
+                        if (gps.satellites.value() == 0) {
+                            thirdRowMainMenu = "WAITING FOR GPS:";
+                        } else {
+                            thirdRowMainMenu = String(gps.location.lat(), 4);
+                            thirdRowMainMenu += " ";
+                            thirdRowMainMenu += String(gps.location.lng(), 4);
+                        }
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
                         thirdRowMainMenu += " LoRa[";

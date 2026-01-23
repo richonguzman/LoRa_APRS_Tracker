@@ -43,7 +43,6 @@ BLECharacteristic       *pCharacteristicTx;
 BLECharacteristic       *pCharacteristicRx;
 
 extern Configuration    Config;
-extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 extern bool             bluetoothConnected;
 extern bool             bluetoothActive;
