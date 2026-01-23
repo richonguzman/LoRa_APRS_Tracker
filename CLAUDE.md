@@ -40,6 +40,22 @@ See `VERSIONING.md` for full details and history.
 - `origin` = upstream (richonguzman/LoRa_APRS_Tracker)
 - `fork` = user fork (moricef/LoRa_APRS_Tracker) ← push here
 
+## LVGL Fonts
+
+Polices Montserrat disponibles (à activer dans lv_conf.h si nécessaire) :
+
+| Macro | Taille | Usage dans code |
+|-------|--------|-----------------|
+| LV_FONT_MONTSERRAT_12 | 12px | `&lv_font_montserrat_12` |
+| LV_FONT_MONTSERRAT_14 | 14px | `&lv_font_montserrat_14` |
+| LV_FONT_MONTSERRAT_16 | 16px | `&lv_font_montserrat_16` |
+| LV_FONT_MONTSERRAT_18 | 18px | `&lv_font_montserrat_18` |
+| LV_FONT_MONTSERRAT_20 | 20px | `&lv_font_montserrat_20` |
+| ... | ... | ... |
+| LV_FONT_MONTSERRAT_48 | 48px | `&lv_font_montserrat_48` |
+
+**Note:** Seules les polices activées dans `lv_conf.h` sont disponibles à la compilation.
+
 ## TODO - Refactoring
 
 ### Modulariser lvgl_ui.cpp (~4500 lignes)

@@ -307,9 +307,20 @@ void loop() {
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 
-    // Log raw frame to SD card (if packet received)
+    // Log raw frame and update stats (if packet received)
     if (!packet.text.isEmpty()) {
-        STORAGE_Utils::logRawFrame(packet.text.substring(3), packet.rssi, packet.snr);
+        String rawFrame = packet.text.substring(3);
+        STORAGE_Utils::logRawFrame(rawFrame, packet.rssi, packet.snr);
+        STORAGE_Utils::updateRxStats(packet.rssi, packet.snr);
+
+        // Extract path for digi stats (between > and :)
+        int pathStart = rawFrame.indexOf('>');
+        int pathEnd = rawFrame.indexOf(':');
+        if (pathStart != -1 && pathEnd != -1 && pathEnd > pathStart) {
+            String path = rawFrame.substring(pathStart + 1, pathEnd);
+            STORAGE_Utils::updateDigiStats(path);
+        }
+
         #ifdef USE_LVGL_UI
             LVGL_UI::refreshFramesList();  // Update display if Frames tab is visible
         #endif

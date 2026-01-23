@@ -30,6 +30,25 @@ struct Contact {
     String comment;
 };
 
+// Link statistics structure
+struct LinkStats {
+    uint32_t rxCount;       // Total frames received
+    uint32_t txCount;       // Total frames transmitted
+    uint32_t ackCount;      // ACKs received
+    int rssiMin;
+    int rssiMax;
+    int32_t rssiTotal;      // For average calculation
+    float snrMin;
+    float snrMax;
+    float snrTotal;         // For average calculation
+};
+
+// Digipeater statistics
+struct DigiStats {
+    String callsign;
+    uint32_t count;         // Times seen in path
+};
+
 namespace STORAGE_Utils {
 
     void    setup();
@@ -71,6 +90,15 @@ namespace STORAGE_Utils {
     bool logRawFrame(const String& frame, int rssi, float snr);
     std::vector<String> getLastFrames(int count);
     void checkFramesLogRotation();
+
+    // Link statistics
+    void resetStats();
+    void updateRxStats(int rssi, float snr);
+    void updateTxStats();
+    void updateAckStats();
+    void updateDigiStats(const String& path);
+    LinkStats getStats();
+    std::vector<DigiStats> getDigiStats();
 
 }
 

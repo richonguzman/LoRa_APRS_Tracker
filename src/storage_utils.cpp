@@ -518,4 +518,112 @@ namespace STORAGE_Utils {
         return frames;
     }
 
+    // ========== Link Statistics ==========
+
+    // Initialize with inverted min/max so first value always updates them
+    static LinkStats linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
+    static std::vector<DigiStats> digiStats;
+
+    void resetStats() {
+        linkStats = {0, 0, 0, 0, 0, -200, 50.0f, -50.0f, 0.0f};
+        digiStats.clear();
+        Serial.println("[Storage] Stats reset");
+    }
+
+    void updateRxStats(int rssi, float snr) {
+        linkStats.rxCount++;
+        linkStats.rssiTotal += rssi;
+        if (rssi < linkStats.rssiMin) linkStats.rssiMin = rssi;
+        if (rssi > linkStats.rssiMax) linkStats.rssiMax = rssi;
+        linkStats.snrTotal += snr;
+        if (snr < linkStats.snrMin) linkStats.snrMin = snr;
+        if (snr > linkStats.snrMax) linkStats.snrMax = snr;
+    }
+
+    void updateTxStats() {
+        linkStats.txCount++;
+    }
+
+    void updateAckStats() {
+        linkStats.ackCount++;
+    }
+
+    void updateDigiStats(const String& path) {
+        // Parse path to extract digipeaters
+        // Format: DEST,DIGI1*,DIGI2,qAO,IGATE or similar
+        // The * indicates which digi actually relayed
+
+        int start = 0;
+        int comma = path.indexOf(',');
+
+        while (comma != -1) {
+            String segment = path.substring(start, comma);
+
+            // Check if this digi has relayed (marked with *)
+            bool relayed = segment.endsWith("*");
+            if (relayed) {
+                segment = segment.substring(0, segment.length() - 1);
+            }
+
+            // Skip q-constructs (qAO, qAR, etc.) and WIDE/TRACE
+            if (!segment.startsWith("q") &&
+                !segment.startsWith("WIDE") &&
+                !segment.startsWith("TRACE") &&
+                segment.length() > 0) {
+
+                // Find or create digi entry
+                bool found = false;
+                for (auto& d : digiStats) {
+                    if (d.callsign.equalsIgnoreCase(segment)) {
+                        d.count++;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && digiStats.size() < 50) {  // Limit to 50 digis
+                    DigiStats newDigi;
+                    newDigi.callsign = segment;
+                    newDigi.count = 1;
+                    digiStats.push_back(newDigi);
+                }
+            }
+
+            start = comma + 1;
+            comma = path.indexOf(',', start);
+        }
+
+        // Handle last segment
+        String lastSeg = path.substring(start);
+        if (lastSeg.endsWith("*")) {
+            lastSeg = lastSeg.substring(0, lastSeg.length() - 1);
+        }
+        if (!lastSeg.startsWith("q") &&
+            !lastSeg.startsWith("WIDE") &&
+            !lastSeg.startsWith("TRACE") &&
+            lastSeg.length() > 0) {
+            bool found = false;
+            for (auto& d : digiStats) {
+                if (d.callsign.equalsIgnoreCase(lastSeg)) {
+                    d.count++;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && digiStats.size() < 50) {
+                DigiStats newDigi;
+                newDigi.callsign = lastSeg;
+                newDigi.count = 1;
+                digiStats.push_back(newDigi);
+            }
+        }
+    }
+
+    LinkStats getStats() {
+        return linkStats;
+    }
+
+    std::vector<DigiStats> getDigiStats() {
+        return digiStats;
+    }
+
 }

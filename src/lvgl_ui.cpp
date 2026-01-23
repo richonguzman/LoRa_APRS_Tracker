@@ -2071,7 +2071,8 @@ static lv_obj_t* msg_tabview = nullptr;
 static lv_obj_t* list_wlnk_global = nullptr;
 static lv_obj_t* list_contacts_global = nullptr;
 static lv_obj_t* list_frames_global = nullptr;
-static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts, 3 = Frames
+static lv_obj_t* cont_stats_global = nullptr;
+static int current_msg_type = 0;  // 0 = APRS, 1 = Winlink, 2 = Contacts, 3 = Frames, 4 = Stats
 
 // Compose screen variables (declared early for use in callbacks)
 static lv_obj_t* screen_compose = nullptr;
@@ -2742,6 +2743,83 @@ static void populate_frames_list(lv_obj_t* list) {
     }
 }
 
+// Populate stats display
+static void populate_stats(lv_obj_t* cont) {
+    lv_obj_clean(cont);
+
+    LinkStats stats = STORAGE_Utils::getStats();
+    std::vector<DigiStats> digis = STORAGE_Utils::getDigiStats();
+
+    // Link statistics section
+    lv_obj_t* title = lv_label_create(cont);
+    lv_label_set_text(title, "Link Statistics");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x4CAF50), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
+
+    char buf[128];
+
+    // RX/TX counts
+    snprintf(buf, sizeof(buf), "RX: %lu   TX: %lu   ACK: %lu",
+        (unsigned long)stats.rxCount, (unsigned long)stats.txCount, (unsigned long)stats.ackCount);
+    lv_obj_t* lbl_counts = lv_label_create(cont);
+    lv_label_set_text(lbl_counts, buf);
+    lv_obj_set_style_text_color(lbl_counts, lv_color_hex(0x759a9e), 0);
+
+    // RSSI stats
+    if (stats.rxCount > 0) {
+        int rssiAvg = stats.rssiTotal / (int)stats.rxCount;
+        snprintf(buf, sizeof(buf), "RSSI: %d avg  [%d / %d]", rssiAvg, stats.rssiMin, stats.rssiMax);
+    } else {
+        snprintf(buf, sizeof(buf), "RSSI: -- avg  [-- / --]");
+    }
+    lv_obj_t* lbl_rssi = lv_label_create(cont);
+    lv_label_set_text(lbl_rssi, buf);
+    lv_obj_set_style_text_color(lbl_rssi, lv_color_hex(0x759a9e), 0);
+
+    // SNR stats
+    if (stats.rxCount > 0) {
+        float snrAvg = stats.snrTotal / (float)stats.rxCount;
+        snprintf(buf, sizeof(buf), "SNR: %.1f avg  [%.1f / %.1f]", snrAvg, stats.snrMin, stats.snrMax);
+    } else {
+        snprintf(buf, sizeof(buf), "SNR: -- avg  [-- / --]");
+    }
+    lv_obj_t* lbl_snr = lv_label_create(cont);
+    lv_label_set_text(lbl_snr, buf);
+    lv_obj_set_style_text_color(lbl_snr, lv_color_hex(0x759a9e), 0);
+
+    // Digipeaters section
+    lv_obj_t* digi_title = lv_label_create(cont);
+    lv_label_set_text(digi_title, "\nDigipeaters/IGates");
+    lv_obj_set_style_text_color(digi_title, lv_color_hex(0x4CAF50), 0);
+    lv_obj_set_style_text_font(digi_title, &lv_font_montserrat_14, 0);
+
+    if (digis.size() == 0) {
+        lv_obj_t* no_digi = lv_label_create(cont);
+        lv_label_set_text(no_digi, "No digipeaters seen yet");
+        lv_obj_set_style_text_color(no_digi, lv_color_hex(0x888888), 0);
+    } else {
+        // Sort by count (descending) - simple bubble sort for small list
+        for (size_t i = 0; i < digis.size(); i++) {
+            for (size_t j = i + 1; j < digis.size(); j++) {
+                if (digis[j].count > digis[i].count) {
+                    DigiStats tmp = digis[i];
+                    digis[i] = digis[j];
+                    digis[j] = tmp;
+                }
+            }
+        }
+
+        // Show top digis (limit to 10)
+        int showCount = (digis.size() > 10) ? 10 : digis.size();
+        for (int i = 0; i < showCount; i++) {
+            snprintf(buf, sizeof(buf), "%s: %lu", digis[i].callsign.c_str(), (unsigned long)digis[i].count);
+            lv_obj_t* lbl_digi = lv_label_create(cont);
+            lv_label_set_text(lbl_digi, buf);
+            lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
+        }
+    }
+}
+
 // Contact edit screen callbacks
 static void contact_edit_input_focused(lv_event_t* e) {
     lv_obj_t* ta = lv_event_get_target(e);
@@ -2969,8 +3047,8 @@ static void msg_tab_changed(lv_event_t* e) {
 
     uint16_t tab_idx = lv_tabview_get_tab_act(tabview);
 
-    // Validate tab index (only 0, 1, 2, 3 are valid)
-    if (tab_idx > 3 || tab_idx == 0xFFFF) {
+    // Validate tab index (only 0, 1, 2, 3, 4 are valid)
+    if (tab_idx > 4 || tab_idx == 0xFFFF) {
         return;  // Invalid index, silently ignore
     }
 
@@ -2987,6 +3065,10 @@ static void msg_tab_changed(lv_event_t* e) {
         if (current_msg_type == 3 && list_frames_global) {
             populate_frames_list(list_frames_global);
         }
+        // Refresh stats when tab is selected
+        if (current_msg_type == 4 && cont_stats_global) {
+            populate_stats(cont_stats_global);
+        }
     }
 }
 
@@ -2994,8 +3076,8 @@ static void msg_tab_changed(lv_event_t* e) {
 static void btn_delete_msgs_clicked(lv_event_t* e) {
     Serial.printf("[LVGL] Delete all button pressed, type %d\n", current_msg_type);
 
-    // Don't delete contacts or frames with this button
-    if (current_msg_type == 2 || current_msg_type == 3) {
+    // Don't delete contacts, frames or stats with this button
+    if (current_msg_type >= 2) {
         return;
     }
 
@@ -3514,6 +3596,20 @@ static void create_msg_screen() {
     lv_obj_set_style_bg_color(list_frames_global, lv_color_hex(0x0f0f23), 0);
     lv_obj_set_style_border_width(list_frames_global, 0, 0);
     populate_frames_list(list_frames_global);
+
+    // Stats Tab (link statistics)
+    lv_obj_t* tab_stats = lv_tabview_add_tab(msg_tabview, "Stats");
+    lv_obj_set_style_bg_color(tab_stats, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_pad_all(tab_stats, 10, 0);
+
+    cont_stats_global = lv_obj_create(tab_stats);
+    lv_obj_set_size(cont_stats_global, lv_pct(100), lv_pct(100));
+    lv_obj_set_style_bg_color(cont_stats_global, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_width(cont_stats_global, 0, 0);
+    lv_obj_set_flex_flow(cont_stats_global, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(cont_stats_global, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_style_pad_row(cont_stats_global, 4, 0);
+    populate_stats(cont_stats_global);
 
     Serial.println("[LVGL] Messages screen created with tabs");
 }
