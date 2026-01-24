@@ -177,6 +177,7 @@ static lv_obj_t *bluetooth_status_label = nullptr;
 static lv_obj_t *bluetooth_device_label = nullptr;
 static lv_obj_t *bluetooth_device_row = nullptr;
 static lv_timer_t *bluetooth_update_timer = nullptr;
+static uint32_t last_processed_rx_count = 0; // Ajout pour le guard des stats
 
 // Current selection tracking (for highlight updates)
 static lv_obj_t *current_freq_btn = nullptr;
@@ -3021,6 +3022,14 @@ static void populate_frames_list(lv_obj_t *list) {
 
 // Populate stats display
 static void populate_stats(lv_obj_t *cont) {
+  LinkStats stats = STORAGE_Utils::getStats();
+
+  // CONDITION DE GARDE : Si le compteur RX n'a pas bougé et n'est pas zéro, on ne fait RIEN
+  if (stats.rxCount == last_processed_rx_count && stats.rxCount > 0) {
+    return;
+  }
+  last_processed_rx_count = stats.rxCount;
+
   // Check available heap - skip if too low to avoid memory issues
   uint32_t freeHeap = ESP.getFreeHeap();
   if (freeHeap < 8000) {
@@ -3031,7 +3040,6 @@ static void populate_stats(lv_obj_t *cont) {
     return; // Don't update if memory is critically low
   }
 
-  LinkStats stats = STORAGE_Utils::getStats();
   const std::vector<DigiStats> &digis = STORAGE_Utils::getDigiStats();
   char buf[128];
 
@@ -3148,13 +3156,12 @@ static void populate_stats(lv_obj_t *cont) {
     }
 
     stats_no_digi_lbl = lv_label_create(
-        cont); // Créer dans un sous-conteneur
+        stats_digi_list_container); // Créer dans le conteneur des digis (et réutilisé)
     if (stats_no_digi_lbl) {        // Vérifier la création réussie
-      lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
+      lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet"); // Texte initial
       lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
-      lv_obj_add_flag(stats_no_digi_lbl,
-                      LV_OBJ_FLAG_HIDDEN); // Cacher par défaut, afficher s'il
-                                           // n'y a pas de digis
+      lv_label_set_long_mode(stats_no_digi_lbl, LV_LABEL_LONG_WRAP); // Permettre le retour à la ligne
+      lv_obj_set_width(stats_no_digi_lbl, lv_pct(100)); // Prend toute la largeur
     }
   }
 
@@ -3257,51 +3264,44 @@ static void populate_stats(lv_obj_t *cont) {
     }
   }
 
-  // Section Digipeaters - toujours effacer et repopuler son conteneur
-  // spécifique
+  // Section Digipeaters - toujours mettre à jour le label unique
   if (stats_digi_title_lbl) {
     lv_obj_clear_flag(stats_digi_title_lbl, LV_OBJ_FLAG_HIDDEN);
   }
-  if (stats_digi_list_container) {
-    lv_obj_clean(stats_digi_list_container);
-  } // Nettoyer uniquement ce sous-conteneur pour limiter la fragmentation
+  // Suppression de lv_obj_clean(stats_digi_list_container); ici, car on réutilise stats_no_digi_lbl
 
   if (digis.size() == 0) {
     if (stats_no_digi_lbl) {
       lv_obj_clear_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
+      lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
+      lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0); // Reset color
     }
   } else {
     if (stats_no_digi_lbl) {
-      lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
-    }
+      lv_obj_clear_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); // S'assurer qu'il est visible
 
-    // Utiliser un vecteur de pointeurs pour le tri afin d'éviter les copies de
-    // String et la fragmentation mémoire
-    std::vector<const DigiStats *> sortedDigiPtrs;
-    sortedDigiPtrs.reserve(digis.size());
-    for (const auto &d : digis) {
-      sortedDigiPtrs.push_back(&d);
-    }
-    // Trier par compte (décroissant)
-    std::sort(sortedDigiPtrs.begin(), sortedDigiPtrs.end(),
-              [](const DigiStats *a, const DigiStats *b) {
-                return a->count > b->count;
-              });
-
-    // Afficher les meilleurs digis (limité à 10)
-    int showCount = (sortedDigiPtrs.size() > 10) ? 10 : sortedDigiPtrs.size();
-    for (int i = 0; i < showCount; i++) {
-      if (stats_digi_list_container) { // Créer uniquement si le conteneur est
-                                       // valide
-        snprintf(buf, sizeof(buf), "%s: %lu",
-                 sortedDigiPtrs[i]->callsign.c_str(),
-                 (unsigned long)sortedDigiPtrs[i]->count);
-        lv_obj_t *lbl_digi = lv_label_create(stats_digi_list_container);
-        if (lbl_digi) { // Vérifier la création réussie
-          lv_label_set_text(lbl_digi, buf);
-          lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
-        }
+      // Utiliser un vecteur de pointeurs pour le tri afin d'éviter les copies de
+      // String et la fragmentation mémoire
+      std::vector<const DigiStats *> sortedDigiPtrs;
+      sortedDigiPtrs.reserve(digis.size());
+      for (const auto &d : digis) {
+        sortedDigiPtrs.push_back(&d);
       }
+      // Trier par compte (décroissant)
+      std::sort(sortedDigiPtrs.begin(), sortedDigiPtrs.end(),
+                [](const DigiStats *a, const DigiStats *b) {
+                  return a->count > b->count;
+                });
+
+      // Construire une seule String pour afficher tous les digipeaters
+      String fullList = "";
+      // Limiter aux 8 meilleurs pour ne pas saturer l'affichage, comme suggéré dans l'analyse
+      int showCount = std::min((int)sortedDigiPtrs.size(), 8);
+      for (int i = 0; i < showCount; i++) {
+        fullList += String(sortedDigiPtrs[i]->callsign.c_str()) + ": " + String((unsigned long)sortedDigiPtrs[i]->count) + "\n";
+      }
+      lv_label_set_text(stats_no_digi_lbl, fullList.c_str());
+      lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x759a9e), 0); // Couleur du texte
     }
   }
 }
