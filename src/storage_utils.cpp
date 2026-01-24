@@ -600,10 +600,16 @@ namespace STORAGE_Utils {
                 segment = segment.substring(0, segment.length() - 1);
             }
 
-            // Skip q-constructs (qAO, qAR, etc.) and WIDE/TRACE
+            // Skip q-constructs (qAO, qAR, etc.), WIDE/TRACE, and known generic/service aliases
             if (!segment.startsWith("q") &&
                 !segment.startsWith("WIDE") &&
                 !segment.startsWith("TRACE") &&
+                !segment.equalsIgnoreCase("APLRT1") && // APRS-IS Relay Tracker 1
+                !segment.equalsIgnoreCase("APLRG1") && // APRS-IS Relay Gateway 1
+                !segment.equalsIgnoreCase("APLRFD") && // APRS-IS Relay Forwarder
+                !segment.equalsIgnoreCase("APLRFA") && // APRS-IS Relay Forwarder (alternate)
+                !segment.equalsIgnoreCase("APFD11") && // Generic Forwarder
+                !segment.equalsIgnoreCase("APWW11") && // Weather station IGate
                 segment.length() > 0) {
 
                 // Find or create digi entry
@@ -635,6 +641,12 @@ namespace STORAGE_Utils {
         if (!lastSeg.startsWith("q") &&
             !lastSeg.startsWith("WIDE") &&
             !lastSeg.startsWith("TRACE") &&
+            !lastSeg.equalsIgnoreCase("APLRT1") && // APRS-IS Relay Tracker 1
+            !lastSeg.equalsIgnoreCase("APLRG1") && // APRS-IS Relay Gateway 1
+            !lastSeg.equalsIgnoreCase("APLRFD") && // APRS-IS Relay Forwarder
+            !lastSeg.equalsIgnoreCase("APLRFA") && // APRS-IS Relay Forwarder (alternate)
+            !lastSeg.equalsIgnoreCase("APFD11") && // Generic Forwarder
+            !lastSeg.equalsIgnoreCase("APWW11") && // Weather station IGate
             lastSeg.length() > 0) {
             bool found = false;
             for (auto& d : digiStats) {
