@@ -34,6 +34,7 @@
 #include "sd_logger.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h> 
+#include <algorithm> // Pour std::sort
 
 #include "ui_map_manager.h" // Inclure le nouveau gestionnaire de carte
 
@@ -170,6 +171,22 @@ static lv_timer_t* bluetooth_update_timer = nullptr;
 static lv_obj_t* current_freq_btn = nullptr;
 static lv_obj_t* current_speed_btn = nullptr;
 static lv_obj_t* current_callsign_btn = nullptr;
+
+
+// UI Elements - Stats Tab (for persistent update)
+static lv_obj_t* stats_title_lbl = nullptr;
+static lv_obj_t* stats_rx_tx_counts_lbl = nullptr;
+static lv_obj_t* stats_rssi_stats_lbl = nullptr;
+static lv_obj_t* stats_snr_stats_lbl = nullptr;
+static lv_obj_t* stats_rssi_chart_legend_lbl = nullptr;
+static lv_obj_t* stats_rssi_chart_obj = nullptr;
+static lv_chart_series_t* stats_rssi_chart_ser = nullptr;
+static lv_obj_t* stats_snr_chart_legend_lbl = nullptr;
+static lv_obj_t* stats_snr_chart_obj = nullptr;
+static lv_chart_series_t* stats_snr_chart_ser = nullptr;
+static lv_obj_t* stats_digi_title_lbl = nullptr;
+static lv_obj_t* stats_no_digi_lbl = nullptr;
+static lv_obj_t* stats_digi_list_container = nullptr; // A container for digipeater labels
 
 // LVGL tick tracking
 static uint32_t last_tick = 0;
@@ -2754,136 +2771,174 @@ static void populate_stats(lv_obj_t* cont) {
         return;  // Don't update if memory is critically low
     }
 
-    lv_obj_clean(cont);
-
     LinkStats stats = STORAGE_Utils::getStats();
     const std::vector<DigiStats>& digis = STORAGE_Utils::getDigiStats();
-
-    // Link statistics section
-    lv_obj_t* title = lv_label_create(cont);
-    lv_label_set_text(title, "Link Statistics");
-    lv_obj_set_style_text_color(title, lv_color_hex(0x4CAF50), 0);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
-
     char buf[128];
 
-    // RX/TX counts
+    // Link statistics section - Create if not exists, then update
+    if (!stats_title_lbl) {
+        stats_title_lbl = lv_label_create(cont);
+        lv_label_set_text(stats_title_lbl, "Link Statistics");
+        lv_obj_set_style_text_color(stats_title_lbl, lv_color_hex(0x4CAF50), 0);
+        lv_obj_set_style_text_font(stats_title_lbl, &lv_font_montserrat_14, 0);
+
+        stats_rx_tx_counts_lbl = lv_label_create(cont);
+        lv_obj_set_style_text_color(stats_rx_tx_counts_lbl, lv_color_hex(0x759a9e), 0);
+
+        stats_rssi_stats_lbl = lv_label_create(cont);
+        lv_obj_set_style_text_color(stats_rssi_stats_lbl, lv_color_hex(0x759a9e), 0);
+
+        stats_snr_stats_lbl = lv_label_create(cont);
+        lv_obj_set_style_text_color(stats_snr_stats_lbl, lv_color_hex(0x759a9e), 0);
+
+        // RSSI Chart legend
+        stats_rssi_chart_legend_lbl = lv_label_create(cont);
+        lv_label_set_text(stats_rssi_chart_legend_lbl, "\nRSSI (dBm)");
+        lv_obj_set_style_text_color(stats_rssi_chart_legend_lbl, lv_color_hex(0x00BFFF), 0);
+
+        // RSSI Chart
+        stats_rssi_chart_obj = lv_chart_create(cont);
+        lv_obj_set_size(stats_rssi_chart_obj, 280, 50);
+        lv_chart_set_type(stats_rssi_chart_obj, LV_CHART_TYPE_LINE);
+        lv_obj_set_style_bg_color(stats_rssi_chart_obj, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_line_color(stats_rssi_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
+        lv_chart_set_div_line_count(stats_rssi_chart_obj, 3, 0);
+        stats_rssi_chart_ser = lv_chart_add_series(stats_rssi_chart_obj, lv_color_hex(0x00BFFF), LV_CHART_AXIS_PRIMARY_Y);
+        lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN); // Hidden initially if no data
+        lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+
+        // SNR Chart legend
+        stats_snr_chart_legend_lbl = lv_label_create(cont);
+        lv_label_set_text(stats_snr_chart_legend_lbl, "SNR (dB)");
+        lv_obj_set_style_text_color(stats_snr_chart_legend_lbl, lv_color_hex(0x00FF7F), 0);
+
+        // SNR Chart
+        stats_snr_chart_obj = lv_chart_create(cont);
+        lv_obj_set_size(stats_snr_chart_obj, 280, 50);
+        lv_chart_set_type(stats_snr_chart_obj, LV_CHART_TYPE_LINE);
+        lv_obj_set_style_bg_color(stats_snr_chart_obj, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_line_color(stats_snr_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
+        lv_chart_set_div_line_count(stats_snr_chart_obj, 3, 0);
+        stats_snr_chart_ser = lv_chart_add_series(stats_snr_chart_obj, lv_color_hex(0x00FF7F), LV_CHART_AXIS_PRIMARY_Y);
+        lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN); // Hidden initially if no data
+        lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+
+        // Digipeaters section title
+        stats_digi_title_lbl = lv_label_create(cont);
+        lv_label_set_text(stats_digi_title_lbl, "\nDigipeaters/IGates");
+        lv_obj_set_style_text_color(stats_digi_title_lbl, lv_color_hex(0x4CAF50), 0);
+        lv_obj_set_style_text_font(stats_digi_title_lbl, &lv_font_montserrat_14, 0);
+
+        // Container for digipeater list (its children will be cleaned and repopulated)
+        stats_digi_list_container = lv_obj_create(cont);
+        lv_obj_set_size(stats_digi_list_container, lv_pct(100), LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_opa(stats_digi_list_container, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(stats_digi_list_container, 0, 0);
+        lv_obj_set_style_pad_all(stats_digi_list_container, 0, 0);
+        lv_obj_set_flex_flow(stats_digi_list_container, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(stats_digi_list_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+        stats_no_digi_lbl = lv_label_create(stats_digi_list_container); // Create in sub-container
+        lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
+        lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
+        lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); // Hidden by default, shown if no digis
+    }
+
+    // Always update content
+    // Update RX/TX counts
     snprintf(buf, sizeof(buf), "RX: %lu   TX: %lu   ACK: %lu",
         (unsigned long)stats.rxCount, (unsigned long)stats.txCount, (unsigned long)stats.ackCount);
-    lv_obj_t* lbl_counts = lv_label_create(cont);
-    lv_label_set_text(lbl_counts, buf);
-    lv_obj_set_style_text_color(lbl_counts, lv_color_hex(0x759a9e), 0);
+    lv_label_set_text(stats_rx_tx_counts_lbl, buf);
 
-    // RSSI stats
+    // Update RSSI stats
     if (stats.rxCount > 0) {
         int rssiAvg = stats.rssiTotal / (int)stats.rxCount;
         snprintf(buf, sizeof(buf), "RSSI: %d avg  [%d / %d]", rssiAvg, stats.rssiMin, stats.rssiMax);
     } else {
         snprintf(buf, sizeof(buf), "RSSI: -- avg  [-- / --]");
     }
-    lv_obj_t* lbl_rssi = lv_label_create(cont);
-    lv_label_set_text(lbl_rssi, buf);
-    lv_obj_set_style_text_color(lbl_rssi, lv_color_hex(0x759a9e), 0);
+    lv_label_set_text(stats_rssi_stats_lbl, buf);
 
-    // SNR stats
+    // Update SNR stats
     if (stats.rxCount > 0) {
         float snrAvg = stats.snrTotal / (float)stats.rxCount;
         snprintf(buf, sizeof(buf), "SNR: %.1f avg  [%.1f / %.1f]", snrAvg, stats.snrMin, stats.snrMax);
     } else {
         snprintf(buf, sizeof(buf), "SNR: -- avg  [-- / --]");
     }
-    lv_obj_t* lbl_snr = lv_label_create(cont);
-    lv_label_set_text(lbl_snr, buf);
-    lv_obj_set_style_text_color(lbl_snr, lv_color_hex(0x759a9e), 0);
+    lv_label_set_text(stats_snr_stats_lbl, buf);
 
     // RSSI/SNR Charts
     const std::vector<int>& rssiHist = STORAGE_Utils::getRssiHistory();
     const std::vector<float>& snrHist = STORAGE_Utils::getSnrHistory();
 
     if (rssiHist.size() > 1) {
-        // RSSI Chart legend (with spacing)
-        lv_obj_t* rssi_legend = lv_label_create(cont);
-        lv_label_set_text(rssi_legend, "\nRSSI (dBm)");
-        lv_obj_set_style_text_color(rssi_legend, lv_color_hex(0x00BFFF), 0);
+        lv_obj_clear_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
 
-        // RSSI Chart
-        lv_obj_t* rssi_chart = lv_chart_create(cont);
-        lv_obj_set_size(rssi_chart, 280, 50);
-        lv_chart_set_type(rssi_chart, LV_CHART_TYPE_LINE);
-        lv_chart_set_point_count(rssi_chart, rssiHist.size());
-        lv_obj_set_style_bg_color(rssi_chart, lv_color_hex(0x1a1a2e), 0);
-        lv_obj_set_style_line_color(rssi_chart, lv_color_hex(0x333344), LV_PART_MAIN);
-        lv_chart_set_div_line_count(rssi_chart, 3, 0);
-
+        // RSSI Chart update
+        lv_chart_set_point_count(stats_rssi_chart_obj, rssiHist.size());
         // Find RSSI range for scaling
         int rssiMin = -120, rssiMax = -40;
         for (int v : rssiHist) {
             if (v < rssiMin) rssiMin = v;
             if (v > rssiMax) rssiMax = v;
         }
-        lv_chart_set_range(rssi_chart, LV_CHART_AXIS_PRIMARY_Y, rssiMin - 5, rssiMax + 5);
+        lv_chart_set_range(stats_rssi_chart_obj, LV_CHART_AXIS_PRIMARY_Y, rssiMin - 5, rssiMax + 5);
+        // Use lv_chart_set_ext_y_array for bulk update
+        lv_chart_set_ext_y_array(stats_rssi_chart_obj, stats_rssi_chart_ser, (lv_coord_t*)rssiHist.data());
 
-        lv_chart_series_t* rssi_ser = lv_chart_add_series(rssi_chart, lv_color_hex(0x00BFFF), LV_CHART_AXIS_PRIMARY_Y);
-        for (size_t i = 0; i < rssiHist.size(); i++) {
-            lv_chart_set_next_value(rssi_chart, rssi_ser, rssiHist[i]);
-        }
-
-        // SNR Chart legend
-        lv_obj_t* snr_legend = lv_label_create(cont);
-        lv_label_set_text(snr_legend, "SNR (dB)");
-        lv_obj_set_style_text_color(snr_legend, lv_color_hex(0x00FF7F), 0);
-
-        // SNR Chart
-        lv_obj_t* snr_chart = lv_chart_create(cont);
-        lv_obj_set_size(snr_chart, 280, 50);
-        lv_chart_set_type(snr_chart, LV_CHART_TYPE_LINE);
-        lv_chart_set_point_count(snr_chart, snrHist.size());
-        lv_obj_set_style_bg_color(snr_chart, lv_color_hex(0x1a1a2e), 0);
-        lv_obj_set_style_line_color(snr_chart, lv_color_hex(0x333344), LV_PART_MAIN);
-        lv_chart_set_div_line_count(snr_chart, 3, 0);
-
+        // SNR Chart update
+        lv_chart_set_point_count(stats_snr_chart_obj, snrHist.size());
         // Find SNR range for scaling
         float snrMinF = -10, snrMaxF = 15;
         for (float v : snrHist) {
             if (v < snrMinF) snrMinF = v;
             if (v > snrMaxF) snrMaxF = v;
         }
-        lv_chart_set_range(snr_chart, LV_CHART_AXIS_PRIMARY_Y, (int)(snrMinF - 2), (int)(snrMaxF + 2));
-
-        lv_chart_series_t* snr_ser = lv_chart_add_series(snr_chart, lv_color_hex(0x00FF7F), LV_CHART_AXIS_PRIMARY_Y);
-        for (size_t i = 0; i < snrHist.size(); i++) {
-            lv_chart_set_next_value(snr_chart, snr_ser, (int)(snrHist[i] * 10) / 10);
+        // Scale float SNR values to int for lv_coord_t (typically int16_t)
+        std::vector<lv_coord_t> snrHist_scaled;
+        snrHist_scaled.reserve(snrHist.size());
+        for (float v : snrHist) {
+            snrHist_scaled.push_back(static_cast<lv_coord_t>(v * 10)); // Scale by 10 to keep one decimal precision
         }
+        lv_chart_set_range(stats_snr_chart_obj, LV_CHART_AXIS_PRIMARY_Y, (int)((snrMinF - 2)*10), (int)((snrMaxF + 2)*10));
+        lv_chart_set_ext_y_array(stats_snr_chart_obj, stats_snr_chart_ser, snrHist_scaled.data());
+
+    } else {
+        lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
     }
 
-    // Digipeaters section
-    lv_obj_t* digi_title = lv_label_create(cont);
-    lv_label_set_text(digi_title, "\nDigipeaters/IGates");
-    lv_obj_set_style_text_color(digi_title, lv_color_hex(0x4CAF50), 0);
-    lv_obj_set_style_text_font(digi_title, &lv_font_montserrat_14, 0);
+    // Digipeaters section - always clear and repopulate its specific container
+    lv_obj_clear_flag(stats_digi_title_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clean(stats_digi_list_container); // Only clean this sub-container to limit fragmentation
 
     if (digis.size() == 0) {
-        lv_obj_t* no_digi = lv_label_create(cont);
-        lv_label_set_text(no_digi, "No digipeaters seen yet");
-        lv_obj_set_style_text_color(no_digi, lv_color_hex(0x888888), 0);
+        lv_obj_clear_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
     } else {
-        // Copy and sort by count (descending)
-        std::vector<DigiStats> sortedDigis = digis;
-        for (size_t i = 0; i < sortedDigis.size(); i++) {
-            for (size_t j = i + 1; j < sortedDigis.size(); j++) {
-                if (sortedDigis[j].count > sortedDigis[i].count) {
-                    DigiStats tmp = sortedDigis[i];
-                    sortedDigis[i] = sortedDigis[j];
-                    sortedDigis[j] = tmp;
-                }
-            }
+        lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
+
+        // Use vector of pointers for sorting to avoid String copies and memory fragmentation
+        std::vector<const DigiStats*> sortedDigiPtrs;
+        sortedDigiPtrs.reserve(digis.size());
+        for (const auto& d : digis) {
+            sortedDigiPtrs.push_back(&d);
         }
+        // Sort by count (descending)
+        std::sort(sortedDigiPtrs.begin(), sortedDigiPtrs.end(), [](const DigiStats* a, const DigiStats* b) {
+            return a->count > b->count;
+        });
 
         // Show top digis (limit to 10)
-        int showCount = (sortedDigis.size() > 10) ? 10 : sortedDigis.size();
+        int showCount = (sortedDigiPtrs.size() > 10) ? 10 : sortedDigiPtrs.size();
         for (int i = 0; i < showCount; i++) {
-            snprintf(buf, sizeof(buf), "%s: %lu", sortedDigis[i].callsign.c_str(), (unsigned long)sortedDigis[i].count);
-            lv_obj_t* lbl_digi = lv_label_create(cont);
+            snprintf(buf, sizeof(buf), "%s: %lu", sortedDigiPtrs[i]->callsign.c_str(), (unsigned long)sortedDigiPtrs[i]->count);
+            lv_obj_t* lbl_digi = lv_label_create(stats_digi_list_container);
             lv_label_set_text(lbl_digi, buf);
             lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
         }
