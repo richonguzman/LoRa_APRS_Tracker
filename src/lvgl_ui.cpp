@@ -2778,100 +2778,177 @@ static void populate_stats(lv_obj_t* cont) {
     // Link statistics section - Create if not exists, then update
     if (!stats_title_lbl) {
         stats_title_lbl = lv_label_create(cont);
-        lv_label_set_text(stats_title_lbl, "Link Statistics");
-        lv_obj_set_style_text_color(stats_title_lbl, lv_color_hex(0x4CAF50), 0);
-        lv_obj_set_style_text_font(stats_title_lbl, &lv_font_montserrat_14, 0);
+        if (stats_title_lbl) { // Vérifier la création réussie
+            lv_label_set_text(stats_title_lbl, "Link Statistics");
+            lv_obj_set_style_text_color(stats_title_lbl, lv_color_hex(0x4CAF50), 0);
+            lv_obj_set_style_text_font(stats_title_lbl, &lv_font_montserrat_14, 0);
+        }
 
         stats_rx_tx_counts_lbl = lv_label_create(cont);
-        lv_obj_set_style_text_color(stats_rx_tx_counts_lbl, lv_color_hex(0x759a9e), 0);
+        if (stats_rx_tx_counts_lbl) { // Vérifier la création réussie
+            lv_obj_set_style_text_color(stats_rx_tx_counts_lbl, lv_color_hex(0x759a9e), 0);
+        }
 
         stats_rssi_stats_lbl = lv_label_create(cont);
-        lv_obj_set_style_text_color(stats_rssi_stats_lbl, lv_color_hex(0x759a9e), 0);
+        if (stats_rssi_stats_lbl) { // Vérifier la création réussie
+            lv_obj_set_style_text_color(stats_rssi_stats_lbl, lv_color_hex(0x759a9e), 0);
+        }
 
         stats_snr_stats_lbl = lv_label_create(cont);
-        lv_obj_set_style_text_color(stats_snr_stats_lbl, lv_color_hex(0x759a9e), 0);
+        if (stats_snr_stats_lbl) { // Vérifier la création réussie
+            lv_obj_set_style_text_color(stats_snr_stats_lbl, lv_color_hex(0x759a9e), 0);
+        }
 
         // RSSI Chart legend
         stats_rssi_chart_legend_lbl = lv_label_create(cont);
-        lv_label_set_text(stats_rssi_chart_legend_lbl, "\nRSSI (dBm)");
-        lv_obj_set_style_text_color(stats_rssi_chart_legend_lbl, lv_color_hex(0x00BFFF), 0);
+        if (stats_rssi_chart_legend_lbl) { // Vérifier la création réussie
+            lv_label_set_text(stats_rssi_chart_legend_lbl, "\nRSSI (dBm)");
+            lv_obj_set_style_text_color(stats_rssi_chart_legend_lbl, lv_color_hex(0x00BFFF), 0);
+        }
 
         // RSSI Chart
         stats_rssi_chart_obj = lv_chart_create(cont);
-        lv_obj_set_size(stats_rssi_chart_obj, 280, 50);
-        lv_chart_set_type(stats_rssi_chart_obj, LV_CHART_TYPE_LINE);
-        lv_obj_set_style_bg_color(stats_rssi_chart_obj, lv_color_hex(0x1a1a2e), 0);
-        lv_obj_set_style_line_color(stats_rssi_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
-        lv_chart_set_div_line_count(stats_rssi_chart_obj, 3, 0);
-        stats_rssi_chart_ser = lv_chart_add_series(stats_rssi_chart_obj, lv_color_hex(0x00BFFF), LV_CHART_AXIS_PRIMARY_Y);
-        lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN); // Hidden initially if no data
-        lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        if (stats_rssi_chart_obj) { // Vérifier la création réussie
+            lv_obj_set_size(stats_rssi_chart_obj, 280, 50);
+            lv_chart_set_type(stats_rssi_chart_obj, LV_CHART_TYPE_LINE);
+            lv_obj_set_style_bg_color(stats_rssi_chart_obj, lv_color_hex(0x1a1a2e), 0);
+            lv_obj_set_style_line_color(stats_rssi_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
+            lv_chart_set_div_line_count(stats_rssi_chart_obj, 3, 0);
+            stats_rssi_chart_ser = lv_chart_add_series(stats_rssi_chart_obj, lv_color_hex(0x00BFFF), LV_CHART_AXIS_PRIMARY_Y);
+            if (stats_rssi_chart_ser) { // Vérifier la création de la série
+                 lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN); // Cacher initialement s'il n'y a pas de données
+            }
+        }
+        if (stats_rssi_chart_legend_lbl) { // Vérifier l'étiquette séparément, car elle peut être créée même si le graphique a échoué
+            lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        }
 
         // SNR Chart legend
         stats_snr_chart_legend_lbl = lv_label_create(cont);
-        lv_label_set_text(stats_snr_chart_legend_lbl, "SNR (dB)");
-        lv_obj_set_style_text_color(stats_snr_chart_legend_lbl, lv_color_hex(0x00FF7F), 0);
+        if (stats_snr_chart_legend_lbl) { // Vérifier la création réussie
+            lv_label_set_text(stats_snr_chart_legend_lbl, "SNR (dB)");
+            lv_obj_set_style_text_color(stats_snr_chart_legend_lbl, lv_color_hex(0x00FF7F), 0);
+        }
 
         // SNR Chart
         stats_snr_chart_obj = lv_chart_create(cont);
-        lv_obj_set_size(stats_snr_chart_obj, 280, 50);
-        lv_chart_set_type(stats_snr_chart_obj, LV_CHART_TYPE_LINE);
-        lv_obj_set_style_bg_color(stats_snr_chart_obj, lv_color_hex(0x1a1a2e), 0);
-        lv_obj_set_style_line_color(stats_snr_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
-        lv_chart_set_div_line_count(stats_snr_chart_obj, 3, 0);
-        stats_snr_chart_ser = lv_chart_add_series(stats_snr_chart_obj, lv_color_hex(0x00FF7F), LV_CHART_AXIS_PRIMARY_Y);
-        lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN); // Hidden initially if no data
-        lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        if (stats_snr_chart_obj) { // Vérifier la création réussie
+            lv_obj_set_size(stats_snr_chart_obj, 280, 50);
+            lv_chart_set_type(stats_snr_chart_obj, LV_CHART_TYPE_LINE);
+            lv_obj_set_style_bg_color(stats_snr_chart_obj, lv_color_hex(0x1a1a2e), 0);
+            lv_obj_set_style_line_color(stats_snr_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
+            lv_chart_set_div_line_count(stats_snr_chart_obj, 3, 0);
+            stats_snr_chart_ser = lv_chart_add_series(stats_snr_chart_obj, lv_color_hex(0x00FF7F), LV_CHART_AXIS_PRIMARY_Y);
+            if (stats_snr_chart_ser) { // Vérifier la création de la série
+                lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN); // Cacher initialement s'il n'y a pas de données
+            }
+        }
+        if (stats_snr_chart_legend_lbl) { // Vérifier l'étiquette séparément
+            lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        }
 
         // Digipeaters section title
         stats_digi_title_lbl = lv_label_create(cont);
-        lv_label_set_text(stats_digi_title_lbl, "\nDigipeaters/IGates");
-        lv_obj_set_style_text_color(stats_digi_title_lbl, lv_color_hex(0x4CAF50), 0);
-        lv_obj_set_style_text_font(stats_digi_title_lbl, &lv_font_montserrat_14, 0);
+        if (stats_digi_title_lbl) { // Vérifier la création réussie
+            lv_label_set_text(stats_digi_title_lbl, "\nDigipeaters/IGates");
+            lv_obj_set_style_text_color(stats_digi_title_lbl, lv_color_hex(0x4CAF50), 0);
+            lv_obj_set_style_text_font(stats_digi_title_lbl, &lv_font_montserrat_14, 0);
+        }
 
         // Container for digipeater list (its children will be cleaned and repopulated)
         stats_digi_list_container = lv_obj_create(cont);
-        lv_obj_set_size(stats_digi_list_container, lv_pct(100), LV_SIZE_CONTENT);
-        lv_obj_set_style_bg_opa(stats_digi_list_container, LV_OPA_TRANSP, 0);
-        lv_obj_set_style_border_width(stats_digi_list_container, 0, 0);
-        lv_obj_set_style_pad_all(stats_digi_list_container, 0, 0);
-        lv_obj_set_flex_flow(stats_digi_list_container, LV_FLEX_FLOW_COLUMN);
-        lv_obj_set_flex_align(stats_digi_list_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+        if (stats_digi_list_container) { // Vérifier la création réussie
+            lv_obj_set_size(stats_digi_list_container, lv_pct(100), LV_SIZE_CONTENT);
+            lv_obj_set_style_bg_opa(stats_digi_list_container, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_border_width(stats_digi_list_container, 0, 0);
+            lv_obj_set_style_pad_all(stats_digi_list_container, 0, 0);
+            lv_obj_set_flex_flow(stats_digi_list_container, LV_FLEX_FLOW_COLUMN);
+            lv_obj_set_flex_align(stats_digi_list_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+        }
 
-        stats_no_digi_lbl = lv_label_create(stats_digi_list_container); // Create in sub-container
-        lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
-        lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
-        lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); // Hidden by default, shown if no digis
+        stats_no_digi_lbl = lv_label_create(stats_digi_list_container); // Créer dans un sous-conteneur
+        if (stats_no_digi_lbl) { // Vérifier la création réussie
+            lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
+            lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
+            lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); // Cacher par défaut, afficher s'il n'y a pas de digis
+        }
     }
 
     // Always update content
     // Update RX/TX counts
-    snprintf(buf, sizeof(buf), "RX: %lu   TX: %lu   ACK: %lu",
-        (unsigned long)stats.rxCount, (unsigned long)stats.txCount, (unsigned long)stats.ackCount);
-    lv_label_set_text(stats_rx_tx_counts_lbl, buf);
+    if (stats_rx_tx_counts_lbl) { // Vérifier la création réussie
+        snprintf(buf, sizeof(buf), "RX: %lu   TX: %lu   ACK: %lu",
+            (unsigned long)stats.rxCount, (unsigned long)stats.txCount, (unsigned long)stats.ackCount);
+        lv_label_set_text(stats_rx_tx_counts_lbl, buf);
+    }
 
     // Update RSSI stats
-    if (stats.rxCount > 0) {
-        int rssiAvg = stats.rssiTotal / (int)stats.rxCount;
-        snprintf(buf, sizeof(buf), "RSSI: %d avg  [%d / %d]", rssiAvg, stats.rssiMin, stats.rssiMax);
-    } else {
-        snprintf(buf, sizeof(buf), "RSSI: -- avg  [-- / --]");
+    if (stats_rssi_stats_lbl) { // Vérifier la création réussie
+        if (stats.rxCount > 0) {
+            int rssiAvg = stats.rssiTotal / (int)stats.rxCount;
+            snprintf(buf, sizeof(buf), "RSSI: %d avg  [%d / %d]", rssiAvg, stats.rssiMin, stats.rssiMax);
+        } else {
+            snprintf(buf, sizeof(buf), "RSSI: -- avg  [-- / --]");
+        }
+        lv_label_set_text(stats_rssi_stats_lbl, buf);
     }
-    lv_label_set_text(stats_rssi_stats_lbl, buf);
 
     // Update SNR stats
-    if (stats.rxCount > 0) {
-        float snrAvg = stats.snrTotal / (float)stats.rxCount;
-        snprintf(buf, sizeof(buf), "SNR: %.1f avg  [%.1f / %.1f]", snrAvg, stats.snrMin, stats.snrMax);
-    } else {
-        snprintf(buf, sizeof(buf), "SNR: -- avg  [-- / --]");
+    if (stats_snr_stats_lbl) { // Vérifier la création réussie
+        if (stats.rxCount > 0) {
+            float snrAvg = stats.snrTotal / (float)stats.rxCount;
+            snprintf(buf, sizeof(buf), "SNR: %.1f avg  [%.1f / %.1f]", snrAvg, stats.snrMin, stats.snrMax);
+        } else {
+            snprintf(buf, sizeof(buf), "SNR: -- avg  [-- / --]");
+        }
+        lv_label_set_text(stats_snr_stats_lbl, buf);
     }
-    lv_label_set_text(stats_snr_stats_lbl, buf);
 
     // RSSI/SNR Charts
     const std::vector<int>& rssiHist = STORAGE_Utils::getRssiHistory();
     const std::vector<float>& snrHist = STORAGE_Utils::getSnrHistory();
 
+    /*if (rssiHist.size() > 1) {
+        if (stats_rssi_chart_obj) { lv_obj_clear_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_rssi_chart_legend_lbl) { lv_obj_clear_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_snr_chart_obj) { lv_obj_clear_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_snr_chart_legend_lbl) { lv_obj_clear_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN); }
+
+        // RSSI Chart update
+        if (stats_rssi_chart_obj && stats_rssi_chart_ser) { // Vérifier la création réussie du graphique et de la série
+            lv_chart_set_point_count(stats_rssi_chart_obj, rssiHist.size());
+            // Trouver la plage RSSI pour l'échelle
+            int rssiMin = -120, rssiMax = -40;
+            for (int v : rssiHist) {
+                if (v < rssiMin) rssiMin = v;
+                if (v > rssiMax) rssiMax = v;
+            }
+            lv_chart_set_range(stats_rssi_chart_obj, LV_CHART_AXIS_PRIMARY_Y, rssiMin - 5, rssiMax + 5);
+            // Utiliser lv_chart_set_ext_y_array pour la mise à jour en masse
+            lv_chart_set_ext_y_array(stats_rssi_chart_obj, stats_rssi_chart_ser, (lv_coord_t*)rssiHist.data());
+        }
+
+        // SNR Chart update
+        if (stats_snr_chart_obj && stats_snr_chart_ser) { // Vérifier la création réussie du graphique et de la série
+            lv_chart_set_point_count(stats_snr_chart_obj, snrHist.size());
+            // Trouver la plage SNR pour l'échelle
+            float snrMinF = -10, snrMaxF = 15;
+            for (float v : snrHist) {
+                if (v < snrMinF) snrMinF = v;
+                if (v > snrMaxF) snrMaxF = v;
+            }
+            // Mettre à l'échelle les valeurs flottantes SNR en int pour lv_coord_t (généralement int16_t)
+            std::vector<lv_coord_t> snrHist_scaled;
+            snrHist_scaled.reserve(snrHist.size());
+            for (float v : snrHist) {
+                snrHist_scaled.push_back(static_cast<lv_coord_t>(v * 10)); // Mettre à l'échelle par 10 pour conserver une décimale
+            }
+            lv_chart_set_range(stats_snr_chart_obj, LV_CHART_AXIS_PRIMARY_Y, (int)((snrMinF - 2)*10), (int)((snrMaxF + 2)*10));
+            lv_chart_set_ext_y_array(stats_snr_chart_obj, stats_snr_chart_ser, snrHist_scaled.data());
+        }
+
+    } else {*/
+    
     if (rssiHist.size() > 1) {
         lv_obj_clear_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -2887,8 +2964,12 @@ static void populate_stats(lv_obj_t* cont) {
             if (v > rssiMax) rssiMax = v;
         }
         lv_chart_set_range(stats_rssi_chart_obj, LV_CHART_AXIS_PRIMARY_Y, rssiMin - 5, rssiMax + 5);
-        // Use lv_chart_set_ext_y_array for bulk update
-        lv_chart_set_ext_y_array(stats_rssi_chart_obj, stats_rssi_chart_ser, (lv_coord_t*)rssiHist.data());
+        
+        // SAFE UPDATE: Copy values individually (avoid ext_y_array with local/volatile pointers)
+        for (size_t i = 0; i < rssiHist.size(); i++) {
+            lv_chart_set_value_by_id(stats_rssi_chart_obj, stats_rssi_chart_ser, i, (lv_coord_t)rssiHist[i]);
+        }
+        lv_chart_refresh(stats_rssi_chart_obj);
 
         // SNR Chart update
         lv_chart_set_point_count(stats_snr_chart_obj, snrHist.size());
@@ -2898,52 +2979,54 @@ static void populate_stats(lv_obj_t* cont) {
             if (v < snrMinF) snrMinF = v;
             if (v > snrMaxF) snrMaxF = v;
         }
-        // Scale float SNR values to int for lv_coord_t (typically int16_t)
-        std::vector<lv_coord_t> snrHist_scaled;
-        snrHist_scaled.reserve(snrHist.size());
-        for (float v : snrHist) {
-            snrHist_scaled.push_back(static_cast<lv_coord_t>(v * 10)); // Scale by 10 to keep one decimal precision
-        }
         lv_chart_set_range(stats_snr_chart_obj, LV_CHART_AXIS_PRIMARY_Y, (int)((snrMinF - 2)*10), (int)((snrMaxF + 2)*10));
-        lv_chart_set_ext_y_array(stats_snr_chart_obj, stats_snr_chart_ser, snrHist_scaled.data());
+        
+        // SAFE UPDATE: Copy values with scaling
+        for (size_t i = 0; i < snrHist.size(); i++) {
+             lv_chart_set_value_by_id(stats_snr_chart_obj, stats_snr_chart_ser, i, (lv_coord_t)(snrHist[i] * 10));
+        }
+        lv_chart_refresh(stats_snr_chart_obj);
 
     } else {
-        lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
+        if (stats_rssi_chart_obj) { lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_rssi_chart_legend_lbl) { lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_snr_chart_obj) { lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN); }
+        if (stats_snr_chart_legend_lbl) { lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN); }
     }
 
-    // Digipeaters section - always clear and repopulate its specific container
-    lv_obj_clear_flag(stats_digi_title_lbl, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_clean(stats_digi_list_container); // Only clean this sub-container to limit fragmentation
+    // Section Digipeaters - toujours effacer et repopuler son conteneur spécifique
+    if (stats_digi_title_lbl) { lv_obj_clear_flag(stats_digi_title_lbl, LV_OBJ_FLAG_HIDDEN); }
+    if (stats_digi_list_container) { lv_obj_clean(stats_digi_list_container); } // Nettoyer uniquement ce sous-conteneur pour limiter la fragmentation
 
     if (digis.size() == 0) {
-        lv_obj_clear_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
+        if (stats_no_digi_lbl) { lv_obj_clear_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); }
     } else {
-        lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN);
+        if (stats_no_digi_lbl) { lv_obj_add_flag(stats_no_digi_lbl, LV_OBJ_FLAG_HIDDEN); }
 
-        // Use vector of pointers for sorting to avoid String copies and memory fragmentation
+        // Utiliser un vecteur de pointeurs pour le tri afin d'éviter les copies de String et la fragmentation mémoire
         std::vector<const DigiStats*> sortedDigiPtrs;
         sortedDigiPtrs.reserve(digis.size());
         for (const auto& d : digis) {
             sortedDigiPtrs.push_back(&d);
         }
-        // Sort by count (descending)
+        // Trier par compte (décroissant)
         std::sort(sortedDigiPtrs.begin(), sortedDigiPtrs.end(), [](const DigiStats* a, const DigiStats* b) {
             return a->count > b->count;
         });
 
-        // Show top digis (limit to 10)
+        // Afficher les meilleurs digis (limité à 10)
         int showCount = (sortedDigiPtrs.size() > 10) ? 10 : sortedDigiPtrs.size();
         for (int i = 0; i < showCount; i++) {
-            snprintf(buf, sizeof(buf), "%s: %lu", sortedDigiPtrs[i]->callsign.c_str(), (unsigned long)sortedDigiPtrs[i]->count);
-            lv_obj_t* lbl_digi = lv_label_create(stats_digi_list_container);
-            lv_label_set_text(lbl_digi, buf);
-            lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
+            if (stats_digi_list_container) { // Créer uniquement si le conteneur est valide
+                snprintf(buf, sizeof(buf), "%s: %lu", sortedDigiPtrs[i]->callsign.c_str(), (unsigned long)sortedDigiPtrs[i]->count);
+                lv_obj_t* lbl_digi = lv_label_create(stats_digi_list_container);
+                if (lbl_digi) { // Vérifier la création réussie
+                    lv_label_set_text(lbl_digi, buf);
+                    lv_obj_set_style_text_color(lbl_digi, lv_color_hex(0x759a9e), 0);
+                }
+            }
         }
     }
-}
 
 // Contact edit screen callbacks
 static void contact_edit_input_focused(lv_event_t* e) {
@@ -3674,6 +3757,10 @@ static void create_msg_screen() {
 
     // Tabview for APRS / Winlink
     msg_tabview = lv_tabview_create(screen_msg, LV_DIR_TOP, 30);
+    if (!msg_tabview) { // Vérifier la création réussie
+        Serial.println("[LVGL] ERROR: Failed to create msg_tabview!");
+        return; // Éviter le crash
+    }
     lv_obj_set_size(msg_tabview, SCREEN_WIDTH, SCREEN_HEIGHT - 35);
     lv_obj_set_pos(msg_tabview, 0, 35);
     lv_obj_set_style_bg_color(msg_tabview, lv_color_hex(0x0f0f23), 0);
@@ -3681,65 +3768,87 @@ static void create_msg_screen() {
 
     // Get tab bar and set equal width for all tabs
     lv_obj_t* tab_bar = lv_tabview_get_tab_btns(msg_tabview);
-    lv_obj_set_style_pad_column(tab_bar, 2, 0);  // Small gap between tabs
+    if (tab_bar) { // Vérifier la création réussie
+        lv_obj_set_style_pad_column(tab_bar, 2, 0);  // Small gap between tabs
+    }
 
     // APRS Tab
     lv_obj_t* tab_aprs = lv_tabview_add_tab(msg_tabview, "APRS");
-    lv_obj_set_style_bg_color(tab_aprs, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_pad_all(tab_aprs, 5, 0);
+    if (tab_aprs) { // Vérifier la création réussie
+        lv_obj_set_style_bg_color(tab_aprs, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_pad_all(tab_aprs, 5, 0);
 
-    list_aprs_global = lv_list_create(tab_aprs);
-    lv_obj_set_size(list_aprs_global, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(list_aprs_global, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_border_width(list_aprs_global, 0, 0);
-    populate_msg_list(list_aprs_global, 0);
+        list_aprs_global = lv_list_create(tab_aprs);
+        if (list_aprs_global) { // Vérifier la création réussie
+            lv_obj_set_size(list_aprs_global, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(list_aprs_global, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_width(list_aprs_global, 0, 0);
+            populate_msg_list(list_aprs_global, 0);
+        }
+    }
 
     // Winlink Tab
     lv_obj_t* tab_wlnk = lv_tabview_add_tab(msg_tabview, "Winlink");
-    lv_obj_set_style_bg_color(tab_wlnk, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_pad_all(tab_wlnk, 5, 0);
+    if (tab_wlnk) { // Vérifier la création réussie
+        lv_obj_set_style_bg_color(tab_wlnk, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_pad_all(tab_wlnk, 5, 0);
 
-    list_wlnk_global = lv_list_create(tab_wlnk);
-    lv_obj_set_size(list_wlnk_global, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(list_wlnk_global, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_border_width(list_wlnk_global, 0, 0);
-    // Don't populate here - lazy load when tab is selected
+        list_wlnk_global = lv_list_create(tab_wlnk);
+        if (list_wlnk_global) { // Vérifier la création réussie
+            lv_obj_set_size(list_wlnk_global, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(list_wlnk_global, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_width(list_wlnk_global, 0, 0);
+            // Don't populate here - lazy load when tab is selected
+        }
+    }
 
     // Contacts Tab
     lv_obj_t* tab_contacts = lv_tabview_add_tab(msg_tabview, "Contacts");
-    lv_obj_set_style_bg_color(tab_contacts, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_pad_all(tab_contacts, 5, 0);
+    if (tab_contacts) { // Vérifier la création réussie
+        lv_obj_set_style_bg_color(tab_contacts, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_pad_all(tab_contacts, 5, 0);
 
-    list_contacts_global = lv_list_create(tab_contacts);
-    lv_obj_set_size(list_contacts_global, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(list_contacts_global, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_border_width(list_contacts_global, 0, 0);
-    // Don't populate here - lazy load when tab is selected
+        list_contacts_global = lv_list_create(tab_contacts);
+        if (list_contacts_global) { // Vérifier la création réussie
+            lv_obj_set_size(list_contacts_global, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(list_contacts_global, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_width(list_contacts_global, 0, 0);
+            // Don't populate here - lazy load when tab is selected
+        }
+    }
 
     // Frames Tab (raw LoRa frames log)
     lv_obj_t* tab_frames = lv_tabview_add_tab(msg_tabview, "Frames");
-    lv_obj_set_style_bg_color(tab_frames, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_pad_all(tab_frames, 5, 0);
+    if (tab_frames) { // Vérifier la création réussie
+        lv_obj_set_style_bg_color(tab_frames, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_pad_all(tab_frames, 5, 0);
 
-    list_frames_global = lv_list_create(tab_frames);
-    lv_obj_set_size(list_frames_global, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(list_frames_global, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_border_width(list_frames_global, 0, 0);
-    // Don't populate here - lazy load when tab is selected
+        list_frames_global = lv_list_create(tab_frames);
+        if (list_frames_global) { // Vérifier la création réussie
+            lv_obj_set_size(list_frames_global, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(list_frames_global, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_width(list_frames_global, 0, 0);
+            // Don't populate here - lazy load when tab is selected
+        }
+    }
 
     // Stats Tab (link statistics)
     lv_obj_t* tab_stats = lv_tabview_add_tab(msg_tabview, "Stats");
-    lv_obj_set_style_bg_color(tab_stats, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_pad_all(tab_stats, 10, 0);
+    if (tab_stats) { // Vérifier la création réussie
+        lv_obj_set_style_bg_color(tab_stats, lv_color_hex(0x0f0f23), 0);
+        lv_obj_set_style_pad_all(tab_stats, 10, 0);
 
-    cont_stats_global = lv_obj_create(tab_stats);
-    lv_obj_set_size(cont_stats_global, lv_pct(100), lv_pct(100));
-    lv_obj_set_style_bg_color(cont_stats_global, lv_color_hex(0x0f0f23), 0);
-    lv_obj_set_style_border_width(cont_stats_global, 0, 0);
-    lv_obj_set_flex_flow(cont_stats_global, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(cont_stats_global, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_set_style_pad_row(cont_stats_global, 4, 0);
-    // Don't populate here - lazy load when tab is selected
+        cont_stats_global = lv_obj_create(tab_stats);
+        if (cont_stats_global) { // Vérifier la création réussie
+            lv_obj_set_size(cont_stats_global, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(cont_stats_global, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_width(cont_stats_global, 0, 0);
+            lv_obj_set_flex_flow(cont_stats_global, LV_FLEX_FLOW_COLUMN);
+            lv_obj_set_flex_align(cont_stats_global, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(cont_stats_global, 4, 0);
+            // Don't populate here - lazy load when tab is selected
+        }
+    }
 
     Serial.println("[LVGL] Messages screen created with tabs");
 }
