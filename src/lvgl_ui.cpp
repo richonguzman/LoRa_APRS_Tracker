@@ -2412,7 +2412,7 @@ static void refresh_conversation_messages() {
     lv_label_set_text(empty, "No messages");
     lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
   } else {
-    for (size_t i = 0; i < messages.size(); i++) {
+    for (int i = messages.size() - 1; i >= 0; i--) {
       String msg = messages[i];
       int firstComma = msg.indexOf(',');
       int secondComma = msg.indexOf(',', firstComma + 1);
@@ -2464,7 +2464,7 @@ static void refresh_conversation_messages() {
     }
   }
 
-  lv_obj_scroll_to_y(conversation_list, LV_COORD_MAX, LV_ANIM_OFF);
+  lv_obj_scroll_to_y(conversation_list, 0, LV_ANIM_OFF);
   Serial.printf("[LVGL] Conversation messages refreshed: %d messages\n",
                 messages.size());
 }
@@ -2715,7 +2715,7 @@ static void create_conversation_screen(const String &callsign) {
     lv_label_set_text(empty, "No messages");
     lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
   } else {
-    for (size_t i = 0; i < messages.size(); i++) {
+    for (int i = messages.size() - 1; i >= 0; i--) {
       // Parse: timestamp,direction,content
       String msg = messages[i];
       int firstComma = msg.indexOf(',');
@@ -2771,7 +2771,7 @@ static void create_conversation_screen(const String &callsign) {
   }
 
   // Scroll to bottom to show latest messages
-  lv_obj_scroll_to_y(conversation_list, LV_COORD_MAX, LV_ANIM_OFF);
+  lv_obj_scroll_to_y(conversation_list, 0, LV_ANIM_OFF);
 
   if (isRefresh) {
     // Refreshing same screen - no animation, just swap
@@ -4521,6 +4521,13 @@ static void populate_stats(lv_obj_t *cont) {
       // Update LoRa (last received packet)
       if (lastReceivedPacket.sender.length() > 0) {
         updateLoRa(lastReceivedPacket.sender.c_str(), lastReceivedPacket.rssi);
+      }
+      
+     // Update Stats tab if currently active (Index 4)
+    if (screen_msg && lv_scr_act() == screen_msg && msg_tabview) {
+        if (lv_tabview_get_tab_act(msg_tabview) == 4 && cont_stats_global) {
+            populate_stats(cont_stats_global);
+        }
       }
     }
   }
