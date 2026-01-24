@@ -1976,17 +1976,41 @@ static void btn_bluetooth_back_clicked(lv_event_t *e) {
 
 // Timer callbacks for deferred BLE operations (non-blocking UI)
 static void ble_setup_timer_cb(lv_timer_t *timer) {
-  if (Config.bluetooth.useBLE) {
-    BLE_Utils::setup();
-    Serial.println("[LVGL] BLE setup completed (deferred)");
+  uint32_t currentFreeHeap = ESP.getFreeHeap();
+  uint32_t largestBlock = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+  Serial.printf("[LVGL] BLE setup timer: Free heap: %u bytes, Largest block: %u bytes\n", currentFreeHeap, largestBlock);
+
+  // Le stack BLE nécessite généralement ~40KB-60KB de mémoire contiguë sur ESP32.
+  // Ce seuil est une estimation et peut nécessiter un ajustement.
+  const uint32_t MIN_CONTIGUOUS_HEAP_FOR_BLE = 40 * 1024; // 40 KB
+
+  if (Config.bluetooth.useBLE) { // Vérifier si Bluetooth doit être activé
+    if (largestBlock < MIN_CONTIGUOUS_HEAP_FOR_BLE) {
+      Serial.printf("[LVGL] AVERTISSEMENT: Mémoire contiguë insuffisante (%u octets) pour l'initialisation BLE. Abandon.\n", largestBlock);
+      // Mettre à jour l'UI pour indiquer l'échec
+      if (bluetooth_status_label) {
+        lv_label_set_text(bluetooth_status_label, "Échec (Mem)");
+        lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xff6b6b), 0);
+      }
+      if (bluetooth_switch) { // Revenir à l'état désactivé de l'interrupteur
+        lv_obj_clear_state(bluetooth_switch, LV_STATE_CHECKED);
+      }
+      bluetoothActive = false; // Marquer Bluetooth comme inactif
+      Config.bluetooth.useBLE = false; // Mettre à jour la configuration
+      Config.writeFile(); // Sauvegarder la configuration
+    } else {
+      BLE_Utils::setup();
+      Serial.printf("[LVGL] Configuration BLE terminée (différée). Mémoire libre après configuration: %u octets\n", ESP.getFreeHeap());
+    }
   }
   lv_timer_del(timer);
 }
 
 static void ble_stop_timer_cb(lv_timer_t *timer) {
-  if (Config.bluetooth.useBLE) {
+  Serial.printf("[LVGL] BLE stop timer: Mémoire libre avant arrêt: %u octets\n", ESP.getFreeHeap());
+  if (Config.bluetooth.useBLE) { // Vérifier si Bluetooth était censé être actif avant l'arrêt
     BLE_Utils::stop();
-    Serial.println("[LVGL] BLE stop completed (deferred)");
+    Serial.printf("[LVGL] Arrêt BLE terminé (différé). Mémoire libre après arrêt: %u octets\n", ESP.getFreeHeap());
   }
   lv_timer_del(timer);
 }
