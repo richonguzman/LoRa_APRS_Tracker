@@ -2648,36 +2648,37 @@ static void populate_msg_list(lv_obj_t *list, int type) {
             callsign_storage.push_back(conversations[i]);                                                                                                                                                                                                                                   
         }                                                                                                                                                                                                                                                                                   
                                                                                                                                                                                                                                                                                             
-        // Ensuite, créer les boutons en utilisant les pointeurs stables                                                                                                                                                                                                                    
-        for (size_t i = 0; i < conversations.size(); i++) {                                                                                                                                                                                                                                 
-          // Get last message preview                                                                                                                                                                                                                                                       
-          std::vector<String> messages =                                                                                                                                                                                                                                                    
-              MSG_Utils::getMessagesForContact(conversations[i]);                                                                                                                                                                                                                           
-          String preview = conversations[i];                                                                                                                                                                                                                                                
-          if (messages.size() > 0) {                                                                                                                                                                                                                                                        
-            // Parse last message: timestamp,direction,content                                                                                                                                                                                                                              
-            String lastMsg = messages[messages.size() - 1];                                                                                                                                                                                                                                 
-            int firstComma = lastMsg.indexOf(',');                                                                                                                                                                                                                                          
-            int secondComma = lastMsg.indexOf(',', firstComma + 1);                                                                                                                                                                                                                         
-            if (secondComma > 0) {                                                                                                                                                                                                                                                          
-              String msgContent = lastMsg.substring(secondComma + 1);                                                                                                                                                                                                                       
-              if (msgContent.length() > 30) {                                                                                                                                                                                                                                               
-                msgContent = msgContent.substring(0, 27) + "...";                                                                                                                                                                                                                           
-              }                                                                                                                                                                                                                                                                             
-              preview += "\n" + msgContent;                                                                                                                                                                                                                                                 
-            }                                                                                                                                                                                                                                                                               
-          }                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                            
-          lv_obj_t *btn =                                                                                                                                                                                                                                                                   
-              lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());                                                                                                                                                                                                                   
-          // Utiliser le pointeur de l'élément correspondant dans callsign_storage                                                                                                                                                                                                          
-          lv_obj_add_event_cb(                                                                                                                                                                                                                                                              
-              btn, conversation_item_clicked, LV_EVENT_CLICKED,                                                                                                                                                                                                                             
-              (void *)callsign_storage[i].c_str());                                                                                                                                                                                                                                         
-        }                                                                                                                                                                                                                                                                                   
+        // Ensuite, créer les boutons en utilisant les pointeurs stables
+        // Afficher du plus récent (fin du vecteur) au plus ancien (début)
+        for (int i = conversations.size() - 1; i >= 0; i--) {
+          // Get last message preview
+          std::vector<String> messages =
+              MSG_Utils::getMessagesForContact(conversations[i]);
+          String preview = conversations[i];
+          if (messages.size() > 0) {
+            // Parse last message: timestamp,direction,content
+            String lastMsg = messages[messages.size() - 1];
+            int firstComma = lastMsg.indexOf(',');
+            int secondComma = lastMsg.indexOf(',', firstComma + 1);
+            if (secondComma > 0) {
+              String msgContent = lastMsg.substring(secondComma + 1);
+              if (msgContent.length() > 30) {
+                msgContent = msgContent.substring(0, 27) + "...";
+              }
+              preview += "\n" + msgContent;
+            }
+          }
+          
+          lv_obj_t *btn =
+              lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());
+          // Utiliser le pointeur de l'élément correspondant dans callsign_storage
+          lv_obj_add_event_cb(
+              btn, conversation_item_clicked, LV_EVENT_CLICKED,
+              (void *)callsign_storage[i].c_str());
+        }
       }                                                                                                                                                                                                                                                                                     
     } else {                                                                                                                                                                                                                                                                                
-      // Winlink messages - keep old behavior for now                                                                                                                                                                                                                                       
+      // Winlink messages - show from newest to oldest                                                                                                                                                                                                                                      
       MSG_Utils::loadMessagesFromMemory(1);                                                                                                                                                                                                                                                 
       std::vector<String> &messages = MSG_Utils::getLoadedWLNKMails();                                                                                                                                                                                                                      
                                                                                                                                                                                                                                                                                             
@@ -2686,7 +2687,8 @@ static void populate_msg_list(lv_obj_t *list, int type) {
         lv_label_set_text(empty, "No Winlink mails");                                                                                                                                                                                                                                       
         lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);                                                                                                                                                                                                                      
       } else {                                                                                                                                                                                                                                                                              
-        for (size_t i = 0; i < messages.size(); i++) {                                                                                                                                                                                                                                      
+        // Afficher du plus récent (fin du vecteur) au plus ancien (début)                                                                                                                                                                                                                  
+        for (int i = messages.size() - 1; i >= 0; i--) {                                                                                                                                                                                                                                    
           lv_obj_t *btn =                                                                                                                                                                                                                                                                   
               lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, messages[i].c_str());                                                                                                                                                                                                               
           lv_obj_add_event_cb(btn, msg_item_clicked, LV_EVENT_CLICKED, NULL);                                                                                                                                                                                                               
@@ -2846,7 +2848,7 @@ static void create_conversation_screen(const String &callsign) {
     }
   }
 
-  // Scroll to bottom to show latest messages
+  // Scroll to bottom to show oldest messages
   lv_obj_scroll_to_y(conversation_list, 0, LV_ANIM_OFF);
 
   if (isRefresh) {
