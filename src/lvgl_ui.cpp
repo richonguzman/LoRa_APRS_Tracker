@@ -3046,7 +3046,7 @@ static void populate_stats(lv_obj_t *cont) {
     }
 
     stats_no_digi_lbl = lv_label_create(
-        stats_digi_list_container); // Créer dans un sous-conteneur
+        cont); // Créer dans un sous-conteneur
     if (stats_no_digi_lbl) {        // Vérifier la création réussie
       lv_label_set_text(stats_no_digi_lbl, "No digipeaters seen yet");
       lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
