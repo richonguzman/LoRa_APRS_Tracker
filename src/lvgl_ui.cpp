@@ -2561,15 +2561,26 @@ static void msg_item_longpress(lv_event_t *e) {
 static void populate_msg_list(lv_obj_t *list, int type) {
   lv_obj_clean(list);
 
-  if (type == 0) {
+  /*if (type == 0) {
     // APRS messages - show conversations
     std::vector<String> conversations = MSG_Utils::getConversationsList();
+
+    // IMPORTANT: Clear static storage to prevent memory leak and stale pointers
+    static std::vector<String> callsign_storage;
+    callsign_storage.clear(); // Vider le vecteur à chaque appel
 
     if (conversations.size() == 0) {
       lv_obj_t *empty = lv_label_create(list);
       lv_label_set_text(empty, "No conversations");
       lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
     } else {
+      // Remplir d'abord callsign_storage avec toutes les String
+      callsign_storage.reserve(conversations.size()); // Pré-allouer pour éviter les réallocations fréquentes
+      for (size_t i = 0; i < conversations.size(); i++) {
+          callsign_storage.push_back(conversations[i]);
+      }
+
+      // Ensuite, créer les boutons en utilisant les pointeurs stables
       for (size_t i = 0; i < conversations.size(); i++) {
         // Get last message preview
         std::vector<String> messages =
@@ -2588,16 +2599,13 @@ static void populate_msg_list(lv_obj_t *list, int type) {
             preview += "\n" + msgContent;
           }
         }
-
-        // Store callsign as user data (must persist)
-        static std::vector<String> callsign_storage;
-        callsign_storage.push_back(conversations[i]);
-
+          
         lv_obj_t *btn =
             lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());
+        // Utiliser le pointeur de l'élément correspondant dans callsign_storage
         lv_obj_add_event_cb(
             btn, conversation_item_clicked, LV_EVENT_CLICKED,
-            (void *)callsign_storage[callsign_storage.size() - 1].c_str());
+            (void *)callsign_storage[i].c_str());
       }
     }
   } else {
@@ -2619,7 +2627,75 @@ static void populate_msg_list(lv_obj_t *list, int type) {
       }
     }
   }
-}
+}*/
+  
+  if (type == 0) {                                                                                                                                                                                                                                                                        
+      // APRS messages - show conversations                                                                                                                                                                                                                                                 
+      std::vector<String> conversations = MSG_Utils::getConversationsList();                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                            
+      // IMPORTANT: Clear static storage to prevent memory leak and stale pointers                                                                                                                                                                                                          
+      static std::vector<String> callsign_storage;                                                                                                                                                                                                                                          
+      callsign_storage.clear(); // Vider le vecteur à chaque appel                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                            
+      if (conversations.size() == 0) {                                                                                                                                                                                                                                                      
+        lv_obj_t *empty = lv_label_create(list);                                                                                                                                                                                                                                            
+        lv_label_set_text(empty, "No conversations");                                                                                                                                                                                                                                       
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);                                                                                                                                                                                                                      
+      } else {                                                                                                                                                                                                                                                                              
+        // Remplir d'abord callsign_storage avec toutes les String                                                                                                                                                                                                                          
+        callsign_storage.reserve(conversations.size()); // Pré-allouer pour éviter les réallocations fréquentes                                                                                                                                                                             
+        for (size_t i = 0; i < conversations.size(); i++) {                                                                                                                                                                                                                                 
+            callsign_storage.push_back(conversations[i]);                                                                                                                                                                                                                                   
+        }                                                                                                                                                                                                                                                                                   
+                                                                                                                                                                                                                                                                                            
+        // Ensuite, créer les boutons en utilisant les pointeurs stables                                                                                                                                                                                                                    
+        for (size_t i = 0; i < conversations.size(); i++) {                                                                                                                                                                                                                                 
+          // Get last message preview                                                                                                                                                                                                                                                       
+          std::vector<String> messages =                                                                                                                                                                                                                                                    
+              MSG_Utils::getMessagesForContact(conversations[i]);                                                                                                                                                                                                                           
+          String preview = conversations[i];                                                                                                                                                                                                                                                
+          if (messages.size() > 0) {                                                                                                                                                                                                                                                        
+            // Parse last message: timestamp,direction,content                                                                                                                                                                                                                              
+            String lastMsg = messages[messages.size() - 1];                                                                                                                                                                                                                                 
+            int firstComma = lastMsg.indexOf(',');                                                                                                                                                                                                                                          
+            int secondComma = lastMsg.indexOf(',', firstComma + 1);                                                                                                                                                                                                                         
+            if (secondComma > 0) {                                                                                                                                                                                                                                                          
+              String msgContent = lastMsg.substring(secondComma + 1);                                                                                                                                                                                                                       
+              if (msgContent.length() > 30) {                                                                                                                                                                                                                                               
+                msgContent = msgContent.substring(0, 27) + "...";                                                                                                                                                                                                                           
+              }                                                                                                                                                                                                                                                                             
+              preview += "\n" + msgContent;                                                                                                                                                                                                                                                 
+            }                                                                                                                                                                                                                                                                               
+          }                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                            
+          lv_obj_t *btn =                                                                                                                                                                                                                                                                   
+              lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());                                                                                                                                                                                                                   
+          // Utiliser le pointeur de l'élément correspondant dans callsign_storage                                                                                                                                                                                                          
+          lv_obj_add_event_cb(                                                                                                                                                                                                                                                              
+              btn, conversation_item_clicked, LV_EVENT_CLICKED,                                                                                                                                                                                                                             
+              (void *)callsign_storage[i].c_str());                                                                                                                                                                                                                                         
+        }                                                                                                                                                                                                                                                                                   
+      }                                                                                                                                                                                                                                                                                     
+    } else {                                                                                                                                                                                                                                                                                
+      // Winlink messages - keep old behavior for now                                                                                                                                                                                                                                       
+      MSG_Utils::loadMessagesFromMemory(1);                                                                                                                                                                                                                                                 
+      std::vector<String> &messages = MSG_Utils::getLoadedWLNKMails();                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                            
+      if (messages.size() == 0) {                                                                                                                                                                                                                                                           
+        lv_obj_t *empty = lv_label_create(list);                                                                                                                                                                                                                                            
+        lv_label_set_text(empty, "No Winlink mails");                                                                                                                                                                                                                                       
+        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);                                                                                                                                                                                                                      
+      } else {                                                                                                                                                                                                                                                                              
+        for (size_t i = 0; i < messages.size(); i++) {                                                                                                                                                                                                                                      
+          lv_obj_t *btn =                                                                                                                                                                                                                                                                   
+              lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, messages[i].c_str());                                                                                                                                                                                                               
+          lv_obj_add_event_cb(btn, msg_item_clicked, LV_EVENT_CLICKED, NULL);                                                                                                                                                                                                               
+          lv_obj_add_event_cb(btn, msg_item_longpress, LV_EVENT_LONG_PRESSED,                                                                                                                                                                                                               
+                              (void *)(intptr_t)i);                                                                                                                                                                                                                                         
+        }                                                                                                                                                                                                                                                                                   
+      }                                                                                                                                                                                                                                                                                     
+    }
+  }
 
 // Back button callback for conversation screen
 static void btn_conversation_back_clicked(lv_event_t *e) {
