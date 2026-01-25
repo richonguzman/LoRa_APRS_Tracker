@@ -25,8 +25,8 @@ See `VERSIONING.md` for full details and history.
 
 ## Rôles
 
-- **Claude** : Écriture et modification du code uniquement
-- **Utilisateur** : Compilation (`pio run`) et upload (`pio run -t upload`)
+- **Claude** : Écriture et modification du code uniquement. **NE JAMAIS compiler** (`pio run`).
+- **Utilisateur** : Compilation (`pio run`) et upload (`pio run -t upload`). C'est l'utilisateur qui compile, pas Claude.
 
 ## Workflow
 
