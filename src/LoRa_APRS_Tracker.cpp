@@ -313,6 +313,13 @@ void loop() {
         STORAGE_Utils::logRawFrame(rawFrame, packet.rssi, packet.snr);
         STORAGE_Utils::updateRxStats(packet.rssi, packet.snr);
 
+        // Extract sender callsign (before '>') for station stats
+        int senderEnd = rawFrame.indexOf('>');
+        if (senderEnd > 0) {
+            String sender = rawFrame.substring(0, senderEnd);
+            STORAGE_Utils::updateStationStats(sender, packet.rssi, packet.snr);
+        }
+
         // Extract path for digi stats (between > and :)
         int pathStart = rawFrame.indexOf('>');
         int pathEnd = rawFrame.indexOf(':');

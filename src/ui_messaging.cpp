@@ -16,6 +16,7 @@
 #include <lvgl.h>
 #include <vector>
 #include <algorithm>
+#include <TimeLib.h>
 
 #include "configuration.h"
 #include "msg_utils.h"
@@ -82,21 +83,9 @@ static int pending_delete_msg_index = -1;
 static bool msg_longpress_handled = false;
 static bool need_aprs_list_refresh = false;
 
-// Stats tab persistent labels
+// Stats tab persistent widgets
 static lv_obj_t *stats_title_lbl = nullptr;
-static lv_obj_t *stats_rx_tx_counts_lbl = nullptr;
-static lv_obj_t *stats_rssi_stats_lbl = nullptr;
-static lv_obj_t *stats_snr_stats_lbl = nullptr;
-static lv_obj_t *stats_rssi_chart_legend_lbl = nullptr;
-static lv_obj_t *stats_rssi_chart_obj = nullptr;
-static lv_chart_series_t *stats_rssi_chart_ser = nullptr;
-static lv_obj_t *stats_snr_chart_legend_lbl = nullptr;
-static lv_obj_t *stats_snr_chart_obj = nullptr;
-static lv_chart_series_t *stats_snr_chart_ser = nullptr;
-static lv_obj_t *stats_digi_title_lbl = nullptr;
-static lv_obj_t *stats_no_digi_lbl = nullptr;
-static lv_obj_t *stats_digi_list_container = nullptr;
-static uint32_t last_processed_rx_count = 0;
+static lv_obj_t *stats_table = nullptr;
 
 // Contact long-press flag
 static bool contact_longpress_handled = false;
@@ -889,7 +878,7 @@ static void show_contact_edit_screen(const Contact *contact) {
 static void populate_frames_list(lv_obj_t *list) {
     lv_obj_clean(list);
 
-    const std::vector<String> &frames = STORAGE_Utils::getLastFrames(50);
+    const std::vector<String> &frames = STORAGE_Utils::getLastFrames(20);
 
     if (frames.size() == 0) {
         lv_obj_t *empty = lv_label_create(list);
@@ -923,177 +912,94 @@ static void populate_frames_list(lv_obj_t *list) {
 // =============================================================================
 
 static void populate_stats(lv_obj_t *cont) {
-    LinkStats stats = STORAGE_Utils::getStats();
-
-    if (stats.rxCount == last_processed_rx_count && stats.rxCount > 0) {
-        return;
-    }
-    last_processed_rx_count = stats.rxCount;
+    const std::vector<StationStats> &stations = STORAGE_Utils::getStationStats();
 
     uint32_t freeHeap = ESP.getFreeHeap();
     if (freeHeap < 8000) {
         return;
     }
 
-    const std::vector<DigiStats> &digis = STORAGE_Utils::getDigiStats();
-    char buf[128];
+    char buf[32];
 
-    // Create labels if not exists
+    // Create title and table if not exists
     if (!stats_title_lbl) {
         stats_title_lbl = lv_label_create(cont);
         if (stats_title_lbl) {
-            lv_label_set_text(stats_title_lbl, "Link Statistics");
+            lv_label_set_text(stats_title_lbl, "Stations Heard");
             lv_obj_set_style_text_color(stats_title_lbl, lv_color_hex(0x4CAF50), 0);
             lv_obj_set_style_text_font(stats_title_lbl, &lv_font_montserrat_14, 0);
         }
 
-        stats_rx_tx_counts_lbl = lv_label_create(cont);
-        if (stats_rx_tx_counts_lbl) {
-            lv_obj_set_style_text_color(stats_rx_tx_counts_lbl, lv_color_hex(0x759a9e), 0);
-        }
+        stats_table = lv_table_create(cont);
+        if (stats_table) {
+            lv_table_set_col_cnt(stats_table, 5);
+            lv_obj_set_width(stats_table, lv_pct(100));
+            lv_obj_set_style_bg_color(stats_table, lv_color_hex(0x0f0f23), 0);
+            lv_obj_set_style_border_color(stats_table, lv_color_hex(0x333344), 0);
+            lv_obj_set_style_text_color(stats_table, lv_color_hex(0x759a9e), 0);
+            lv_obj_set_style_pad_all(stats_table, 2, LV_PART_ITEMS);
 
-        stats_rssi_stats_lbl = lv_label_create(cont);
-        if (stats_rssi_stats_lbl) {
-            lv_obj_set_style_text_color(stats_rssi_stats_lbl, lv_color_hex(0x759a9e), 0);
-        }
+            // Column widths (total ~290px for content area)
+            lv_table_set_col_width(stats_table, 0, 65);  // Time
+            lv_table_set_col_width(stats_table, 1, 80);  // Station
+            lv_table_set_col_width(stats_table, 2, 38);  // Pkts
+            lv_table_set_col_width(stats_table, 3, 45);  // RSSI
+            lv_table_set_col_width(stats_table, 4, 45);  // SNR
 
-        stats_snr_stats_lbl = lv_label_create(cont);
-        if (stats_snr_stats_lbl) {
-            lv_obj_set_style_text_color(stats_snr_stats_lbl, lv_color_hex(0x759a9e), 0);
-        }
-
-        // RSSI Chart
-        stats_rssi_chart_legend_lbl = lv_label_create(cont);
-        if (stats_rssi_chart_legend_lbl) {
-            lv_label_set_text(stats_rssi_chart_legend_lbl, "\nRSSI (dBm)");
-            lv_obj_set_style_text_color(stats_rssi_chart_legend_lbl, lv_color_hex(0x00BFFF), 0);
-        }
-
-        stats_rssi_chart_obj = lv_chart_create(cont);
-        if (stats_rssi_chart_obj) {
-            lv_obj_set_size(stats_rssi_chart_obj, 280, 50);
-            lv_chart_set_type(stats_rssi_chart_obj, LV_CHART_TYPE_LINE);
-            lv_obj_set_style_bg_color(stats_rssi_chart_obj, lv_color_hex(0x1a1a2e), 0);
-            lv_obj_set_style_line_color(stats_rssi_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
-            lv_chart_set_div_line_count(stats_rssi_chart_obj, 3, 0);
-            stats_rssi_chart_ser = lv_chart_add_series(stats_rssi_chart_obj, lv_color_hex(0x00BFFF),
-                                                       LV_CHART_AXIS_PRIMARY_Y);
-            if (stats_rssi_chart_ser) {
-                lv_obj_add_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
-            }
-        }
-        if (stats_rssi_chart_legend_lbl) {
-            lv_obj_add_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
-        }
-
-        // SNR Chart
-        stats_snr_chart_legend_lbl = lv_label_create(cont);
-        if (stats_snr_chart_legend_lbl) {
-            lv_label_set_text(stats_snr_chart_legend_lbl, "SNR (dB)");
-            lv_obj_set_style_text_color(stats_snr_chart_legend_lbl, lv_color_hex(0x00FF7F), 0);
-        }
-
-        stats_snr_chart_obj = lv_chart_create(cont);
-        if (stats_snr_chart_obj) {
-            lv_obj_set_size(stats_snr_chart_obj, 280, 50);
-            lv_chart_set_type(stats_snr_chart_obj, LV_CHART_TYPE_LINE);
-            lv_obj_set_style_bg_color(stats_snr_chart_obj, lv_color_hex(0x1a1a2e), 0);
-            lv_obj_set_style_line_color(stats_snr_chart_obj, lv_color_hex(0x333344), LV_PART_MAIN);
-            lv_chart_set_div_line_count(stats_snr_chart_obj, 3, 0);
-            stats_snr_chart_ser = lv_chart_add_series(stats_snr_chart_obj, lv_color_hex(0x00FF7F),
-                                                      LV_CHART_AXIS_PRIMARY_Y);
-            if (stats_snr_chart_ser) {
-                lv_obj_add_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN);
-            }
-        }
-        if (stats_snr_chart_legend_lbl) {
-            lv_obj_add_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
-        }
-
-        // Digipeater section
-        stats_digi_title_lbl = lv_label_create(cont);
-        if (stats_digi_title_lbl) {
-            lv_label_set_text(stats_digi_title_lbl, "\nDigipeaters Heard");
-            lv_obj_set_style_text_color(stats_digi_title_lbl, lv_color_hex(0xFFD700), 0);
-            lv_obj_set_style_text_font(stats_digi_title_lbl, &lv_font_montserrat_14, 0);
-        }
-
-        stats_digi_list_container = lv_obj_create(cont);
-        if (stats_digi_list_container) {
-            lv_obj_set_width(stats_digi_list_container, lv_pct(100));
-            lv_obj_set_height(stats_digi_list_container, LV_SIZE_CONTENT);
-            lv_obj_set_style_bg_opa(stats_digi_list_container, LV_OPA_TRANSP, 0);
-            lv_obj_set_style_border_width(stats_digi_list_container, 0, 0);
-            lv_obj_set_style_pad_all(stats_digi_list_container, 0, 0);
-            lv_obj_set_flex_flow(stats_digi_list_container, LV_FLEX_FLOW_COLUMN);
-            lv_obj_clear_flag(stats_digi_list_container, LV_OBJ_FLAG_SCROLLABLE);
+            // Left align text (default)
         }
     }
 
-    // Update labels with current stats
-    if (stats_rx_tx_counts_lbl) {
-        snprintf(buf, sizeof(buf), "RX: %d packets  TX: %d packets", stats.rxCount, stats.txCount);
-        lv_label_set_text(stats_rx_tx_counts_lbl, buf);
-    }
+    // Update table
+    if (stats_table) {
+        // Header row
+        lv_table_set_cell_value(stats_table, 0, 0, "Time");
+        lv_table_set_cell_value(stats_table, 0, 1, "Station");
+        lv_table_set_cell_value(stats_table, 0, 2, "Pkts");
+        lv_table_set_cell_value(stats_table, 0, 3, "RSSI");
+        lv_table_set_cell_value(stats_table, 0, 4, "SNR");
 
-    if (stats_rssi_stats_lbl) {
-        int rssiAvg = (stats.rxCount > 0) ? (stats.rssiTotal / (int)stats.rxCount) : 0;
-        snprintf(buf, sizeof(buf), "RSSI: min %d / avg %d / max %d dBm",
-                 stats.rssiMin, rssiAvg, stats.rssiMax);
-        lv_label_set_text(stats_rssi_stats_lbl, buf);
-    }
-
-    if (stats_snr_stats_lbl) {
-        float snrAvg = (stats.rxCount > 0) ? (stats.snrTotal / stats.rxCount) : 0.0f;
-        snprintf(buf, sizeof(buf), "SNR: min %.1f / avg %.1f / max %.1f dB",
-                 stats.snrMin, snrAvg, stats.snrMax);
-        lv_label_set_text(stats_snr_stats_lbl, buf);
-    }
-
-    // Update charts if we have history data
-    const std::vector<int> &rssiHistory = STORAGE_Utils::getRssiHistory();
-    const std::vector<float> &snrHistory = STORAGE_Utils::getSnrHistory();
-
-    if (rssiHistory.size() > 0 && stats_rssi_chart_obj && stats_rssi_chart_ser) {
-        lv_obj_clear_flag(stats_rssi_chart_obj, LV_OBJ_FLAG_HIDDEN);
-        if (stats_rssi_chart_legend_lbl) {
-            lv_obj_clear_flag(stats_rssi_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
-        }
-        lv_chart_set_point_count(stats_rssi_chart_obj, rssiHistory.size());
-        lv_chart_set_range(stats_rssi_chart_obj, LV_CHART_AXIS_PRIMARY_Y, -140, -40);
-        for (size_t i = 0; i < rssiHistory.size(); i++) {
-            lv_chart_set_value_by_id(stats_rssi_chart_obj, stats_rssi_chart_ser, i, rssiHistory[i]);
-        }
-        lv_chart_refresh(stats_rssi_chart_obj);
-    }
-
-    if (snrHistory.size() > 0 && stats_snr_chart_obj && stats_snr_chart_ser) {
-        lv_obj_clear_flag(stats_snr_chart_obj, LV_OBJ_FLAG_HIDDEN);
-        if (stats_snr_chart_legend_lbl) {
-            lv_obj_clear_flag(stats_snr_chart_legend_lbl, LV_OBJ_FLAG_HIDDEN);
-        }
-        lv_chart_set_point_count(stats_snr_chart_obj, snrHistory.size());
-        lv_chart_set_range(stats_snr_chart_obj, LV_CHART_AXIS_PRIMARY_Y, -20, 15);
-        for (size_t i = 0; i < snrHistory.size(); i++) {
-            lv_chart_set_value_by_id(stats_snr_chart_obj, stats_snr_chart_ser, i, (int)(snrHistory[i] * 10));
-        }
-        lv_chart_refresh(stats_snr_chart_obj);
-    }
-
-    // Update digipeater list
-    if (stats_digi_list_container) {
-        lv_obj_clean(stats_digi_list_container);
-
-        if (digis.size() == 0) {
-            stats_no_digi_lbl = lv_label_create(stats_digi_list_container);
-            lv_label_set_text(stats_no_digi_lbl, "No digipeaters heard yet");
-            lv_obj_set_style_text_color(stats_no_digi_lbl, lv_color_hex(0x888888), 0);
+        if (stations.size() == 0) {
+            lv_table_set_row_cnt(stats_table, 2);
+            lv_table_set_cell_value(stats_table, 1, 0, "No stations");
+            lv_table_set_cell_value(stats_table, 1, 1, "heard yet");
+            lv_table_set_cell_value(stats_table, 1, 2, "");
+            lv_table_set_cell_value(stats_table, 1, 3, "");
+            lv_table_set_cell_value(stats_table, 1, 4, "");
         } else {
-            for (size_t i = 0; i < digis.size() && i < 10; i++) {
-                lv_obj_t *digi_lbl = lv_label_create(stats_digi_list_container);
-                snprintf(buf, sizeof(buf), "%s: %d pkts", digis[i].callsign.c_str(), digis[i].count);
-                lv_label_set_text(digi_lbl, buf);
-                lv_obj_set_style_text_color(digi_lbl, lv_color_hex(0x759a9e), 0);
+            // Sort stations by lastHeard (most recent first)
+            std::vector<size_t> indices(stations.size());
+            for (size_t i = 0; i < stations.size(); i++) indices[i] = i;
+            std::sort(indices.begin(), indices.end(), [&stations](size_t a, size_t b) {
+                return stations[a].lastHeard > stations[b].lastHeard;
+            });
+
+            size_t rowCount = (indices.size() < 10) ? indices.size() : 10;
+            lv_table_set_row_cnt(stats_table, rowCount + 1); // +1 for header
+
+            for (size_t i = 0; i < rowCount; i++) {
+                const StationStats &s = stations[indices[i]];
+                int row = i + 1; // Skip header row
+
+                // Time
+                snprintf(buf, sizeof(buf), "%02d:%02d:%02d",
+                         hour(s.lastHeard), minute(s.lastHeard), second(s.lastHeard));
+                lv_table_set_cell_value(stats_table, row, 0, buf);
+
+                // Station
+                lv_table_set_cell_value(stats_table, row, 1, s.callsign.c_str());
+
+                // Packets
+                snprintf(buf, sizeof(buf), "%d", s.count);
+                lv_table_set_cell_value(stats_table, row, 2, buf);
+
+                // RSSI
+                snprintf(buf, sizeof(buf), "%d", s.lastRssi);
+                lv_table_set_cell_value(stats_table, row, 3, buf);
+
+                // SNR
+                snprintf(buf, sizeof(buf), "%.1f", s.lastSnr);
+                lv_table_set_cell_value(stats_table, row, 4, buf);
             }
         }
     }

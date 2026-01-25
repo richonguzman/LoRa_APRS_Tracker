@@ -28,6 +28,7 @@ namespace UIDashboard {
     void updateBattery(int percent, float voltage);
     void updateLoRa(const char* lastRx, int rssi);
     void refreshLoRaInfo();
+    void updateLastRx();
     void updateWiFi(bool connected, int rssi);
     void updateCallsign(const char* callsign);
     void updateTime(int day, int month, int year, int hour, int minute, int second);

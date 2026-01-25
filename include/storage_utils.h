@@ -49,6 +49,15 @@ struct DigiStats {
     uint32_t count;         // Times seen in path
 };
 
+// Per-station statistics
+struct StationStats {
+    String callsign;
+    uint32_t count;         // Total packets received
+    int lastRssi;
+    float lastSnr;
+    uint32_t lastHeard;     // Unix timestamp
+};
+
 namespace STORAGE_Utils {
 
     void    setup();
@@ -99,6 +108,10 @@ namespace STORAGE_Utils {
     void updateDigiStats(const String& path);
     LinkStats getStats();
     const std::vector<DigiStats>& getDigiStats();
+
+    // Per-station statistics
+    void updateStationStats(const String& callsign, int rssi, float snr);
+    const std::vector<StationStats>& getStationStats();
 
     // History for charts (last 50 values)
     const int HISTORY_SIZE = 50;

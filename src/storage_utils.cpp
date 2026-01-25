@@ -516,6 +516,7 @@ namespace STORAGE_Utils {
     // Initialize with inverted min/max so first value always updates them
     static LinkStats linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
     static std::vector<DigiStats> digiStats;
+    static std::vector<StationStats> stationStats;
 
     // History buffers for charts - fixed size circular buffer
     static int rssiHistory[HISTORY_SIZE];
@@ -530,6 +531,7 @@ namespace STORAGE_Utils {
     void resetStats() {
         linkStats = {0, 0, 0, 0, -200, 0, 50.0f, -50.0f, 0.0f};
         digiStats.clear();
+        stationStats.clear();
         historyCount = 0;
         historyHead = 0;
         rssiHistoryOrdered.clear();
@@ -671,6 +673,35 @@ namespace STORAGE_Utils {
 
     const std::vector<DigiStats>& getDigiStats() {
         return digiStats;
+    }
+
+    // Per-station statistics
+    void updateStationStats(const String& callsign, int rssi, float snr) {
+        // Check if station already exists
+        for (auto& s : stationStats) {
+            if (s.callsign.equalsIgnoreCase(callsign)) {
+                s.count++;
+                s.lastRssi = rssi;
+                s.lastSnr = snr;
+                s.lastHeard = now(); // Unix timestamp from GPS/RTC
+                return;
+            }
+        }
+
+        // New station - add to list (limit to 20)
+        if (stationStats.size() < 20) {
+            StationStats newStation;
+            newStation.callsign = callsign;
+            newStation.count = 1;
+            newStation.lastRssi = rssi;
+            newStation.lastSnr = snr;
+            newStation.lastHeard = now();
+            stationStats.push_back(newStation);
+        }
+    }
+
+    const std::vector<StationStats>& getStationStats() {
+        return stationStats;
     }
 
 }

@@ -623,10 +623,9 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       // Update Bluetooth status
       UIDashboard::updateBluetooth();
 
-      // Update LoRa (last received packet)
-      if (lastReceivedPacket.sender.length() > 0) {
-        UIDashboard::updateLoRa(lastReceivedPacket.sender.c_str(), lastReceivedPacket.rssi);
-      }
+      // Update LoRa info and last RX stations
+      UIDashboard::refreshLoRaInfo();
+      UIDashboard::updateLastRx();
 
       // Update Stats tab if currently active
       UIMessaging::refreshStatsIfActive();

@@ -19,7 +19,11 @@
 #include "ble_utils.h"
 #include "configuration.h"
 #include "custom_characters.h"
+#include "storage_utils.h"
 #include "utils.h"
+#include <TimeLib.h>
+#include <algorithm>
+#include <vector>
 
 // External configuration and state
 extern Configuration Config;
@@ -57,6 +61,9 @@ static lv_obj_t *label_lora = nullptr;
 static lv_obj_t *label_time = nullptr;
 static lv_obj_t *aprs_symbol_canvas = nullptr;
 static lv_color_t *aprs_symbol_buf = nullptr;
+
+// Last RX stations
+static lv_obj_t *label_last_rx = nullptr;
 
 // Status bar icons
 static lv_obj_t *icon_wifi = nullptr;
@@ -250,15 +257,21 @@ void createDashboard() {
 
     // LoRa info
     label_lora = lv_label_create(content);
-    char lora_init[96];
+    char lora_init[64];
     float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
     int rate = Config.loraTypes[loraIndex].dataRate;
-    snprintf(lora_init, sizeof(lora_init), "LoRa: %.3f MHz  %d bps\nLast RX: ---",
-             freq, rate);
+    snprintf(lora_init, sizeof(lora_init), "LoRa: %.3f MHz  %d bps", freq, rate);
     lv_label_set_text(label_lora, lora_init);
     lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
     lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
     lv_obj_set_pos(label_lora, 0, 55);
+
+    // Last RX stations (4 max)
+    label_last_rx = lv_label_create(content);
+    lv_label_set_text(label_last_rx, "Last RX:\n---");
+    lv_obj_set_style_text_color(label_last_rx, lv_color_hex(0xffcc00), 0);
+    lv_obj_set_style_text_font(label_last_rx, &lv_font_montserrat_12, 0);
+    lv_obj_set_pos(label_last_rx, 0, 80);
 
     // Bottom button bar
     lv_obj_t *btn_bar = lv_obj_create(screen_main);
@@ -375,24 +388,53 @@ void updateBattery(int percent, float voltage) {
 }
 
 void updateLoRa(const char *lastRx, int rssi) {
-    if (label_lora) {
-        char buf[128];
-        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
-        int rate = Config.loraTypes[loraIndex].dataRate;
-        snprintf(buf, sizeof(buf), "LoRa: %.3f MHz  %d bps\nLast RX: %s (%ddBm)",
-                 freq, rate, lastRx, rssi);
-        lv_label_set_text(label_lora, buf);
-    }
+    (void)lastRx; // Now handled by updateLastRx
+    (void)rssi;
+    // Just refresh LoRa freq/rate info
+    refreshLoRaInfo();
 }
 
 void refreshLoRaInfo() {
     if (label_lora) {
-        char buf[128];
+        char buf[64];
         float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
         int rate = Config.loraTypes[loraIndex].dataRate;
-        snprintf(buf, sizeof(buf), "LoRa: %.3f MHz  %d bps\nLast RX: ---", freq, rate);
+        snprintf(buf, sizeof(buf), "LoRa: %.3f MHz  %d bps", freq, rate);
         lv_label_set_text(label_lora, buf);
     }
+}
+
+void updateLastRx() {
+    if (!label_last_rx) return;
+
+    const std::vector<StationStats> &stations = STORAGE_Utils::getStationStats();
+
+    if (stations.empty()) {
+        lv_label_set_text(label_last_rx, "Last RX:\n---");
+        return;
+    }
+
+    // Sort by lastHeard (most recent first)
+    std::vector<size_t> indices(stations.size());
+    for (size_t i = 0; i < stations.size(); i++) indices[i] = i;
+    std::sort(indices.begin(), indices.end(), [&stations](size_t a, size_t b) {
+        return stations[a].lastHeard > stations[b].lastHeard;
+    });
+
+    // Build display string (max 3 stations)
+    String text = "Last RX:";
+    size_t count = (indices.size() < 3) ? indices.size() : 3;
+    char line[80];
+
+    for (size_t i = 0; i < count; i++) {
+        const StationStats &s = stations[indices[i]];
+        snprintf(line, sizeof(line), "\n%02d:%02d:%02d   %-9s   RSSI:%d   SNR:%.1f",
+                 hour(s.lastHeard), minute(s.lastHeard), second(s.lastHeard),
+                 s.callsign.c_str(), s.lastRssi, s.lastSnr);
+        text += line;
+    }
+
+    lv_label_set_text(label_last_rx, text.c_str());
 }
 
 void updateWiFi(bool connected, int rssi) {
