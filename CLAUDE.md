@@ -18,7 +18,12 @@ See `VERSIONING.md` for full details and history.
 
 ## Key Files
 
-- `src/lvgl_ui.cpp` - Main LVGL UI code
+- `src/lvgl_ui.cpp` - LVGL initialization + navigation (~730 lines)
+- `src/ui_dashboard.cpp` - Dashboard screen
+- `src/ui_messaging.cpp` - Messages, conversations, contacts, compose, frames, stats
+- `src/ui_settings.cpp` - Settings screens (callsign, display, sound, wifi, speed)
+- `src/ui_popups.cpp` - Popups TX/RX/notifications
+- `src/ui_map_manager.cpp` - Map functionality
 - `src/msg_utils.cpp` - Message handling
 - `docs/index.html` - Web flasher (update version here)
 - `docs/firmware/` - Compiled binaries for web flasher
@@ -56,18 +61,17 @@ Polices Montserrat disponibles (à activer dans lv_conf.h si nécessaire) :
 
 **Note:** Seules les polices activées dans `lv_conf.h` sont disponibles à la compilation.
 
-## TODO - Refactoring
+## Refactoring (Completed)
 
-### Modulariser lvgl_ui.cpp (~4500 lignes)
+### Modularisation lvgl_ui.cpp ✓
 
-Extraire en modules séparés :
-- `ui_messaging.cpp` - Messages, conversations, contacts
-- `ui_settings.cpp` - Écrans de configuration (callsign, display, sound, wifi, speed)
-- `ui_popups.cpp` - Popups TX/RX/notifications
-- `ui_dashboard.cpp` - Écran principal dashboard
-- `ui_compose.cpp` - Écran de composition de messages
+| Module | Lignes | Contenu |
+|--------|--------|---------|
+| `ui_dashboard.cpp` | 476 | Écran principal |
+| `ui_messaging.cpp` | 1676 | Messages, conversations, contacts, compose, frames, stats |
+| `ui_popups.cpp` | 505 | Popups TX/RX/notifications |
+| `ui_settings.cpp` | 1822 | Écrans de configuration |
+| `ui_map_manager.cpp` | 1739 | Carte |
+| `lvgl_ui.cpp` | 730 | Init LVGL + navigation |
 
-Garder dans `lvgl_ui.cpp` :
-- Initialisation LVGL
-- Navigation principale
-- Variables globales partagées
+**Total : ~7300 lignes** réparties en 6 modules.
