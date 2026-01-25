@@ -310,29 +310,36 @@ void loop() {
     // Log raw frame and update stats (if packet received)
     if (!packet.text.isEmpty()) {
         String rawFrame = packet.text.substring(3);
-        STORAGE_Utils::logRawFrame(rawFrame, packet.rssi, packet.snr);
-        STORAGE_Utils::updateRxStats(packet.rssi, packet.snr);
-
-        // Extract sender callsign (before '>') for station stats
-        int senderEnd = rawFrame.indexOf('>');
-        if (senderEnd > 0) {
-            String sender = rawFrame.substring(0, senderEnd);
-            STORAGE_Utils::updateStationStats(sender, packet.rssi, packet.snr);
-        }
-
-        // Extract path for digi stats (between > and :)
+        
+        // --- 1. Extraction du chemin et détection Direct/Digi ---
         int pathStart = rawFrame.indexOf('>');
         int pathEnd = rawFrame.indexOf(':');
-        if (pathStart != -1 && pathEnd != -1 && pathEnd > pathStart) {
+        bool isDirect = true; // Par défaut direct
+
+        if (pathStart != -1 && pathEnd != -1) {
             String path = rawFrame.substring(pathStart + 1, pathEnd);
+            if (path.indexOf('*') != -1) {
+                isDirect = false; // Astérisque trouvé = Relayé
+            }
+            // Mise à jour des stats digi (code original)
             STORAGE_Utils::updateDigiStats(path);
         }
 
+        // --- 2. Enregistrement de la trame ---
+        STORAGE_Utils::logRawFrame(rawFrame, packet.rssi, packet.snr, isDirect);
+        STORAGE_Utils::updateRxStats(packet.rssi, packet.snr);
+
+        // --- 3. Stats par station (Émetteur) ---
+        if (pathStart > 0) {
+            String sender = rawFrame.substring(0, pathStart);
+            STORAGE_Utils::updateStationStats(sender, packet.rssi, packet.snr, isDirect);
+        }
+
         #ifdef USE_LVGL_UI
-            LVGL_UI::refreshFramesList();  // Update display if Frames tab is visible
+            LVGL_UI::refreshFramesList();
         #endif
     }
-
+    
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();

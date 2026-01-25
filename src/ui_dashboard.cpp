@@ -252,7 +252,7 @@ void createDashboard() {
     lv_label_set_text(label_gps, "GPS: -- sat  Loc: --------\nLat: --.----  Lon: "
                                  "--.----\nAlt: ---- m  Spd: --- km/h");
     lv_obj_set_style_text_color(label_gps, lv_color_hex(0x759a9e), 0);
-    lv_obj_set_style_text_font(label_gps, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(label_gps, &lv_font_mono_14, 0);
     lv_obj_set_pos(label_gps, 0, 0);
 
     // LoRa info
@@ -263,14 +263,15 @@ void createDashboard() {
     snprintf(lora_init, sizeof(lora_init), "LoRa: %.3f MHz  %d bps", freq, rate);
     lv_label_set_text(label_lora, lora_init);
     lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
-    lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(label_lora, &lv_font_mono_14, 0);
     lv_obj_set_pos(label_lora, 0, 55);
 
     // Last RX stations (4 max)
     label_last_rx = lv_label_create(content);
+    lv_label_set_recolor(label_last_rx, true);
     lv_label_set_text(label_last_rx, "Last RX:\n---");
     lv_obj_set_style_text_color(label_last_rx, lv_color_hex(0xffcc00), 0);
-    lv_obj_set_style_text_font(label_last_rx, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_font(label_last_rx, &lv_font_mono_14, 0);
     lv_obj_set_pos(label_last_rx, 0, 80);
 
     // Bottom button bar
@@ -406,34 +407,34 @@ void refreshLoRaInfo() {
 
 void updateLastRx() {
     if (!label_last_rx) return;
-
     const std::vector<StationStats> &stations = STORAGE_Utils::getStationStats();
-
     if (stations.empty()) {
         lv_label_set_text(label_last_rx, "Last RX:\n---");
         return;
     }
 
-    // Sort by lastHeard (most recent first)
+    // Tri par date de réception
     std::vector<size_t> indices(stations.size());
     for (size_t i = 0; i < stations.size(); i++) indices[i] = i;
     std::sort(indices.begin(), indices.end(), [&stations](size_t a, size_t b) {
         return stations[a].lastHeard > stations[b].lastHeard;
     });
 
-    // Build display string (max 3 stations)
     String text = "Last RX:";
-    size_t count = (indices.size() < 3) ? indices.size() : 3;
-    char line[80];
+    size_t count = (indices.size() < 4) ? indices.size() : 4; 
+    char line[128];
 
     for (size_t i = 0; i < count; i++) {
         const StationStats &s = stations[indices[i]];
-        snprintf(line, sizeof(line), "\n%02d:%02d:%02d   %-9s   RSSI:%d   SNR:%.1f",
-                 hour(s.lastHeard), minute(s.lastHeard), second(s.lastHeard),
+        
+        // Vert (#00ff00) pour Direct, Orange (#ffa500) pour Digi
+        const char* color = s.lastIsDirect ? "00ff00" : "ffa500";
+        
+        snprintf(line, sizeof(line), "\n#%s %02d:%02d %-9s RSSI:%-4d SNR:%-2.0f#",
+                 color, hour(s.lastHeard), minute(s.lastHeard),
                  s.callsign.c_str(), s.lastRssi, s.lastSnr);
         text += line;
     }
-
     lv_label_set_text(label_last_rx, text.c_str());
 }
 

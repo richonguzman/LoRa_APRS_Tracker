@@ -472,8 +472,8 @@ namespace STORAGE_Utils {
     static int framesCacheCount = 0;
     static std::vector<String> framesCacheOrdered;  // For returning ordered list
 
-    bool logRawFrame(const String& frame, int rssi, float snr) {
-        // Get current time from GPS (via TimeLib) - format: YYYY-MM-DD HH:MM:SS
+    bool logRawFrame(const String& frame, int rssi, float snr, bool isDirect) {
+        // 1. Préparation du timestamp
         char timestamp[64];
         if (year() > 2000) {
             snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d",
@@ -482,24 +482,27 @@ namespace STORAGE_Utils {
             snprintf(timestamp, sizeof(timestamp), "----/--/-- --:--:--");
         }
 
-        // Build formatted line and store in circular buffer (no reallocation)
-        framesCache[framesCacheHead] = String(timestamp) + " GMT: " + frame;
+        // 2. Création de la ligne avec le marqueur [D]irect ou [R]elayé
+        String statusMarker = isDirect ? "[D]" : "[R]";
+        String logLine = statusMarker + String(timestamp) + " GMT: " + frame;
+
+        // 3. Stockage dans le buffer de la mémoire vive (pour l'écran)
+        framesCache[framesCacheHead] = logLine;
         framesCacheHead = (framesCacheHead + 1) % FRAMES_CACHE_SIZE;
         if (framesCacheCount < FRAMES_CACHE_SIZE) framesCacheCount++;
 
-        // Also write to SD for persistence
+        // 4. Écriture sur la carte SD
         if (sdAvailable) {
             checkFramesLogRotation();
             File file = SD.open(FRAMES_FILE, FILE_APPEND);
             if (file) {
-                file.println(framesCache[(framesCacheHead - 1 + FRAMES_CACHE_SIZE) % FRAMES_CACHE_SIZE]);
+                file.println(logLine);
                 file.close();
             }
         }
-
         return true;
     }
-
+    
     const std::vector<String>& getLastFrames(int count) {
         // Rebuild ordered vector from circular buffer (only when UI requests)
         framesCacheOrdered.clear();
@@ -676,7 +679,7 @@ namespace STORAGE_Utils {
     }
 
     // Per-station statistics
-    void updateStationStats(const String& callsign, int rssi, float snr) {
+    void updateStationStats(const String& callsign, int rssi, float snr, bool isDirect) {
         // Check if station already exists
         for (auto& s : stationStats) {
             if (s.callsign.equalsIgnoreCase(callsign)) {
@@ -684,6 +687,7 @@ namespace STORAGE_Utils {
                 s.lastRssi = rssi;
                 s.lastSnr = snr;
                 s.lastHeard = now(); // Unix timestamp from GPS/RTC
+                s.lastIsDirect = isDirect;
                 return;
             }
         }
@@ -696,7 +700,9 @@ namespace STORAGE_Utils {
             newStation.lastRssi = rssi;
             newStation.lastSnr = snr;
             newStation.lastHeard = now();
+            newStation.lastIsDirect = isDirect;
             stationStats.push_back(newStation);
+            
         }
     }
 

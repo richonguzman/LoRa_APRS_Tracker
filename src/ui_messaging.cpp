@@ -875,6 +875,15 @@ static void show_contact_edit_screen(const Contact *contact) {
 // Frames List
 // =============================================================================
 
+static void frame_item_clicked(lv_event_t *e) {
+    lv_obj_t *cont = lv_event_get_target(e);
+    lv_obj_t *label = lv_obj_get_child(cont, 0); // Récupère le texte de la trame
+    if (label) {
+        const char *text = lv_label_get_text(label);
+        show_message_detail(text); // Affiche la popup avec le message complet
+    }
+}
+
 static void populate_frames_list(lv_obj_t *list) {
     lv_obj_clean(list);
 
@@ -887,6 +896,13 @@ static void populate_frames_list(lv_obj_t *list) {
         lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
     } else {
         for (int i = frames.size() - 1; i >= 0; i--) {
+            String rawLine = frames[i];
+            
+            // --- ANALYSE DU MARQUEUR ---
+            bool isDirect = rawLine.startsWith("[D]");
+            // On retire le marqueur [D] ou [R] pour l'affichage (3 caractères)
+            String displayLine = rawLine.substring(3); 
+
             lv_obj_t *cont = lv_obj_create(list);
             lv_obj_set_width(cont, lv_pct(100));
             lv_obj_set_height(cont, LV_SIZE_CONTENT);
@@ -897,16 +913,28 @@ static void populate_frames_list(lv_obj_t *list) {
             lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, 0);
             lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 
+            // --- ACTIVER LE CLIC SUR LA LIGNE ---
+            lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
+
             lv_obj_t *label = lv_label_create(cont);
-            lv_label_set_text(label, frames[i].c_str());
+            lv_label_set_text(label, displayLine.c_str());
             lv_obj_set_width(label, lv_pct(100));
             lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-            lv_obj_set_style_text_color(label, lv_color_hex(0x759a9e), 0);
+            
+            // --- APPLICATION DE LA COULEUR ---
+            if (isDirect) {
+                // Vert pour les stations reçues en direct
+                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_GREEN), 0);
+            } else {
+                // Orange pour les stations reçues via Digipeater
+                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_ORANGE), 0);
+            }
+            
             lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
         }
     }
 }
-
 // =============================================================================
 // Stats Tab
 // =============================================================================

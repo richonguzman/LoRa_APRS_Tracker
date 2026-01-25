@@ -56,6 +56,7 @@ struct StationStats {
     int lastRssi;
     float lastSnr;
     uint32_t lastHeard;     // Unix timestamp
+    bool lastIsDirect;
 };
 
 namespace STORAGE_Utils {
@@ -96,7 +97,8 @@ namespace STORAGE_Utils {
     int getContactCount();
 
     // Raw frames logging
-    bool logRawFrame(const String& frame, int rssi, float snr);
+    bool logRawFrame(const String& frame, int rssi, float snr, bool isDirect);
+    void updateStationStats(const String& callsign, int rssi, float snr, bool isDirect);
     const std::vector<String>& getLastFrames(int count);
     void checkFramesLogRotation();
 
