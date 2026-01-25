@@ -37,6 +37,9 @@
 #include <freertos/semphr.h>
 
 #include "ui_map_manager.h" // Inclure le nouveau gestionnaire de carte
+#include "ui_common.h"       // UI shared constants and accessors
+#include "ui_popups.h"       // Popup notifications module
+#include "ui_settings.h"     // Settings screens module
 
 SemaphoreHandle_t spiMutex = NULL;
 
@@ -290,7 +293,7 @@ static void create_bluetooth_screen();
 #define APRS_CANVAS_WIDTH SYMBOL_WIDTH
 #define APRS_CANVAS_HEIGHT SYMBOL_HEIGHT
 
-static void drawAPRSSymbol(const char *symbolStr) {
+void drawAPRSSymbol(const char *symbolStr) {
   if (!aprs_symbol_canvas || !aprs_symbol_buf)
     return;
 
@@ -2236,6 +2239,24 @@ static lv_obj_t *compose_return_screen =
 
 // Forward declaration
 static void create_compose_screen();
+static void populate_contacts_list(lv_obj_t *list);
+
+// =============================================================================
+// UIScreens namespace - Getters for other modules (ui_popups, etc.)
+// =============================================================================
+
+namespace UIScreens {
+    lv_obj_t* getMainScreen() { return screen_main; }
+    lv_obj_t* getMsgScreen() { return screen_msg; }
+    lv_obj_t* getMsgTabview() { return msg_tabview; }
+    lv_obj_t* getContactsList() { return list_contacts_global; }
+    bool isInitialized() { return screen_main != nullptr; }
+    void populateContactsList() {
+        if (list_contacts_global) {
+            populate_contacts_list(list_contacts_global);
+        }
+    }
+}
 
 // Open compose screen with prefilled callsign (now public function)
 void LVGL_UI::open_compose_with_callsign(const String &callsign) {
@@ -4723,54 +4744,9 @@ static void populate_stats(lv_obj_t *cont) {
     }
   }
 
-  // RX Message popup
-  static lv_obj_t *rx_msgbox = nullptr;
-  static lv_timer_t *rx_popup_timer = nullptr;
-
-  static void hide_rx_popup(lv_timer_t *timer) {
-    if (rx_msgbox) {
-      lv_msgbox_close(rx_msgbox);
-      rx_msgbox = nullptr;
-    }
-    rx_popup_timer = nullptr;
-  }
-
+  // RX Message popup - delegated to UIPopups module
   void showMessage(const char *from, const char *message) {
-    Serial.printf("[LVGL] showMessage from %s: %s\n", from, message);
-
-    // Close existing msgbox if any
-    if (rx_msgbox) {
-      lv_msgbox_close(rx_msgbox);
-      rx_msgbox = nullptr;
-    }
-    if (rx_popup_timer) {
-      lv_timer_del(rx_popup_timer);
-      rx_popup_timer = nullptr;
-    }
-
-    // Build message content
-    char content[256];
-    snprintf(content, sizeof(content), "From: %s\n\n%s", from, message);
-
-    // Create message box on top layer (visible on all screens)
-    rx_msgbox = lv_msgbox_create(lv_layer_top(), ">>> MSG Rx <<<", content,
-                                 NULL, false);
-    lv_obj_set_size(rx_msgbox, 290, 140);
-    lv_obj_set_style_bg_color(rx_msgbox, lv_color_hex(0x000022), 0);
-    lv_obj_set_style_bg_opa(rx_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(rx_msgbox, lv_color_hex(0x4488ff), 0);
-    lv_obj_set_style_border_width(rx_msgbox, 3, 0);
-    lv_obj_set_style_text_color(rx_msgbox, lv_color_hex(0x88ccff), 0);
-    lv_obj_center(rx_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 4 seconds (longer for received messages)
-    rx_popup_timer = lv_timer_create(hide_rx_popup, 4000, NULL);
-    lv_timer_set_repeat_count(rx_popup_timer, 1);
-
-    Serial.println("[LVGL] RX msgbox created and refreshed");
+    UIPopups::showMessage(from, message);
   }
 
   void updateCallsign(const char *callsign) {
@@ -4789,409 +4765,43 @@ static void populate_stats(lv_obj_t *cont) {
     }
   }
 
-  // Beacon pending msgbox (orange) - shown immediately when BEACON button is
-  // pressed
-  static lv_obj_t *beacon_pending_msgbox = nullptr;
-  static lv_timer_t *beacon_pending_timer = nullptr;
-
-  static void hide_beacon_pending_popup(lv_timer_t *timer) {
-    if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
-      lv_obj_del(beacon_pending_msgbox);
-      beacon_pending_msgbox = nullptr;
-    }
-    beacon_pending_timer = nullptr;
-  }
-
+  // Beacon pending popup - delegated to UIPopups module
   void showBeaconPending() {
-    Serial.println("[LVGL] showBeaconPending called");
-
-    // Close existing beacon pending msgbox if any
-    if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
-      lv_obj_del(beacon_pending_msgbox);
-      beacon_pending_msgbox = nullptr;
-    }
-    if (beacon_pending_timer) {
-      lv_timer_del(beacon_pending_timer);
-      beacon_pending_timer = nullptr;
-    }
-
-    // Create message box on top layer (visible on all screens)
-    beacon_pending_msgbox = lv_msgbox_create(lv_layer_top(), "BEACON",
-                                             "Waiting for GPS...", NULL, false);
-    lv_obj_set_size(beacon_pending_msgbox, 200, 80);
-    lv_obj_set_style_bg_color(beacon_pending_msgbox, lv_color_hex(0x332200),
-                              0); // Dark orange
-    lv_obj_set_style_bg_opa(beacon_pending_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(beacon_pending_msgbox, lv_color_hex(0xaa6600),
-                                  0); // Orange border
-    lv_obj_set_style_border_width(beacon_pending_msgbox, 3, 0);
-    lv_obj_set_style_text_color(beacon_pending_msgbox, lv_color_hex(0xffaa00),
-                                0); // Orange text
-    lv_obj_center(beacon_pending_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 5 seconds (in case GPS never gets fix)
-    beacon_pending_timer =
-        lv_timer_create(hide_beacon_pending_popup, 5000, NULL);
-    lv_timer_set_repeat_count(beacon_pending_timer, 1);
-
-    Serial.println("[LVGL] Beacon pending msgbox created");
+    UIPopups::showBeaconPending();
   }
 
   void hideBeaconPending() {
-    if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
-      lv_obj_del(beacon_pending_msgbox);
-      beacon_pending_msgbox = nullptr;
-    }
-    if (beacon_pending_timer) {
-      lv_timer_del(beacon_pending_timer);
-      beacon_pending_timer = nullptr;
-    }
+    UIPopups::hideBeaconPending();
   }
 
-  // TX msgbox
-  static lv_obj_t *tx_msgbox = nullptr;
-  static lv_timer_t *tx_popup_timer = nullptr;
-
-  static void hide_tx_popup(lv_timer_t *timer) {
-    if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
-      lv_obj_del(tx_msgbox);
-      tx_msgbox = nullptr;
-    }
-    tx_popup_timer = nullptr;
-  }
-
-  // Close all popups (useful when changing screens)
+  // Close all popups - delegated to UIPopups module
   void closeAllPopups() {
-    // Close beacon pending popup
-    hideBeaconPending();
-
-    // Close TX popup
-    if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
-      lv_obj_del(tx_msgbox);
-      tx_msgbox = nullptr;
-    }
-    if (tx_popup_timer) {
-      lv_timer_del(tx_popup_timer);
-      tx_popup_timer = nullptr;
-    }
-
-    // Close RX popup
-    if (rx_msgbox && lv_obj_is_valid(rx_msgbox)) {
-      lv_obj_del(rx_msgbox);
-      rx_msgbox = nullptr;
-    }
-    if (rx_popup_timer) {
-      lv_timer_del(rx_popup_timer);
-      rx_popup_timer = nullptr;
-    }
+    UIPopups::closeAll();
   }
 
+  // TX packet popup - delegated to UIPopups module
   void showTxPacket(const char *packet) {
-    Serial.printf("[LVGL] showTxPacket called: %s\n", packet);
-
-    // Always close beacon pending popup when TX happens
-    hideBeaconPending();
-
-    // Only show popup on dashboard
-    if (lv_scr_act() != screen_main) {
-      Serial.println("[LVGL] TX popup skipped (not on dashboard)");
-      return;
-    }
-
-    // Close existing msgbox if any
-    if (tx_msgbox && lv_obj_is_valid(tx_msgbox)) {
-      lv_obj_del(tx_msgbox);
-      tx_msgbox = nullptr;
-    }
-    if (tx_popup_timer) {
-      lv_timer_del(tx_popup_timer);
-      tx_popup_timer = nullptr;
-    }
-
-    // Create message box on top layer (visible on all screens)
-    tx_msgbox =
-        lv_msgbox_create(lv_layer_top(), "<<< TX >>>", packet, NULL, false);
-    lv_obj_set_size(tx_msgbox, 280, 120);
-    lv_obj_set_style_bg_color(tx_msgbox, lv_color_hex(0x002200), 0);
-    lv_obj_set_style_bg_opa(tx_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(tx_msgbox, lv_color_hex(0x006600), 0);
-    lv_obj_set_style_border_width(tx_msgbox, 3, 0);
-    lv_obj_set_style_text_color(tx_msgbox, lv_color_hex(0x006600), 0);
-    lv_obj_center(tx_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 3 seconds
-    tx_popup_timer = lv_timer_create(hide_tx_popup, 3000, NULL);
-    lv_timer_set_repeat_count(tx_popup_timer, 1);
-
-    Serial.println("[LVGL] TX msgbox created and refreshed");
+    UIPopups::showTxPacket(packet);
   }
 
-  // RX LoRa packet popup (blue)
-  static lv_obj_t *rx_lora_msgbox = nullptr;
-  static lv_timer_t *rx_lora_timer = nullptr;
-
-  static void hide_rx_lora_popup(lv_timer_t *timer) {
-    if (rx_lora_msgbox && lv_obj_is_valid(rx_lora_msgbox)) {
-      lv_obj_del(rx_lora_msgbox);
-      rx_lora_msgbox = nullptr;
-    }
-    rx_lora_timer = nullptr;
-  }
-
+  // RX LoRa packet popup - delegated to UIPopups module
   void showRxPacket(const char *packet) {
-    Serial.printf("[LVGL] showRxPacket called: %s\n", packet);
-
-    // Only show popup on dashboard
-    if (lv_scr_act() != screen_main) {
-      Serial.println("[LVGL] RX popup skipped (not on dashboard)");
-      return;
-    }
-
-    // Close existing msgbox if any
-    if (rx_lora_msgbox && lv_obj_is_valid(rx_lora_msgbox)) {
-      lv_obj_del(rx_lora_msgbox);
-      rx_lora_msgbox = nullptr;
-    }
-    if (rx_lora_timer) {
-      lv_timer_del(rx_lora_timer);
-      rx_lora_timer = nullptr;
-    }
-
-    // Create message box on top layer (visible on all screens)
-    rx_lora_msgbox =
-        lv_msgbox_create(lv_layer_top(), ">>> RX <<<", packet, NULL, false);
-    lv_obj_set_size(rx_lora_msgbox, 280, 120);
-    lv_obj_set_style_bg_color(rx_lora_msgbox, lv_color_hex(0x000033), 0);
-    lv_obj_set_style_bg_opa(rx_lora_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(rx_lora_msgbox, lv_color_hex(0x4488ff), 0);
-    lv_obj_set_style_border_width(rx_lora_msgbox, 3, 0);
-    lv_obj_set_style_text_color(rx_lora_msgbox, lv_color_hex(0x88bbff), 0);
-    lv_obj_center(rx_lora_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 3 seconds
-    rx_lora_timer = lv_timer_create(hide_rx_lora_popup, 3000, NULL);
-    lv_timer_set_repeat_count(rx_lora_timer, 1);
-
-    Serial.println("[LVGL] RX msgbox created and refreshed");
+    UIPopups::showRxPacket(packet);
   }
 
-  // WiFi Eco Mode popup
-  static lv_obj_t *wifi_eco_msgbox = nullptr;
-  static lv_timer_t *wifi_eco_timer = nullptr;
-
-  static void hide_wifi_eco_popup(lv_timer_t *timer) {
-    if (wifi_eco_msgbox && lv_obj_is_valid(wifi_eco_msgbox)) {
-      lv_obj_del(wifi_eco_msgbox);
-      wifi_eco_msgbox = nullptr;
-    }
-    wifi_eco_timer = nullptr;
-  }
-
+  // WiFi Eco Mode popup - delegated to UIPopups module
   void showWiFiEcoMode() {
-    Serial.println("[LVGL] showWiFiEcoMode called");
-
-    // Check if LVGL UI is initialized
-    if (!screen_main) {
-      Serial.println("[LVGL] UI not initialized yet, skipping popup");
-      return;
-    }
-
-    // Close existing msgbox if any
-    if (wifi_eco_msgbox && lv_obj_is_valid(wifi_eco_msgbox)) {
-      lv_obj_del(wifi_eco_msgbox);
-      wifi_eco_msgbox = nullptr;
-    }
-    if (wifi_eco_timer) {
-      lv_timer_del(wifi_eco_timer);
-      wifi_eco_timer = nullptr;
-    }
-
-    // Create message box on top layer (visible on all screens)
-    wifi_eco_msgbox =
-        lv_msgbox_create(lv_layer_top(), "WiFi Eco Mode",
-                         "Connection failed\nRetry in 30 min", NULL, false);
-    lv_obj_set_size(wifi_eco_msgbox, 240, 100);
-    lv_obj_set_style_bg_color(wifi_eco_msgbox, lv_color_hex(0x332200), 0);
-    lv_obj_set_style_bg_opa(wifi_eco_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(wifi_eco_msgbox, lv_color_hex(0xffa500), 0);
-    lv_obj_set_style_border_width(wifi_eco_msgbox, 3, 0);
-    lv_obj_set_style_text_color(wifi_eco_msgbox, lv_color_hex(0xffa500), 0);
-    lv_obj_center(wifi_eco_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 2 seconds
-    wifi_eco_timer = lv_timer_create(hide_wifi_eco_popup, 2000, NULL);
-    lv_timer_set_repeat_count(wifi_eco_timer, 1);
-
-    Serial.println("[LVGL] WiFi Eco msgbox created");
+    UIPopups::showWiFiEcoMode();
   }
 
-  // Caps Lock popup
-  static lv_obj_t *capslock_msgbox = nullptr;
-  static lv_timer_t *capslock_timer = nullptr;
-
-  static void hide_capslock_popup(lv_timer_t *timer) {
-    if (capslock_msgbox && lv_obj_is_valid(capslock_msgbox)) {
-      lv_msgbox_close(capslock_msgbox);
-    }
-    capslock_msgbox = nullptr;
-    capslock_timer = nullptr;
-  }
-
+  // Caps Lock popup - delegated to UIPopups module
   void showCapsLockPopup(bool active) {
-    Serial.printf("[LVGL] showCapsLockPopup called: %s\n",
-                  active ? "ON" : "OFF");
-
-    // Check if LVGL UI is initialized
-    if (!screen_main) {
-      Serial.println("[LVGL] UI not initialized yet, skipping popup");
-      return;
-    }
-
-    // Close existing msgbox if any
-    if (capslock_msgbox && lv_obj_is_valid(capslock_msgbox)) {
-      lv_msgbox_close(capslock_msgbox);
-      capslock_msgbox = nullptr;
-    }
-    if (capslock_timer) {
-      lv_timer_del(capslock_timer);
-      capslock_timer = nullptr;
-    }
-
-    // Create message box on top layer (visible on all screens)
-    const char *title = active ? "MAJ" : "maj";
-    const char *msg = active ? "Caps Lock ON" : "Caps Lock OFF";
-    capslock_msgbox = lv_msgbox_create(lv_layer_top(), title, msg, NULL, false);
-    lv_obj_set_size(capslock_msgbox, 150, 70);
-    if (active) {
-      lv_obj_set_style_bg_color(capslock_msgbox, lv_color_hex(0x003300), 0);
-      lv_obj_set_style_border_color(capslock_msgbox, lv_color_hex(0x00ff00), 0);
-      lv_obj_set_style_text_color(capslock_msgbox, lv_color_hex(0x00ff00), 0);
-    } else {
-      lv_obj_set_style_bg_color(capslock_msgbox, lv_color_hex(0x333333), 0);
-      lv_obj_set_style_border_color(capslock_msgbox, lv_color_hex(0x888888), 0);
-      lv_obj_set_style_text_color(capslock_msgbox, lv_color_hex(0xaaaaaa), 0);
-    }
-    lv_obj_set_style_bg_opa(capslock_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(capslock_msgbox, 2, 0);
-    lv_obj_center(capslock_msgbox);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    // Auto-close after 1.5 seconds
-    capslock_timer = lv_timer_create(hide_capslock_popup, 1500, NULL);
-    lv_timer_set_repeat_count(capslock_timer, 1);
-
-    Serial.println("[LVGL] Caps Lock popup created");
+    UIPopups::showCapsLockPopup(active);
   }
 
-  // Add Contact confirmation popup
-  static lv_obj_t *add_contact_msgbox = nullptr;
-  static String pending_contact_callsign;
-
-  static void add_contact_btn_callback(lv_event_t *e) {
-    (void)e; // Unused parameter
-    const char *btn_text = lv_msgbox_get_active_btn_text(add_contact_msgbox);
-
-    bool accepted = (btn_text && strcmp(btn_text, "Yes") == 0);
-
-    if (accepted) {
-      // User confirmed - add contact
-      Contact newContact;
-      newContact.callsign = pending_contact_callsign;
-      newContact.name = "";
-      newContact.comment = "Auto-added";
-
-      if (STORAGE_Utils::addContact(newContact)) {
-        Serial.printf("[LVGL] Contact %s added successfully\n",
-                      pending_contact_callsign.c_str());
-      } else {
-        Serial.printf("[LVGL] Failed to add contact %s\n",
-                      pending_contact_callsign.c_str());
-      }
-    } else {
-      Serial.printf("[LVGL] User declined to add contact %s\n",
-                    pending_contact_callsign.c_str());
-    }
-
-    // Close the popup
-    if (add_contact_msgbox && lv_obj_is_valid(add_contact_msgbox)) {
-      lv_obj_del(add_contact_msgbox);
-      add_contact_msgbox = nullptr;
-    }
-    pending_contact_callsign = "";
-
-    // Navigate to Contacts tab only if accepted
-    if (accepted && screen_msg && msg_tabview) {
-      lv_scr_load_anim(screen_msg, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
-      lv_tabview_set_act(msg_tabview, 2, LV_ANIM_ON); // 2 = Contacts tab
-      populate_contacts_list(list_contacts_global);
-      Serial.println("[LVGL] Navigated to Contacts tab");
-    }
-  }
-
+  // Add Contact prompt - delegated to UIPopups module
   void showAddContactPrompt(const char *callsign) {
-    Serial.printf("[LVGL] showAddContactPrompt called for: %s\n", callsign);
-
-    // Check if LVGL UI is initialized
-    if (!screen_main) {
-      Serial.println("[LVGL] UI not initialized yet, skipping popup");
-      return;
-    }
-
-    // Close existing msgbox if any
-    if (add_contact_msgbox && lv_obj_is_valid(add_contact_msgbox)) {
-      lv_obj_del(add_contact_msgbox);
-      add_contact_msgbox = nullptr;
-    }
-
-    // Store callsign for callback
-    pending_contact_callsign = String(callsign);
-
-    // Create message with callsign
-    char msg[64];
-    snprintf(msg, sizeof(msg), "New contact:\n%s\n\nAdd to contacts?",
-             callsign);
-
-    // Create message box with Yes/No buttons
-    static const char *btns[] = {"Yes", "No", ""};
-    add_contact_msgbox =
-        lv_msgbox_create(lv_layer_top(), "New Contact", msg, btns, false);
-    lv_obj_set_size(add_contact_msgbox, 220, 140);
-    lv_obj_set_style_bg_color(add_contact_msgbox, lv_color_hex(0x1a1a2e), 0);
-    lv_obj_set_style_bg_opa(add_contact_msgbox, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(add_contact_msgbox, lv_color_hex(0x006600),
-                                  0);
-    lv_obj_set_style_border_width(add_contact_msgbox, 3, 0);
-    lv_obj_set_style_text_color(add_contact_msgbox, lv_color_hex(0xffffff), 0);
-    lv_obj_center(add_contact_msgbox);
-
-    // Style the buttons
-    lv_obj_t *btns_obj = lv_msgbox_get_btns(add_contact_msgbox);
-    lv_obj_set_style_bg_color(btns_obj, lv_color_hex(0x006600), LV_PART_ITEMS);
-    lv_obj_set_style_text_color(btns_obj, lv_color_hex(0xffffff),
-                                LV_PART_ITEMS);
-
-    // Add event callback
-    lv_obj_add_event_cb(add_contact_msgbox, add_contact_btn_callback,
-                        LV_EVENT_VALUE_CHANGED, NULL);
-
-    // Force immediate refresh
-    lv_refr_now(NULL);
-
-    Serial.println("[LVGL] Add contact popup created");
+    UIPopups::showAddContactPrompt(callsign);
   }
 
   void handleComposeKeyboard(char key) { ::handleComposeKeyboard(key); }
