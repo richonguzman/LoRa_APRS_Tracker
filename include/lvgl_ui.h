@@ -37,6 +37,7 @@ namespace LVGL_UI {
     void open_compose_with_callsign(const String& callsign); // Open compose screen with pre-filled callsign
     void return_to_dashboard();  // Return to main dashboard screen
     void refreshFramesList();  // Refresh frames list if visible
+    void openMessagesScreen();  // Open messages screen
 }
 
 #endif // USE_LVGL_UI

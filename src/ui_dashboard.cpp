@@ -1,0 +1,476 @@
+/* LVGL UI Dashboard Module
+ * Main dashboard screen with status bar, content area, and button bar
+ */
+
+#ifdef USE_LVGL_UI
+
+#include "ui_dashboard.h"
+#include "ui_common.h"
+#include "ui_settings.h"
+#include "ui_popups.h"
+#include "ui_map_manager.h"
+#include "lvgl_ui.h"
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <lvgl.h>
+
+#include "battery_utils.h"
+#include "ble_utils.h"
+#include "configuration.h"
+#include "custom_characters.h"
+#include "storage_utils.h"
+#include "utils.h"
+
+// External configuration and state
+extern Configuration Config;
+extern uint8_t myBeaconsIndex;
+extern int myBeaconsSize;
+extern bool WiFiConnected;
+extern bool WiFiEcoMode;
+extern bool WiFiUserDisabled;
+extern bool bluetoothActive;
+extern bool bluetoothConnected;
+extern bool sendUpdate;
+extern uint8_t loraIndex;
+extern int loraIndexSize;
+
+// APRS symbols (defined in lvgl_ui.cpp)
+extern const char *symbolArray[];
+extern const int symbolArraySize;
+extern const uint8_t *symbolsAPRS[];
+
+// Screen dimensions
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+
+// APRS symbol canvas dimensions
+#define APRS_CANVAS_WIDTH SYMBOL_WIDTH
+#define APRS_CANVAS_HEIGHT SYMBOL_HEIGHT
+
+namespace UIDashboard {
+
+// Dashboard screen and labels
+static lv_obj_t *screen_main = nullptr;
+static lv_obj_t *label_callsign = nullptr;
+static lv_obj_t *label_gps = nullptr;
+static lv_obj_t *label_battery = nullptr;
+static lv_obj_t *label_lora = nullptr;
+static lv_obj_t *label_wifi = nullptr;
+static lv_obj_t *label_bluetooth = nullptr;
+static lv_obj_t *label_storage = nullptr;
+static lv_obj_t *label_time = nullptr;
+static lv_obj_t *aprs_symbol_canvas = nullptr;
+static lv_color_t *aprs_symbol_buf = nullptr;
+
+// Forward declarations for button callbacks
+static void btn_beacon_clicked(lv_event_t *e);
+static void btn_setup_clicked(lv_event_t *e);
+static void btn_msg_clicked(lv_event_t *e);
+static void btn_map_clicked(lv_event_t *e);
+
+void init() {
+    // Initialize dashboard module (nothing to do yet)
+}
+
+lv_obj_t* getMainScreen() {
+    return screen_main;
+}
+
+void drawAPRSSymbol(const char *symbolStr) {
+    if (!aprs_symbol_canvas || !aprs_symbol_buf)
+        return;
+
+    // Extract symbol character from full format (e.g., "/>" or "\>" or ">")
+    // Symbol is always second char in 2-char format, first char in 1-char format
+    char symbolChar[2] = {0, 0};
+    if (symbolStr && strlen(symbolStr) >= 2) {
+        symbolChar[0] = symbolStr[1]; // Second character is the symbol
+    } else if (symbolStr && strlen(symbolStr) >= 1) {
+        symbolChar[0] = symbolStr[0];
+    }
+
+    // Find symbol index
+    int symbolIndex = -1;
+    for (int i = 0; i < symbolArraySize; i++) {
+        if (strcmp(symbolChar, symbolArray[i]) == 0) {
+            symbolIndex = i;
+            break;
+        }
+    }
+
+    // Clear canvas with dark background
+    lv_canvas_fill_bg(aprs_symbol_canvas, lv_color_hex(0x16213e), LV_OPA_COVER);
+
+    if (symbolIndex < 0)
+        return; // Symbol not found
+
+    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
+    lv_color_t white = lv_color_hex(0xffffff);
+
+    // Draw bitmap 1:1
+    for (int y = 0; y < SYMBOL_HEIGHT; y++) {
+        for (int x = 0; x < SYMBOL_WIDTH; x++) {
+            int byteIndex = (y * ((SYMBOL_WIDTH + 7) / 8)) + (x / 8);
+            int bitIndex = 7 - (x % 8);
+            if (bitMap[byteIndex] & (1 << bitIndex)) {
+                lv_canvas_set_px_color(aprs_symbol_canvas, x, y, white);
+            }
+        }
+    }
+    lv_obj_invalidate(aprs_symbol_canvas);
+}
+
+// Button event callbacks
+static void btn_beacon_clicked(lv_event_t *e) {
+    sendUpdate = true;
+    Serial.println("[LVGL] BEACON button pressed - requesting beacon");
+    UIPopups::showBeaconPending();
+}
+
+static void btn_setup_clicked(lv_event_t *e) {
+    Serial.println("[LVGL] SETUP button pressed");
+    UIPopups::closeAll();
+    UISettings::openSetup();
+}
+
+static void btn_msg_clicked(lv_event_t *e) {
+    Serial.println("[LVGL] MSG button pressed");
+    UIPopups::closeAll();
+    LVGL_UI::openMessagesScreen();
+}
+
+static void btn_map_clicked(lv_event_t *e) {
+    Serial.println("[LVGL] MAP button pressed");
+    Serial.printf("[LVGL-DEBUG] Free heap before MAP: %u bytes\n", ESP.getFreeHeap());
+    UIPopups::closeAll();
+    Serial.println("[LVGL-DEBUG] Popups closed");
+
+    // Recreate map screen each time to update positions
+    if (UIMapManager::screen_map) {
+        Serial.println("[LVGL-DEBUG] Deleting old screen_map");
+        lv_obj_del(UIMapManager::screen_map);
+        UIMapManager::screen_map = nullptr;
+    }
+    Serial.println("[LVGL-DEBUG] Creating new map screen");
+    UIMapManager::create_map_screen();
+    Serial.println("[LVGL-DEBUG] Map screen created, loading animation");
+    lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    Serial.println("[LVGL-DEBUG] btn_map_clicked DONE");
+}
+
+// Public button action functions
+void onBeaconClicked() { btn_beacon_clicked(nullptr); }
+void onMsgClicked() { btn_msg_clicked(nullptr); }
+void onMapClicked() { btn_map_clicked(nullptr); }
+void onSetupClicked() { btn_setup_clicked(nullptr); }
+
+void createDashboard() {
+    // Create main screen
+    screen_main = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_main, lv_color_hex(0x1a1a2e), 0);
+
+    // Status bar at top
+    lv_obj_t *status_bar = lv_obj_create(screen_main);
+    lv_obj_set_size(status_bar, SCREEN_WIDTH, 30);
+    lv_obj_set_pos(status_bar, 0, 0);
+    lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_border_width(status_bar, 0, 0);
+    lv_obj_set_style_radius(status_bar, 0, 0);
+    lv_obj_set_style_pad_all(status_bar, 5, 0);
+    lv_obj_set_flex_flow(status_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(status_bar, LV_FLEX_ALIGN_SPACE_BETWEEN,
+                          LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Callsign label (left)
+    label_callsign = lv_label_create(status_bar);
+    lv_label_set_text(label_callsign, "NOCALL");
+    lv_obj_set_style_text_color(label_callsign, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(label_callsign, &lv_font_montserrat_14, 0);
+
+    // APRS symbol canvas (center)
+    aprs_symbol_buf = (lv_color_t *)malloc(
+        APRS_CANVAS_WIDTH * APRS_CANVAS_HEIGHT * sizeof(lv_color_t));
+    if (aprs_symbol_buf) {
+        aprs_symbol_canvas = lv_canvas_create(status_bar);
+        lv_canvas_set_buffer(aprs_symbol_canvas, aprs_symbol_buf, APRS_CANVAS_WIDTH,
+                             APRS_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+        lv_obj_set_size(aprs_symbol_canvas, APRS_CANVAS_WIDTH, APRS_CANVAS_HEIGHT);
+        // Draw initial symbol from current beacon
+        Beacon *currentBeacon = &Config.beacons[myBeaconsIndex];
+        String fullSymbol = currentBeacon->overlay + currentBeacon->symbol;
+        drawAPRSSymbol(fullSymbol.c_str());
+    }
+
+    // Date/Time label (right)
+    label_time = lv_label_create(status_bar);
+    lv_label_set_text(label_time, "--/--/---- --:--:-- UTC");
+    lv_obj_set_style_text_color(label_time, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(label_time, &lv_font_montserrat_14, 0);
+
+    // Main content area
+    lv_obj_t *content = lv_obj_create(screen_main);
+    lv_obj_set_size(content, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 80);
+    lv_obj_set_pos(content, 5, 35);
+    lv_obj_set_style_bg_color(content, lv_color_hex(0x0f0f23), 0);
+    lv_obj_set_style_border_color(content, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_radius(content, 8, 0);
+    lv_obj_set_style_pad_all(content, 10, 0);
+
+    // GPS info
+    label_gps = lv_label_create(content);
+    lv_label_set_text(label_gps, "GPS: -- sat  Loc: --------\nLat: --.----  Lon: "
+                                 "--.----\nAlt: ---- m  Spd: --- km/h");
+    lv_obj_set_style_text_color(label_gps, lv_color_hex(0x759a9e), 0);
+    lv_obj_set_style_text_font(label_gps, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_gps, 0, 0);
+
+    // LoRa info
+    label_lora = lv_label_create(content);
+    char lora_init[96];
+    float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+    int rate = Config.loraTypes[loraIndex].dataRate;
+    snprintf(lora_init, sizeof(lora_init), "LoRa: %.3f MHz  %d bps\nLast RX: ---",
+             freq, rate);
+    lv_label_set_text(label_lora, lora_init);
+    lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
+    lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_lora, 0, 55);
+
+    // WiFi info
+    label_wifi = lv_label_create(content);
+    lv_label_set_text(label_wifi, "WiFi: ---");
+    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
+    lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_wifi, 0, 95);
+
+    // Bluetooth info
+    label_bluetooth = lv_label_create(content);
+    if (!bluetoothActive) {
+        lv_label_set_text(label_bluetooth, "BT: Disabled");
+        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
+    } else if (bluetoothConnected) {
+        String addr = BLE_Utils::getConnectedDeviceAddress();
+        if (addr.length() > 0) {
+            String btText = "BT: > " + addr;
+            lv_label_set_text(label_bluetooth, btText.c_str());
+        } else {
+            lv_label_set_text(label_bluetooth, "BT: Connected");
+        }
+        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xc792ea), 0);
+    } else {
+        lv_label_set_text(label_bluetooth, "BT: Waiting...");
+        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xffa500), 0);
+    }
+    lv_obj_set_style_text_font(label_bluetooth, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_bluetooth, 0, 115);
+
+    // Battery info
+    label_battery = lv_label_create(content);
+    lv_label_set_text(label_battery, "Bat: --.-- V (--%)");
+    lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0);
+    lv_obj_set_style_text_font(label_battery, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_battery, 0, 135);
+
+    // Storage info
+    label_storage = lv_label_create(content);
+    String storageInfo = "Storage: " + STORAGE_Utils::getStorageType();
+    if (STORAGE_Utils::isSDAvailable()) {
+        storageInfo += " (" + String(STORAGE_Utils::getTotalBytes() / (1024 * 1024)) + "MB)";
+    }
+    lv_label_set_text(label_storage, storageInfo.c_str());
+    lv_obj_set_style_text_color(label_storage, lv_color_hex(0xffcc00), 0);
+    lv_obj_set_style_text_font(label_storage, &lv_font_montserrat_14, 0);
+    lv_obj_set_pos(label_storage, 0, 155);
+
+    // Bottom button bar
+    lv_obj_t *btn_bar = lv_obj_create(screen_main);
+    lv_obj_set_size(btn_bar, SCREEN_WIDTH, 40);
+    lv_obj_set_pos(btn_bar, 0, SCREEN_HEIGHT - 40);
+    lv_obj_set_style_bg_color(btn_bar, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_border_width(btn_bar, 0, 0);
+    lv_obj_set_style_radius(btn_bar, 0, 0);
+    lv_obj_set_style_pad_all(btn_bar, 5, 0);
+    lv_obj_set_flex_flow(btn_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_bar, LV_FLEX_ALIGN_SPACE_EVENLY,
+                          LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Beacon button (APRS red)
+    lv_obj_t *btn_beacon = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_beacon, 70, 30);
+    lv_obj_set_style_bg_color(btn_beacon, lv_color_hex(0xcc0000), 0);
+    lv_obj_add_event_cb(btn_beacon, btn_beacon_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_beacon = lv_label_create(btn_beacon);
+    lv_label_set_text(lbl_beacon, "BCN");
+    lv_obj_center(lbl_beacon);
+    lv_obj_set_style_text_color(lbl_beacon, lv_color_hex(0xffffff), 0);
+
+    // Messages button (APRS blue)
+    lv_obj_t *btn_msg = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_msg, 70, 30);
+    lv_obj_set_style_bg_color(btn_msg, lv_color_hex(0x0066cc), 0);
+    lv_obj_add_event_cb(btn_msg, btn_msg_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_msg = lv_label_create(btn_msg);
+    lv_label_set_text(lbl_msg, "MSG");
+    lv_obj_center(lbl_msg);
+    lv_obj_set_style_text_color(lbl_msg, lv_color_hex(0xffffff), 0);
+
+    // Map button (green)
+    lv_obj_t *btn_map = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_map, 70, 30);
+    lv_obj_set_style_bg_color(btn_map, lv_color_hex(0x009933), 0);
+    lv_obj_add_event_cb(btn_map, btn_map_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_map = lv_label_create(btn_map);
+    lv_label_set_text(lbl_map, "MAP");
+    lv_obj_center(lbl_map);
+    lv_obj_set_style_text_color(lbl_map, lv_color_hex(0xffffff), 0);
+
+    // Settings button
+    lv_obj_t *btn_settings = lv_btn_create(btn_bar);
+    lv_obj_set_size(btn_settings, 70, 30);
+    lv_obj_set_style_bg_color(btn_settings, lv_color_hex(0xc792ea), 0);
+    lv_obj_add_event_cb(btn_settings, btn_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_settings = lv_label_create(btn_settings);
+    lv_label_set_text(lbl_settings, "SET");
+    lv_obj_center(lbl_settings);
+    lv_obj_set_style_text_color(lbl_settings, lv_color_hex(0x000000), 0);
+
+    // Load the screen
+    lv_scr_load(screen_main);
+}
+
+// Update functions
+void updateGPS(double lat, double lng, double alt, double speed, int sats, double hdop) {
+    if (label_gps) {
+        char buf[128];
+        const char *locator = Utils::getMaidenheadLocator(lat, lng, 8);
+
+        // Determine HDOP quality indicator
+        const char *hdopState = "";
+        if (hdop > 5.0) {
+            hdopState = "X"; // Bad precision
+        } else if (hdop > 2.0 && hdop < 5.0) {
+            hdopState = "-"; // Medium precision
+        } else if (hdop <= 2.0) {
+            hdopState = "+"; // Good precision
+        }
+
+        snprintf(buf, sizeof(buf),
+                 "GPS: %d%s sat  Loc: %s\nLat: %.4f  Lon: %.4f\nAlt: %.0f m  "
+                 "Spd: %.0f km/h",
+                 sats, hdopState, locator, lat, lng, alt, speed);
+        lv_label_set_text(label_gps, buf);
+    }
+}
+
+void updateBattery(int percent, float voltage) {
+    if (label_battery) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Bat: %.2f V (%d%%)", voltage, percent);
+        lv_label_set_text(label_battery, buf);
+
+        // Change color based on level
+        if (percent > 50) {
+            lv_obj_set_style_text_color(label_battery, lv_color_hex(0x006600), 0); // Green
+        } else if (percent > 20) {
+            lv_obj_set_style_text_color(label_battery, lv_color_hex(0xffa500), 0); // Orange
+        } else {
+            lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0); // Red
+        }
+    }
+}
+
+void updateLoRa(const char *lastRx, int rssi) {
+    if (label_lora) {
+        char buf[128];
+        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+        int rate = Config.loraTypes[loraIndex].dataRate;
+        snprintf(buf, sizeof(buf), "LoRa: %.3f MHz  %d bps\nLast RX: %s (%ddBm)",
+                 freq, rate, lastRx, rssi);
+        lv_label_set_text(label_lora, buf);
+    }
+}
+
+void refreshLoRaInfo() {
+    if (label_lora) {
+        char buf[128];
+        float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
+        int rate = Config.loraTypes[loraIndex].dataRate;
+        snprintf(buf, sizeof(buf), "LoRa: %.3f MHz  %d bps\nLast RX: ---", freq, rate);
+        lv_label_set_text(label_lora, buf);
+    }
+}
+
+void updateWiFi(bool connected, int rssi) {
+    if (label_wifi) {
+        if (WiFiUserDisabled) {
+            lv_label_set_text(label_wifi, "WiFi: Disabled");
+            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xff6b6b), 0);
+        } else if (connected) {
+            char buf[48];
+            String ip = WiFi.localIP().toString();
+            snprintf(buf, sizeof(buf), "WiFi: %s (%d dBm)", ip.c_str(), rssi);
+            lv_label_set_text(label_wifi, buf);
+            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
+        } else if (WiFiEcoMode) {
+            lv_label_set_text(label_wifi, "WiFi: Eco (sleep)");
+            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xffa500), 0);
+        } else {
+            lv_label_set_text(label_wifi, "WiFi: ---");
+            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
+        }
+    }
+}
+
+void updateCallsign(const char *callsign) {
+    if (label_callsign) {
+        lv_label_set_text(label_callsign, callsign);
+    }
+}
+
+void updateTime(int day, int month, int year, int hour, int minute, int second) {
+    if (label_time) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%02d/%02d/%04d %02d:%02d:%02d UTC", day,
+                 month, year, hour, minute, second);
+        lv_label_set_text(label_time, buf);
+    }
+}
+
+void updateBluetooth() {
+    if (label_bluetooth) {
+        if (!bluetoothActive) {
+            lv_label_set_text(label_bluetooth, "BT: Disabled");
+            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
+        } else if (BLE_Utils::isSleeping()) {
+            lv_label_set_text(label_bluetooth, "BT: Eco Sleep");
+            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
+        } else if (bluetoothConnected) {
+            String addr = BLE_Utils::getConnectedDeviceAddress();
+            if (addr.length() > 0) {
+                String btText = "BT: > " + addr;
+                lv_label_set_text(label_bluetooth, btText.c_str());
+            } else {
+                lv_label_set_text(label_bluetooth, "BT: Connected");
+            }
+            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xc792ea), 0);
+        } else {
+            lv_label_set_text(label_bluetooth, "BT: Waiting...");
+            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xffa500), 0);
+        }
+    }
+}
+
+void returnToDashboard() {
+    if (screen_main) {
+        lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
+    }
+}
+
+// Provide label access for UISettings (callsign, wifi labels)
+lv_obj_t* getLabelCallsign() { return label_callsign; }
+lv_obj_t* getLabelWifi() { return label_wifi; }
+
+} // namespace UIDashboard
+
+#endif // USE_LVGL_UI
