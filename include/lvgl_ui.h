@@ -9,6 +9,13 @@
 
 #include <lvgl.h>
 
+// External declarations for custom JetBrains Mono fonts
+// These must match the 'Font Name' you used in the converter
+LV_FONT_DECLARE(lv_font_mono_12);
+LV_FONT_DECLARE(lv_font_mono_14);
+LV_FONT_DECLARE(lv_font_mono_16);
+
+
 namespace LVGL_UI {
     void showSplashScreen(uint8_t loraIndex, const char* version);
     void showInitScreen();                      // Show init screen with spinner
