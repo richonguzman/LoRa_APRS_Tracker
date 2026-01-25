@@ -9,6 +9,7 @@
 #include "ui_settings.h"
 #include "ui_common.h"
 #include "ui_popups.h"
+#include "ui_dashboard.h"
 #include <Arduino.h>
 #include <lvgl.h>
 #include <WiFi.h>
@@ -34,24 +35,19 @@ extern bool WiFiEcoMode;
 extern uint8_t screenBrightness;
 extern bool displayEcoMode;
 extern bool screenDimmed;
-extern unsigned long lastActivityTime;
+extern uint32_t lastActivityTime;
 extern bool bluetoothActive;
 extern bool bluetoothConnected;
 extern int loraIndex;
 extern int loraIndexSize;
 extern int myBeaconsIndex;
 extern int myBeaconsSize;
-extern lv_obj_t *label_callsign;
-extern lv_obj_t *label_wifi;
 extern uint32_t last_tick;
 
 // External namespace for map screen
 namespace UIMapManager {
     extern lv_obj_t *screen_map;
 }
-
-// Forward declaration from lvgl_ui.cpp
-void drawAPRSSymbol(const char *symbolStr);
 
 // =============================================================================
 // Module State - Screen Pointers
@@ -529,14 +525,12 @@ static void callsign_item_clicked(lv_event_t *e) {
     STATION_Utils::saveIndex(0, myBeaconsIndex);
 
     // Update the callsign label on main screen
-    if (label_callsign) {
-        lv_label_set_text(label_callsign, Config.beacons[myBeaconsIndex].callsign.c_str());
-    }
+    UIDashboard::updateCallsign(Config.beacons[myBeaconsIndex].callsign.c_str());
 
     // Update APRS symbol for new beacon
     String fullSymbol = Config.beacons[myBeaconsIndex].overlay +
                         Config.beacons[myBeaconsIndex].symbol;
-    drawAPRSSymbol(fullSymbol.c_str());
+    UIDashboard::drawAPRSSymbol(fullSymbol.c_str());
 
     if (current_callsign_btn && current_callsign_btn != btn) {
         lv_obj_set_style_bg_color(current_callsign_btn, lv_color_hex(UIColors::BG_DARKER), 0);
@@ -1043,9 +1037,10 @@ static void wifi_switch_changed(lv_event_t *e) {
             lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff6b6b), 0);
         }
 
-        if (label_wifi) {
-            lv_label_set_text(label_wifi, "WiFi: OFF");
-            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xff6b6b), 0);
+        lv_obj_t *wifi_lbl = UIDashboard::getLabelWifi();
+        if (wifi_lbl) {
+            lv_label_set_text(wifi_lbl, "WiFi: OFF");
+            lv_obj_set_style_text_color(wifi_lbl, lv_color_hex(0xff6b6b), 0);
         }
     }
 
