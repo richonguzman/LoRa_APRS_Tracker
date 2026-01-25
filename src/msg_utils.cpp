@@ -18,6 +18,9 @@
 
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
+#include <algorithm>
+#include <utility>
+#include <vector>
 #include "notification_utils.h"
 #include "bluetooth_utils.h"
 #include "storage_utils.h"
@@ -227,7 +230,7 @@ namespace MSG_Utils {
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Saved %s message to %s", direction.c_str(), filename.c_str());
     }
 
-    // Get list of callsigns with active conversations
+    // Get list of callsigns with active conversations, sorted by last message time
     std::vector<String> getConversationsList() {
         std::vector<String> callsigns;
 
@@ -242,6 +245,9 @@ namespace MSG_Utils {
             return callsigns;
         }
 
+        // Collect conversations with their last modification time
+        std::vector<std::pair<String, time_t>> conversationsWithTime;
+
         File entry = dir.openNextFile();
         while (entry) {
             if (!entry.isDirectory()) {
@@ -254,8 +260,9 @@ namespace MSG_Utils {
                 // Remove .txt extension
                 if (filename.endsWith(".txt")) {
                     String callsign = filename.substring(0, filename.length() - 4);
-                    callsigns.push_back(callsign);
-                    Serial.printf("[MSG] Found conversation: %s\n", callsign.c_str());
+                    time_t lastWrite = entry.getLastWrite();
+                    conversationsWithTime.push_back(std::make_pair(callsign, lastWrite));
+                    Serial.printf("[MSG] Found conversation: %s (time: %ld)\n", callsign.c_str(), lastWrite);
                 }
             }
             entry.close();
@@ -263,7 +270,18 @@ namespace MSG_Utils {
         }
         dir.close();
 
-        Serial.printf("[MSG] Found %d conversations\n", callsigns.size());
+        // Sort by last modification time (most recent first)
+        std::sort(conversationsWithTime.begin(), conversationsWithTime.end(),
+            [](const std::pair<String, time_t>& a, const std::pair<String, time_t>& b) {
+                return a.second > b.second;  // Descending order
+            });
+
+        // Extract sorted callsigns
+        for (const auto& conv : conversationsWithTime) {
+            callsigns.push_back(conv.first);
+        }
+
+        Serial.printf("[MSG] Found %d conversations (sorted by recent)\n", callsigns.size());
         return callsigns;
     }
 

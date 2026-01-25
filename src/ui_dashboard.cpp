@@ -19,7 +19,6 @@
 #include "ble_utils.h"
 #include "configuration.h"
 #include "custom_characters.h"
-#include "storage_utils.h"
 #include "utils.h"
 
 // External configuration and state
@@ -54,14 +53,16 @@ namespace UIDashboard {
 static lv_obj_t *screen_main = nullptr;
 static lv_obj_t *label_callsign = nullptr;
 static lv_obj_t *label_gps = nullptr;
-static lv_obj_t *label_battery = nullptr;
 static lv_obj_t *label_lora = nullptr;
-static lv_obj_t *label_wifi = nullptr;
-static lv_obj_t *label_bluetooth = nullptr;
-static lv_obj_t *label_storage = nullptr;
 static lv_obj_t *label_time = nullptr;
 static lv_obj_t *aprs_symbol_canvas = nullptr;
 static lv_color_t *aprs_symbol_buf = nullptr;
+
+// Status bar icons
+static lv_obj_t *icon_wifi = nullptr;
+static lv_obj_t *icon_bluetooth = nullptr;
+static lv_obj_t *icon_battery = nullptr;
+static lv_obj_t *label_battery_pct = nullptr;
 
 // Forward declarations for button callbacks
 static void btn_beacon_clicked(lv_event_t *e);
@@ -202,11 +203,33 @@ void createDashboard() {
         drawAPRSSymbol(fullSymbol.c_str());
     }
 
-    // Date/Time label (right)
+    // Date/Time label
     label_time = lv_label_create(status_bar);
-    lv_label_set_text(label_time, "--/--/---- --:--:-- UTC");
+    lv_label_set_text(label_time, "--/-- --:--");
     lv_obj_set_style_text_color(label_time, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(label_time, &lv_font_montserrat_14, 0);
+
+    // WiFi icon (hidden by default, shown when connected)
+    icon_wifi = lv_label_create(status_bar);
+    lv_label_set_text(icon_wifi, LV_SYMBOL_WIFI);
+    lv_obj_set_style_text_color(icon_wifi, lv_color_hex(0x00ff00), 0);
+    lv_obj_add_flag(icon_wifi, LV_OBJ_FLAG_HIDDEN);
+
+    // Bluetooth icon (hidden by default, shown when connected)
+    icon_bluetooth = lv_label_create(status_bar);
+    lv_label_set_text(icon_bluetooth, LV_SYMBOL_BLUETOOTH);
+    lv_obj_set_style_text_color(icon_bluetooth, lv_color_hex(0x00ff00), 0);
+    lv_obj_add_flag(icon_bluetooth, LV_OBJ_FLAG_HIDDEN);
+
+    // Battery icon + percentage
+    icon_battery = lv_label_create(status_bar);
+    lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_FULL);
+    lv_obj_set_style_text_color(icon_battery, lv_color_hex(0x00ff00), 0);
+
+    label_battery_pct = lv_label_create(status_bar);
+    lv_label_set_text(label_battery_pct, "--%");
+    lv_obj_set_style_text_color(label_battery_pct, lv_color_hex(0xffffff), 0);
+    lv_obj_set_style_text_font(label_battery_pct, &lv_font_montserrat_12, 0);
 
     // Main content area
     lv_obj_t *content = lv_obj_create(screen_main);
@@ -236,52 +259,6 @@ void createDashboard() {
     lv_obj_set_style_text_color(label_lora, lv_color_hex(0xff6b6b), 0);
     lv_obj_set_style_text_font(label_lora, &lv_font_montserrat_14, 0);
     lv_obj_set_pos(label_lora, 0, 55);
-
-    // WiFi info
-    label_wifi = lv_label_create(content);
-    lv_label_set_text(label_wifi, "WiFi: ---");
-    lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
-    lv_obj_set_style_text_font(label_wifi, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_wifi, 0, 95);
-
-    // Bluetooth info
-    label_bluetooth = lv_label_create(content);
-    if (!bluetoothActive) {
-        lv_label_set_text(label_bluetooth, "BT: Disabled");
-        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
-    } else if (bluetoothConnected) {
-        String addr = BLE_Utils::getConnectedDeviceAddress();
-        if (addr.length() > 0) {
-            String btText = "BT: > " + addr;
-            lv_label_set_text(label_bluetooth, btText.c_str());
-        } else {
-            lv_label_set_text(label_bluetooth, "BT: Connected");
-        }
-        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xc792ea), 0);
-    } else {
-        lv_label_set_text(label_bluetooth, "BT: Waiting...");
-        lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xffa500), 0);
-    }
-    lv_obj_set_style_text_font(label_bluetooth, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_bluetooth, 0, 115);
-
-    // Battery info
-    label_battery = lv_label_create(content);
-    lv_label_set_text(label_battery, "Bat: --.-- V (--%)");
-    lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0);
-    lv_obj_set_style_text_font(label_battery, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_battery, 0, 135);
-
-    // Storage info
-    label_storage = lv_label_create(content);
-    String storageInfo = "Storage: " + STORAGE_Utils::getStorageType();
-    if (STORAGE_Utils::isSDAvailable()) {
-        storageInfo += " (" + String(STORAGE_Utils::getTotalBytes() / (1024 * 1024)) + "MB)";
-    }
-    lv_label_set_text(label_storage, storageInfo.c_str());
-    lv_obj_set_style_text_color(label_storage, lv_color_hex(0xffcc00), 0);
-    lv_obj_set_style_text_font(label_storage, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(label_storage, 0, 155);
 
     // Bottom button bar
     lv_obj_t *btn_bar = lv_obj_create(screen_main);
@@ -364,19 +341,36 @@ void updateGPS(double lat, double lng, double alt, double speed, int sats, doubl
 }
 
 void updateBattery(int percent, float voltage) {
-    if (label_battery) {
-        char buf[32];
-        snprintf(buf, sizeof(buf), "Bat: %.2f V (%d%%)", voltage, percent);
-        lv_label_set_text(label_battery, buf);
+    // Update battery icon
+    if (icon_battery) {
+        // Select icon based on level
+        if (percent > 85) {
+            lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_FULL);
+        } else if (percent > 60) {
+            lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_3);
+        } else if (percent > 35) {
+            lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_2);
+        } else if (percent > 10) {
+            lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_1);
+        } else {
+            lv_label_set_text(icon_battery, LV_SYMBOL_BATTERY_EMPTY);
+        }
 
         // Change color based on level
         if (percent > 50) {
-            lv_obj_set_style_text_color(label_battery, lv_color_hex(0x006600), 0); // Green
+            lv_obj_set_style_text_color(icon_battery, lv_color_hex(0x00ff00), 0); // Green
         } else if (percent > 20) {
-            lv_obj_set_style_text_color(label_battery, lv_color_hex(0xffa500), 0); // Orange
+            lv_obj_set_style_text_color(icon_battery, lv_color_hex(0xffa500), 0); // Orange
         } else {
-            lv_obj_set_style_text_color(label_battery, lv_color_hex(0xff6b6b), 0); // Red
+            lv_obj_set_style_text_color(icon_battery, lv_color_hex(0xff6b6b), 0); // Red
         }
+    }
+
+    // Update battery percentage
+    if (label_battery_pct) {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%d%%", percent);
+        lv_label_set_text(label_battery_pct, buf);
     }
 }
 
@@ -402,22 +396,12 @@ void refreshLoRaInfo() {
 }
 
 void updateWiFi(bool connected, int rssi) {
-    if (label_wifi) {
-        if (WiFiUserDisabled) {
-            lv_label_set_text(label_wifi, "WiFi: Disabled");
-            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xff6b6b), 0);
-        } else if (connected) {
-            char buf[48];
-            String ip = WiFi.localIP().toString();
-            snprintf(buf, sizeof(buf), "WiFi: %s (%d dBm)", ip.c_str(), rssi);
-            lv_label_set_text(label_wifi, buf);
-            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
-        } else if (WiFiEcoMode) {
-            lv_label_set_text(label_wifi, "WiFi: Eco (sleep)");
-            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0xffa500), 0);
+    if (icon_wifi) {
+        // Show icon only if WiFi is connected
+        if (connected && !WiFiUserDisabled && !WiFiEcoMode) {
+            lv_obj_clear_flag(icon_wifi, LV_OBJ_FLAG_HIDDEN);
         } else {
-            lv_label_set_text(label_wifi, "WiFi: ---");
-            lv_obj_set_style_text_color(label_wifi, lv_color_hex(0x759a9e), 0);
+            lv_obj_add_flag(icon_wifi, LV_OBJ_FLAG_HIDDEN);
         }
     }
 }
@@ -429,34 +413,22 @@ void updateCallsign(const char *callsign) {
 }
 
 void updateTime(int day, int month, int year, int hour, int minute, int second) {
+    (void)year;   // Unused
+    (void)second; // Unused
     if (label_time) {
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%02d/%02d/%04d %02d:%02d:%02d UTC", day,
-                 month, year, hour, minute, second);
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%02d/%02d %02d:%02d", day, month, hour, minute);
         lv_label_set_text(label_time, buf);
     }
 }
 
 void updateBluetooth() {
-    if (label_bluetooth) {
-        if (!bluetoothActive) {
-            lv_label_set_text(label_bluetooth, "BT: Disabled");
-            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
-        } else if (BLE_Utils::isSleeping()) {
-            lv_label_set_text(label_bluetooth, "BT: Eco Sleep");
-            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0x666666), 0);
-        } else if (bluetoothConnected) {
-            String addr = BLE_Utils::getConnectedDeviceAddress();
-            if (addr.length() > 0) {
-                String btText = "BT: > " + addr;
-                lv_label_set_text(label_bluetooth, btText.c_str());
-            } else {
-                lv_label_set_text(label_bluetooth, "BT: Connected");
-            }
-            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xc792ea), 0);
+    if (icon_bluetooth) {
+        // Show icon only if BT is connected
+        if (bluetoothActive && !BLE_Utils::isSleeping() && bluetoothConnected) {
+            lv_obj_clear_flag(icon_bluetooth, LV_OBJ_FLAG_HIDDEN);
         } else {
-            lv_label_set_text(label_bluetooth, "BT: Waiting...");
-            lv_obj_set_style_text_color(label_bluetooth, lv_color_hex(0xffa500), 0);
+            lv_obj_add_flag(icon_bluetooth, LV_OBJ_FLAG_HIDDEN);
         }
     }
 }
@@ -469,7 +441,7 @@ void returnToDashboard() {
 
 // Provide label access for UISettings (callsign, wifi labels)
 lv_obj_t* getLabelCallsign() { return label_callsign; }
-lv_obj_t* getLabelWifi() { return label_wifi; }
+lv_obj_t* getLabelWifi() { return nullptr; } // Removed from dashboard, now icon only
 
 } // namespace UIDashboard
 

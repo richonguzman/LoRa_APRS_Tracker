@@ -80,8 +80,10 @@ namespace NOTIFICATION_Utils {
     void playToneI2S(int frequency, uint8_t duration) {
         initI2S();
 
-        // Calculate amplitude based on volume setting (0-100%)
-        int amplitude = (MAX_AMPLITUDE * Config.notification.volume) / 100;
+        // Calculate amplitude with logarithmic curve for natural volume perception
+        // Quadratic curve: 50% slider = 25% amplitude, 70% = 49%, 100% = 100%
+        float normalized = Config.notification.volume / 100.0f;
+        int amplitude = (int)(MAX_AMPLITUDE * normalized * normalized);
         if (amplitude <= 0) return;  // Skip if volume is 0
 
         int numSamples = (I2S_SAMPLE_RATE * duration) / 1000;

@@ -24,6 +24,7 @@
 #include "lora_utils.h"
 #include "notification_utils.h"
 #include "station_utils.h"
+#include "storage_utils.h"
 #include "wifi_utils.h"
 
 // External variables from main code
@@ -40,6 +41,8 @@ extern bool bluetoothActive;
 extern bool bluetoothConnected;
 extern int loraIndex;
 extern int loraIndexSize;
+extern String versionDate;
+extern String versionNumber;
 extern int myBeaconsIndex;
 extern int myBeaconsSize;
 extern uint32_t last_tick;
@@ -62,6 +65,7 @@ static lv_obj_t *screen_sound = nullptr;
 static lv_obj_t *screen_wifi = nullptr;
 static lv_obj_t *screen_bluetooth = nullptr;
 static lv_obj_t *screen_webconf = nullptr;
+static lv_obj_t *screen_about = nullptr;
 
 // WiFi screen widgets
 static lv_obj_t *wifi_switch = nullptr;
@@ -257,6 +261,16 @@ static void setup_item_reboot(lv_event_t *e) {
     ESP.restart();
 }
 
+static void setup_item_about(lv_event_t *e) {
+    Serial.println("[UISettings] About selected");
+    if (screen_about) {
+        lv_obj_del(screen_about);
+        screen_about = nullptr;
+    }
+    UISettings::createAboutScreen();
+    lv_scr_load_anim(screen_about, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+}
+
 // =============================================================================
 // Setup Screen Creation
 // =============================================================================
@@ -327,6 +341,9 @@ void UISettings::createSetupScreen() {
 
     btn = lv_list_add_btn(list, LV_SYMBOL_REFRESH, "Reboot");
     lv_obj_add_event_cb(btn, setup_item_reboot, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_FILE, "About");
+    lv_obj_add_event_cb(btn, setup_item_about, LV_EVENT_CLICKED, NULL);
 
     Serial.println("[UISettings] Setup screen created");
 }
@@ -1763,6 +1780,104 @@ void UISettings::showBootWebConfig() {
 
         lv_timer_handler();
     }
+}
+
+// =============================================================================
+// About Screen
+// =============================================================================
+
+void UISettings::createAboutScreen() {
+    screen_about = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_about, lv_color_hex(UIColors::BG_DARK), 0);
+
+    // Title bar
+    lv_obj_t *title_bar = lv_obj_create(screen_about);
+    lv_obj_set_size(title_bar, UI_SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(UIColors::TEXT_PURPLE), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t *btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(UIColors::BG_HEADER), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_to_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, LV_SYMBOL_LEFT);
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t *title = lv_label_create(title_bar);
+    lv_label_set_text(title, "About");
+    lv_obj_set_style_text_color(title, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Content container
+    lv_obj_t *content = lv_obj_create(screen_about);
+    lv_obj_set_size(content, UI_SCREEN_WIDTH - 20, UI_SCREEN_HEIGHT - 50);
+    lv_obj_set_pos(content, 10, 42);
+    lv_obj_set_style_bg_color(content, lv_color_hex(UIColors::BG_DARKER), 0);
+    lv_obj_set_style_border_color(content, lv_color_hex(UIColors::BG_HEADER), 0);
+    lv_obj_set_style_radius(content, 8, 0);
+    lv_obj_set_style_pad_all(content, 15, 0);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(content, 10, 0);
+
+    // Project name
+    lv_obj_t *lbl_project = lv_label_create(content);
+    lv_label_set_text(lbl_project, "LoRa APRS Tracker");
+    lv_obj_set_style_text_color(lbl_project, lv_color_hex(UIColors::TEXT_PURPLE), 0);
+    lv_obj_set_style_text_font(lbl_project, &lv_font_montserrat_18, 0);
+
+    // CA2RXU Firmware version
+    lv_obj_t *lbl_fw_title = lv_label_create(content);
+    lv_label_set_text(lbl_fw_title, "Firmware (CA2RXU)");
+    lv_obj_set_style_text_color(lbl_fw_title, lv_color_hex(UIColors::TEXT_CYAN), 0);
+    lv_obj_set_style_text_font(lbl_fw_title, &lv_font_montserrat_14, 0);
+
+    lv_obj_t *lbl_fw_version = lv_label_create(content);
+    String fwVersion = "v" + versionNumber + " (" + versionDate + ")";
+    lv_label_set_text(lbl_fw_version, fwVersion.c_str());
+    lv_obj_set_style_text_color(lbl_fw_version, lv_color_hex(UIColors::TEXT_WHITE), 0);
+    lv_obj_set_style_text_font(lbl_fw_version, &lv_font_montserrat_14, 0);
+
+    // LVGL UI version
+    lv_obj_t *lbl_ui_title = lv_label_create(content);
+    lv_label_set_text(lbl_ui_title, "LVGL UI (T-Deck Plus)");
+    lv_obj_set_style_text_color(lbl_ui_title, lv_color_hex(UIColors::TEXT_CYAN), 0);
+    lv_obj_set_style_text_font(lbl_ui_title, &lv_font_montserrat_14, 0);
+
+    lv_obj_t *lbl_ui_version = lv_label_create(content);
+    lv_label_set_text(lbl_ui_version, "v" UI_VERSION " (" UI_VERSION_DATE ")");
+    lv_obj_set_style_text_color(lbl_ui_version, lv_color_hex(UIColors::TEXT_WHITE), 0);
+    lv_obj_set_style_text_font(lbl_ui_version, &lv_font_montserrat_14, 0);
+
+    // Storage info
+    lv_obj_t *lbl_storage_title = lv_label_create(content);
+    lv_label_set_text(lbl_storage_title, "Storage");
+    lv_obj_set_style_text_color(lbl_storage_title, lv_color_hex(UIColors::TEXT_CYAN), 0);
+    lv_obj_set_style_text_font(lbl_storage_title, &lv_font_montserrat_14, 0);
+
+    lv_obj_t *lbl_storage_info = lv_label_create(content);
+    String storageInfo = STORAGE_Utils::getStorageType();
+    if (STORAGE_Utils::isSDAvailable()) {
+        storageInfo += " (" + String(STORAGE_Utils::getTotalBytes() / (1024 * 1024)) + " MB)";
+    }
+    lv_label_set_text(lbl_storage_info, storageInfo.c_str());
+    lv_obj_set_style_text_color(lbl_storage_info, lv_color_hex(UIColors::TEXT_WHITE), 0);
+    lv_obj_set_style_text_font(lbl_storage_info, &lv_font_montserrat_14, 0);
+
+    // Author info
+    lv_obj_t *lbl_author = lv_label_create(content);
+    lv_label_set_text(lbl_author, "github.com/richonguzman/LoRa_APRS_Tracker");
+    lv_obj_set_style_text_color(lbl_author, lv_color_hex(UIColors::TEXT_GRAY), 0);
+    lv_obj_set_style_text_font(lbl_author, &lv_font_montserrat_12, 0);
+
+    Serial.println("[UISettings] About screen created");
 }
 
 // =============================================================================

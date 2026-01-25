@@ -299,8 +299,8 @@ static void populate_msg_list(lv_obj_t *list, int type) {
                 callsign_storage.push_back(conversations[i]);
             }
 
-            // Display from newest to oldest
-            for (int i = conversations.size() - 1; i >= 0; i--) {
+            // Display in order (already sorted by most recent first)
+            for (size_t i = 0; i < conversations.size(); i++) {
                 std::vector<String> messages = MSG_Utils::getMessagesForContact(conversations[i]);
                 String preview = conversations[i];
                 if (messages.size() > 0) {
@@ -1414,7 +1414,18 @@ void createMsgScreen() {
 
     lv_obj_t *tab_bar = lv_tabview_get_tab_btns(msg_tabview);
     if (tab_bar) {
-        lv_obj_set_style_pad_column(tab_bar, 2, 0);
+        lv_obj_set_style_pad_column(tab_bar, 0, 0);
+        // Inactive tabs: white background (LVGL default), black text
+        lv_obj_set_style_text_color(tab_bar, lv_color_hex(0x000000), LV_PART_ITEMS);
+        lv_obj_set_style_border_color(tab_bar, lv_color_hex(0x9DB2CC), LV_PART_ITEMS);
+        lv_obj_set_style_border_width(tab_bar, 1, LV_PART_ITEMS);
+        lv_obj_set_style_border_side(tab_bar, LV_BORDER_SIDE_RIGHT, LV_PART_ITEMS);
+        // Active tab: light blue background, dark blue border and text
+        lv_obj_set_style_bg_color(tab_bar, lv_color_hex(0x86B8F7), LV_PART_ITEMS | LV_STATE_CHECKED);
+        lv_obj_set_style_text_color(tab_bar, lv_color_hex(0x0952AD), LV_PART_ITEMS | LV_STATE_CHECKED);
+        lv_obj_set_style_border_color(tab_bar, lv_color_hex(0x0952AD), LV_PART_ITEMS | LV_STATE_CHECKED);
+        lv_obj_set_style_border_width(tab_bar, 3, LV_PART_ITEMS | LV_STATE_CHECKED);
+        lv_obj_set_style_border_side(tab_bar, LV_BORDER_SIDE_BOTTOM, LV_PART_ITEMS | LV_STATE_CHECKED);
     }
 
     // APRS Tab
