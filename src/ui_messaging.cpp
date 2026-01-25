@@ -1609,23 +1609,40 @@ default: return key;
 }
 
 void handleComposeKeyboard(char key) {
-    // Réinitialiser le minuteur d'inactivité à chaque appui
+    // 1. Réinitialiser le minuteur d'inactivité
     lastActivityTime = millis();
 
-    // LOGIQUE DE RÉVEIL ÉCRAN
+    // 2. Logique de réveil écran
     if (screenDimmed) {
         screenDimmed = false;
         #ifdef BOARD_BL_PIN
             analogWrite(BOARD_BL_PIN, screenBrightness);
         #endif
-        Serial.println("[UIMessaging] Screen woken up by keyboard");
-        // On continue pour traiter la touche (ou return; si vous voulez juste réveiller sans écrire)
+        // On ne retourne pas ici pour permettre la saisie immédiate
     }
 
-    if (!compose_screen_active || !current_focused_input)
-        return;
+    // 3. Identifier la cible (Compose ou Contact Edit)
+    lv_obj_t* target_input = nullptr;
+    bool is_compose_mode = false;
+    bool is_contact_mode = false;
+
+    // Mode Compose Message
+    if (compose_screen_active && current_focused_input) {
+        target_input = current_focused_input;
+        is_compose_mode = true;
+    }
+    // Mode Édition Contact (Vérifier si l'écran est affiché et si un champ est actif)
+    else if (screen_contact_edit && lv_scr_act() == screen_contact_edit && contact_current_input) {
+        target_input = contact_current_input;
+        is_contact_mode = true;
+    }
+
+    // Si aucun champ texte n'est actif, on sort
+    if (!target_input) return;
 
     uint32_t now = millis();
+
+    // --- Gestion des touches modificatrices ---
 
     // Handle Shift key
     if (key == KEY_SHIFT) {
@@ -1633,7 +1650,6 @@ void handleComposeKeyboard(char key) {
             capsLockActive = !capsLockActive;
             symbolLockActive = false;
             UIPopups::showCapsLockPopup(capsLockActive);
-            Serial.printf("[UIMessaging] Caps Lock %s\n", capsLockActive ? "ON" : "OFF");
         }
         lastShiftTime = now;
         return;
@@ -1644,41 +1660,58 @@ void handleComposeKeyboard(char key) {
         if (now - lastSymbolTime < DOUBLE_TAP_MS) {
             symbolLockActive = !symbolLockActive;
             capsLockActive = false;
-            Serial.printf("[UIMessaging] Symbol Lock %s\n", symbolLockActive ? "ON" : "OFF");
         }
         lastSymbolTime = now;
         return;
     }
 
+    // --- Gestion des touches d'action ---
+
     // Handle backspace
     if (key == '\b' || key == 0x08) {
-        lv_textarea_del_char(current_focused_input);
+        lv_textarea_del_char(target_input);
         return;
     }
 
-    // Handle Enter
-    if (key == '\n' || key == '\r') {
-        if (current_focused_input == compose_to_input) {
-            current_focused_input = compose_msg_input;
-            lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
+    // Handle Enter or Tab (Navigation)
+    if (key == '\n' || key == '\r' || key == '\t') {
+        
+        if (is_compose_mode) {
+            // Navigation dans Compose (To -> Msg)
+            if (current_focused_input == compose_to_input) {
+                lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
+                current_focused_input = compose_msg_input;
+            } else {
+                // Si on est dans le message et qu'on fait TAB, on remonte (optionnel)
+                if (key == '\t') {
+                    lv_obj_clear_state(compose_msg_input, LV_STATE_FOCUSED);
+                    lv_obj_add_state(compose_to_input, LV_STATE_FOCUSED);
+                    current_focused_input = compose_to_input;
+                }
+            }
+        }
+        else if (is_contact_mode) {
+            // Navigation dans Contact (Callsign -> Name -> Note)
+            if (contact_current_input == contact_callsign_input) {
+                lv_obj_clear_state(contact_callsign_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_name_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_name_input;
+            } else if (contact_current_input == contact_name_input) {
+                lv_obj_clear_state(contact_name_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_comment_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_comment_input;
+            } else if (contact_current_input == contact_comment_input && key == '\t') {
+                // Boucle retour au début avec TAB
+                lv_obj_clear_state(contact_comment_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_callsign_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_callsign_input;
+            }
         }
         return;
     }
 
-    // Handle Tab
-    if (key == '\t') {
-        if (current_focused_input == compose_to_input) {
-            current_focused_input = compose_msg_input;
-            lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
-        } else {
-            current_focused_input = compose_to_input;
-            lv_obj_add_state(compose_to_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_msg_input, LV_STATE_FOCUSED);
-        }
-        return;
-    }
+    // --- Saisie de caractères ---
 
     // Apply symbol or caps lock transformation
     char output = key;
@@ -1688,9 +1721,9 @@ void handleComposeKeyboard(char key) {
         output = key - 32; // Convert to uppercase
     }
 
-    // Add character to textarea
+    // Add character to the identified target textarea
     char str[2] = {output, '\0'};
-    lv_textarea_add_text(current_focused_input, str);
+    lv_textarea_add_text(target_input, str);
 }
 
 } // namespace UIMessaging
