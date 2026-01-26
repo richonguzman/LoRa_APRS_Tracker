@@ -99,6 +99,8 @@ struct FrameItemPool {
 };
 static FrameItemPool frame_pool[MAX_FRAME_ITEMS];
 static bool frame_pool_initialized = false;
+static lv_style_t style_header_text; // Déclaration du style pour les en-têtes du tableau de statistiques
+static bool style_header_text_initialized = false; // Flag pour l'initialisation du style
 
 // Contact long-press flag
 static bool contact_longpress_handled = false;
@@ -989,7 +991,7 @@ static void init_frame_pool(lv_obj_t *list) {
         lv_obj_t *label_summary = lv_label_create(cont);
         lv_obj_set_width(label_summary, lv_pct(100));
         lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT);
-        lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(label_summary, &lv_font_mono_14, 0);
 
         lv_obj_t *label_full = lv_label_create(cont);
         lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN);
@@ -1014,56 +1016,68 @@ static void update_frame_item(int index, const String& rawLine) {
     const char* raw = rawLine.c_str();
     size_t rawLen = rawLine.length();
 
-    // Check [D]irect prefix
+    // Détermine si c'est une trame directe (pour la couleur)
     bool isDirect = (rawLen >= 3 && raw[0] == '[' && raw[1] == 'D' && raw[2] == ']');
 
-    // Skip [X] prefix if present
-    const char* frameStart = raw;
-    if (rawLen > 4 && raw[0] == '[' && raw[3] == ']') {
-        frameStart = raw + 4;
-    }
-
-    // Static buffer for summary (reused, no heap alloc)
+    // Buffer statique pour le résumé (réutilisé, pas d'allocation de heap)
     static char summary[80];
+    summary[0] = '\0'; // Initialise le buffer
 
-    // Find '>' for "sender > dest" parsing
-    const char* arrow = strchr(frameStart, '>');
-    if (arrow && arrow > frameStart) {
-        // Find end of destination (first ',' or ':' after arrow)
-        const char* endDest = arrow + 1;
-        while (*endDest && *endDest != ',' && *endDest != ':') endDest++;
-
-        size_t senderLen = arrow - frameStart;
-        size_t destLen = endDest - (arrow + 1);
-
-        // Clamp lengths to fit buffer
-        if (senderLen > 30) senderLen = 30;
-        if (destLen > 30) destLen = 30;
-
-        // Build "sender > dest" in static buffer
-        memcpy(summary, frameStart, senderLen);
-        summary[senderLen] = ' ';
-        summary[senderLen + 1] = '>';
-        summary[senderLen + 2] = ' ';
-        memcpy(summary + senderLen + 3, arrow + 1, destLen);
-        summary[senderLen + 3 + destLen] = '\0';
+    // Extraire la partie HH:MM:SS (commence à l'index 14 de raw, 8 caractères de long)
+    // Ex: "[D]YYYY-MM-DD HH:MM:SS GMT: ..." -> HH:MM:SS est à raw[14]
+    char timeStr[9]; // HH:MM:SS\0
+    if (rawLen >= 22) { // S'assurer que la ligne est assez longue pour contenir l'heure
+        strncpy(timeStr, raw + 14, 8);
+        timeStr[8] = '\0';
     } else {
-        // No arrow found, copy truncated frame
-        size_t copyLen = strlen(frameStart);
-        if (copyLen > sizeof(summary) - 1) copyLen = sizeof(summary) - 1;
-        memcpy(summary, frameStart, copyLen);
-        summary[copyLen] = '\0';
+        strcpy(timeStr, "        "); // Fallback si la trame est trop courte
     }
 
-    // Update text (LVGL copies internally)
-    lv_label_set_text(item.summary_label, summary);
-    lv_label_set_text(item.full_label, raw);
+    // Déterminer le début du contenu réel de la trame APRS (après "[X]YYYY-MM-JJ HH:MM:SS GMT: ")
+    // Le contenu APRS commence à l'index 27 (3+10+1+8+5 = 27 caractères à sauter)
+    const char* aprsFrameContent = raw;
+    if (rawLen >= 27) { // Longueur suffisante pour le préfixe complet
+        aprsFrameContent = raw + 27;
+    } else {
+        aprsFrameContent = raw; // Si trop court, traiter la ligne entière comme contenu
+    }
 
-    // Update color based on direct/digipeated
+    const char* arrowPos = strchr(aprsFrameContent, '>');
+    if (arrowPos) {
+        // Extrait l'émetteur
+        size_t senderLen = arrowPos - aprsFrameContent;
+        // Extrait la destination/chemin
+        const char* pathStart = arrowPos + 1;
+        const char* pathEnd = strchr(pathStart, ':'); // Trouve la fin du chemin/début du texte du message
+        if (!pathEnd) pathEnd = strchr(pathStart, ','); // S'il n'y a pas de texte de message, la virgule sépare les éléments du chemin
+        if (!pathEnd) pathEnd = pathStart + strlen(pathStart); // S'il n'y a pas d'éléments de chemin, le chemin est tout ce qui reste
+        size_t pathDisplayLen = pathEnd - pathStart;
+
+        // Construire le résumé: "HH:MM:SS EMETTEUR > CHEMIN"
+        snprintf(summary, sizeof(summary), "%s %.*s > %.*s",
+                 timeStr,
+                 (int)senderLen, aprsFrameContent,
+                 (int)pathDisplayLen, pathStart);
+    } else {
+        // Pas de '>' trouvé, juste l'heure et le contenu de la trame
+        snprintf(summary, sizeof(summary), "%s %s", timeStr, aprsFrameContent);
+    }
+    
+    // Troncation finale si le résumé est toujours trop long
+    if (strlen(summary) >= sizeof(summary) - 4) { // Réserve de l'espace pour "..."
+        summary[sizeof(summary) - 4] = '\0';
+        strcat(summary, "...");
+    }
+
+    // Met à jour le texte (LVGL fait une copie interne)
+    lv_label_set_text(item.summary_label, summary);
+    lv_label_set_text(item.full_label, raw); // Ligne raw complète pour la popup de détail
+
+    // Met à jour la couleur en fonction de direct/digipeated
     lv_obj_set_style_text_color(item.summary_label,
         isDirect ? lv_palette_main(LV_PALETTE_GREEN) : lv_palette_main(LV_PALETTE_ORANGE), 0);
 
-    // Show item
+    // Affiche l'élément
     lv_obj_clear_flag(item.container, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -1112,32 +1126,55 @@ static void populate_stats(lv_obj_t *cont) {
 
         stats_table = lv_table_create(cont);
         if (stats_table) {
-            lv_table_set_col_cnt(stats_table, 5);
+            lv_table_set_col_cnt(stats_table, 4); // Suppression de la colonne "Time"
             lv_obj_set_width(stats_table, lv_pct(100));
             lv_obj_set_style_bg_color(stats_table, lv_color_hex(0x0f0f23), 0);
             lv_obj_set_style_border_color(stats_table, lv_color_hex(0x333344), 0);
-            lv_obj_set_style_text_color(stats_table, lv_color_hex(0x759a9e), 0);
             lv_obj_set_style_pad_all(stats_table, 2, LV_PART_ITEMS);
+            // Couleur de texte par défaut pour les éléments du tableau (lignes de données)
+            lv_obj_set_style_text_color(stats_table, lv_color_hex(0x759a9e), LV_PART_ITEMS);
 
-            // Column widths (total ~290px for content area)
-            lv_table_set_col_width(stats_table, 0, 65);  // Time
-            lv_table_set_col_width(stats_table, 1, 80);  // Station
-            lv_table_set_col_width(stats_table, 2, 38);  // Pkts
-            lv_table_set_col_width(stats_table, 3, 45);  // RSSI
-            lv_table_set_col_width(stats_table, 4, 45);  // SNR
+            // Initialiser le style des en-têtes une seule fois
+            if (!style_header_text_initialized) { // Vérifie si le style a déjà été initialisé
+                lv_style_init(&style_header_text);
+                lv_style_set_text_color(&style_header_text, lv_color_hex(0xFF8C00)); // Orange
+                lv_style_set_text_font(&style_header_text, &lv_font_montserrat_14); // Spécifier la police pour les en-têtes
+                style_header_text_initialized = true; // Marque le style comme initialisé
+            }
+            // Appliquer le style pour les en-têtes (utilisant l'état personnalisé)
+            lv_obj_add_style(stats_table, &style_header_text, LV_PART_ITEMS | LV_STATE_USER_1);
 
-            // Left align text (default)
+            // Largeurs de colonne ajustées (total ~290px pour la zone de contenu)
+            // Ancien: Time (0, 65), Station (1, 80), Pkts (2, 38), RSSI (3, 45), SNR (4, 45)
+            // Largeurs de colonne ajustées pour utiliser la largeur complète (~310px) et décaler Pkts
+            // Largeurs de colonne ajustées pour utiliser la largeur complète (~310px)
+            // Largeurs de colonne ajustées pour utiliser la largeur complète de 310px
+            // Largeurs de colonne ajustées pour un espacement équilibré et pour remplir la largeur de 310px
+            // Largeurs de colonne ajustées pour un espacement équilibré et pour remplir la largeur de 280px
+            // Largeurs de colonne ajustées pour un espacement équilibré et pour remplir la largeur de 280px
+            // Nouveau: Station (0, 100), Pkts (1, 40), RSSI (2, 70), SNR (3, 70) -> 100+40+70+70 = 280
+            lv_table_set_col_width(stats_table, 0, 100);  // Station
+            lv_table_set_col_width(stats_table, 1, 40);   // Pkts
+            lv_table_set_col_width(stats_table, 2, 70);   // RSSI
+            lv_table_set_col_width(stats_table, 3, 70);   // SNR
+
+            // Centrer le texte dans toutes les colonnes du tableau
+            lv_obj_set_style_text_align(stats_table, LV_TEXT_ALIGN_CENTER, LV_PART_ITEMS);
         }
     }
 
     // Update table
     if (stats_table) {
-        // Header row
-        lv_table_set_cell_value(stats_table, 0, 0, "Time");
-        lv_table_set_cell_value(stats_table, 0, 1, "Station");
-        lv_table_set_cell_value(stats_table, 0, 2, "Pkts");
-        lv_table_set_cell_value(stats_table, 0, 3, "RSSI");
-        lv_table_set_cell_value(stats_table, 0, 4, "SNR");
+        // Ligne d'en-tête
+        lv_table_set_cell_value(stats_table, 0, 0, "Station");
+        lv_table_set_cell_value(stats_table, 0, 1, "Pkts");
+        lv_table_set_cell_value(stats_table, 0, 2, "RSSI");
+        lv_table_set_cell_value(stats_table, 0, 3, "SNR");
+        // Appliquer l'état personnalisé aux cellules d'en-tête pour le style
+        lv_table_add_cell_ctrl(stats_table, 0, 0, LV_TABLE_CELL_CTRL_CUSTOM_1);
+        lv_table_add_cell_ctrl(stats_table, 0, 1, LV_TABLE_CELL_CTRL_CUSTOM_1);
+        lv_table_add_cell_ctrl(stats_table, 0, 2, LV_TABLE_CELL_CTRL_CUSTOM_1);
+        lv_table_add_cell_ctrl(stats_table, 0, 3, LV_TABLE_CELL_CTRL_CUSTOM_1);
 
         if (stations.size() == 0) {
             lv_table_set_row_cnt(stats_table, 2);
@@ -1145,41 +1182,35 @@ static void populate_stats(lv_obj_t *cont) {
             lv_table_set_cell_value(stats_table, 1, 1, "heard yet");
             lv_table_set_cell_value(stats_table, 1, 2, "");
             lv_table_set_cell_value(stats_table, 1, 3, "");
-            lv_table_set_cell_value(stats_table, 1, 4, "");
         } else {
-            // Sort stations by lastHeard (most recent first)
+            // Trie les stations par 'count' (nombre de paquets) décroissant
             std::vector<size_t> indices(stations.size());
             for (size_t i = 0; i < stations.size(); i++) indices[i] = i;
             std::sort(indices.begin(), indices.end(), [&stations](size_t a, size_t b) {
-                return stations[a].lastHeard > stations[b].lastHeard;
+                return stations[a].count > stations[b].count; // Tri par nombre de paquets
             });
 
             size_t rowCount = (indices.size() < 10) ? indices.size() : 10;
-            lv_table_set_row_cnt(stats_table, rowCount + 1); // +1 for header
+            lv_table_set_row_cnt(stats_table, rowCount + 1); // +1 pour l'en-tête
 
             for (size_t i = 0; i < rowCount; i++) {
                 const StationStats &s = stations[indices[i]];
-                int row = i + 1; // Skip header row
-
-                // Time
-                snprintf(buf, sizeof(buf), "%02d:%02d:%02d",
-                         hour(s.lastHeard), minute(s.lastHeard), second(s.lastHeard));
-                lv_table_set_cell_value(stats_table, row, 0, buf);
+                int row = i + 1; // Saute la ligne d'en-tête
 
                 // Station
-                lv_table_set_cell_value(stats_table, row, 1, s.callsign.c_str());
+                lv_table_set_cell_value(stats_table, row, 0, s.callsign.c_str());
 
                 // Packets
                 snprintf(buf, sizeof(buf), "%d", s.count);
-                lv_table_set_cell_value(stats_table, row, 2, buf);
+                lv_table_set_cell_value(stats_table, row, 1, buf);
 
                 // RSSI
                 snprintf(buf, sizeof(buf), "%d", s.lastRssi);
-                lv_table_set_cell_value(stats_table, row, 3, buf);
+                lv_table_set_cell_value(stats_table, row, 2, buf);
 
                 // SNR
                 snprintf(buf, sizeof(buf), "%.1f", s.lastSnr);
-                lv_table_set_cell_value(stats_table, row, 4, buf);
+                lv_table_set_cell_value(stats_table, row, 3, buf);
             }
         }
     }
@@ -1262,14 +1293,15 @@ static void btn_send_msg_clicked(lv_event_t *e) {
 
     if (strlen(to) > 0 && strlen(msg) > 0) {
         Serial.printf("[UIMessaging] Sending message to %s: %s\n", to, msg);
-        MSG_Utils::addToOutputBuffer(1, String(to), String(msg));
+        MSG_Utils::addToOutputBuffer(1, String(to), String(msg)); // String copies still occur within addToOutputBuffer
 
         // Save sent message
         if (xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
             File msgFile = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
             if (msgFile) {
-                String sentMsg = String(to) + ",>" + String(msg);
-                msgFile.println(sentMsg);
+                char sentMsgBuf[256]; // Utilisation d'un buffer statique pour éviter les allocations String
+                snprintf(sentMsgBuf, sizeof(sentMsgBuf), "%s,>%s", to, msg);
+                msgFile.println(sentMsgBuf);
                 msgFile.close();
                 MSG_Utils::loadNumMessages();
             }
@@ -1513,8 +1545,8 @@ void createMsgScreen() {
     lv_obj_t *tab_bar = lv_tabview_get_tab_btns(msg_tabview);
     if (tab_bar) {
         lv_obj_set_style_pad_column(tab_bar, 0, 0);
-        // Inactive tabs: white background (LVGL default), black text
-        lv_obj_set_style_text_color(tab_bar, lv_color_hex(0x000000), LV_PART_ITEMS);
+        // Inactive tabs: white background (LVGL default), orange text
+        lv_obj_set_style_text_color(tab_bar, lv_color_hex(0xFF8C00), LV_PART_ITEMS); // Orange
         lv_obj_set_style_border_color(tab_bar, lv_color_hex(0x9DB2CC), LV_PART_ITEMS);
         lv_obj_set_style_border_width(tab_bar, 1, LV_PART_ITEMS);
         lv_obj_set_style_border_side(tab_bar, LV_BORDER_SIDE_RIGHT, LV_PART_ITEMS);
@@ -1587,7 +1619,7 @@ void createMsgScreen() {
     lv_obj_t *tab_stats = lv_tabview_add_tab(msg_tabview, "Stats");
     if (tab_stats) {
         lv_obj_set_style_bg_color(tab_stats, lv_color_hex(0x0f0f23), 0);
-        lv_obj_set_style_pad_all(tab_stats, 10, 0);
+        lv_obj_set_style_pad_all(tab_stats, 5, 0); // Réduction du padding pour augmenter la largeur utile
 
         cont_stats_global = lv_obj_create(tab_stats);
         if (cont_stats_global) {

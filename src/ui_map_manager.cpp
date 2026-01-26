@@ -98,8 +98,14 @@ namespace UIMapManager {
     // Forward declarations
     void drawStationOnMap(lv_obj_t* canvas, int x, int y, const String& ssid, const char* aprsSymbol);
 
-    // Station clickable buttons tracking (MAP_STATIONS_MAX defined in station_utils.h)
-    static lv_obj_t* station_buttons[MAP_STATIONS_MAX] = {nullptr};
+    // Station hit zones for click detection (replaces LVGL buttons - no alloc/dealloc)
+    struct StationHitZone {
+        int16_t x, y;      // Screen position (center)
+        int16_t w, h;      // Hit zone size
+        int8_t stationIdx; // Index in mapStations array (-1 = unused)
+    };
+    static StationHitZone stationHitZones[MAP_STATIONS_MAX];
+    static int stationHitZoneCount = 0;
 
     // Periodic refresh timer for stations
     static lv_timer_t* map_refresh_timer = nullptr;
@@ -243,21 +249,18 @@ namespace UIMapManager {
     }
     // ============ END ASYNC TILE PRELOADING ============
 
-    // Clean up old station buttons
+    // Clear station hit zones (no LVGL objects to delete)
     void cleanup_station_buttons() {
-        for (int i = 0; i < MAP_STATIONS_MAX; i++) {
-            if (station_buttons[i] && lv_obj_is_valid(station_buttons[i])) {
-                lv_obj_del(station_buttons[i]);
-            }
-            station_buttons[i] = nullptr;
-        }
+        stationHitZoneCount = 0;
     }
 
-    // Create clickable buttons for map stations
+    // Draw stations and store hit zones for click detection (no LVGL buttons)
     void create_station_buttons() {
         if (!map_container) return;
 
-        // Draw stations and create clickable buttons
+        stationHitZoneCount = 0;
+
+        // Draw stations and store hit zones
         STATION_Utils::cleanOldMapStations();
         for (int i = 0; i < MAP_STATIONS_MAX; i++) {
             MapStation* station = STATION_Utils::getMapStation(i);
@@ -270,16 +273,17 @@ namespace UIMapManager {
                     // Draw station with symbol + SSID
                     drawStationOnMap(map_canvas, stX, stY, station->callsign, station->symbol.c_str());
 
-                    // Create clickable transparent button over station
-                    // Zone covers symbol (24x24) + SSID (label below)
-                    // Adjust position for canvas margin offset
-                    station_buttons[i] = lv_btn_create(map_container);
-                    lv_obj_set_size(station_buttons[i], 60, 45);  // Touch zone: symbol + SSID + margin
-                    lv_obj_set_pos(station_buttons[i], stX - 30 - MAP_CANVAS_MARGIN, stY - 12 - MAP_CANVAS_MARGIN);
-                    lv_obj_set_style_bg_opa(station_buttons[i], LV_OPA_TRANSP, 0);  // Transparent
-                    lv_obj_set_style_border_width(station_buttons[i], 0, 0);
-                    lv_obj_set_style_shadow_width(station_buttons[i], 0, 0);
-                    lv_obj_add_event_cb(station_buttons[i], map_station_clicked, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+                    // Store hit zone (screen coords, adjusted for canvas margin)
+                    if (stationHitZoneCount < MAP_STATIONS_MAX) {
+                        // Ajuster la position et la taille de la zone de clic pour mieux englober l'ensemble visuel (symbole + texte)
+                        // Les coordonnées x, y représentent le CENTRE de la zone de détection dans le système de coordonnées du conteneur.
+                        stationHitZones[stationHitZoneCount].x = stX - MAP_CANVAS_MARGIN;      // Centre X sur le symbole
+                        stationHitZones[stationHitZoneCount].y = stY - MAP_CANVAS_MARGIN + 12; // Centre Y décalé plus bas pour mieux englober le texte
+                        stationHitZones[stationHitZoneCount].w = 80;                           // Largeur généreuse pour le doigt et le texte long
+                        stationHitZones[stationHitZoneCount].h = 50;                           // Hauteur pour couvrir symbole et texte
+                        stationHitZones[stationHitZoneCount].stationIdx = i;
+                        stationHitZoneCount++;
+                    }
                 }
             }
         }
@@ -1008,7 +1012,7 @@ namespace UIMapManager {
     // Track map station click - stores callsign to prefill compose screen
     static String map_prefill_callsign = "";
 
-    // Station click handler - opens compose screen with prefilled callsign
+/*    // Station click handler - opens compose screen with prefilled callsign
     void map_station_clicked(lv_event_t* e) {
         int stationIndex = (int)(intptr_t)lv_event_get_user_data(e);
         MapStation* station = STATION_Utils::getMapStation(stationIndex);
@@ -1019,7 +1023,7 @@ namespace UIMapManager {
             LVGL_UI::open_compose_with_callsign(station->callsign); // Call public function
         }
     }
-
+*/
     // Map back button handler
     void btn_map_back_clicked(lv_event_t* e) {
         Serial.println("[LVGL] MAP BACK button pressed");
@@ -1313,8 +1317,8 @@ namespace UIMapManager {
             }
         }
         else if (code == LV_EVENT_RELEASED) {
-            // Finger up - finish pan
             if (touch_dragging) {
+                // Finger up after pan - finish pan
                 touch_dragging = false;
 
                 // Calculate final displacement from last drag_start position
@@ -1334,6 +1338,27 @@ namespace UIMapManager {
 
                 // Schedule redraw (canvas will be recentered after new tiles are drawn)
                 schedule_map_reload();
+            } else {
+                // Tap (no drag) - check if a station was tapped
+                for (int i = 0; i < stationHitZoneCount; i++) {
+                    int16_t hx = stationHitZones[i].x;
+                    int16_t hy = stationHitZones[i].y;
+                    int16_t hw = stationHitZones[i].w;
+                    int16_t hh = stationHitZones[i].h;
+
+                    // Check if tap is within hit zone (centered on station)
+                    if (point.x >= hx - hw/2 && point.x <= hx + hw/2 &&
+                        point.y >= hy - hh/2 && point.y <= hy + hh/2) {
+
+                        int stationIdx = stationHitZones[i].stationIdx;
+                        MapStation* station = STATION_Utils::getMapStation(stationIdx);
+                        if (station && station->valid && station->callsign.length() > 0) {
+                            Serial.printf("[MAP] Station tapped: %s\n", station->callsign.c_str());
+                            LVGL_UI::open_compose_with_callsign(station->callsign);
+                        }
+                        break;
+                    }
+                }
             }
         }
     }
