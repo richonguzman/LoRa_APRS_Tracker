@@ -25,6 +25,9 @@
 // External variables
 extern Configuration Config;
 extern SemaphoreHandle_t spiMutex;
+extern uint32_t lastActivityTime;
+extern bool screenDimmed;
+extern uint8_t screenBrightness;
 
 // Screen dimensions
 #define SCREEN_WIDTH 320
@@ -738,18 +741,24 @@ static void btn_contact_kb_toggle_clicked(lv_event_t *e) {
     }
 }
 
+// =============================================================================
+// Contact Edit Screen
+// =============================================================================
+
 static void show_contact_edit_screen(const Contact *contact) {
+    // Determine if we are editing an existing contact or adding a new one
     if (contact) {
         editing_contact_callsign = contact->callsign;
     } else {
         editing_contact_callsign = "";
     }
 
+    // Create the screen and UI objects if they don't exist yet
     if (!screen_contact_edit) {
         screen_contact_edit = lv_obj_create(NULL);
         lv_obj_set_style_bg_color(screen_contact_edit, lv_color_hex(0x0f0f23), 0);
 
-        // Title bar
+        // --- Title Bar ---
         lv_obj_t *title_bar = lv_obj_create(screen_contact_edit);
         lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
         lv_obj_set_pos(title_bar, 0, 0);
@@ -793,7 +802,7 @@ static void show_contact_edit_screen(const Contact *contact) {
         lv_label_set_text(lbl_del, LV_SYMBOL_TRASH);
         lv_obj_center(lbl_del);
 
-        // Form container
+        // --- Form Container ---
         lv_obj_t *form = lv_obj_create(screen_contact_edit);
         lv_obj_set_size(form, SCREEN_WIDTH - 10, 160);
         lv_obj_set_pos(form, 5, 40);
@@ -807,47 +816,48 @@ static void show_contact_edit_screen(const Contact *contact) {
         // Callsign input
         lv_obj_t *lbl_call = lv_label_create(form);
         lv_label_set_text(lbl_call, "Callsign:");
-        lv_obj_set_style_text_color(lbl_call, lv_color_hex(0x0000cc), 0);
+        lv_obj_set_style_text_color(lbl_call, lv_color_hex(0x82aaff), 0);
 
         contact_callsign_input = lv_textarea_create(form);
-        lv_obj_set_size(contact_callsign_input, lv_pct(100), 30);
+        lv_obj_set_size(contact_callsign_input, lv_pct(100), 32);
         lv_textarea_set_one_line(contact_callsign_input, true);
-        lv_textarea_set_placeholder_text(contact_callsign_input, "F4ABC-9");
+        lv_textarea_set_placeholder_text(contact_callsign_input, "e.g. F4ABC-9");
         lv_obj_add_event_cb(contact_callsign_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
 
         // Name input
         lv_obj_t *lbl_name = lv_label_create(form);
         lv_label_set_text(lbl_name, "Name:");
-        lv_obj_set_style_text_color(lbl_name, lv_color_hex(0x0000cc), 0);
+        lv_obj_set_style_text_color(lbl_name, lv_color_hex(0x82aaff), 0);
 
         contact_name_input = lv_textarea_create(form);
-        lv_obj_set_size(contact_name_input, lv_pct(100), 30);
+        lv_obj_set_size(contact_name_input, lv_pct(100), 32);
         lv_textarea_set_one_line(contact_name_input, true);
-        lv_textarea_set_placeholder_text(contact_name_input, "Jean");
+        lv_textarea_set_placeholder_text(contact_name_input, "e.g. Jean");
         lv_obj_add_event_cb(contact_name_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
 
-        // Comment input
+        // Comment/Note input
         lv_obj_t *lbl_comment = lv_label_create(form);
         lv_label_set_text(lbl_comment, "Note:");
-        lv_obj_set_style_text_color(lbl_comment, lv_color_hex(0x0000cc), 0);
+        lv_obj_set_style_text_color(lbl_comment, lv_color_hex(0x82aaff), 0);
 
         contact_comment_input = lv_textarea_create(form);
-        lv_obj_set_size(contact_comment_input, lv_pct(100), 30);
+        lv_obj_set_size(contact_comment_input, lv_pct(100), 32);
         lv_textarea_set_one_line(contact_comment_input, true);
-        lv_textarea_set_placeholder_text(contact_comment_input, "Paris");
+        lv_textarea_set_placeholder_text(contact_comment_input, "e.g. Paris");
         lv_obj_add_event_cb(contact_comment_input, contact_edit_input_focused, LV_EVENT_FOCUSED, NULL);
 
-        // Keyboard toggle button
+        // --- Virtual Keyboard Button ---
         lv_obj_t *btn_kb = lv_btn_create(screen_contact_edit);
         lv_obj_set_size(btn_kb, 40, 30);
         lv_obj_set_pos(btn_kb, SCREEN_WIDTH - 50, 165);
         lv_obj_set_style_bg_color(btn_kb, lv_color_hex(0x555555), 0);
+        // Link the toggle callback (Fixes "unused function" warning)
         lv_obj_add_event_cb(btn_kb, btn_contact_kb_toggle_clicked, LV_EVENT_CLICKED, NULL);
         lv_obj_t *lbl_kb = lv_label_create(btn_kb);
         lv_label_set_text(lbl_kb, LV_SYMBOL_KEYBOARD);
         lv_obj_center(lbl_kb);
 
-        // Virtual keyboard
+        // --- Virtual Keyboard ---
         contact_edit_keyboard = lv_keyboard_create(screen_contact_edit);
         lv_obj_set_size(contact_edit_keyboard, SCREEN_WIDTH, 100);
         lv_obj_align(contact_edit_keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -855,20 +865,35 @@ static void show_contact_edit_screen(const Contact *contact) {
         lv_obj_add_event_cb(contact_edit_keyboard, contact_edit_keyboard_event, LV_EVENT_ALL, NULL);
     }
 
-    // Fill form with contact data
+    // --- Data Filling (Fixes the empty fields issue) ---
     if (contact) {
+        // Edit mode: populate with existing contact data
         lv_textarea_set_text(contact_callsign_input, contact->callsign.c_str());
         lv_textarea_set_text(contact_name_input, contact->name.c_str());
         lv_textarea_set_text(contact_comment_input, contact->comment.c_str());
     } else {
+        // Add mode: clear all fields
         lv_textarea_set_text(contact_callsign_input, "");
         lv_textarea_set_text(contact_name_input, "");
         lv_textarea_set_text(contact_comment_input, "");
     }
 
+    // Load the screen
     lv_scr_load(screen_contact_edit);
-    lv_obj_add_state(contact_callsign_input, LV_STATE_FOCUSED);
+    
+    // --- Initial Setup for Physical Keyboard and Focus ---
+    // 1. Set the initial target for physical keyboard typing
     contact_current_input = contact_callsign_input;
+    
+    // 2. Link virtual keyboard to the first field
+    if (contact_edit_keyboard) {
+        lv_keyboard_set_textarea(contact_edit_keyboard, contact_callsign_input);
+    }
+
+    // 3. Visual Focus (Orange glow on the Callsign field)
+    lv_obj_clear_state(contact_name_input, LV_STATE_FOCUSED);
+    lv_obj_clear_state(contact_comment_input, LV_STATE_FOCUSED);
+    lv_obj_add_state(contact_callsign_input, LV_STATE_FOCUSED);
 }
 
 // =============================================================================
@@ -878,16 +903,21 @@ static void show_contact_edit_screen(const Contact *contact) {
 // Callback quand on clique sur une ligne de trame
 static void frame_item_clicked(lv_event_t *e) {
     lv_obj_t *cont = lv_event_get_target(e);
-    lv_obj_t *label = lv_obj_get_child(cont, 0); // Récupère le texte du label enfant
-    if (label) {
-        const char *text = lv_label_get_text(label);
-        show_message_detail(text); // Affiche la popup avec le message complet
+    
+    // On cherche le label caché (c'est le 2ème enfant, index 1)
+    // Enfant 0 = Résumé visible, Enfant 1 = Full text caché
+    lv_obj_t *hidden_label = lv_obj_get_child(cont, 1); 
+    
+    if (hidden_label) {
+        const char *full_text = lv_label_get_text(hidden_label);
+        show_message_detail(full_text);
     }
 }
+
 static void populate_frames_list(lv_obj_t *list) {
     lv_obj_clean(list);
 
-    // On récupère les 20 dernières trames (ajustez le nombre si besoin)
+    // Récupérer les 20 dernières trames
     const std::vector<String> &frames = STORAGE_Utils::getLastFrames(20);
 
     if (frames.size() == 0) {
@@ -900,50 +930,67 @@ static void populate_frames_list(lv_obj_t *list) {
         for (int i = frames.size() - 1; i >= 0; i--) {
             String rawLine = frames[i];
             
-            // --- ANALYSE DU MARQUEUR ---
-            // On suppose que le backend ajoute [D] pour direct ou [R] pour répété
+            // --- 1. ANALYSE (Couleur & Nettoyage) ---
             bool isDirect = rawLine.startsWith("[D]");
-            
-            // Nettoyage pour l'affichage : on retire les 3 premiers caractères "[X] "
-            // Si la ligne est trop courte, on l'affiche telle quelle
-            String displayLine = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
-                                 ? rawLine.substring(4) 
-                                 : rawLine; 
+            // On retire le marqueur [D] ou [R] pour avoir la trame pure
+            String cleanFrame = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
+                                ? rawLine.substring(4) 
+                                : rawLine;
 
-            // Création du conteneur (la ligne)
+            // --- 2. EXTRACTION (Expéditeur > Destinataire) ---
+            String summary = cleanFrame; // Par défaut, tout afficher si parsing échoue
+            
+            int idxArrow = cleanFrame.indexOf('>');
+            if (idxArrow > 0) {
+                String sender = cleanFrame.substring(0, idxArrow);
+                
+                // Le destinataire est entre '>' et le premier ',' ou ':'
+                int idxComma = cleanFrame.indexOf(',', idxArrow);
+                int idxColon = cleanFrame.indexOf(':', idxArrow);
+                int idxEndDest = -1;
+
+                if (idxComma > 0 && idxColon > 0) idxEndDest = std::min(idxComma, idxColon);
+                else if (idxComma > 0) idxEndDest = idxComma;
+                else idxEndDest = idxColon;
+
+                if (idxEndDest > 0) {
+                    String dest = cleanFrame.substring(idxArrow + 1, idxEndDest);
+                    summary = sender + " > " + dest;
+                }
+            }
+
+            // --- 3. CREATION UI ---
             lv_obj_t *cont = lv_obj_create(list);
             lv_obj_set_width(cont, lv_pct(100));
             lv_obj_set_height(cont, LV_SIZE_CONTENT);
-            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0); // Fond sombre
-            lv_obj_set_style_pad_all(cont, 5, 0);
+            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
+            lv_obj_set_style_pad_all(cont, 6, 0); // Un peu plus d'espace
             lv_obj_set_style_border_width(cont, 0, 0);
-            // Petit trait de séparation en bas
             lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
             lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
             lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
             lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
-
-            // --- ACTIVER LE CLIC ---
             lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
 
-            // Création du texte
-            lv_obj_t *label = lv_label_create(cont);
-            lv_label_set_text(label, displayLine.c_str());
-            lv_obj_set_width(label, lv_pct(100));
-            lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP); // Retour à la ligne auto
+            // A. LABEL VISIBLE (Résumé)
+            lv_obj_t *label_summary = lv_label_create(cont);
+            lv_label_set_text(label_summary, summary.c_str());
+            lv_obj_set_width(label_summary, lv_pct(100));
+            lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT); // "..." si trop long
             
-            // --- GESTION DES COULEURS ---
+            // Couleurs
             if (isDirect) {
-                // Vert pour les stations reçues en direct
-                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_GREEN), 0);
+                lv_obj_set_style_text_color(label_summary, lv_palette_main(LV_PALETTE_GREEN), 0);
             } else {
-                // Orange pour les stations reçues via Digipeater
-                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_ORANGE), 0);
+                lv_obj_set_style_text_color(label_summary, lv_palette_main(LV_PALETTE_ORANGE), 0);
             }
-            
-            // Police un peu plus petite pour voir plus de texte
-            lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
+            lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0); // Police plus lisible
+
+            // B. LABEL CACHÉ (Trame complète pour le popup)
+            lv_obj_t *label_full = lv_label_create(cont);
+            lv_label_set_text(label_full, rawLine.c_str());
+            lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN); // Invisible
         }
     }
 }
@@ -1496,9 +1543,14 @@ void refreshContactsList() {
 }
 
 void refreshFramesList() {
-    if (lv_scr_act() == screen_msg && current_msg_type == 3 && list_frames_global) {
-        populate_frames_list(list_frames_global);
-        lv_obj_scroll_to_y(list_frames_global, 0, LV_ANIM_ON);
+    // On ne rafraîchit que si l'écran Messages est actif ET qu'on est sur l'onglet Frames (Index 3)
+    // Cela évite de consommer du CPU inutilement si on est sur la Map ou le Dashboard
+    if (screen_msg && lv_scr_act() == screen_msg && msg_tabview) {
+        if (lv_tabview_get_tab_act(msg_tabview) == 3 && list_frames_global) {
+            populate_frames_list(list_frames_global);
+            // Scroll en haut pour voir le nouveau message
+            lv_obj_scroll_to_y(list_frames_global, 0, LV_ANIM_ON);
+        }
     }
 }
 
@@ -1558,12 +1610,41 @@ static char getSymbolChar(char key) {
 }
 
 void handleComposeKeyboard(char key) {
-    if (!compose_screen_active || !current_focused_input)
-        return;
+    // 1. Réinitialiser le minuteur d'inactivité et réveil écran
+    lastActivityTime = millis();
+    if (screenDimmed) {
+        screenDimmed = false;
+        #ifdef BOARD_BL_PIN
+            analogWrite(BOARD_BL_PIN, screenBrightness);
+        #endif
+        // On continue pour traiter la touche immédiatement
+    }
+
+    // 2. Identifier la cible (Compose Message OU Contact Edit)
+    lv_obj_t* target_input = nullptr;
+    bool is_compose_mode = false;
+    bool is_contact_mode = false;
+
+    // Cas A : Mode Compose Message
+    if (compose_screen_active && current_focused_input) {
+        target_input = current_focused_input;
+        is_compose_mode = true;
+    }
+    // Cas B : Mode Édition Contact (Vérifier si l'écran est affiché)
+    else if (screen_contact_edit && lv_scr_act() == screen_contact_edit) {
+        // Sécurité : si le pointeur est null, on force le premier champ
+        if (!contact_current_input) contact_current_input = contact_callsign_input;
+        
+        target_input = contact_current_input;
+        is_contact_mode = true;
+    }
+
+    // Si aucun champ texte n'est actif, on sort
+    if (!target_input) return;
 
     uint32_t now = millis();
 
-    // Handle Shift key
+    // --- Gestion des touches modificatrices (Shift/Symbol) ---
     if (key == KEY_SHIFT) {
         if (now - lastShiftTime < DOUBLE_TAP_MS) {
             capsLockActive = !capsLockActive;
@@ -1575,7 +1656,6 @@ void handleComposeKeyboard(char key) {
         return;
     }
 
-    // Handle Symbol key
     if (key == KEY_SYMBOL) {
         if (now - lastSymbolTime < DOUBLE_TAP_MS) {
             symbolLockActive = !symbolLockActive;
@@ -1586,37 +1666,53 @@ void handleComposeKeyboard(char key) {
         return;
     }
 
-    // Handle backspace
+    // --- Gestion Backspace ---
     if (key == '\b' || key == 0x08) {
-        lv_textarea_del_char(current_focused_input);
+        lv_textarea_del_char(target_input);
         return;
     }
 
-    // Handle Enter
-    if (key == '\n' || key == '\r') {
-        if (current_focused_input == compose_to_input) {
-            current_focused_input = compose_msg_input;
-            lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
+    // --- Gestion Navigation (Enter / Tab) ---
+    if (key == '\n' || key == '\r' || key == '\t') {
+        
+        if (is_compose_mode) {
+            // Navigation Compose (To <-> Msg)
+            if (current_focused_input == compose_to_input) {
+                lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
+                current_focused_input = compose_msg_input;
+            } else if (key == '\t') { // Shift+Tab simulé par Tab simple pour remonter
+                lv_obj_clear_state(compose_msg_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(compose_to_input, LV_STATE_FOCUSED);
+                current_focused_input = compose_to_input;
+            }
+        }
+        else if (is_contact_mode) {
+            // Navigation Contact (Callsign -> Name -> Note -> Callsign)
+            if (contact_current_input == contact_callsign_input) {
+                lv_obj_clear_state(contact_callsign_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_name_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_name_input;
+            } else if (contact_current_input == contact_name_input) {
+                lv_obj_clear_state(contact_name_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_comment_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_comment_input;
+            } else if (contact_current_input == contact_comment_input) {
+                // Sur le dernier champ, Entrée ou Tab boucle au début
+                lv_obj_clear_state(contact_comment_input, LV_STATE_FOCUSED);
+                lv_obj_add_state(contact_callsign_input, LV_STATE_FOCUSED);
+                contact_current_input = contact_callsign_input;
+            }
+            
+            // Mise à jour du clavier virtuel si présent
+            if (contact_edit_keyboard) {
+                lv_keyboard_set_textarea(contact_edit_keyboard, contact_current_input);
+            }
         }
         return;
     }
 
-    // Handle Tab
-    if (key == '\t') {
-        if (current_focused_input == compose_to_input) {
-            current_focused_input = compose_msg_input;
-            lv_obj_add_state(compose_msg_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_to_input, LV_STATE_FOCUSED);
-        } else {
-            current_focused_input = compose_to_input;
-            lv_obj_add_state(compose_to_input, LV_STATE_FOCUSED);
-            lv_obj_clear_state(compose_msg_input, LV_STATE_FOCUSED);
-        }
-        return;
-    }
-
-    // Apply symbol or caps lock transformation
+    // --- Saisie de caractères ---
     char output = key;
     if (symbolLockActive && key >= 'a' && key <= 'z') {
         output = getSymbolChar(key);
@@ -1624,11 +1720,10 @@ void handleComposeKeyboard(char key) {
         output = key - 32; // Convert to uppercase
     }
 
-    // Add character to textarea
+    // IMPORTANT : On écrit dans target_input (qui peut être Compose OU Contact)
     char str[2] = {output, '\0'};
-    lv_textarea_add_text(current_focused_input, str);
+    lv_textarea_add_text(target_input, str);
 }
-
 } // namespace UIMessaging
 
 #endif // USE_LVGL_UI
