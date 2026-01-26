@@ -875,33 +875,74 @@ static void show_contact_edit_screen(const Contact *contact) {
 // Frames List
 // =============================================================================
 
+// Callback quand on clique sur une ligne de trame
+static void frame_item_clicked(lv_event_t *e) {
+    lv_obj_t *cont = lv_event_get_target(e);
+    lv_obj_t *label = lv_obj_get_child(cont, 0); // Récupère le texte du label enfant
+    if (label) {
+        const char *text = lv_label_get_text(label);
+        show_message_detail(text); // Affiche la popup avec le message complet
+    }
+}
 static void populate_frames_list(lv_obj_t *list) {
     lv_obj_clean(list);
 
+    // On récupère les 20 dernières trames (ajustez le nombre si besoin)
     const std::vector<String> &frames = STORAGE_Utils::getLastFrames(20);
 
     if (frames.size() == 0) {
         lv_obj_t *empty = lv_label_create(list);
-        lv_label_set_text(empty, "No frames recorded\n(Requires SD card)");
+        lv_label_set_text(empty, "No frames recorded");
         lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
         lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
     } else {
+        // Affichage inversé (le plus récent en haut)
         for (int i = frames.size() - 1; i >= 0; i--) {
+            String rawLine = frames[i];
+            
+            // --- ANALYSE DU MARQUEUR ---
+            // On suppose que le backend ajoute [D] pour direct ou [R] pour répété
+            bool isDirect = rawLine.startsWith("[D]");
+            
+            // Nettoyage pour l'affichage : on retire les 3 premiers caractères "[X] "
+            // Si la ligne est trop courte, on l'affiche telle quelle
+            String displayLine = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
+                                 ? rawLine.substring(4) 
+                                 : rawLine; 
+
+            // Création du conteneur (la ligne)
             lv_obj_t *cont = lv_obj_create(list);
             lv_obj_set_width(cont, lv_pct(100));
             lv_obj_set_height(cont, LV_SIZE_CONTENT);
-            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
-            lv_obj_set_style_pad_all(cont, 4, 0);
-            lv_obj_set_style_border_width(cont, 1, 0);
+            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0); // Fond sombre
+            lv_obj_set_style_pad_all(cont, 5, 0);
+            lv_obj_set_style_border_width(cont, 0, 0);
+            // Petit trait de séparation en bas
+            lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
+            lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
             lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
-            lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, 0);
             lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
 
+            // --- ACTIVER LE CLIC ---
+            lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
+
+            // Création du texte
             lv_obj_t *label = lv_label_create(cont);
-            lv_label_set_text(label, frames[i].c_str());
+            lv_label_set_text(label, displayLine.c_str());
             lv_obj_set_width(label, lv_pct(100));
-            lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
-            lv_obj_set_style_text_color(label, lv_color_hex(0x759a9e), 0);
+            lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP); // Retour à la ligne auto
+            
+            // --- GESTION DES COULEURS ---
+            if (isDirect) {
+                // Vert pour les stations reçues en direct
+                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_GREEN), 0);
+            } else {
+                // Orange pour les stations reçues via Digipeater
+                lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_ORANGE), 0);
+            }
+            
+            // Police un peu plus petite pour voir plus de texte
             lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
         }
     }
