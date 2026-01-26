@@ -243,13 +243,21 @@ bool Configuration::readFile() {
             loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
             loraType.power              = LoraTypesArray[j]["power"] | 20;
 
-            // Force dataRate calculation based ONLY on SF and CR4 from JSON
-            // formula: BW * (SF / 2^SF) * (4 / CR)
+            // 1. Physical bitrate formula: BW * (SF / 2^SF) * (4 / CR)
             double bw = (double)loraType.signalBandwidth;
             double sf = (double)loraType.spreadingFactor;
             double cr = (double)loraType.codingRate4;
-            
-            loraType.dataRate = (uint16_t)round(bw * (sf / pow(2.0, sf)) * (4.0 / cr));
+            double rawBps = bw * (sf / pow(2.0, sf)) * (4.0 / cr);
+
+            // 2. Mapping to nominal standard rates for UI display
+            // This ensures SF9/CR7 (~1256bps) maps to 1200, SF12/CR5 (~293bps) to 300, etc.
+            if (rawBps < 250)        loraType.dataRate = 183;  // SF12, CR4:8
+            else if (rawBps < 450)   loraType.dataRate = 300;  // SF12, CR4:5
+            else if (rawBps < 900)   loraType.dataRate = 600;  // SF11, CR4:5
+            else if (rawBps < 1800)  loraType.dataRate = 1200; // SF10, CR4:5 or SF9, CR4:7
+            else if (rawBps < 3600)  loraType.dataRate = 2400; // SF9, CR4:5
+            else if (rawBps < 7200)  loraType.dataRate = 4800; // SF8, CR4:5
+            else                     loraType.dataRate = 9600; // SF7, CR4:5
 
             loraTypes.push_back(loraType);
         }
