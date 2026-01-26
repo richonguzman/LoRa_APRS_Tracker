@@ -120,6 +120,12 @@ namespace STORAGE_Utils {
     const std::vector<int>& getRssiHistory();
     const std::vector<float>& getSnrHistory();
 
+    // Dirty flags for conditional refresh (avoid unnecessary UI updates)
+    bool isFramesDirty();
+    void clearFramesDirty();
+    bool isStatsDirty();
+    void clearStatsDirty();
+
 }
 
 #endif

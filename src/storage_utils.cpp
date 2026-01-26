@@ -472,6 +472,10 @@ namespace STORAGE_Utils {
     static int framesCacheCount = 0;
     static std::vector<String> framesCacheOrdered;  // For returning ordered list
 
+    // Dirty flags for conditional UI refresh
+    static bool framesDirty = false;
+    static bool statsDirty = false;
+
     bool logRawFrame(const String& frame, int rssi, float snr, bool isDirect) {
         // 1. Préparation du timestamp
         char timestamp[64];
@@ -490,6 +494,7 @@ namespace STORAGE_Utils {
         framesCache[framesCacheHead] = logLine;
         framesCacheHead = (framesCacheHead + 1) % FRAMES_CACHE_SIZE;
         if (framesCacheCount < FRAMES_CACHE_SIZE) framesCacheCount++;
+        framesDirty = true;  // Mark for UI refresh
 
         // 4. Écriture sur la carte SD
         if (sdAvailable) {
@@ -695,6 +700,7 @@ const std::vector<String>& getLastFrames(int count) {
                 s.lastSnr = snr;
                 s.lastHeard = now(); // Unix timestamp from GPS/RTC
                 s.lastIsDirect = isDirect;
+                statsDirty = true;  // Mark for UI refresh
                 return;
             }
         }
@@ -709,12 +715,29 @@ const std::vector<String>& getLastFrames(int count) {
             newStation.lastHeard = now();
             newStation.lastIsDirect = isDirect;
             stationStats.push_back(newStation);
-            
+            statsDirty = true;  // Mark for UI refresh
         }
     }
 
     const std::vector<StationStats>& getStationStats() {
         return stationStats;
+    }
+
+    // Dirty flag accessors for conditional UI refresh
+    bool isFramesDirty() {
+        return framesDirty;
+    }
+
+    void clearFramesDirty() {
+        framesDirty = false;
+    }
+
+    bool isStatsDirty() {
+        return statsDirty;
+    }
+
+    void clearStatsDirty() {
+        statsDirty = false;
     }
 
 }

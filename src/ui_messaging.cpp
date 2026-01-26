@@ -90,6 +90,16 @@ static bool need_aprs_list_refresh = false;
 static lv_obj_t *stats_title_lbl = nullptr;
 static lv_obj_t *stats_table = nullptr;
 
+// Frame item pool for object recycling (avoids alloc/dealloc churn)
+static const int MAX_FRAME_ITEMS = 20;
+struct FrameItemPool {
+    lv_obj_t *container;
+    lv_obj_t *summary_label;
+    lv_obj_t *full_label;
+};
+static FrameItemPool frame_pool[MAX_FRAME_ITEMS];
+static bool frame_pool_initialized = false;
+
 // Contact long-press flag
 static bool contact_longpress_handled = false;
 
@@ -293,23 +303,44 @@ static void populate_msg_list(lv_obj_t *list, int type) {
             }
 
             // Display in order (already sorted by most recent first)
+            // Static buffer for preview text (reused, no heap alloc per iteration)
+            static char previewBuf[80];
+
             for (size_t i = 0; i < conversations.size(); i++) {
                 std::vector<String> messages = MSG_Utils::getMessagesForContact(conversations[i]);
-                String preview = conversations[i];
+                const char* callsign = conversations[i].c_str();
+                size_t callLen = strlen(callsign);
+                if (callLen > 15) callLen = 15;
+
+                memcpy(previewBuf, callsign, callLen);
+                size_t pos = callLen;
+
                 if (messages.size() > 0) {
-                    String lastMsg = messages[messages.size() - 1];
-                    int firstComma = lastMsg.indexOf(',');
-                    int secondComma = lastMsg.indexOf(',', firstComma + 1);
-                    if (secondComma > 0) {
-                        String msgContent = lastMsg.substring(secondComma + 1);
-                        if (msgContent.length() > 30) {
-                            msgContent = msgContent.substring(0, 27) + "...";
+                    const String& lastMsg = messages[messages.size() - 1];
+                    const char* msgPtr = lastMsg.c_str();
+                    // Find second comma to get message content
+                    const char* comma1 = strchr(msgPtr, ',');
+                    if (comma1) {
+                        const char* comma2 = strchr(comma1 + 1, ',');
+                        if (comma2) {
+                            const char* content = comma2 + 1;
+                            size_t contentLen = strlen(content);
+                            previewBuf[pos++] = '\n';
+                            if (contentLen > 30) {
+                                memcpy(previewBuf + pos, content, 27);
+                                pos += 27;
+                                memcpy(previewBuf + pos, "...", 3);
+                                pos += 3;
+                            } else {
+                                memcpy(previewBuf + pos, content, contentLen);
+                                pos += contentLen;
+                            }
                         }
-                        preview += "\n" + msgContent;
                     }
                 }
+                previewBuf[pos] = '\0';
 
-                lv_obj_t *btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, preview.c_str());
+                lv_obj_t *btn = lv_list_add_btn(list, LV_SYMBOL_ENVELOPE, previewBuf);
                 lv_obj_add_event_cb(btn, conversation_item_clicked, LV_EVENT_CLICKED,
                                     (void *)callsign_storage[i].c_str());
             }
@@ -421,50 +452,51 @@ static void refresh_conversation_messages() {
         lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
     } else {
         for (int i = messages.size() - 1; i >= 0; i--) {
-            String msg = messages[i];
-            int firstComma = msg.indexOf(',');
-            int secondComma = msg.indexOf(',', firstComma + 1);
+            const char* msgPtr = messages[i].c_str();
+            // Parse: "timestamp,direction,content" using C-style
+            const char* comma1 = strchr(msgPtr, ',');
+            if (!comma1) continue;
+            const char* comma2 = strchr(comma1 + 1, ',');
+            if (!comma2) continue;
 
-            if (secondComma > 0) {
-                String direction = msg.substring(firstComma + 1, secondComma);
-                String content = msg.substring(secondComma + 1);
-                bool isOutgoing = (direction == "OUT");
+            // Check direction (between comma1 and comma2)
+            bool isOutgoing = (strncmp(comma1 + 1, "OUT", 3) == 0);
+            const char* content = comma2 + 1;
 
-                lv_obj_t *bubble_container = lv_obj_create(conversation_list);
-                lv_obj_set_width(bubble_container, lv_pct(100));
-                lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
-                lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
-                lv_obj_set_style_border_width(bubble_container, 0, 0);
-                lv_obj_set_style_pad_all(bubble_container, 2, 0);
-                lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_t *bubble_container = lv_obj_create(conversation_list);
+            lv_obj_set_width(bubble_container, lv_pct(100));
+            lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
+            lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_border_width(bubble_container, 0, 0);
+            lv_obj_set_style_pad_all(bubble_container, 2, 0);
+            lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
 
-                lv_obj_t *bubble = lv_obj_create(bubble_container);
-                lv_obj_set_width(bubble, lv_pct(75));
-                lv_obj_set_height(bubble, LV_SIZE_CONTENT);
-                lv_obj_set_style_pad_all(bubble, 8, 0);
-                lv_obj_set_style_radius(bubble, 10, 0);
-                lv_obj_set_style_border_width(bubble, 0, 0);
+            lv_obj_t *bubble = lv_obj_create(bubble_container);
+            lv_obj_set_width(bubble, lv_pct(75));
+            lv_obj_set_height(bubble, LV_SIZE_CONTENT);
+            lv_obj_set_style_pad_all(bubble, 8, 0);
+            lv_obj_set_style_radius(bubble, 10, 0);
+            lv_obj_set_style_border_width(bubble, 0, 0);
 
-                lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
-                lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED,
-                                    (void *)(intptr_t)i);
-                lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED,
-                                    (void *)(intptr_t)i);
+            lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED,
+                                (void *)(intptr_t)i);
+            lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED,
+                                (void *)(intptr_t)i);
 
-                if (isOutgoing) {
-                    lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
-                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
-                } else {
-                    lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
-                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
-                }
-
-                lv_obj_t *msg_label = lv_label_create(bubble);
-                lv_label_set_text(msg_label, content.c_str());
-                lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
-                lv_obj_set_width(msg_label, lv_pct(100));
-                lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
+            if (isOutgoing) {
+                lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
+                lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
+            } else {
+                lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
+                lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
             }
+
+            lv_obj_t *msg_label = lv_label_create(bubble);
+            lv_label_set_text(msg_label, content);  // Direct pointer, no String copy
+            lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+            lv_obj_set_width(msg_label, lv_pct(100));
+            lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
         }
     }
 
@@ -547,50 +579,51 @@ static void create_conversation_screen(const String &callsign) {
         lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
     } else {
         for (int i = messages.size() - 1; i >= 0; i--) {
-            String msg = messages[i];
-            int firstComma = msg.indexOf(',');
-            int secondComma = msg.indexOf(',', firstComma + 1);
+            const char* msgPtr = messages[i].c_str();
+            // Parse: "timestamp,direction,content" using C-style
+            const char* comma1 = strchr(msgPtr, ',');
+            if (!comma1) continue;
+            const char* comma2 = strchr(comma1 + 1, ',');
+            if (!comma2) continue;
 
-            if (secondComma > 0) {
-                String direction = msg.substring(firstComma + 1, secondComma);
-                String content = msg.substring(secondComma + 1);
-                bool isOutgoing = (direction == "OUT");
+            // Check direction (between comma1 and comma2)
+            bool isOutgoing = (strncmp(comma1 + 1, "OUT", 3) == 0);
+            const char* content = comma2 + 1;
 
-                lv_obj_t *bubble_container = lv_obj_create(conversation_list);
-                lv_obj_set_width(bubble_container, lv_pct(100));
-                lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
-                lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
-                lv_obj_set_style_border_width(bubble_container, 0, 0);
-                lv_obj_set_style_pad_all(bubble_container, 2, 0);
-                lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_t *bubble_container = lv_obj_create(conversation_list);
+            lv_obj_set_width(bubble_container, lv_pct(100));
+            lv_obj_set_height(bubble_container, LV_SIZE_CONTENT);
+            lv_obj_set_style_bg_opa(bubble_container, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_border_width(bubble_container, 0, 0);
+            lv_obj_set_style_pad_all(bubble_container, 2, 0);
+            lv_obj_clear_flag(bubble_container, LV_OBJ_FLAG_SCROLLABLE);
 
-                lv_obj_t *bubble = lv_obj_create(bubble_container);
-                lv_obj_set_width(bubble, lv_pct(75));
-                lv_obj_set_height(bubble, LV_SIZE_CONTENT);
-                lv_obj_set_style_pad_all(bubble, 8, 0);
-                lv_obj_set_style_radius(bubble, 10, 0);
-                lv_obj_set_style_border_width(bubble, 0, 0);
+            lv_obj_t *bubble = lv_obj_create(bubble_container);
+            lv_obj_set_width(bubble, lv_pct(75));
+            lv_obj_set_height(bubble, LV_SIZE_CONTENT);
+            lv_obj_set_style_pad_all(bubble, 8, 0);
+            lv_obj_set_style_radius(bubble, 10, 0);
+            lv_obj_set_style_border_width(bubble, 0, 0);
 
-                lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
-                lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED,
-                                    (void *)(intptr_t)i);
-                lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED,
-                                    (void *)(intptr_t)i);
+            lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(bubble, conversation_msg_clicked, LV_EVENT_CLICKED,
+                                (void *)(intptr_t)i);
+            lv_obj_add_event_cb(bubble, conversation_msg_longpress, LV_EVENT_LONG_PRESSED,
+                                (void *)(intptr_t)i);
 
-                if (isOutgoing) {
-                    lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
-                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
-                } else {
-                    lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
-                    lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
-                }
-
-                lv_obj_t *msg_label = lv_label_create(bubble);
-                lv_label_set_text(msg_label, content.c_str());
-                lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
-                lv_obj_set_width(msg_label, lv_pct(100));
-                lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
+            if (isOutgoing) {
+                lv_obj_align(bubble, LV_ALIGN_RIGHT_MID, 0, 0);
+                lv_obj_set_style_bg_color(bubble, lv_color_hex(0x82aaff), 0);
+            } else {
+                lv_obj_align(bubble, LV_ALIGN_LEFT_MID, 0, 0);
+                lv_obj_set_style_bg_color(bubble, lv_color_hex(0x2a2a3e), 0);
             }
+
+            lv_obj_t *msg_label = lv_label_create(bubble);
+            lv_label_set_text(msg_label, content);  // Direct pointer, no String copy
+            lv_label_set_long_mode(msg_label, LV_LABEL_LONG_WRAP);
+            lv_obj_set_width(msg_label, lv_pct(100));
+            lv_obj_set_style_text_color(msg_label, lv_color_hex(0xffffff), 0);
         }
     }
 
@@ -629,16 +662,41 @@ static void populate_contacts_list(lv_obj_t *list) {
         lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
         lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
     } else {
+        // Static buffer for display text (reused, no heap alloc per iteration)
+        static char displayBuf[100];
+
         for (size_t i = 0; i < contacts.size(); i++) {
             Contact *c = STORAGE_Utils::findContact(contacts[i].callsign);
-            String display = contacts[i].callsign;
-            if (contacts[i].name.length() > 0) {
-                display += " - " + contacts[i].name;
+            const char* callsign = contacts[i].callsign.c_str();
+            const char* name = contacts[i].name.c_str();
+            const char* comment = contacts[i].comment.c_str();
+
+            size_t pos = 0;
+            size_t callLen = strlen(callsign);
+            if (callLen > 15) callLen = 15;
+            memcpy(displayBuf, callsign, callLen);
+            pos = callLen;
+
+            if (name[0] != '\0') {
+                memcpy(displayBuf + pos, " - ", 3);
+                pos += 3;
+                size_t nameLen = strlen(name);
+                if (nameLen > 30) nameLen = 30;
+                memcpy(displayBuf + pos, name, nameLen);
+                pos += nameLen;
             }
-            if (contacts[i].comment.length() > 0) {
-                display += "\n" + contacts[i].comment;
+
+            if (comment[0] != '\0') {
+                displayBuf[pos++] = '\n';
+                size_t commentLen = strlen(comment);
+                if (commentLen > 40) commentLen = 40;
+                memcpy(displayBuf + pos, comment, commentLen);
+                pos += commentLen;
             }
-            lv_obj_t *btn = lv_list_add_btn(list, LV_SYMBOL_CALL, display.c_str());
+
+            displayBuf[pos] = '\0';
+
+            lv_obj_t *btn = lv_list_add_btn(list, LV_SYMBOL_CALL, displayBuf);
             lv_obj_add_event_cb(btn, contact_item_clicked, LV_EVENT_CLICKED, c);
             lv_obj_add_event_cb(btn, contact_item_longpress, LV_EVENT_LONG_PRESSED, c);
         }
@@ -898,78 +956,134 @@ static void show_contact_edit_screen(const Contact *contact) {
 }
 
 // =============================================================================
-// Frames List (Optimized for RAM and Speed)
+// Frames List (Optimized with Object Pooling)
 // =============================================================================
 
 static void frame_item_clicked(lv_event_t *e) {
     lv_obj_t *cont = lv_event_get_target(e);
     // Hidden label is the 2nd child (index 1)
-    lv_obj_t *hidden_label = lv_obj_get_child(cont, 1); 
+    lv_obj_t *hidden_label = lv_obj_get_child(cont, 1);
     if (hidden_label) {
         const char *full_text = lv_label_get_text(hidden_label);
         show_message_detail(full_text);
     }
 }
 
-// Helper: Creates a single frame entry with parsing and styling
-static void ui_add_frame_item(lv_obj_t *list, const String& rawLine, bool at_top) {
-    bool isDirect = rawLine.startsWith("[D]");
-    String cleanFrame = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
-                        ? rawLine.substring(4) 
-                        : rawLine;
+// Initialize the frame item pool (called once on first use)
+static void init_frame_pool(lv_obj_t *list) {
+    if (frame_pool_initialized) return;
 
-    // Parsing Sender > Destination
-    String summary = cleanFrame; 
-    int idxArrow = cleanFrame.indexOf('>');
-    if (idxArrow > 0) {
-        String sender = cleanFrame.substring(0, idxArrow);
-        int idxComma = cleanFrame.indexOf(',', idxArrow);
-        int idxColon = cleanFrame.indexOf(':', idxArrow);
-        int idxEndDest = -1;
+    for (int i = 0; i < MAX_FRAME_ITEMS; i++) {
+        lv_obj_t *cont = lv_obj_create(list);
+        lv_obj_set_width(cont, lv_pct(100));
+        lv_obj_set_height(cont, LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
+        lv_obj_set_style_pad_all(cont, 6, 0);
+        lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
+        lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
+        lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
+        lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
 
-        if (idxComma > 0 && idxColon > 0) idxEndDest = std::min(idxComma, idxColon);
-        else if (idxComma > 0) idxEndDest = idxComma;
-        else idxEndDest = idxColon;
+        lv_obj_t *label_summary = lv_label_create(cont);
+        lv_obj_set_width(label_summary, lv_pct(100));
+        lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT);
+        lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0);
 
-        if (idxEndDest > 0) {
-            String dest = cleanFrame.substring(idxArrow + 1, idxEndDest);
-            summary = sender + " > " + dest;
-        }
+        lv_obj_t *label_full = lv_label_create(cont);
+        lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN);
+
+        // Hide all items by default
+        lv_obj_add_flag(cont, LV_OBJ_FLAG_HIDDEN);
+
+        frame_pool[i].container = cont;
+        frame_pool[i].summary_label = label_summary;
+        frame_pool[i].full_label = label_full;
     }
 
-    lv_obj_t *cont = lv_obj_create(list);
-    lv_obj_set_width(cont, lv_pct(100));
-    lv_obj_set_height(cont, LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
-    lv_obj_set_style_pad_all(cont, 6, 0); 
-    lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
-    lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
-    lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
-    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
+    frame_pool_initialized = true;
+    Serial.println("[UIMessaging] Frame pool initialized (20 items)");
+}
 
-    if (at_top) lv_obj_move_to_index(cont, 0);
+// Update a single frame item in the pool (no String alloc - uses static buffer)
+static void update_frame_item(int index, const String& rawLine) {
+    if (index < 0 || index >= MAX_FRAME_ITEMS) return;
 
-    lv_obj_t *label_summary = lv_label_create(cont);
-    lv_label_set_text(label_summary, summary.c_str());
-    lv_obj_set_width(label_summary, lv_pct(100));
-    lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT);
-    
-    lv_obj_set_style_text_color(label_summary, isDirect ? lv_palette_main(LV_PALETTE_GREEN) : lv_palette_main(LV_PALETTE_ORANGE), 0);
-    lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0);
+    FrameItemPool& item = frame_pool[index];
+    const char* raw = rawLine.c_str();
+    size_t rawLen = rawLine.length();
 
-    lv_obj_t *label_full = lv_label_create(cont);
-    lv_label_set_text(label_full, rawLine.c_str());
-    lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN);
+    // Check [D]irect prefix
+    bool isDirect = (rawLen >= 3 && raw[0] == '[' && raw[1] == 'D' && raw[2] == ']');
+
+    // Skip [X] prefix if present
+    const char* frameStart = raw;
+    if (rawLen > 4 && raw[0] == '[' && raw[3] == ']') {
+        frameStart = raw + 4;
+    }
+
+    // Static buffer for summary (reused, no heap alloc)
+    static char summary[80];
+
+    // Find '>' for "sender > dest" parsing
+    const char* arrow = strchr(frameStart, '>');
+    if (arrow && arrow > frameStart) {
+        // Find end of destination (first ',' or ':' after arrow)
+        const char* endDest = arrow + 1;
+        while (*endDest && *endDest != ',' && *endDest != ':') endDest++;
+
+        size_t senderLen = arrow - frameStart;
+        size_t destLen = endDest - (arrow + 1);
+
+        // Clamp lengths to fit buffer
+        if (senderLen > 30) senderLen = 30;
+        if (destLen > 30) destLen = 30;
+
+        // Build "sender > dest" in static buffer
+        memcpy(summary, frameStart, senderLen);
+        summary[senderLen] = ' ';
+        summary[senderLen + 1] = '>';
+        summary[senderLen + 2] = ' ';
+        memcpy(summary + senderLen + 3, arrow + 1, destLen);
+        summary[senderLen + 3 + destLen] = '\0';
+    } else {
+        // No arrow found, copy truncated frame
+        size_t copyLen = strlen(frameStart);
+        if (copyLen > sizeof(summary) - 1) copyLen = sizeof(summary) - 1;
+        memcpy(summary, frameStart, copyLen);
+        summary[copyLen] = '\0';
+    }
+
+    // Update text (LVGL copies internally)
+    lv_label_set_text(item.summary_label, summary);
+    lv_label_set_text(item.full_label, raw);
+
+    // Update color based on direct/digipeated
+    lv_obj_set_style_text_color(item.summary_label,
+        isDirect ? lv_palette_main(LV_PALETTE_GREEN) : lv_palette_main(LV_PALETTE_ORANGE), 0);
+
+    // Show item
+    lv_obj_clear_flag(item.container, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void populate_frames_list(lv_obj_t *list) {
-    lv_obj_clean(list);
+    // Initialize pool on first call
+    if (!frame_pool_initialized) {
+        init_frame_pool(list);
+    }
+
     const std::vector<String> &frames = STORAGE_Utils::getLastFrames(20);
-    // Add frames (getLastFrames returns them newest-first now)
-    for (const String& frame : frames) {
-        ui_add_frame_item(list, frame, false); // already sorted, just add to bottom
+
+    // Update existing pool items with new data
+    size_t frameCount = std::min(frames.size(), (size_t)MAX_FRAME_ITEMS);
+    for (size_t i = 0; i < frameCount; i++) {
+        update_frame_item(i, frames[i]);
+    }
+
+    // Hide unused items
+    for (size_t i = frameCount; i < MAX_FRAME_ITEMS; i++) {
+        lv_obj_add_flag(frame_pool[i].container, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -1100,9 +1214,11 @@ static void msg_tab_changed(lv_event_t *e) {
         }
         if (current_msg_type == 3 && list_frames_global) {
             populate_frames_list(list_frames_global);
+            STORAGE_Utils::clearFramesDirty();  // Data is now up-to-date
         }
         if (current_msg_type == 4 && cont_stats_global) {
             populate_stats(cont_stats_global);
+            STORAGE_Utils::clearStatsDirty();  // Data is now up-to-date
         }
     }
 }
@@ -1531,33 +1647,27 @@ void refreshContactsList() {
 }
 
 void refreshFramesList() {
-    // Only refresh if Messages screen is active and Frames tab is visible
+    // Only refresh if data changed AND Messages screen is active AND Frames tab is visible
+    if (!STORAGE_Utils::isFramesDirty()) return;
+
     if (screen_msg && lv_scr_act() == screen_msg && msg_tabview) {
         if (lv_tabview_get_tab_act(msg_tabview) == 3 && list_frames_global) {
-            
-            // Get only the most recent frame
-            const std::vector<String> &frames = STORAGE_Utils::getLastFrames(1);
-            if (frames.empty()) return;
-
-            // Add the new frame to the top
-            ui_add_frame_item(list_frames_global, frames[0], true);
-
-            // RAM Protection: Remove oldest if more than 20 items
-            if (lv_obj_get_child_cnt(list_frames_global) > 20) {
-                lv_obj_t *oldest = lv_obj_get_child(list_frames_global, -1); 
-                if (oldest) lv_obj_del(oldest);
-            }
-            
+            // With object pooling, just update all items (no alloc/dealloc)
+            populate_frames_list(list_frames_global);
             lv_obj_scroll_to_y(list_frames_global, 0, LV_ANIM_ON);
+            STORAGE_Utils::clearFramesDirty();
         }
     }
 }
 
 void refreshStatsIfActive() {
-    // Update Stats tab if currently active (tab index 4)
+    // Only refresh if data changed AND Stats tab is currently active
+    if (!STORAGE_Utils::isStatsDirty()) return;
+
     if (screen_msg && lv_scr_act() == screen_msg && msg_tabview) {
         if (lv_tabview_get_tab_act(msg_tabview) == 4 && cont_stats_global) {
             populate_stats(cont_stats_global);
+            STORAGE_Utils::clearStatsDirty();
         }
     }
 }
