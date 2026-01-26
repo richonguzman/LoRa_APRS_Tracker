@@ -1351,7 +1351,7 @@ void createMsgScreen() {
     lv_label_set_text(title, "Messages");
     lv_obj_set_style_text_color(title, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
-    lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, -40, 0);
 
    // --- 1. Compose button (Green) ---
     lv_obj_t *btn_compose = lv_btn_create(title_bar);

@@ -242,7 +242,15 @@ bool Configuration::readFile() {
             loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
             loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
             loraType.power              = LoraTypesArray[j]["power"] | 20;
-            loraType.dataRate           = LoraTypesArray[j]["dataRate"] | 300;
+
+            // Force dataRate calculation based ONLY on SF and CR4 from JSON
+            // formula: BW * (SF / 2^SF) * (4 / CR)
+            double bw = (double)loraType.signalBandwidth;
+            double sf = (double)loraType.spreadingFactor;
+            double cr = (double)loraType.codingRate4;
+            
+            loraType.dataRate = (uint16_t)round(bw * (sf / pow(2.0, sf)) * (4.0 / cr));
+
             loraTypes.push_back(loraType);
         }
 
