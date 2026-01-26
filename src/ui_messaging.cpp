@@ -117,6 +117,7 @@ static void refresh_conversation_messages();
 static void show_contact_edit_screen(const Contact *contact);
 static void show_message_detail(const char *msg);
 static void show_delete_confirmation(const char *message, int msg_index);
+static void frame_item_clicked(lv_event_t *e);
 
 // =============================================================================
 // Module Initialization
@@ -897,101 +898,78 @@ static void show_contact_edit_screen(const Contact *contact) {
 }
 
 // =============================================================================
-// Frames List
+// Frames List (Optimized for RAM and Speed)
 // =============================================================================
 
-// Callback quand on clique sur une ligne de trame
 static void frame_item_clicked(lv_event_t *e) {
     lv_obj_t *cont = lv_event_get_target(e);
-    
-    // On cherche le label caché (c'est le 2ème enfant, index 1)
-    // Enfant 0 = Résumé visible, Enfant 1 = Full text caché
+    // Hidden label is the 2nd child (index 1)
     lv_obj_t *hidden_label = lv_obj_get_child(cont, 1); 
-    
     if (hidden_label) {
         const char *full_text = lv_label_get_text(hidden_label);
         show_message_detail(full_text);
     }
 }
 
+// Helper: Creates a single frame entry with parsing and styling
+static void ui_add_frame_item(lv_obj_t *list, const String& rawLine, bool at_top) {
+    bool isDirect = rawLine.startsWith("[D]");
+    String cleanFrame = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
+                        ? rawLine.substring(4) 
+                        : rawLine;
+
+    // Parsing Sender > Destination
+    String summary = cleanFrame; 
+    int idxArrow = cleanFrame.indexOf('>');
+    if (idxArrow > 0) {
+        String sender = cleanFrame.substring(0, idxArrow);
+        int idxComma = cleanFrame.indexOf(',', idxArrow);
+        int idxColon = cleanFrame.indexOf(':', idxArrow);
+        int idxEndDest = -1;
+
+        if (idxComma > 0 && idxColon > 0) idxEndDest = std::min(idxComma, idxColon);
+        else if (idxComma > 0) idxEndDest = idxComma;
+        else idxEndDest = idxColon;
+
+        if (idxEndDest > 0) {
+            String dest = cleanFrame.substring(idxArrow + 1, idxEndDest);
+            summary = sender + " > " + dest;
+        }
+    }
+
+    lv_obj_t *cont = lv_obj_create(list);
+    lv_obj_set_width(cont, lv_pct(100));
+    lv_obj_set_height(cont, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
+    lv_obj_set_style_pad_all(cont, 6, 0); 
+    lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
+    lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
+    lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
+    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
+
+    if (at_top) lv_obj_move_to_index(cont, 0);
+
+    lv_obj_t *label_summary = lv_label_create(cont);
+    lv_label_set_text(label_summary, summary.c_str());
+    lv_obj_set_width(label_summary, lv_pct(100));
+    lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT);
+    
+    lv_obj_set_style_text_color(label_summary, isDirect ? lv_palette_main(LV_PALETTE_GREEN) : lv_palette_main(LV_PALETTE_ORANGE), 0);
+    lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0);
+
+    lv_obj_t *label_full = lv_label_create(cont);
+    lv_label_set_text(label_full, rawLine.c_str());
+    lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN);
+}
+
 static void populate_frames_list(lv_obj_t *list) {
     lv_obj_clean(list);
-
-    // Récupérer les 20 dernières trames
     const std::vector<String> &frames = STORAGE_Utils::getLastFrames(20);
-
-    if (frames.size() == 0) {
-        lv_obj_t *empty = lv_label_create(list);
-        lv_label_set_text(empty, "No frames recorded");
-        lv_obj_set_style_text_color(empty, lv_color_hex(0x888888), 0);
-        lv_obj_set_style_text_align(empty, LV_TEXT_ALIGN_CENTER, 0);
-    } else {
-        // Affichage inversé (le plus récent en haut)
-        for (int i = frames.size() - 1; i >= 0; i--) {
-            String rawLine = frames[i];
-            
-            // --- 1. ANALYSE (Couleur & Nettoyage) ---
-            bool isDirect = rawLine.startsWith("[D]");
-            // On retire le marqueur [D] ou [R] pour avoir la trame pure
-            String cleanFrame = (rawLine.length() > 4 && rawLine.charAt(0) == '[') 
-                                ? rawLine.substring(4) 
-                                : rawLine;
-
-            // --- 2. EXTRACTION (Expéditeur > Destinataire) ---
-            String summary = cleanFrame; // Par défaut, tout afficher si parsing échoue
-            
-            int idxArrow = cleanFrame.indexOf('>');
-            if (idxArrow > 0) {
-                String sender = cleanFrame.substring(0, idxArrow);
-                
-                // Le destinataire est entre '>' et le premier ',' ou ':'
-                int idxComma = cleanFrame.indexOf(',', idxArrow);
-                int idxColon = cleanFrame.indexOf(':', idxArrow);
-                int idxEndDest = -1;
-
-                if (idxComma > 0 && idxColon > 0) idxEndDest = std::min(idxComma, idxColon);
-                else if (idxComma > 0) idxEndDest = idxComma;
-                else idxEndDest = idxColon;
-
-                if (idxEndDest > 0) {
-                    String dest = cleanFrame.substring(idxArrow + 1, idxEndDest);
-                    summary = sender + " > " + dest;
-                }
-            }
-
-            // --- 3. CREATION UI ---
-            lv_obj_t *cont = lv_obj_create(list);
-            lv_obj_set_width(cont, lv_pct(100));
-            lv_obj_set_height(cont, LV_SIZE_CONTENT);
-            lv_obj_set_style_bg_color(cont, lv_color_hex(0x0a0a14), 0);
-            lv_obj_set_style_pad_all(cont, 6, 0); // Un peu plus d'espace
-            lv_obj_set_style_border_width(cont, 0, 0);
-            lv_obj_set_style_border_width(cont, 1, LV_PART_MAIN);
-            lv_obj_set_style_border_side(cont, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
-            lv_obj_set_style_border_color(cont, lv_color_hex(0x333344), 0);
-            lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_add_flag(cont, LV_OBJ_FLAG_CLICKABLE);
-            lv_obj_add_event_cb(cont, frame_item_clicked, LV_EVENT_CLICKED, NULL);
-
-            // A. LABEL VISIBLE (Résumé)
-            lv_obj_t *label_summary = lv_label_create(cont);
-            lv_label_set_text(label_summary, summary.c_str());
-            lv_obj_set_width(label_summary, lv_pct(100));
-            lv_label_set_long_mode(label_summary, LV_LABEL_LONG_DOT); // "..." si trop long
-            
-            // Couleurs
-            if (isDirect) {
-                lv_obj_set_style_text_color(label_summary, lv_palette_main(LV_PALETTE_GREEN), 0);
-            } else {
-                lv_obj_set_style_text_color(label_summary, lv_palette_main(LV_PALETTE_ORANGE), 0);
-            }
-            lv_obj_set_style_text_font(label_summary, &lv_font_montserrat_14, 0); // Police plus lisible
-
-            // B. LABEL CACHÉ (Trame complète pour le popup)
-            lv_obj_t *label_full = lv_label_create(cont);
-            lv_label_set_text(label_full, rawLine.c_str());
-            lv_obj_add_flag(label_full, LV_OBJ_FLAG_HIDDEN); // Invisible
-        }
+    // Add frames (getLastFrames returns them newest-first now)
+    for (const String& frame : frames) {
+        ui_add_frame_item(list, frame, false); // already sorted, just add to bottom
     }
 }
 
@@ -1375,7 +1353,7 @@ void createMsgScreen() {
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
     lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
 
-    // Compose button
+   // --- 1. Compose button (Green) ---
     lv_obj_t *btn_compose = lv_btn_create(title_bar);
     lv_obj_set_size(btn_compose, 40, 25);
     lv_obj_align(btn_compose, LV_ALIGN_RIGHT_MID, -50, 0);
@@ -1385,7 +1363,17 @@ void createMsgScreen() {
     lv_label_set_text(lbl_compose, LV_SYMBOL_EDIT);
     lv_obj_center(lbl_compose);
 
-    // Delete button
+    // --- 2. Add Contact button (Blue) ---
+    lv_obj_t *btn_add_contact = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_add_contact, 40, 25);
+    lv_obj_align(btn_add_contact, LV_ALIGN_RIGHT_MID, -95, 0); 
+    lv_obj_set_style_bg_color(btn_add_contact, lv_color_hex(0x82aaff), 0);
+    lv_obj_add_event_cb(btn_add_contact, btn_add_contact_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_add = lv_label_create(btn_add_contact);
+    lv_label_set_text(lbl_add, LV_SYMBOL_PLUS);
+    lv_obj_center(lbl_add);
+
+    // --- 3. Delete All button (Red) ---
     lv_obj_t *btn_delete = lv_btn_create(title_bar);
     lv_obj_set_size(btn_delete, 40, 25);
     lv_obj_align(btn_delete, LV_ALIGN_RIGHT_MID, -5, 0);
@@ -1394,7 +1382,7 @@ void createMsgScreen() {
     lv_obj_t *lbl_delete = lv_label_create(btn_delete);
     lv_label_set_text(lbl_delete, LV_SYMBOL_TRASH);
     lv_obj_center(lbl_delete);
-
+    
     // Tabview
     msg_tabview = lv_tabview_create(screen_msg, LV_DIR_TOP, 30);
     if (!msg_tabview) {
@@ -1543,12 +1531,23 @@ void refreshContactsList() {
 }
 
 void refreshFramesList() {
-    // On ne rafraîchit que si l'écran Messages est actif ET qu'on est sur l'onglet Frames (Index 3)
-    // Cela évite de consommer du CPU inutilement si on est sur la Map ou le Dashboard
+    // Only refresh if Messages screen is active and Frames tab is visible
     if (screen_msg && lv_scr_act() == screen_msg && msg_tabview) {
         if (lv_tabview_get_tab_act(msg_tabview) == 3 && list_frames_global) {
-            populate_frames_list(list_frames_global);
-            // Scroll en haut pour voir le nouveau message
+            
+            // Get only the most recent frame
+            const std::vector<String> &frames = STORAGE_Utils::getLastFrames(1);
+            if (frames.empty()) return;
+
+            // Add the new frame to the top
+            ui_add_frame_item(list_frames_global, frames[0], true);
+
+            // RAM Protection: Remove oldest if more than 20 items
+            if (lv_obj_get_child_cnt(list_frames_global) > 20) {
+                lv_obj_t *oldest = lv_obj_get_child(list_frames_global, -1); 
+                if (oldest) lv_obj_del(oldest);
+            }
+            
             lv_obj_scroll_to_y(list_frames_global, 0, LV_ANIM_ON);
         }
     }

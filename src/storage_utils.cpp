@@ -442,7 +442,7 @@ namespace STORAGE_Utils {
 
     static const char* FRAMES_FILE = "/LoRa_Tracker/frames.log";
     static const char* FRAMES_OLD_FILE = "/LoRa_Tracker/frames.old";
-    static const uint32_t MAX_FRAMES_SIZE = 5 * 1024 * 1024;  // 5 MB
+    static const uint32_t MAX_FRAMES_SIZE = 100 * 1024;  // 100 KB
 
     void checkFramesLogRotation() {
         if (!sdAvailable) return;
@@ -503,16 +503,23 @@ namespace STORAGE_Utils {
         return true;
     }
     
-    const std::vector<String>& getLastFrames(int count) {
-        // Rebuild ordered vector from circular buffer (only when UI requests)
-        framesCacheOrdered.clear();
-        framesCacheOrdered.reserve(framesCacheCount);
-        int start = (framesCacheCount < FRAMES_CACHE_SIZE) ? 0 : framesCacheHead;
-        for (int i = 0; i < framesCacheCount; i++) {
-            framesCacheOrdered.push_back(framesCache[(start + i) % FRAMES_CACHE_SIZE]);
-        }
-        return framesCacheOrdered;
+const std::vector<String>& getLastFrames(int count) {
+    framesCacheOrdered.clear();
+    
+    if (framesCacheCount == 0) return framesCacheOrdered;
+
+    // Limit count to what we actually have
+    int actualCount = (count > framesCacheCount) ? framesCacheCount : count;
+    framesCacheOrdered.reserve(actualCount);
+
+    // Get the most recent frames (backwards from head)
+    for (int i = 0; i < actualCount; i++) {
+        int idx = (framesCacheHead - 1 - i + FRAMES_CACHE_SIZE) % FRAMES_CACHE_SIZE;
+        framesCacheOrdered.push_back(framesCache[idx]);
     }
+    
+    return framesCacheOrdered;
+}
 
     // ========== Link Statistics ==========
 
