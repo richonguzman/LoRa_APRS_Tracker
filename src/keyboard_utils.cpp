@@ -50,6 +50,8 @@ extern bool             displayState;
 extern uint32_t         displayTime;
 extern bool             displayEcoMode;
 extern uint8_t          screenBrightness;
+extern uint32_t         lastActivityTime;
+extern bool             screenDimmed;
 extern bool             statusUpdate;
 extern uint32_t         statusTime;
 extern int              messagesIterator;
@@ -625,8 +627,15 @@ namespace KEYBOARD_Utils {
         keyDetected = true;
         menuTime = millis();
 
-        // Forward key to LVGL compose screen if active
+        // Reset LVGL eco mode activity timer and wake screen if dimmed
         #ifdef USE_LVGL_UI
+            lastActivityTime = millis();
+            if (screenDimmed) {
+                screenDimmed = false;
+                #ifdef BOARD_BL_PIN
+                    analogWrite(BOARD_BL_PIN, screenBrightness);
+                #endif
+            }
             LVGL_UI::handleComposeKeyboard(key);
         #endif
 
