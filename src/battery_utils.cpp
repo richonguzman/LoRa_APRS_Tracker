@@ -50,8 +50,34 @@ float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to
 
 namespace BATTERY_Utils {
 
+    // Li-Ion discharge curve lookup table (voltage -> percent)
+    // Based on typical Li-Ion single cell discharge profile
+    static const float battLUT[][2] = {
+        {4.20, 100}, {4.15, 95}, {4.10, 90}, {4.05, 85},
+        {4.00, 80},  {3.95, 75}, {3.90, 70}, {3.85, 65},
+        {3.80, 60},  {3.75, 55}, {3.70, 50}, {3.65, 45},
+        {3.60, 40},  {3.55, 35}, {3.50, 30}, {3.45, 25},
+        {3.40, 20},  {3.35, 15}, {3.30, 10}, {3.20,  5},
+        {3.00,  0}
+    };
+    static const int battLUTSize = sizeof(battLUT) / sizeof(battLUT[0]);
+
+    int voltageToPercent(float voltage) {
+        if (voltage >= battLUT[0][0]) return 100;
+        if (voltage <= battLUT[battLUTSize - 1][0]) return 0;
+        for (int i = 0; i < battLUTSize - 1; i++) {
+            if (voltage >= battLUT[i + 1][0]) {
+                // Linear interpolation between two points
+                float v0 = battLUT[i][0],     p0 = battLUT[i][1];
+                float v1 = battLUT[i + 1][0], p1 = battLUT[i + 1][1];
+                return (int)(p1 + (voltage - v1) / (v0 - v1) * (p0 - p1));
+            }
+        }
+        return 0;
+    }
+
     String getPercentVoltageBattery(float voltage) {
-        int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
+        int percent = voltageToPercent(voltage);
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
