@@ -103,10 +103,15 @@ namespace LoRa_Utils {
     }
 
     void setup() {
-        #ifdef LIGHTTRACKER_PLUS_1_0
+        #if defined(LIGHTTRACKER_PLUS_1_0) || defined(TTGO_T_BEAM_1W)
             pinMode(RADIO_VCC_PIN,OUTPUT);
             digitalWrite(RADIO_VCC_PIN,HIGH);
         #endif
+        #if defined(TTGO_T_BEAM_1W)
+            pinMode(RADIO_RXEN, OUTPUT);
+            digitalWrite(RADIO_RXEN, LOW);  // start setup in Tx mode
+        #endif
+
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
         #if defined(LIGHTTRACKER_PLUS_1_0)
             loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN);
@@ -143,6 +148,9 @@ namespace LoRa_Utils {
         #if defined(RADIO_RXEN) && defined(RADIO_TXEN)
             radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
+        #if defined(TTGO_T_BEAM_1W)
+            radio.setRfSwitchPins(RADIO_RXEN, RADIOLIB_NC);
+        #endif
 
         #ifdef HAS_1W_LORA  // Ebyte E22 400M30S (SX1268) / 900M30S (SX1262) / Ebyte E220 400M30S (LLCC68)
             state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
@@ -160,7 +168,14 @@ namespace LoRa_Utils {
         #endif
 
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
-        radio.setRxBoostedGainMode(true);
+            radio.setRxBoostedGainMode(true);
+        #endif
+
+        #if defined(HAS_TCXO) && !defined(HAS_1W_LORA)
+            radio.setDio2AsRfSwitch();
+        #endif
+        #ifdef HAS_TCXO
+            radio.setTCXO(1.8);
         #endif
 
         if (state == RADIOLIB_ERR_NONE) {
@@ -184,6 +199,9 @@ namespace LoRa_Utils {
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
         
+        #if defined(TTGO_T_BEAM_1W)
+            digitalWrite(RADIO_RXEN, LOW);
+        #endif
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
         if (state == RADIOLIB_ERR_NONE) {
@@ -207,6 +225,9 @@ namespace LoRa_Utils {
     ReceivedLoRaPacket receiveFromSleep() {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
+        #if defined(TTGO_T_BEAM_1W)
+            digitalWrite(RADIO_RXEN, HIGH);
+        #endif
         int state = radio.readData(packet);
         if (state == RADIOLIB_ERR_NONE) {
             receivedLoraPacket.text       = packet;
@@ -225,6 +246,9 @@ namespace LoRa_Utils {
         if (operationDone) {
             operationDone = false;
             if (transmitFlag) {
+                #if defined(TTGO_T_BEAM_1W)
+                    digitalWrite(RADIO_RXEN, HIGH);
+                #endif
                 radio.startReceive();
                 transmitFlag = false;
             } else {

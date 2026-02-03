@@ -69,7 +69,7 @@ ____________________________________________________________________*/
 #endif
 
 
-String      versionDate             = "2026-01-29";
+String      versionDate             = "2026-02-03";
 String      versionNumber           = "2.4.3";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
