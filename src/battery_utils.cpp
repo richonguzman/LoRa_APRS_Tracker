@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -82,15 +82,15 @@ namespace BATTERY_Utils {
                     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
                 #endif
                 #if defined(TTGO_T_BEAM_1W)
-                    double inputDivider = (1.0 / (300.0 + 150.0)) * 150.0;  // The voltage divider is a 300k + 150k resistor in series, 150k on the low side. 
+                    double inputDivider = (1.0 / (300.0 + 150.0)) * 150.0;  // The voltage divider is a 300k + 150k resistor in series, 150k on the low side.
                     return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
                 #endif
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-                    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
+                    double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side.
                     return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
                 #endif
                 #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
-                    double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
+                    double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side.
                     return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
                 #endif
             #else
@@ -110,7 +110,7 @@ namespace BATTERY_Utils {
             batteryVoltage = String(readBatteryVoltage(), 2);
             if (batteryVoltage.toFloat() > 1.5) batteryConnected = true;
         #endif
-    }   
+    }
 
     void monitor() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -141,7 +141,7 @@ namespace BATTERY_Utils {
                                 obtainBatteryInfo();
                                 POWER_Utils::adc_ctrl_OFF();
                                 measuringState = 1;
-                                
+
                                 if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
                                     displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
                                     POWER_Utils::shutdown();

@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -127,7 +127,7 @@ namespace MSG_Utils {
             numAPRSMessages++;
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
-    
+
         File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
         if(!fileToReadWLNK) {
             Serial.println("Failed to open Winlink_Msg for reading");
@@ -216,7 +216,7 @@ namespace MSG_Utils {
             SPIFFS.remove("/aprsMessages.txt");
         } else if (typeOfFile == 1) {   //WLNK
             SPIFFS.remove("/winlinkMails.txt");
-        }    
+        }
         if (Config.notification.ledMessage) messageLed = false;
     }
 
@@ -370,7 +370,7 @@ namespace MSG_Utils {
                 String rest = outputAckRequestBuffer[0].substring(outputAckRequestBuffer[0].indexOf(",") + 1);
                 ackCallsignRequest = rest.substring(0, rest.indexOf(","));
                 String payload = rest.substring(rest.indexOf(",") + 1);
-                ackNumberRequest = payload.substring(payload.indexOf("{") + 1);                
+                ackNumberRequest = payload.substring(payload.indexOf("{") + 1);
                 sendMessage(ackCallsignRequest, payload);
                 lastTxTime = millis();
                 lastRetryTime = millis();
@@ -404,7 +404,7 @@ namespace MSG_Utils {
         packet15SegBuffer.push_back(packet);
         return true;
     }
-    
+
     void checkReceivedMessage(ReceivedLoRaPacket packet) {
         if(packet.text.isEmpty()) {
             return;
@@ -418,7 +418,7 @@ namespace MSG_Utils {
                     lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
                 }
 
-                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {            
+                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
@@ -446,7 +446,7 @@ namespace MSG_Utils {
                         }
 
                         if (Config.notification.buzzerActive && Config.notification.messageRxBeep) NOTIFICATION_Utils::messageBeep();
-                        
+
                         if (lastReceivedPacket.payload.indexOf("ping") == 0 || lastReceivedPacket.payload.indexOf("Ping") == 0 || lastReceivedPacket.payload.indexOf("PING") == 0) {
                             lastMsgRxTime = millis();
                             MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "pong, 73!");
@@ -490,7 +490,7 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
                                 if (lastReceivedPacket.payload.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
-                                }                                    
+                                }
                             } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
                                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Waiting Challenge");
                                 lastMsgRxTime = millis();
@@ -525,7 +525,7 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
                                 displayShow("<WLNK Rx >", "", lastReceivedPacket.payload, 3000);
                                 saveNewMessage(1, lastReceivedPacket.sender, lastReceivedPacket.payload);
-                            } 
+                            }
                         } else {
                             if (!Config.simplifiedTrackerMode) {
                                 lastMsgRxTime = millis();
@@ -535,7 +535,7 @@ namespace MSG_Utils {
                                         displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
                                     #else   // T-Deck
                                         displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
-                                    #endif                                    
+                                    #endif
                                 #else
                                     displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , "", "", "", 3000);
                                 #endif
@@ -555,7 +555,7 @@ namespace MSG_Utils {
                     }
                 }
             }
-        }   
+        }
     }
 
 }

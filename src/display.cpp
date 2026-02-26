@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -30,7 +30,7 @@
 #ifdef HAS_TFT
     #include <TFT_eSPI.h>
 
-    TFT_eSPI    tft     = TFT_eSPI(); 
+    TFT_eSPI    tft     = TFT_eSPI();
     TFT_eSprite sprite  = TFT_eSprite(&tft);
 
     #ifdef HELTEC_WIRELESS_TRACKER
@@ -88,7 +88,7 @@ extern bool             bluetoothConnected;
 const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                 "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
-const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, 
+const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol,
                                 truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
                                 houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
                                 aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
@@ -149,13 +149,13 @@ extern logging::Logger logger;
     }
 
     void draw_T_DECK_Top() {
-        sprite.fillSprite(TFT_BLACK); 
+        sprite.fillSprite(TFT_BLACK);
         sprite.fillRect(0, 0, 320, 38, redColor);
         sprite.setTextFont(0);
         sprite.setTextSize(bigSizeFont);
         sprite.setTextColor(TFT_WHITE, redColor);
         sprite.drawString(topHeader1, 3, 5);
-        
+
         sprite.setTextSize(smallSizeFont);
         sprite.setTextColor(TFT_WHITE, redColor);
         sprite.drawString(topHeader1_1, 258, 5);
@@ -295,7 +295,7 @@ void displayToggle(bool toggle) {
             analogWrite(TFT_BL, screenBrightness);
         #else
             #ifdef ssd1306
-                display.ssd1306_command(SSD1306_DISPLAYON); 
+                display.ssd1306_command(SSD1306_DISPLAYON);
             #else
                 display.oled_command(SH110X_DISPLAYON);
             #endif
@@ -356,7 +356,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
 
             for (int i = 0; i < 2; i++) {
                 String text = *lines[i];
-                if (text.length() > 0) {                    
+                if (text.length() > 0) {
                     while (text.length() > 0) {
                         String chunk = text.substring(0, maxLineLength);
                         sprite.drawString(chunk, 3, yLineOffset);
@@ -443,7 +443,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             drawButton(220, 210, 80, 28, "Exit", 2);
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
-            sprite.fillSprite(TFT_BLACK); 
+            sprite.fillSprite(TFT_BLACK);
             sprite.fillRect(0, 0, 160, 19, redColor);
             sprite.setTextFont(0);
             sprite.setTextSize(bigSizeFont);
@@ -486,7 +486,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                 /*  Symbol alternate every 5s
                 *   If bluetooth is disconnected or if we are in the first part of the clock, then we show the APRS symbol
                 *   Otherwise, we are in the second part of the clock, then we show BT connected */
-            
+
                 const auto time_now = now();
                 if (!bluetoothConnected || time_now % 10 < 5) {
                     if (symbolAvailable) drawSymbol(symbol, false);

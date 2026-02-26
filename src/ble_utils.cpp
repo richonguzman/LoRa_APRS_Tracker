@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -96,7 +96,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 } else {
                     int firstFendIndex = kissSerialBuffer.indexOf((char)KissChar::FEND);    // find first FEND byte to discard leading corrupted bytes
                     if (firstFendIndex != -1) {
-                        kissSerialBuffer.remove(0, firstFendIndex);                         // delete corrupted data before FEND 
+                        kissSerialBuffer.remove(0, firstFendIndex);                         // delete corrupted data before FEND
                     } else {
                         kissSerialBuffer = "";                                              // if no FEND found, delete all
                         break;
@@ -110,7 +110,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 
                 String frame = kissSerialBuffer.substring(0, fendIndex + 1);                // extract full frame (With FEND at start and end)
                 kissSerialBuffer.remove(0, fendIndex + 1);
-                
+
                 if (frame.length() >= 4) {                                                  // FEND | CMD | DATA | FEND
                     bool isDataFrame    = false;
                     BLEToLoRaPacket     = KISS_Utils::decodeKISS(frame, isDataFrame);
@@ -135,7 +135,7 @@ namespace BLE_Utils {
 
     void setup() {
         String BLEid = Config.bluetooth.deviceName;
-        BLEDevice::init(BLEid.c_str()); 
+        BLEDevice::init(BLEid.c_str());
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
@@ -188,7 +188,7 @@ namespace BLE_Utils {
             int length      = kissEncodedFrame.length();
             for (int i = 0; i < length; i += BLE_CHUNK_SIZE) {
                 int chunkSize = (length - i < BLE_CHUNK_SIZE) ? (length - i) : BLE_CHUNK_SIZE;
-                
+
                 uint8_t* chunk = new uint8_t[chunkSize];
                 memcpy(chunk, t + i, chunkSize);
 

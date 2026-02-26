@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -124,7 +124,7 @@ namespace STATION_Utils {
         if (millis() - lastDeleteListenedStation > Config.rememberStationTime * 60 * 1000) deleteListenedStationsByTime();
     }
 
-    void orderListenedStationsByDistance(const String& callsign, float distance, float course) {   
+    void orderListenedStationsByDistance(const String& callsign, float distance, float course) {
         bool shouldSortbyDistance = false;
         bool callsignInNearStations = false;
 
@@ -139,7 +139,7 @@ namespace STATION_Utils {
                 break;
             }
         }
-    
+
         if (!callsignInNearStations) {                      // callsign not in nearbyStations[]
             for (int b = 0; b < nearbyStationsSize; b++) {                   // if nearbyStations[] is available
                 if (nearbyStations[b].callsign == "") {
@@ -208,7 +208,7 @@ namespace STATION_Utils {
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) shouldSleepLowVoltage = true;
         #endif
-        
+
         if (!shouldSleepLowVoltage) {
             String comment = (winlinkCommentState ? "winlink" : currentBeacon->comment);
             int sendCommentAfterXBeacons = ((winlinkCommentState || Config.battery.sendVoltageAlways) ? 1 : Config.sendCommentAfterXBeacons);
@@ -256,7 +256,7 @@ namespace STATION_Utils {
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
 
         if (shouldSleepLowVoltage) POWER_Utils::shutdown();
-        
+
         if (smartBeaconActive) {
             lastTxLat       = gps.location.lat();
             lastTxLng       = gps.location.lng();
@@ -276,10 +276,10 @@ namespace STATION_Utils {
             case 2: filePath = "/brightness.txt"; break;
             default: return; // Invalid type, exit function
         }
-    
+
         File fileIndex = SPIFFS.open(filePath, "w");
         if (!fileIndex) return;
-    
+
         String dataToSave = String(index);
         if (fileIndex.println(dataToSave)) {
             String logMessage;

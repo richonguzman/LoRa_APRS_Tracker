@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -79,7 +79,7 @@ namespace GPS_Utils {
             digitalWrite(GPS_VCC, HIGH);
             delay(200);
         #endif
-        
+
         gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
     }
 
@@ -167,9 +167,9 @@ namespace GPS_Utils {
         if (bearing >= 16.875 && bearing < 28.125)    return ">.....N...|...NE....<"; // NEN
         if (bearing >= 28.125 && bearing < 39.375)    return ">...N.....|.NE......<";
         if (bearing >= 39.375 && bearing < 50.625)    return ">.N......(NE).....E.<"; // NE
-        if (bearing >= 50.625 && bearing < 61.875)    return ">.......NE|.....E...<"; 
+        if (bearing >= 50.625 && bearing < 61.875)    return ">.......NE|.....E...<";
         if (bearing >= 61.875 && bearing < 73.125)    return ">.....NE..|...E.....<"; // ENE
-        if (bearing >= 73.125 && bearing < 84.375)    return ">...NE....|.E.......<"; 
+        if (bearing >= 73.125 && bearing < 84.375)    return ">...NE....|.E.......<";
         if (bearing >= 84.375 && bearing < 95.625)    return ">.NE.....(E).....SE.<"; // E
         if (bearing >= 95.625 && bearing < 106.875)   return ">.......E.|.....SE..<";
         if (bearing >= 106.875 && bearing < 118.125)  return ">.....E...|...SE....<"; // ESE

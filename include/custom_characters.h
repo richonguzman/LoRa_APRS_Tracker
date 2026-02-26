@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -53,9 +53,9 @@ static const unsigned char runnerSymbol[] PROGMEM = {
     0b00000011, 0b10001100,
     0b00001111, 0b00001100,
     0b00011100, 0b00000110
-};  
+};
 
-static const unsigned char carSymbol[] PROGMEM = {  
+static const unsigned char carSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b01000000, 0b00000000,
     0b00111111, 0b11000000,
@@ -72,7 +72,7 @@ static const unsigned char carSymbol[] PROGMEM = {
     0b00000000, 0b00000000
 };
 
-static const unsigned char jeepSymbol[] PROGMEM = {   
+static const unsigned char jeepSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
@@ -174,7 +174,7 @@ static const unsigned char recreationalVehicleSymbol[] PROGMEM = {
     0b00110000, 0b00001100
 };
 
-static const unsigned char vanSymbol[] PROGMEM = { 
+static const unsigned char vanSymbol[] PROGMEM = {
     0b00000000, 0b00000000,
     0b00000000, 0b00000000,
     0b01111111, 0b11110000,

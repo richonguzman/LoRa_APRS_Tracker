@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -110,7 +110,7 @@ namespace KEYBOARD_Utils {
             menuDisplay--;
             if (menuDisplay < 240) menuDisplay = 241;
         }
-        
+
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
             menuDisplay--;
             if (menuDisplay < 30) menuDisplay = 33;
@@ -120,7 +120,7 @@ namespace KEYBOARD_Utils {
             menuDisplay--;
             if (menuDisplay < 40) menuDisplay = 41;
         }
-        
+
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
             menuDisplay--;
             if (menuDisplay < 50) menuDisplay = 53;
@@ -137,12 +137,12 @@ namespace KEYBOARD_Utils {
             menuDisplay--;
             if (menuDisplay < 5084) menuDisplay = 5085;
         }
-        
+
         else if (menuDisplay >= 60 && menuDisplay <= 64) {
             menuDisplay--;
             if (menuDisplay < 60) menuDisplay = 64;
         }
-        
+
         else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
             menuDisplay--;
             if (menuDisplay < 9000) menuDisplay = 9001;
@@ -182,7 +182,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 110) {
             menuDisplay = 11;
         }
-        
+
         else if (menuDisplay >= 20 && menuDisplay <= 27) {
         menuDisplay++;
         if (menuDisplay > 27) menuDisplay = 20;
@@ -198,17 +198,17 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay >= 30 && menuDisplay <= 33) {
-            menuDisplay++;  
+            menuDisplay++;
             if (menuDisplay > 33) menuDisplay = 30;
         }
 
         else if (menuDisplay >= 40 && menuDisplay <= 41) {
-            menuDisplay++;  
+            menuDisplay++;
             if (menuDisplay > 41) menuDisplay = 40;
         }
-        
+
         else if (menuDisplay >= 50 && menuDisplay <= 53) {
-        menuDisplay++;  
+        menuDisplay++;
         if (menuDisplay > 53) menuDisplay = 50;
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = menuDisplay + 10;
@@ -235,7 +235,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay++;
             if (menuDisplay > 5085) menuDisplay = 5084;
-        } 
+        }
 
         else if (menuDisplay >= 60 && menuDisplay <= 64) {
             menuDisplay++;
@@ -305,7 +305,7 @@ namespace KEYBOARD_Utils {
             statusUpdate  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            
+
             String newCallsign = "-----> ";
             newCallsign += Config.beacons[myBeaconsIndex].callsign;
             String profileLabel = "";
@@ -320,7 +320,7 @@ namespace KEYBOARD_Utils {
                 profileLabel += ")";
             }
             displayShow("   INFO", "", "  CHANGING CALLSIGN!", newCallsign, profileLabel, "", 2000);
-            
+
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
@@ -405,7 +405,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 221;
             #endif
         }
-        
+
         else if (menuDisplay == 240) {
             displayShow("  STATUS", "", "WRITE STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 241) {
@@ -562,11 +562,11 @@ namespace KEYBOARD_Utils {
         /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
         if (!displayState) {
             displayToggle(true);
-            displayTime = millis();   
+            displayTime = millis();
             displayState = true;
         }
         if (menuDisplay == 0 && key == 13) {       // Main Menu
-            menuDisplay = 1;      
+            menuDisplay = 1;
         } else if (menuDisplay == 0 && key == 8) {
             showHumanHeading = !showHumanHeading;
         } else if (key == 27) {                           // ESC = return to Main Menu
@@ -654,7 +654,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5040;
             } else if (key == 8) {
                 winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 5041;
                 winlinkAddressee = "";
             }
@@ -671,7 +671,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 50611;
             } else if (key == 8) {
                 winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 5061;
                 winlinkAlias = "";
             }
@@ -687,7 +687,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5061;
             } else if (key == 8) {
                 winlinkAliasComplete = winlinkAliasComplete.substring(0, winlinkAliasComplete.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 50610;
                 winlinkAliasComplete = "";
             }
@@ -702,7 +702,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5062;
             } else if (key == 8) {
                 winlinkAlias = winlinkAlias.substring(0, winlinkAlias.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 5062;
                 winlinkAlias = "";
             }
@@ -715,7 +715,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5082;
             } else if (key == 8) {
                 winlinkAddressee = winlinkAddressee.substring(0, winlinkAddressee.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 5080;
                 winlinkAddressee = "";
             }
@@ -729,7 +729,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5083;
             } else if (key == 8) {
                 winlinkSubject = winlinkSubject.substring(0, winlinkSubject.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 menuDisplay = 5081;
                 winlinkSubject = "";
             }
@@ -743,7 +743,7 @@ namespace KEYBOARD_Utils {
                 menuDisplay = 5084;
             } else if (key == 8) {
                 winlinkBody = winlinkBody.substring(0, winlinkBody.length() - 1);
-            } else if (key == 180) { 
+            } else if (key == 180) {
                 winlinkBody = "";
             }
         } else if (menuDisplay == 630 && key != 180) {
@@ -756,7 +756,7 @@ namespace KEYBOARD_Utils {
                 String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate));
                 packet += messageText;
                 displayShow("<<< TX >>>", "", packet,100);
-                LoRa_Utils::sendNewPacket(packet);       
+                LoRa_Utils::sendNewPacket(packet);
                 messageText = "";
                 menuDisplay = 63;
             } else if (key == 8) {
@@ -788,7 +788,7 @@ namespace KEYBOARD_Utils {
                 if (c != 0) {
                     //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
                     keyboardTime = millis();
-                    processPressedKey(c);      
+                    processPressedKey(c);
                 }
             }
         }
