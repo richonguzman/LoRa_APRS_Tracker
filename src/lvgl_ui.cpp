@@ -145,17 +145,15 @@ uint32_t last_tick = 0;  // Non-static: accessed by UISettings for blocking loop
 // Track if LVGL display is already initialized
 static bool lvgl_display_initialized = false;
 
-// Display flush callback — uses DMA for non-blocking SPI transfer via LovyanGFX.
-// pushImageDMA() queues the pixel data for DMA transfer ; LovyanGFX waits for any
-// previous DMA to finish before starting, so the buffer is safe to reuse after return.
-// Note: no setSwapBytes() — LVGL already produces pixels in the byte order expected
-// by the ST7789 panel (matching the original pushImage() behavior).
+// Display flush callback
+// Note: pushImageDMA() cannot be used here because LVGL draw buffers are in PSRAM
+// (ps_malloc), and ESP32 SPI DMA requires source buffers in internal SRAM.
 static void disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
                           lv_color_t *color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
     if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
-        tft.pushImageDMA(area->x1, area->y1, w, h, (uint16_t *)color_p);
+        tft.pushImage(area->x1, area->y1, w, h, (uint16_t *)color_p);
         xSemaphoreGiveRecursive(spiMutex);
     }
     lv_disp_flush_ready(drv);
@@ -265,9 +263,8 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     if (screenBrightness > BRIGHT_MAX)
       screenBrightness = BRIGHT_MAX;
 
-    // Init TFT with DMA support (mirrors IceNav-v3 tft.cpp::initTFT)
+    // Init TFT
     tft.init();
-    tft.initDMA();             // Enable SPI DMA for pushImageDMA() calls
     tft.setRotation(1);
     tft.fillScreen(TFT_BLACK); // Clear to black before showing anything
 
@@ -462,10 +459,9 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       analogWrite(BOARD_BL_PIN, screenBrightness);
 #endif
 
-      // Re-init TFT for LVGL with DMA support
+      // Re-init TFT for LVGL
       tft.init();
-      tft.initDMA();         // Enable SPI DMA for pushImageDMA() calls
-      tft.setRotation(1);    // Landscape, keyboard at bottom
+      tft.setRotation(1); // Landscape, keyboard at bottom
 
       // Initialize LVGL
       lv_init();
