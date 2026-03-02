@@ -406,7 +406,7 @@ namespace UIMapManager {
             }
         }
 
-        // Callsign text with semi-transparent background below symbol
+       /* // Callsign text with semi-transparent background below symbol
         if (callsign) {
             int textY = canvasY + SYMBOL_SIZE / 2 + 2;
             if (textY >= 0 && textY < MAP_CANVAS_HEIGHT) {
@@ -431,6 +431,46 @@ namespace UIMapManager {
                 label_dsc.color = lv_color_hex(0x332221);
                 label_dsc.font = &lv_font_montserrat_12;
                 lv_canvas_draw_text(map_canvas, textX + 2, textY + 1, textW, &label_dsc, callsign);
+            }
+        }*/
+       
+       // Callsign text with semi-transparent background below symbol
+        if (callsign) {
+            int textY = canvasY + SYMBOL_SIZE / 2 + 2;
+            if (textY >= 0 && textY < MAP_CANVAS_HEIGHT) {
+                
+                // 1. Calculate the EXACT text size in pixels based on the font
+                lv_point_t text_size;
+                lv_txt_get_size(&text_size, callsign, &lv_font_montserrat_12, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+
+                // 2. Define margins (padding) around the text
+                int padding_x = 8; // 4 pixels on the left, 4 pixels on the right
+                int padding_y = 4; // 2 pixels on top, 2 pixels on the bottom
+
+                // 3. Calculate background dimensions based on text size + padding
+                int textW = text_size.x + padding_x;
+                int textH = text_size.y + padding_y; 
+                
+                // Center the background horizontally relative to the symbol
+                int textX = canvasX - textW / 2;
+                if (textX < 0) textX = 0;
+
+                // Background rectangle (light gray, fully opaque to avoid accumulation on refresh)
+                lv_draw_rect_dsc_t bg_dsc;
+                lv_draw_rect_dsc_init(&bg_dsc);
+                bg_dsc.bg_color = lv_color_hex(0xDDDDDD);
+                bg_dsc.bg_opa = LV_OPA_COVER;
+                bg_dsc.radius = 2;
+                lv_canvas_draw_rect(map_canvas, textX, textY, textW, textH, &bg_dsc);
+
+                // Text on top
+                lv_draw_label_dsc_t label_dsc;
+                lv_draw_label_dsc_init(&label_dsc);
+                label_dsc.color = lv_color_hex(0x332221);
+                label_dsc.font = &lv_font_montserrat_12;
+
+                // 4. Draw the text offset by half the padding to center it inside the background box
+                lv_canvas_draw_text(map_canvas, textX + (padding_x / 2), textY + (padding_y / 2), textW, &label_dsc, callsign);
             }
         }
 
