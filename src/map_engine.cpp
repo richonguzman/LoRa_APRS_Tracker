@@ -787,7 +787,8 @@ namespace MapEngine {
             bool readOk = false;
             if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
                 slot->file.seek(baseOff);
-                readOk = (slot->file.read((uint8_t*)npkRowBuf, readSize) == readSize);
+                // Use DMA-chunked read to reduce SPI transaction overhead
+                readOk = (STORAGE_Utils::readChunked(slot->file, (uint8_t*)npkRowBuf, readSize) == readSize);
                 xSemaphoreGiveRecursive(spiMutex);
             }
             if (!readOk) return false;
@@ -848,7 +849,8 @@ namespace MapEngine {
         bool ok = false;
         if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
             slot->file.seek(entry->offset);
-            ok = (slot->file.read(*outData, entry->size) == entry->size);
+            // Use DMA-chunked read to reduce SPI transaction overhead for large tile data
+            ok = (STORAGE_Utils::readChunked(slot->file, *outData, entry->size) == entry->size);
             xSemaphoreGiveRecursive(spiMutex);
         }
 

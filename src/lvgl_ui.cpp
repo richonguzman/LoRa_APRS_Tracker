@@ -145,13 +145,17 @@ uint32_t last_tick = 0;  // Non-static: accessed by UISettings for blocking loop
 // Track if LVGL display is already initialized
 static bool lvgl_display_initialized = false;
 
-// Display flush callback
-static void disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
-                          lv_color_t *color_p) {
+// Display flush callback — uses DMA (non-blocking) when available via LovyanGFX
+// LovyanGFX manages DMA completion internally; we signal LVGL immediately after
+// queuing the transfer since the buffer remains valid until the next flush call.
+static void IRAM_ATTR disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
+                                    lv_color_t *color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
     if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
-        tft.pushImage(area->x1, area->y1, w, h, (uint16_t *)color_p);
+        tft.setSwapBytes(true);
+        tft.pushImageDMA(area->x1, area->y1, w, h, (uint16_t *)color_p);
+        tft.setSwapBytes(false);
         xSemaphoreGiveRecursive(spiMutex);
     }
     lv_disp_flush_ready(drv);
@@ -261,8 +265,9 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     if (screenBrightness > BRIGHT_MAX)
       screenBrightness = BRIGHT_MAX;
 
-    // Init TFT
+    // Init TFT with DMA support (mirrors IceNav-v3 tft.cpp::initTFT)
     tft.init();
+    tft.initDMA();             // Enable SPI DMA for pushImageDMA() calls
     tft.setRotation(1);
     tft.fillScreen(TFT_BLACK); // Clear to black before showing anything
 
@@ -457,9 +462,10 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       analogWrite(BOARD_BL_PIN, screenBrightness);
 #endif
 
-      // Re-init TFT for LVGL
+      // Re-init TFT for LVGL with DMA support
       tft.init();
-      tft.setRotation(1); // Landscape, keyboard at bottom
+      tft.initDMA();         // Enable SPI DMA for pushImageDMA() calls
+      tft.setRotation(1);    // Landscape, keyboard at bottom
 
       // Initialize LVGL
       lv_init();

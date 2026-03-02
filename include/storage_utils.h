@@ -85,6 +85,10 @@ namespace STORAGE_Utils {
     // File operations
     bool    fileExists(const String& path);
     File    openFile(const String& path, const char* mode);
+    // Chunked DMA read: reads 'size' bytes from an open SD File into 'dest'
+    // using a 32 KB DMA-aligned internal buffer. Reduces SPI transaction overhead
+    // for large files (map tiles). Falls back to file.read() if DMA buffer unavailable.
+    size_t  readChunked(File& file, uint8_t* dest, size_t size);
     bool    removeFile(const String& path);
     bool    mkdir(const String& path);
 
