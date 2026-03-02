@@ -34,14 +34,12 @@
 #include "station_utils.h"
 #include "gps_utils.h"
 #include "display.h"
-#include "logger.h"
 #ifdef USE_LVGL_UI
 #include "lvgl_ui.h"
 #endif
 
 
 extern Beacon               *currentBeacon;
-extern logging::Logger      logger;
 extern Configuration        Config;
 
 extern int                  menuDisplay;

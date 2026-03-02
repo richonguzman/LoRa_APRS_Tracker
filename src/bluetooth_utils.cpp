@@ -26,13 +26,9 @@ static const char *TAG = "Bluetooth";
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "display.h"
-#include "logger.h"
-
-
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern BluetoothSerial  SerialBT;
-extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 extern bool             bluetoothConnected;
 extern bool             bluetoothActive;

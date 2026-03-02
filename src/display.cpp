@@ -19,7 +19,6 @@
 #include <esp_log.h>
 static const char *TAG = "Display";
 
-#include <logger.h>
 #include <Wire.h>
 #include "custom_characters.h"
 #include "custom_colors.h"
@@ -96,9 +95,6 @@ extern bool             bluetoothConnected;
 int         lastMenuDisplay         = 0;
 uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of screens
 bool        symbolAvailable         = true;
-
-extern logging::Logger logger;
-
 
 #if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
     void drawButton(int xPos, int yPos, int wide, int height, String buttonText, int color) {

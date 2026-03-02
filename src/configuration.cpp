@@ -22,11 +22,7 @@
 #include "configuration.h"
 #include "board_pinout.h"
 #include "display.h"
-#include "logger.h"
-
 static const char *TAG = "Config";
-
-extern logging::Logger logger;
 
 bool Configuration::writeFile() {
 

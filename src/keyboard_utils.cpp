@@ -21,7 +21,6 @@
 
 static const char *TAG = "Keyboard";
 #include <TinyGPS++.h>
-#include <logger.h>
 #include <Wire.h>
 #include "keyboard_utils.h"
 #include "winlink_utils.h"
@@ -42,7 +41,6 @@ static const char *TAG = "Keyboard";
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern TinyGPSPlus      gps;
-extern logging::Logger  logger;
 extern bool             sendUpdate;
 extern int              menuDisplay;
 extern uint32_t         menuTime;

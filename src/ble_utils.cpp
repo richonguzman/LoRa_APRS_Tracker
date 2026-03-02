@@ -24,7 +24,6 @@
 #include "kiss_utils.h"
 #include "ble_utils.h"
 #include "display.h"
-#include "logger.h"
 #ifdef USE_LVGL_UI
 #include "lvgl_ui.h"
 #endif
@@ -49,7 +48,6 @@ BLECharacteristic       *pCharacteristicRx;
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
-extern logging::Logger  logger;
 extern bool             bluetoothConnected;
 extern bool             bluetoothActive;
 

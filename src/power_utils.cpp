@@ -28,9 +28,6 @@
 #include "ble_utils.h"
 #include "gps_utils.h"
 #include "display.h"
-#include "logger.h"
-
-
 #if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_WIRELESS_TRACKER)
     #define I2C_SDA 21
     #define I2C_SCL 22
@@ -53,7 +50,6 @@
 #endif
 
 extern  Configuration                   Config;
-extern  logging::Logger                 logger;
 extern  bool                            transmitFlag;
 extern  bool                            gpsIsActive;
 

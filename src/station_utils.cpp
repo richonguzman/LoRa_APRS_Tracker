@@ -34,7 +34,6 @@ static const char *TAG = "Station";
 #include "ble_utils.h"
 #include "wx_utils.h"
 #include "display.h"
-#include "logger.h"
 #ifdef USE_LVGL_UI
 #include "lvgl_ui.h"
 #include "ui_map_manager.h"
@@ -43,7 +42,6 @@ static const char *TAG = "Station";
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
-extern logging::Logger      logger;
 extern TinyGPSPlus          gps;
 extern uint8_t              myBeaconsIndex;
 extern uint8_t              loraIndex;

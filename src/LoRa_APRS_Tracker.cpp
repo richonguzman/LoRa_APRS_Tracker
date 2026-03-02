@@ -45,7 +45,6 @@ static const char *TAG = "Main";
 #include <esp_task_wdt.h>
 #include <TinyGPS++.h>
 #include <Arduino.h>
-#include <logger.h>
 #include <WiFi.h>
 #include "smartbeacon_utils.h"
 #include "bluetooth_utils.h"
@@ -138,7 +137,6 @@ uint32_t    lastGPSTime             = 0;
 
 APRSPacket                          lastReceivedPacket;
 
-logging::Logger                     logger;
 //#define DEBUG
 
 extern bool gpsIsActive;
@@ -154,10 +152,6 @@ void setup() {
     #if defined(USE_LVGL_UI) && defined(BOARD_BL_PIN)
         pinMode(BOARD_BL_PIN, OUTPUT);
         digitalWrite(BOARD_BL_PIN, LOW);
-    #endif
-
-    #ifndef DEBUG
-        logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
 
     POWER_Utils::setup();

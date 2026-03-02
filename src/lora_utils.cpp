@@ -18,7 +18,6 @@
 
 #include <esp_log.h>
 #include <RadioLib.h>
-#include <logger.h>
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
@@ -31,7 +30,6 @@
 #include "lvgl_ui.h"
 #endif
 
-extern logging::Logger  logger;
 extern Configuration    Config;
 extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;

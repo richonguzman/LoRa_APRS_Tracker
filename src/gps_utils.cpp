@@ -29,9 +29,6 @@
 #include "sleep_utils.h"
 #include "gps_utils.h"
 #include "display.h"
-#include "logger.h"
-
-
 #ifdef GPS_BAUDRATE
     #define GPS_BAUD    GPS_BAUDRATE
 #else
@@ -43,7 +40,6 @@ extern Configuration        Config;
 extern HardwareSerial       gpsSerial;
 extern TinyGPSPlus          gps;
 extern Beacon               *currentBeacon;
-extern logging::Logger      logger;
 extern bool                 sendUpdate;
 extern bool		            sendStandingUpdate;
 

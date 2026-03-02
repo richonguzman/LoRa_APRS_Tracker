@@ -20,7 +20,6 @@
 static const char *TAG = "Utils";
 
 #include <APRSPacketLib.h>
-#include <logger.h>
 #include <Wire.h>
 #include "configuration.h"
 #include "board_pinout.h"
@@ -30,8 +29,6 @@ static const char *TAG = "Utils";
 
 extern Beacon                   *currentBeacon;
 extern Configuration            Config;
-extern logging::Logger          logger;
-
 extern uint32_t                 lastTx;
 extern uint32_t                 lastTxTime;
 

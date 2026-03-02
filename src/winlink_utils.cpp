@@ -23,12 +23,8 @@ static const char *TAG = "Winlink";
 #include "configuration.h"
 #include "msg_utils.h"
 #include "display.h"
-#include "logger.h"
-
-
 extern      Configuration           Config;
 extern      int                     menuDisplay;
-extern      logging::Logger         logger;
 
 uint8_t     winlinkStatus           = 0;
 String      winlinkMailNumber       = "_?";

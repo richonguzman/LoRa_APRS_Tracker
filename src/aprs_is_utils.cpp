@@ -20,7 +20,6 @@
 static const char *TAG = "APRS_IS";
 
 #include <WiFi.h>
-#include <logger.h>
 #include <esp_task_wdt.h>
 #include "aprs_is_utils.h"
 #include "configuration.h"
@@ -30,8 +29,6 @@ static const char *TAG = "APRS_IS";
 extern Configuration    Config;
 extern Beacon*          currentBeacon;
 extern String           versionNumber;
-extern logging::Logger  logger;
-
 WiFiClient              aprsIsClient;
 bool                    aprsIsConnected     = false;
 bool                    passcodeValid       = false;
