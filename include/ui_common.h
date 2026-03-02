@@ -13,8 +13,8 @@
 // Version Info
 // =============================================================================
 
-#define UI_VERSION "2.7.2+dev"
-#define UI_VERSION_DATE "2026-03-01"
+#define UI_VERSION "2.7.3+dev"
+#define UI_VERSION_DATE "2026-03-02"
 
 // =============================================================================
 // Display Constants
