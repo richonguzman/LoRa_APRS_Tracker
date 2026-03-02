@@ -76,7 +76,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceName = "";
         bleNeedToReadName = true;
         bleLastActivityTime = millis();  // Reset eco mode timer
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
+        ESP_LOGI(TAG, "%s", "BLE Client Connected");
     }
 
     void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
@@ -87,7 +87,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceName = "";  // Will be read later
         bleNeedToReadName = true;  // Signal to read name in loop
         bleLastActivityTime = millis();  // Reset eco mode timer
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
+        ESP_LOGI(TAG, "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
     void onDisconnect(NimBLEServer* pServer) {
@@ -95,7 +95,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceAddr = "";
         bleConnectedDeviceName = "";
         bleNeedToReadName = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected");
+        ESP_LOGI(TAG, "%s", "BLE client Disconnected");
         pServer->startAdvertising();
     }
 
@@ -104,7 +104,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceAddr = "";
         bleConnectedDeviceName = "";
         bleNeedToReadName = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "BLE client Disconnected (reason: %d)", reason);
+        ESP_LOGI(TAG, "BLE client Disconnected (reason: %d)", reason);
         pServer->startAdvertising();
     }
 };
@@ -208,16 +208,16 @@ namespace BLE_Utils {
             pServer->getAdvertising()->setMinPreferred(0x06);
             pServer->getAdvertising()->setMaxPreferred(0x0C);
             pAdvertising->start();
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE", "%s", "Waiting for BLE central to connect...");
+            ESP_LOGD(TAG, "%s", "Waiting for BLE central to connect...");
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "Failed to create BLE service");
+            ESP_LOGE(TAG, "Failed to create BLE service");
         }
     }
 
     void sendToLoRa() {
         if (!shouldSendBLEtoLoRa) return;
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
+        ESP_LOGD(TAG, "Tx %s", BLEToLoRaPacket.c_str());
         #ifdef USE_LVGL_UI
             LVGL_UI::showTxPacket(BLEToLoRaPacket.c_str());
         #else
@@ -259,7 +259,7 @@ namespace BLE_Utils {
 
     void sendToPhone(const String& packet) {
         if (!packet.isEmpty() && bluetoothConnected) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Rx", "%s", packet.c_str());
+            ESP_LOGD(TAG, "Rx %s", packet.c_str());
             String receivedPacketString = "";
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];
             txToPhoneOverBLE(receivedPacketString);
@@ -298,7 +298,7 @@ namespace BLE_Utils {
             bleSleeping = false;
             bleLastActivityTime = millis();
             setup();
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE restarted");
+            ESP_LOGI(TAG, "Eco mode: BLE restarted");
             return;
         }
         bleWakeRequested = false;
@@ -311,7 +311,7 @@ namespace BLE_Utils {
         if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
             bleSleeping = true;
             BLEDevice::deinit();
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
+            ESP_LOGI(TAG, "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
             ESP_LOGI(TAG, "Eco mode: BLE stopped (5 min timeout)");
         }
     }

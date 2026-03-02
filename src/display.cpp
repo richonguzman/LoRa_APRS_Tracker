@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "Display";
+
 #include <logger.h>
 #include <Wire.h>
 #include "custom_characters.h"
@@ -282,12 +285,12 @@ void displaySetup() {
         Wire.begin(OLED_SDA, OLED_SCL);
         #ifdef ssd1306
             if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306", "allocation failed!");
+                ESP_LOGE(TAG, "SSD1306 allocation failed!");
                 while (true) {}
             }
         #else
             if (!display.begin(0x3c, false)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
+                ESP_LOGE(TAG, "SH1106 allocation failed!");
                 while (true) {}
             }
         #endif
@@ -592,8 +595,8 @@ void startupScreen(uint8_t index, const String& version) {
         case 3: workingFreq += "US]"; break;
     }
     displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
+    ESP_LOGI(TAG, "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
+    ESP_LOGI(TAG, "Version: %s", version);
 }
 
 String fillMessageLine(const String& line, const int& length) {

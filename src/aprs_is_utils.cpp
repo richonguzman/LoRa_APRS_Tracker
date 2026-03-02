@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "APRS_IS";
+
 #include <WiFi.h>
 #include <logger.h>
 #include <esp_task_wdt.h>
@@ -50,32 +53,32 @@ namespace APRS_IS_Utils {
 
         // Resolve DNS once, then reuse cached IP to avoid blocking
         if (!dnsResolved) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Resolving %s ...",
+            ESP_LOGI(TAG, "Resolving %s ...",
                        Config.aprs_is.server.c_str());
             if (WiFi.hostByName(Config.aprs_is.server.c_str(), cachedServerIP)) {
                 dnsResolved = true;
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Resolved to %s",
+                ESP_LOGI(TAG, "Resolved to %s",
                            cachedServerIP.toString().c_str());
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "DNS failed for %s",
+                ESP_LOGW(TAG, "DNS failed for %s",
                            Config.aprs_is.server.c_str());
                 lastConnectionTry = millis();
                 return;
             }
         }
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Connecting to %s:%d",
+        ESP_LOGI(TAG, "Connecting to %s:%d",
                    cachedServerIP.toString().c_str(), Config.aprs_is.port);
 
         aprsIsClient.setTimeout(2);  // 2 second TCP timeout
 
         if (!aprsIsClient.connect(cachedServerIP, Config.aprs_is.port)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "Connection failed");
+            ESP_LOGW(TAG, "Connection failed");
             aprsIsClient.stop();
             aprsIsConnected = false;
             passcodeValid = false;
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Connected to server");
+            ESP_LOGI(TAG, "Connected to server");
 
             // Send authentication
             String aprsAuth = "user ";
@@ -86,7 +89,7 @@ namespace APRS_IS_Utils {
             aprsAuth += versionNumber;
 
             aprsIsClient.print(aprsAuth + "\r\n");
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "APRS-IS", "Auth sent: %s", aprsAuth.c_str());
+            ESP_LOGD(TAG, "Auth sent: %s", aprsAuth.c_str());
 
             // Wait for server response to validate passcode
             uint32_t startWait = millis();
@@ -95,17 +98,17 @@ namespace APRS_IS_Utils {
                 if (aprsIsClient.available()) {
                     String response = aprsIsClient.readStringUntil('\n');
                     response.trim();
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "APRS-IS", "Server: %s", response.c_str());
+                    ESP_LOGD(TAG, "Server: %s", response.c_str());
 
                     if (response.indexOf("verified") != -1 && response.indexOf("unverified") == -1) {
                         passcodeValid = true;
                         aprsIsConnected = true;
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Passcode verified");
+                        ESP_LOGI(TAG, "Passcode verified");
                         break;
                     } else if (response.indexOf("unverified") != -1) {
                         passcodeValid = false;
                         aprsIsConnected = true;  // Connected but read-only
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "Passcode invalid - read-only mode");
+                        ESP_LOGW(TAG, "Passcode invalid - read-only mode");
                         break;
                     }
                 }
@@ -117,17 +120,17 @@ namespace APRS_IS_Utils {
 
     void upload(const String& packet) {
         if (!aprsIsConnected || !aprsIsClient.connected()) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "Not connected, cannot upload");
+            ESP_LOGW(TAG, "Not connected, cannot upload");
             return;
         }
 
         if (!passcodeValid) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "APRS-IS", "Passcode invalid, cannot upload");
+            ESP_LOGW(TAG, "Passcode invalid, cannot upload");
             return;
         }
 
         aprsIsClient.print(packet + "\r\n");
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Uploaded: %s", packet.c_str());
+        ESP_LOGI(TAG, "Uploaded: %s", packet.c_str());
     }
 
     bool isConnected() {
@@ -145,7 +148,7 @@ namespace APRS_IS_Utils {
                 aprsIsConnected = false;
                 passcodeValid = false;
                 dnsResolved = false;  // Re-resolve DNS on next WiFi connection
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Disconnected (WiFi lost)");
+                ESP_LOGI(TAG, "Disconnected (WiFi lost)");
             }
             return;
         }
@@ -154,7 +157,7 @@ namespace APRS_IS_Utils {
         if (aprsIsConnected && !aprsIsClient.connected()) {
             aprsIsConnected = false;
             passcodeValid = false;
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "APRS-IS", "Connection lost");
+            ESP_LOGI(TAG, "Connection lost");
         }
 
         // Try to reconnect every 30 seconds if not connected

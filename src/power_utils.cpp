@@ -240,7 +240,7 @@ namespace POWER_Utils {
                 pinMode(Config.notification.buzzerPinVcc, OUTPUT);
                 if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
             } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Buzzer Pins not defined");
+                ESP_LOGW(TAG, "Buzzer Pins not defined");
                 while (1);
             }
         #endif
@@ -248,21 +248,21 @@ namespace POWER_Utils {
         if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
             pinMode(Config.notification.ledTxPin, OUTPUT);
         } else if (Config.notification.ledTx && Config.notification.ledTxPin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Tx Pin not defined");
+            ESP_LOGW(TAG, "Led Tx Pin not defined");
             while (1);
         }
 
         if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
             pinMode(Config.notification.ledMessagePin, OUTPUT);
         } else if (Config.notification.ledMessage && Config.notification.ledMessagePin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Message Pin not defined");
+            ESP_LOGW(TAG, "Led Message Pin not defined");
             while (1);
         }
 
         if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
             pinMode(Config.notification.ledFlashlightPin, OUTPUT);
         } else if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Flashlight Pin not defined");
+            ESP_LOGW(TAG, "Led Flashlight Pin not defined");
             while (1);
         }
 
@@ -270,7 +270,7 @@ namespace POWER_Utils {
             pinMode(Config.ptt.io_pin, OUTPUT);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         } else if (Config.ptt.active && Config.ptt.io_pin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "PTT Pin not defined");
+            ESP_LOGW(TAG, "PTT Pin not defined");
             while (1);
         }
     }
@@ -336,9 +336,9 @@ namespace POWER_Utils {
         #ifdef HAS_AXP192
             Wire.begin(SDA, SCL);
             if (begin(Wire)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP192", "init done!");
+                ESP_LOGI(TAG, "init done!");
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP192", "init failed!");
+                ESP_LOGE(TAG, "init failed!");
             }
             activateLoRa();
             if (disableGPS) {
@@ -364,9 +364,9 @@ namespace POWER_Utils {
                 if (begin(Wire)) beginStatus = true;
             #endif
             if (beginStatus) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
+                ESP_LOGI(TAG, "init done!");
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
+                ESP_LOGE(TAG, "init failed!");
             }
             activateLoRa();
             if (disableGPS) {
@@ -431,10 +431,10 @@ namespace POWER_Utils {
     void shutdown() {
         // Disable watchdog before shutdown
         esp_task_wdt_delete(NULL);
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog disabled for shutdown");
+        ESP_LOGI(TAG, "Watchdog disabled for shutdown");
 
         delay(3000);
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
+        ESP_LOGW(TAG, "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
             displayToggle(false);

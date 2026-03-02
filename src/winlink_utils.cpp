@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "Winlink";
+
 #include "winlink_utils.h"
 #include "configuration.h"
 #include "msg_utils.h"
@@ -64,7 +67,7 @@ namespace WINLINK_Utils {
     }
 
     void login() {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Start Login");
+        ESP_LOGI(TAG, "---> Start Login");
         displayShow(" WINLINK", "" , "Login Initiation ...", "", "" , "<Back");
         if (winlinkStatus == 5) {
             menuDisplay = 5000;

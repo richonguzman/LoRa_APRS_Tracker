@@ -18,7 +18,6 @@
 
 #include <esp_log.h>
 #include <TinyGPS++.h>
-#include <logger.h>
 
 static const char *TAG = "WX";
 #ifdef LIGHTTRACKER_PLUS_1_0
@@ -33,7 +32,6 @@ static const char *TAG = "WX";
 #define CORRECTION_FACTOR (8.2296)      // for meters
 
 extern Configuration    Config;
-extern logging::Logger  logger;
 extern TinyGPSPlus      gps;
 
 extern uint8_t          wxModuleAddress;
@@ -64,29 +62,29 @@ namespace WX_Utils {
         if (Config.telemetry.active) {
             #ifdef LIGHTTRACKER_PLUS_1_0
                 if (!shtc3.begin()) {
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor not found");
+                    ESP_LOGI(TAG, "SHTC3 sensor not found");
                     while (1) delay(1);
                 }
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " SHTC3 sensor found");
+                ESP_LOGI(TAG, "SHTC3 sensor found");
                 wxModuleFound = true;
                 wxModuleType = 4;
             #else
                 if (wxModuleAddress != 0x00) {
                     #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
                         if (bme280.begin(wxModuleAddress, &Wire1)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
+                            ESP_LOGI(TAG, "BME280 sensor found");
                             wxModuleType = 1;
                             wxModuleFound = true;
                         } 
                     #else
                         if (bme280.begin(wxModuleAddress)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 sensor found");
+                            ESP_LOGI(TAG, "BME280 sensor found");
                             wxModuleType = 1;
                             wxModuleFound = true;
                         }
                         if (!wxModuleFound) {
                             if (bme680.begin(wxModuleAddress)) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME680 sensor found");
+                                ESP_LOGI(TAG, "BME680 sensor found");
                                 wxModuleType = 3;
                                 wxModuleFound = true;
                             }
@@ -94,14 +92,14 @@ namespace WX_Utils {
                     #endif
                     if (!wxModuleFound) {
                         if (bmp280.begin(wxModuleAddress)) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP280 sensor found");
+                            ESP_LOGI(TAG, "BMP280 sensor found");
                             wxModuleType = 2;
                             wxModuleFound = true;
                         }
                     }
                     if (!wxModuleFound) {
                         displayShow("ERROR", "BME/BMP sensor active", "but no sensor found...", 2000);
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "BME", " BME/BMP sensor Active in config but not found! Check Wiring");
+                        ESP_LOGW(TAG, "BME/BMP sensor Active in config but not found! Check Wiring");
                     } else {
                         switch (wxModuleType) {
                             case 1:
@@ -111,7 +109,7 @@ namespace WX_Utils {
                                             Adafruit_BME280::SAMPLING_X1,
                                             Adafruit_BME280::FILTER_OFF
                                             );
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BME280 Module init done!");
+                                ESP_LOGI(TAG, "BME280 Module init done!");
                                 break;
                             case 2:
                                 bmp280.setSampling(Adafruit_BMP280::MODE_FORCED,
@@ -119,7 +117,7 @@ namespace WX_Utils {
                                             Adafruit_BMP280::SAMPLING_X1,
                                             Adafruit_BMP280::FILTER_OFF
                                             ); 
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BMP", " BMP280 Module init done!");
+                                ESP_LOGI(TAG, "BMP280 Module init done!");
                                 break;
                             case 3:
                                 #if !defined(HELTEC_V3_GPS) && !defined(HELTEC_V3_TNC) && !defined(HELTEC_V3_2_GPS) && !defined(HELTEC_V3_2_TNC)
@@ -127,7 +125,7 @@ namespace WX_Utils {
                                     bme680.setHumidityOversampling(BME680_OS_1X);
                                     bme680.setPressureOversampling(BME680_OS_1X);
                                     bme680.setIIRFilterSize(BME680_FILTER_SIZE_0);
-                                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BME", " BMP680 Module init done!");
+                                    ESP_LOGI(TAG, "BME680 Module init done!");
                                 #endif
                                 break;
                         }

@@ -167,14 +167,14 @@ namespace MSG_Utils {
         // Ensure /conversations directory exists
         if (!STORAGE_Utils::fileExists("/conversations")) {
             bool created = STORAGE_Utils::mkdir("/conversations");
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Created /conversations directory: %s", created ? "OK" : "FAILED");
+            ESP_LOGI(TAG, "Created /conversations directory: %s", created ? "OK" : "FAILED");
             if (!created) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Failed to create /conversations directory");
+                ESP_LOGE(TAG, "Failed to create /conversations directory");
                 return;
             }
             // Verify directory was created
             if (!STORAGE_Utils::fileExists("/conversations")) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Directory /conversations not found after creation");
+                ESP_LOGE(TAG, "Directory /conversations not found after creation");
                 return;
             }
         }
@@ -207,7 +207,7 @@ namespace MSG_Utils {
                         String lastMessage = lastLine.substring(secondComma + 1);
 
                         if (lastDirection == direction && lastMessage == message) {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Duplicate message skipped for %s", callsign.c_str());
+                            ESP_LOGD(TAG, "Duplicate message skipped for %s", callsign.c_str());
                             return;  // Skip duplicate
                         }
                     }
@@ -215,7 +215,7 @@ namespace MSG_Utils {
             }
         }
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Saving to: %s", filename.c_str());
+        ESP_LOGD(TAG, "Saving to: %s", filename.c_str());
 
         // Build message line: timestamp,direction,content
         uint32_t timestamp = millis() / 1000;  // Uptime in seconds
@@ -224,13 +224,13 @@ namespace MSG_Utils {
         // Use "a" mode (append) which creates file if it doesn't exist
         File conversationFile = STORAGE_Utils::openFile(filename, "a");
         if (!conversationFile) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "MSG", "Failed to open conversation file: %s", filename.c_str());
+            ESP_LOGE(TAG, "Failed to open conversation file: %s", filename.c_str());
             return;
         }
 
         conversationFile.println(line);
         conversationFile.close();
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Saved %s message to %s", direction.c_str(), filename.c_str());
+        ESP_LOGI(TAG, "Saved %s message to %s", direction.c_str(), filename.c_str());
     }
 
     // Get list of callsigns with active conversations, sorted by last message time
@@ -320,7 +320,7 @@ namespace MSG_Utils {
     void loadNumMessages() {
         File fileToReadAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", "r");
         if(!fileToReadAPRS) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "No APRS messages file");
+            ESP_LOGD(TAG, "No APRS messages file");
             numAPRSMessages = 0;
         } else {
             std::vector<String> v1;
@@ -330,11 +330,11 @@ namespace MSG_Utils {
             fileToReadAPRS.close();
             numAPRSMessages = v1.size();
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "APRS Messages: %d (%s)", numAPRSMessages, STORAGE_Utils::getStorageType().c_str());
+        ESP_LOGD(TAG, "APRS Messages: %d (%s)", numAPRSMessages, STORAGE_Utils::getStorageType().c_str());
 
         File fileToReadWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", "r");
         if(!fileToReadWLNK) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "No Winlink mails file");
+            ESP_LOGD(TAG, "No Winlink mails file");
             numWLNKMessages = 0;
         } else {
             std::vector<String> v2;
@@ -344,7 +344,7 @@ namespace MSG_Utils {
             fileToReadWLNK.close();
             numWLNKMessages = v2.size();
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Winlink Mails: %d", numWLNKMessages);
+        ESP_LOGD(TAG, "Winlink Mails: %d", numWLNKMessages);
     }
 
     void loadMessagesFromMemory(uint8_t typeOfMessage) {
@@ -432,7 +432,7 @@ namespace MSG_Utils {
             loadedWLNKMails.clear();
         }
         if (Config.notification.ledMessage) messageLed = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted messages file type %d", typeOfFile);
+        ESP_LOGI(TAG, "Deleted messages file type %d", typeOfFile);
     }
 
     bool deleteMessageByIndex(uint8_t typeOfMessage, int index) {
@@ -456,7 +456,7 @@ namespace MSG_Utils {
         }
 
         if (index < 0 || index >= (int)messages->size()) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Invalid message index %d", index);
+            ESP_LOGW(TAG, "Invalid message index %d", index);
             return false;
         }
 
@@ -477,7 +477,7 @@ namespace MSG_Utils {
             }
         }
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted message %d, %d remaining", index, messages->size());
+        ESP_LOGI(TAG, "Deleted message %d, %d remaining", index, messages->size());
         return true;
     }
 
@@ -486,7 +486,7 @@ namespace MSG_Utils {
         String filename = "/conversations/" + callsign + ".txt";
 
         if (!STORAGE_Utils::fileExists(filename)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Conversation file not found for %s", callsign.c_str());
+            ESP_LOGW(TAG, "Conversation file not found for %s", callsign.c_str());
             return false;
         }
 
@@ -494,7 +494,7 @@ namespace MSG_Utils {
         std::vector<String> messages = getMessagesForContact(callsign);
 
         if (index < 0 || index >= (int)messages.size()) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "MSG", "Invalid message index %d for %s", index, callsign.c_str());
+            ESP_LOGW(TAG, "Invalid message index %d for %s", index, callsign.c_str());
             return false;
         }
 
@@ -514,7 +514,7 @@ namespace MSG_Utils {
             }
         }
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Deleted message %d from conversation with %s, %d remaining",
+        ESP_LOGI(TAG, "Deleted message %d from conversation with %s, %d remaining",
                    index, callsign.c_str(), messages.size());
         return true;
     }
@@ -525,7 +525,7 @@ namespace MSG_Utils {
 
         // Check for duplicate using 30-second window
         if (isDuplicateMessage(station, message)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Duplicate message ignored from %s", station.c_str());
+            ESP_LOGD(TAG, "Duplicate message ignored from %s", station.c_str());
             return;
         }
 
@@ -545,7 +545,7 @@ namespace MSG_Utils {
             // Also save to per-contact conversation file
             saveToConversation(station, message, false);  // false = incoming
 
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "APRS msg saved to %s", STORAGE_Utils::getStorageType().c_str());
+            ESP_LOGI(TAG, "APRS msg saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
@@ -563,7 +563,7 @@ namespace MSG_Utils {
                 Contact* existingContact = STORAGE_Utils::findContact(station);
                 if (existingContact == nullptr) {
                     // Unknown contact - show popup to ask user
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "New contact detected: %s", station.c_str());
+                    ESP_LOGI(TAG, "New contact detected: %s", station.c_str());
                     LVGL_UI::showAddContactPrompt(station.c_str());
                 }
             }
@@ -579,7 +579,7 @@ namespace MSG_Utils {
             }
             numWLNKMessages++;
             fileToAppendWLNK.close();
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "MSG", "Winlink mail saved to %s", STORAGE_Utils::getStorageType().c_str());
+            ESP_LOGI(TAG, "Winlink mail saved to %s", STORAGE_Utils::getStorageType().c_str());
             if (Config.notification.ledMessage) {
                 messageLed = true;
             }
@@ -602,7 +602,7 @@ namespace MSG_Utils {
         // Save outgoing message to conversation file (skip ACKs)
         if (textMessage.indexOf("ack") != 0) {
             saveToConversation(station, textMessage, true);  // true = outgoing
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "MSG", "Saved outgoing message to %s", station.c_str());
+            ESP_LOGD(TAG, "Saved outgoing message to %s", station.c_str());
         }
     }
 
@@ -758,7 +758,7 @@ namespace MSG_Utils {
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
                         String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
                         if (digipeatedPacket == "X") {
-                            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDEn-N)");
+                            ESP_LOGW(TAG, "Packet won't be Repeated (Missing WIDEn-N)");
                         } else {
                             delay(500);
                             LoRa_Utils::sendNewPacket(digipeatedPacket);
@@ -827,30 +827,30 @@ namespace MSG_Utils {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
                                 }                                    
                             } else if (winlinkStatus == 1 && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Waiting Challenge");
+                                ESP_LOGD(TAG, "---> Waiting Challenge");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 2;
                                 menuDisplay = 500;
                             } else if ((winlinkStatus >= 1 || winlinkStatus <= 3) &&lastReceivedPacket.payload.indexOf("Login [") == 0) {
                                 WINLINK_Utils::processWinlinkChallenge(lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("[")+1,lastReceivedPacket.payload.indexOf("]")));
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Challenge Received/Processed/Sent");
+                                ESP_LOGI(TAG, "---> Challenge Received/Processed/Sent");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 3;
                                 menuDisplay = 501;
                             } else if (winlinkStatus == 3 && ackNumberRequest == lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("ack") + 3)) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Winlink","---> Challenge Ack Received");
+                                ESP_LOGD(TAG, "---> Challenge Ack Received");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 4;
                                 menuDisplay = 502;
                             } else if (lastReceivedPacket.payload.indexOf("Login valid for") > 0) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Login Succesfull");
+                                ESP_LOGI(TAG, "---> Login Successful");
                                 lastMsgRxTime = millis();
                                 winlinkStatus = 5;
                                 displayShow(" WINLINK>", "", " LOGGED !!!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");
                                 menuDisplay = 5000;
                             } else if (winlinkStatus == 5 && lastReceivedPacket.payload.indexOf("Log off successful") == 0 ) {
-                                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Winlink","---> Log Out");
+                                ESP_LOGI(TAG, "---> Log Out");
                                 lastMsgRxTime = millis();
                                 displayShow(" WINLINK>", "", "    LOG OUT !!!", 2000);
                                 cleanOutputAckRequestBuffer("WLNK-1");

@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "Bluetooth";
+
 #include <TinyGPS++.h>
 #include <esp_bt.h>
 #include "bluetooth_utils.h"
@@ -43,7 +46,7 @@ namespace BLUETOOTH_Utils {
         if (!bluetoothActive) {
             btStop();
             esp_bt_controller_disable();
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "BT controller disabled");
+            ESP_LOGI(TAG, "BT controller disabled");
             return;
         }
 
@@ -55,24 +58,24 @@ namespace BLUETOOTH_Utils {
         String BTid = Config.bluetooth.deviceName;
 
         if (!SerialBT.begin(String(BTid))) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Bluetooth", "Starting Bluetooth failed!");
+            ESP_LOGE(TAG, "Starting Bluetooth failed!");
             displayShow("ERROR", "Starting Bluetooth failed!", "");
             while(true) {
                 delay(1000);
             }
         }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth Classic init done!");
+        ESP_LOGI(TAG, "Bluetooth Classic init done!");
     }
 
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
         if (event == ESP_SPP_SRV_OPEN_EVT) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client connected !");
+            ESP_LOGI(TAG, "Client connected !");
             bluetoothConnected = true;
         } else if (event == ESP_SPP_CLOSE_EVT) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client disconnected !");
+            ESP_LOGI(TAG, "Client disconnected !");
             bluetoothConnected = false;
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Bluetooth", "Status: %d", event);
+            ESP_LOGD(TAG, "Status: %d", event);
         }
     }
 
@@ -81,10 +84,10 @@ namespace BLUETOOTH_Utils {
         shouldSendToLoRa = false;
         serialReceived.clear();
         bool isNmea = buffer[0] == '$';
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "Received buffer size %d. Nmea=%d. %s", size, isNmea, buffer);
+        ESP_LOGD(TAG, "Received buffer size %d. Nmea=%d. %s", size, isNmea, buffer);
 
         for (int i = 0; i < size; i++) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "[%d/%d] %x -> %c", i + 1, size, buffer[i], buffer[i]);
+            ESP_LOGD(TAG, "[%d/%d] %x -> %c", i + 1, size, buffer[i], buffer[i]);
         }
         for (int i = 0; i < size; i++) {
             char c = (char) buffer[i];
@@ -103,20 +106,20 @@ namespace BLUETOOTH_Utils {
             String decodeKiss = KISS_Utils::decodeKISS(serialReceived, dataFrame);
             serialReceived.clear();
             serialReceived += decodeKiss;
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "It's a kiss frame. dataFrame: %d", dataFrame);
+            ESP_LOGD(TAG, "It's a kiss frame. dataFrame: %d", dataFrame);
             useKiss = true;
         } else {
             useKiss = false;
         }
         if (KISS_Utils::validateTNC2Frame(serialReceived)) {
             shouldSendToLoRa = true;
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "bluetooth", "Data received should be transmitted to RF => %s", serialReceived.c_str());
+            ESP_LOGD(TAG, "Data received should be transmitted to RF => %s", serialReceived.c_str());
         }
     }
 
     void sendToLoRa() {
         if (!shouldSendToLoRa) return;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT TX", "%s", serialReceived.c_str());
+        ESP_LOGD(TAG, "Tx %s", serialReceived.c_str());
         displayShow("BT Tx >>", "", serialReceived, 1000);
         LoRa_Utils::sendNewPacket(serialReceived);
         shouldSendToLoRa = false;
@@ -125,10 +128,10 @@ namespace BLUETOOTH_Utils {
     void sendToPhone(const String& packet) {
         if (!packet.isEmpty()) {
             if (useKiss) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX Kiss", "%s", serialReceived.c_str());
+                ESP_LOGD(TAG, "Rx Kiss %s", serialReceived.c_str());
                 SerialBT.println(KISS_Utils::encodeKISS(packet));
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX TNC2", "%s", serialReceived.c_str());
+                ESP_LOGD(TAG, "Rx TNC2 %s", serialReceived.c_str());
                 SerialBT.println(packet);
             }
         }

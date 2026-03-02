@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "Utils";
+
 #include <APRSPacketLib.h>
 #include <logger.h>
 #include <Wire.h>
@@ -111,17 +114,17 @@ namespace Utils {
 
     void checkStatus() {
         if (statusUpdate) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Utils", "checkStatus: status='%s' length=%d", currentBeacon->status.c_str(), currentBeacon->status.length());
+            ESP_LOGD(TAG, "checkStatus: status='%s' length=%d", currentBeacon->status.c_str(), currentBeacon->status.length());
 
             if (currentBeacon->status == "" || currentBeacon->status == "undefined") {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Utils", "Status is empty or undefined, blocking transmission");
+                ESP_LOGI(TAG, "Status is empty or undefined, blocking transmission");
                 statusUpdate = false;
             } else {
                 uint32_t currentTime = millis();
                 uint32_t statusTx = currentTime - statusTime;
                 lastTx = currentTime - lastTxTime;
                 if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Utils", "Sending status packet: '%s'", currentBeacon->status.c_str());
+                    ESP_LOGI(TAG, "Sending status packet: '%s'", currentBeacon->status.c_str());
                     LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->status));
                     statusUpdate = false;
                 }
@@ -166,7 +169,7 @@ namespace Utils {
                     //Serial.println(addr); this shows any connected board to I2C
                     if (addr == 0x76 || addr == 0x77) {
                         wxModuleAddress = addr;
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Wx Module Connected to I2C");
+                        ESP_LOGI(TAG, "Wx Module Connected to I2C");
                     }
                 }
             }
@@ -180,7 +183,7 @@ namespace Utils {
                 int err = Wire.endTransmission();
                 if (err == 0) {
                     keyboardAddress = keyboardAddr;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected to I2C");
+                    ESP_LOGI(TAG, "T-Deck Keyboard Connected to I2C");
                     break;
                 }
                 delay(50);
@@ -192,7 +195,7 @@ namespace Utils {
                 if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
                     //Serial.println(addr); this shows any connected board to I2C
                     keyboardAddress = addr;
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
+                    ESP_LOGI(TAG, "CARDKB Keyboard Connected to I2C");
                 }
             }
         #endif
@@ -204,7 +207,7 @@ namespace Utils {
                 if (err == 0) {
                     if (addr == 0x14 || addr == 0x5D ) {
                         touchModuleAddress = addr;
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Touch Module Connected to I2C");
+                        ESP_LOGI(TAG, "Touch Module Connected to I2C");
                     }
                 }
             }

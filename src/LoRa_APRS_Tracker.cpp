@@ -233,7 +233,7 @@ void setup() {
         }
     #endif
 
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
+    ESP_LOGD(TAG, "Smart Beacon is: %s", Utils::getSmartBeaconState());
 
     // Memory stats
     #ifdef BOARD_HAS_PSRAM
@@ -244,9 +244,9 @@ void setup() {
     // Initialize watchdog timer (30 seconds timeout)
     esp_task_wdt_init(30, true);  // 30 seconds, panic on timeout
     esp_task_wdt_add(NULL);       // Add current task to watchdog
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Watchdog initialized (30s timeout)");
+    ESP_LOGI(TAG, "Watchdog initialized (30s timeout)");
 
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
+    ESP_LOGI(TAG, "Setup Done!");
 
     // Lower CPU frequency for power saving in normal operation
     // Map screen will boost back to 240MHz when needed
@@ -259,7 +259,7 @@ void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
     if (statusUpdate) {
         if (APRSPacketLib::checkNocall(currentBeacon->callsign)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your callsigns in WebConfig");
+            ESP_LOGE(TAG, "Change your callsigns in WebConfig");
             displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
             KEYBOARD_Utils::rightArrow();
             currentBeacon = &Config.beacons[myBeaconsIndex];
@@ -331,11 +331,11 @@ void loop() {
         if (Config.lora.repeaterMode) {
             String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
             if (digipeatedPacket != "X") {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Repeater", "Digipeating: %s", digipeatedPacket.c_str());
+                ESP_LOGI(TAG, "Digipeating: %s", digipeatedPacket.c_str());
                 delay(random(100, 500)); // Random delay to avoid collisions
                 LoRa_Utils::sendNewPacket(digipeatedPacket);
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Repeater", "Packet won't be repeated (Missing WIDEn-N)");
+                ESP_LOGW(TAG, "Packet won't be repeated (Missing WIDEn-N)");
             }
         }
     }
@@ -392,8 +392,7 @@ void loop() {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
             // Log only in debug mode to avoid spam
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main",
-                       "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon",
+            ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon",
                        gps.satellites.value(), gps.hdop.hdop());
         }
 

@@ -550,7 +550,7 @@ namespace STATION_Utils {
                 case 4: logMessage = "ECO Timeout"; break;
                 default: return; // Invalid type, exit function
             }
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s saved to SPIFFS", logMessage.c_str());
+            ESP_LOGD(TAG, "%s saved to SPIFFS", logMessage.c_str());
         }
         fileIndex.close();
     }
@@ -606,7 +606,7 @@ namespace STATION_Utils {
                     }
                     logMessage = "ECO Timeout:";
                 }
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "%s %s", logMessage.c_str(), firstLine);
+                ESP_LOGD(TAG, "%s %s", logMessage.c_str(), firstLine);
             }
             fileIndex.close();
         }

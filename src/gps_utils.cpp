@@ -70,7 +70,7 @@ namespace GPS_Utils {
 
     void setup() {
         if (disableGPS) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "GPS disabled");
+            ESP_LOGW(TAG, "GPS disabled");
             return;
         }
         #ifdef LIGHTTRACKER_PLUS_1_0
@@ -150,8 +150,7 @@ namespace GPS_Utils {
     void checkStartUpFrames() {
         if (disableGPS) return;
         if ((millis() > 10000 && gps.charsProcessed() < 10)) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS",
-                        "No GPS frames detected! Try to reset the GPS Chip with this "
+            ESP_LOGE(TAG, "No GPS frames detected! Try to reset the GPS Chip with this "
                         "firmware: https://github.com/richonguzman/TTGO_T_BEAM_GPS_RESET");
             displayShow("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
         }

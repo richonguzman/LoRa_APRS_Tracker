@@ -220,7 +220,7 @@ namespace LoRa_Utils {
         float signalBandwidth = config.signalBandwidth / 1000;
         radio.setBandwidth(signalBandwidth);
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Data Rate changed to %d bps (SF%d, CR4/%d)",
+        ESP_LOGI(TAG, "Data Rate changed to %d bps (SF%d, CR4/%d)",
                    dataRate, config.spreadingFactor, config.codingRate4);
         Config.writeFile();
     }
@@ -229,7 +229,7 @@ namespace LoRa_Utils {
         // Apply current loraIndex configuration to radio
         // Safety check: ensure loraIndex is valid
         if (loraIndex < 0 || loraIndex >= loraIndexSize) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid loraIndex: %d (max: %d)", loraIndex, loraIndexSize);
+            ESP_LOGE(TAG, "Invalid loraIndex: %d (max: %d)", loraIndex, loraIndexSize);
             loraIndex = 0;  // Reset to safe default
         }
 
@@ -239,19 +239,19 @@ namespace LoRa_Utils {
         #if defined(LORA_FREQ_MIN) && defined(LORA_FREQ_MAX)
             // Board-specific frequency validation
             if (currentLoRaType->frequency < LORA_FREQ_MIN || currentLoRaType->frequency > LORA_FREQ_MAX) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Frequency %ld Hz out of range (%ld-%ld)",
+                ESP_LOGE(TAG, "Frequency %ld Hz out of range (%ld-%ld)",
                     currentLoRaType->frequency, (long)LORA_FREQ_MIN, (long)LORA_FREQ_MAX);
                 return;
             }
         #else
             // Generic frequency validation
             if (currentLoRaType->frequency < 100000000 || currentLoRaType->frequency > 1000000000) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid frequency value: %ld", currentLoRaType->frequency);
+                ESP_LOGE(TAG, "Invalid frequency value: %ld", currentLoRaType->frequency);
                 return;
             }
         #endif
         if (currentLoRaType->signalBandwidth < 1000 || currentLoRaType->signalBandwidth > 1000000) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Invalid bandwidth value: %ld", currentLoRaType->signalBandwidth);
+            ESP_LOGE(TAG, "Invalid bandwidth value: %ld", currentLoRaType->signalBandwidth);
             return;
         }
 
@@ -284,7 +284,7 @@ namespace LoRa_Utils {
         currentLoRainfo += " / CR: ";
         currentLoRainfo += String(currentLoRaType->codingRate4);
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", currentLoRainfo.c_str());
+        ESP_LOGI(TAG, "%s", currentLoRainfo.c_str());
     }
 
     void changeFreq() {
@@ -302,7 +302,7 @@ namespace LoRa_Utils {
             pinMode(RADIO_VCC_PIN,OUTPUT);
             digitalWrite(RADIO_VCC_PIN,HIGH);
         #endif
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", "Set SPI pins!");
+        ESP_LOGD(TAG, "Set SPI pins!");
         #if defined(LIGHTTRACKER_PLUS_1_0)
             loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN);
         #else
@@ -315,12 +315,12 @@ namespace LoRa_Utils {
         int state = radio.begin(freq);
         if (state == RADIOLIB_ERR_NONE) {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX126X ...");
+            ESP_LOGI(TAG, "Initializing SX126X ...");
             #else
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Initializing SX127X ...");
+            ESP_LOGI(TAG, "Initializing SX127X ...");
             #endif
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed! State: %d", state);
+            ESP_LOGE(TAG, "Starting LoRa failed! State: %d", state);
             while (true);
         }
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
@@ -359,18 +359,18 @@ namespace LoRa_Utils {
         #endif
 
         if (state == RADIOLIB_ERR_NONE) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+            ESP_LOGI(TAG, "LoRa init done!");
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed! State: %d", state);
+            ESP_LOGE(TAG, "Starting LoRa failed! State: %d", state);
             while (true);
         }        
     }
 
     void sendNewPacket(const String& newPacket) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
+        ESP_LOGI(TAG, "Tx ---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa","Send data: %s", newPacket.c_str());*/
+        ESP_LOGE(TAG,"Send data: %s", newPacket.c_str());
+        ESP_LOGD(TAG,"Send data: %s", newPacket.c_str());*/
 
         if (Config.ptt.active) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
@@ -425,7 +425,7 @@ namespace LoRa_Utils {
                 int state = radio.readData(packet);
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
-                        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.substring(3).c_str());
+                        ESP_LOGI(TAG, "Rx ---> %s", packet.substring(3).c_str());
                         receivedLoraPacket.text       = packet;
                         receivedLoraPacket.rssi       = radio.getRSSI();
                         receivedLoraPacket.snr        = radio.getSNR();

@@ -147,7 +147,10 @@ static void btn_setup_clicked(lv_event_t *e) {
 }
 
 static void btn_msg_clicked(lv_event_t *e) {
-    ESP_LOGD(TAG, "MSG button pressed");
+    ESP_LOGI(TAG, "Before MSG - DRAM: %u  PSRAM: %u  Largest DRAM block: %u",
+                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                  heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
     UIPopups::closeAll();
     LVGL_UI::openMessagesScreen();
 }

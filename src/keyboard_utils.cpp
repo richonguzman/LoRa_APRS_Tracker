@@ -492,25 +492,25 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay == 30) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
+            ESP_LOGI(TAG, "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
             #ifdef HAS_JOYSTICK
                 menuDisplay = 3;
             #endif
         } else if (menuDisplay == 31) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Hospital");
+            ESP_LOGI(TAG, "9M2PJU-4: Hospital");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "hospital");
             #ifdef HAS_JOYSTICK
                 menuDisplay = 3;
             #endif
         } else if (menuDisplay == 32) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4 : Police");
+            ESP_LOGI(TAG, "9M2PJU-4: Police");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "police");
             #ifdef HAS_JOYSTICK
                 menuDisplay = 3;
             #endif
         } else if (menuDisplay == 33) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Fire Station");
+            ESP_LOGI(TAG, "9M2PJU-4: Fire Station");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "fire_station");
             #ifdef HAS_JOYSTICK
                 menuDisplay = 3;
@@ -595,11 +595,11 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 61) {
             digipeaterActive = !digipeaterActive;
             displayShow("  EXTRAS", "", "     Digipeater", digipeaterActive ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", digipeaterActive ? "Digipeater ON" : "Digipeater OFF");
+            ESP_LOGW(TAG, "%s", digipeaterActive ? "Digipeater ON" : "Digipeater OFF");
         } else if (menuDisplay == 62) {
             sosActive = !sosActive;
             displayShow("  EXTRAS", "", "       S.O.S.", sosActive ? "   Status --> ON" : "   Status --> OFF", "", "", 2000);
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "S.O.S Mode %s", sosActive ? "ON" : "OFF");
+            ESP_LOGW(TAG, "S.O.S Mode %s", sosActive ? "ON" : "OFF");
         } else if (menuDisplay == 63) {
             menuDisplay = 630;
         } else if (menuDisplay == 64) {

@@ -17,7 +17,6 @@
  */
 
 #include <esp_log.h>
-#include <logger.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <esp_task_wdt.h>
@@ -28,7 +27,6 @@
 #include "lvgl_ui.h"
 
 extern Configuration        Config;
-extern logging::Logger      logger;
 
 static const char *TAG = "WiFi";
 
@@ -205,7 +203,7 @@ namespace WIFI_Utils {
         String apName = "LoRa-Tracker-AP";
 
         displayShow(" LoRa APRS", "    ** WEB-CONF **", "", "WiFiAP: " + apName, "IP    : 192.168.4.1", "", 0);
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Started!");
+        ESP_LOGW(TAG, "WebConfiguration Started!");
 
         WiFi.mode(WIFI_MODE_NULL);
         WiFi.mode(WIFI_AP);
@@ -220,7 +218,7 @@ namespace WIFI_Utils {
                 if (noClientsTime == 0) {
                     noClientsTime = millis();
                 } else if ((millis() - noClientsTime) > Config.wifiAutoAP.timeout * 60 * 1000) {
-                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
+                    ESP_LOGW(TAG, "WebConfiguration Stopped!");
                     displayShow("", "", "  STOPPING WiFi AP", "", "", "", 2000);
                     Config.wifiAutoAP.active = false;
                     Config.writeFile();
@@ -330,7 +328,7 @@ namespace WIFI_Utils {
     bool startAPModeNonBlocking() {
         String apName = "LoRa-Tracker-AP";
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "WiFi", "Starting AP Mode: %s", apName.c_str());
+        ESP_LOGW(TAG, "Starting AP Mode: %s", apName.c_str());
 
         // Stop any existing WiFi connection
         WiFi.disconnect(true);
@@ -344,13 +342,13 @@ namespace WIFI_Utils {
 
         bool success = WiFi.softAP(apName.c_str(), Config.wifiAutoAP.password);
         if (success) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "WiFi", "AP Started - IP: %s", WiFi.softAPIP().toString().c_str());
+            ESP_LOGI(TAG, "AP Started - IP: %s", WiFi.softAPIP().toString().c_str());
             WEB_Utils::setup();
             WiFiConnected = false;
             WiFiStationMode = false;
             return true;
         } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "WiFi", "Failed to start AP");
+            ESP_LOGE(TAG, "Failed to start AP");
             return false;
         }
     }
