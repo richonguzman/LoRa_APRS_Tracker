@@ -352,7 +352,7 @@ namespace MapEngine {
             "MapRender",
             16384,  // Increased for feature index + sort + AEL
             NULL,
-            1, // Low priority
+            3, // High priority (was 1), prevents vector drawing from being preempted
             &mapRenderTaskHandle,
             0  // Core 0
         );
