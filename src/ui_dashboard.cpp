@@ -4,6 +4,9 @@
 
 #ifdef USE_LVGL_UI
 
+#include <esp_log.h>
+static const char *TAG = "Dashboard";
+
 #include "ui_dashboard.h"
 #include "ui_common.h"
 #include "ui_settings.h"
@@ -133,49 +136,49 @@ void drawAPRSSymbol(const char *symbolStr) {
 // Button event callbacks
 static void btn_beacon_clicked(lv_event_t *e) {
     sendUpdate = true;
-    Serial.println("[LVGL] BEACON button pressed - requesting beacon");
+    ESP_LOGD(TAG, "BEACON button pressed - requesting beacon");
     UIPopups::showBeaconPending();
 }
 
 static void btn_setup_clicked(lv_event_t *e) {
-    Serial.println("[LVGL] SETUP button pressed");
+    ESP_LOGD(TAG, "SETUP button pressed");
     UIPopups::closeAll();
     UISettings::openSetup();
 }
 
 static void btn_msg_clicked(lv_event_t *e) {
-    Serial.println("[LVGL] MSG button pressed");
+    ESP_LOGD(TAG, "MSG button pressed");
     UIPopups::closeAll();
     LVGL_UI::openMessagesScreen();
 }
 
 static void btn_map_clicked(lv_event_t *e) {
-    Serial.println("[LVGL] MAP button pressed");
-    Serial.printf("[MEM] Before MAP - DRAM: %u  PSRAM: %u  Largest DRAM block: %u\n",
+    ESP_LOGD(TAG, "MAP button pressed");
+    ESP_LOGI(TAG, "Before MAP - DRAM: %u  PSRAM: %u  Largest DRAM block: %u",
                   heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
                   heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
                   heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
     UIPopups::closeAll();
-    Serial.println("[LVGL-DEBUG] Popups closed");
+    ESP_LOGD(TAG, "Popups closed");
 
     // Show loading popup
     UIPopups::showMapLoading();
 
     // Recreate map screen each time to update positions
     if (UIMapManager::screen_map) {
-        Serial.println("[LVGL-DEBUG] Deleting old screen_map");
+        ESP_LOGD(TAG, "Deleting old screen_map");
         lv_obj_del(UIMapManager::screen_map);
         UIMapManager::screen_map = nullptr;
     }
-    Serial.println("[LVGL-DEBUG] Creating new map screen");
+    ESP_LOGD(TAG, "Creating new map screen");
     UIMapManager::create_map_screen();
-    Serial.println("[LVGL-DEBUG] Map screen created, loading animation");
+    ESP_LOGD(TAG, "Map screen created, loading animation");
 
     // Hide loading popup now that map is ready
     UIPopups::hideMapLoading();
 
     lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
-    Serial.println("[LVGL-DEBUG] btn_map_clicked DONE");
+    ESP_LOGD(TAG, "btn_map_clicked DONE");
 }
 
 // Public button action functions

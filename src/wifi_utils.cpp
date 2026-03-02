@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <logger.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
@@ -28,6 +29,8 @@
 
 extern Configuration        Config;
 extern logging::Logger      logger;
+
+static const char *TAG = "WiFi";
 
 bool        WiFiConnected           = false;
 bool        WiFiStationMode         = false;
@@ -66,7 +69,7 @@ namespace WIFI_Utils {
         if (!wifiInitialized) {
             WiFiUserDisabled = !Config.wifiEnabled;
             wifiInitialized = true;
-            Serial.printf("[WiFi] Initialized from config: %s\n", Config.wifiEnabled ? "enabled" : "disabled");
+            ESP_LOGI(TAG, "Initialized from config: %s", Config.wifiEnabled ? "enabled" : "disabled");
         }
 
         // User disabled WiFi manually - do nothing
@@ -93,7 +96,7 @@ namespace WIFI_Utils {
         if (WiFiEcoMode && WiFiStationMode) {
             uint32_t elapsed = millis() - lastWiFiRetry;
             if (elapsed >= WIFI_RETRY_INTERVAL) {
-                Serial.printf("[WiFi] Eco mode: retrying after %u ms\n", elapsed);
+                ESP_LOGI(TAG, "Eco mode: retrying after %u ms", elapsed);
                 WiFiEcoMode = false;
                 wifiIsReconnecting = true;
                 startStationMode();
@@ -104,12 +107,12 @@ namespace WIFI_Utils {
 
         if (WiFiConnected) {
             if (millis() - lastWiFiDebug >= 10000) {
-                Serial.printf("[WiFi] status=%d RSSI=%d\n", WiFi.status(), WiFi.RSSI());
+                ESP_LOGD(TAG, "status=%d RSSI=%d", WiFi.status(), WiFi.RSSI());
                 lastWiFiDebug = millis();
             }
             if ((WiFi.status() != WL_CONNECTED) && ((millis() - previousWiFiMillis) >= 30000)) {
                 wifiRetryCount++;
-                Serial.printf("[WiFi] Connection lost, reconnecting (attempt %d/%d)...\n", wifiRetryCount, WIFI_MAX_RETRIES);
+                ESP_LOGW(TAG, "Connection lost, reconnecting (attempt %d/%d)...", wifiRetryCount, WIFI_MAX_RETRIES);
                 WiFi.disconnect();
                 wifiIsReconnecting = true;
                 wifiCurrentNetworkIndex = 0;
@@ -138,14 +141,14 @@ namespace WIFI_Utils {
 
         const WiFi_AP& network = Config.wifiAPs[networkIndex];
         uint32_t timeout = wifiIsReconnecting ? WIFI_RECONNECT_TIMEOUT : WIFI_CONNECT_TIMEOUT;
-        Serial.printf("[WiFi] Connecting to '%s' (timeout %ds, non-blocking)...\n",
+        ESP_LOGI(TAG, "Connecting to '%s' (timeout %ds, non-blocking)...",
             network.ssid.c_str(), timeout / 1000);
         WiFi.begin(network.ssid.c_str(), network.password.c_str());
     }
 
     // Called when connection timeout occurs
     void handleConnectionTimeout() {
-        Serial.printf("[WiFi] Timeout connecting to '%s'\n",
+        ESP_LOGW(TAG, "Timeout connecting to '%s'",
             Config.wifiAPs[wifiCurrentNetworkIndex].ssid.c_str());
         esp_wifi_disconnect();
 
@@ -167,7 +170,7 @@ namespace WIFI_Utils {
         IPAddress dns2(8, 8, 8, 8);       // Google
         WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), dns1, dns2);
 
-        Serial.printf("[WiFi] Connected to '%s'! IP=%s RSSI=%d dBm DNS=1.1.1.1/8.8.8.8\n",
+        ESP_LOGI(TAG, "Connected to '%s'! IP=%s RSSI=%d dBm DNS=1.1.1.1/8.8.8.8",
             Config.wifiAPs[wifiCurrentNetworkIndex].ssid.c_str(),
             WiFi.localIP().toString().c_str(), WiFi.RSSI());
         WEB_Utils::setup();
@@ -177,14 +180,14 @@ namespace WIFI_Utils {
     void onAllNetworksFailed() {
         wifiConnecting = false;
         wifiRetryCount++;
-        Serial.printf("[WiFi] All networks failed (attempt %d/%d)\n", wifiRetryCount, WIFI_MAX_RETRIES);
+        ESP_LOGW(TAG, "All networks failed (attempt %d/%d)", wifiRetryCount, WIFI_MAX_RETRIES);
 
         if (wifiRetryCount >= WIFI_MAX_RETRIES) {
             WiFiConnected = false;
             WiFiEcoMode = true;
             wifiRetryCount = 0;
             lastWiFiRetry = millis();
-            Serial.println("[WiFi] Max retries reached, entering eco mode (retry in 30 min)");
+            ESP_LOGW(TAG, "Max retries reached, entering eco mode (retry in 30 min)");
             #ifdef USE_LVGL_UI
                 LVGL_UI::showWiFiEcoMode();
             #else
@@ -232,17 +235,16 @@ namespace WIFI_Utils {
         if (network.ssid == "") return false;
 
         unsigned long start = millis();
-        Serial.printf("\n[WiFi] Connecting to '%s' (timeout %ds)... ", network.ssid.c_str(), WIFI_CONNECT_TIMEOUT / 1000);
+        ESP_LOGI(TAG, "Connecting to '%s' (timeout %ds)...", network.ssid.c_str(), WIFI_CONNECT_TIMEOUT / 1000);
         WiFi.begin(network.ssid.c_str(), network.password.c_str());
 
         while (WiFi.status() != WL_CONNECTED) {
             delay(500);
-            Serial.print('.');
             esp_task_wdt_reset();  // Reset watchdog during connection attempts
             delay(500);
             if ((millis() - start) > WIFI_CONNECT_TIMEOUT) {
                 // Timeout - properly stop this connection attempt
-                Serial.printf("\n[WiFi] Timeout after %lu ms, status=%d\n", millis() - start, WiFi.status());
+                ESP_LOGW(TAG, "Timeout after %lu ms, status=%d", millis() - start, WiFi.status());
                 esp_wifi_disconnect();
                 delay(100);
                 break;
@@ -250,7 +252,7 @@ namespace WIFI_Utils {
         }
 
         if (WiFi.status() == WL_CONNECTED) {
-            Serial.printf("\n[WiFi] Connected! RSSI=%d dBm\n", WiFi.RSSI());
+            ESP_LOGI(TAG, "Connected! RSSI=%d dBm", WiFi.RSSI());
             return true;
         }
         return false;
@@ -312,7 +314,7 @@ namespace WIFI_Utils {
     }
 
     void stop() {
-        Serial.println("[WiFi] Stopping WiFi for BLE coexistence");
+        ESP_LOGI(TAG, "Stopping WiFi for BLE coexistence");
         WiFi.disconnect(true);
         esp_wifi_stop();
         WiFiConnected = false;

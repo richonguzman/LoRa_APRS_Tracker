@@ -4,6 +4,9 @@
 
 #ifdef USE_LVGL_UI
 
+#include <esp_log.h>
+static const char *TAG = "LVGL";
+
 #include <APRSPacketLib.h>
 #include <Arduino.h>
 #include <FS.h>
@@ -179,17 +182,17 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
       // Boost CPU to 240 MHz if on map screen
       if (lv_scr_act() == UIMapManager::screen_map) {
         setCpuFrequencyMhz(240);
-        Serial.printf("[LVGL] Screen woken up, CPU boosted to %d MHz (map)\n",
+        ESP_LOGI(TAG, "Screen woken up, CPU boosted to %d MHz (map)",
                       getCpuFrequencyMhz());
       } else {
-        Serial.println("[LVGL] Screen woken up by touch");
+        ESP_LOGI(TAG, "Screen woken up by touch");
       }
       SD_Logger::logScreenState(false); // Log screen active
     }
 
     // Debug: print touch coordinates
     if (millis() - lastTouchDebug > 500) {
-      Serial.printf("[LVGL Touch] x=%d y=%d (raw: %d,%d)\n", x, y, t.x, t.y);
+      ESP_LOGD(TAG, "Touch x=%d y=%d (raw: %d,%d)", x, y, t.x, t.y);
       lastTouchDebug = millis();
     }
   } else {
@@ -296,7 +299,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
   }
 
   void showSplashScreen(uint8_t loraIndex, const char *version) {
-    Serial.println("[LVGL] Showing splash screen");
+    ESP_LOGD(TAG, "Showing splash screen");
 
     initLvglDisplay();
 
@@ -387,13 +390,13 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     // Brief delay then switch to init screen
     delay(2400);
 
-    Serial.println("[LVGL] Splash done, showing init screen");
+    ESP_LOGD(TAG, "Splash done, showing init screen");
   }
 
   void showInitScreen() {
     // Keep splash screen visible, just add init status label on it
     if (!screen_splash) {
-      Serial.println("[LVGL] ERROR: splash screen not available for init");
+      ESP_LOGE(TAG, "Splash screen not available for init");
       return;
     }
 
@@ -413,7 +416,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       lv_label_set_text(init_status_label, status);
       lv_refr_now(NULL);
     }
-    Serial.printf("[LVGL] Init: %s\n", status);
+    ESP_LOGI(TAG, "Init: %s", status);
   }
 
   void hideInitScreen() {
@@ -430,7 +433,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
   }
 
   void setup() {
-    Serial.println("[LVGL] Initializing...");
+    ESP_LOGI(TAG, "Initializing...");
 
     // Initialize tick counter
     last_tick = millis();
@@ -444,7 +447,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       screenBrightness = BRIGHT_MIN;
     if (screenBrightness > BRIGHT_MAX)
       screenBrightness = BRIGHT_MAX;
-    Serial.printf("[LVGL] Loaded brightness: %d\n", screenBrightness);
+    ESP_LOGI(TAG, "Loaded brightness: %d", screenBrightness);
 
     // Only initialize display if not already done by splash screen
     if (!lvgl_display_initialized) {
@@ -465,15 +468,15 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
 #ifdef BOARD_HAS_PSRAM
       buf1 = (lv_color_t *)ps_malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
       buf2 = (lv_color_t *)ps_malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
-      Serial.println("[LVGL] Using PSRAM for display buffers");
+      ESP_LOGI(TAG, "Using PSRAM for display buffers");
 #else
       buf1 = (lv_color_t *)malloc(LVGL_BUF_SIZE * sizeof(lv_color_t));
       buf2 = nullptr;
-      Serial.println("[LVGL] Using RAM for display buffer");
+      ESP_LOGI(TAG, "Using RAM for display buffer");
 #endif
 
       if (!buf1) {
-        Serial.println("[LVGL] ERROR: Failed to allocate display buffer!");
+        ESP_LOGE(TAG, "Failed to allocate display buffer!");
         return;
       }
 
@@ -491,12 +494,12 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       lv_disp_drv_register(&disp_drv);
       lvgl_display_initialized = true;
     } else {
-      Serial.println("[LVGL] Display already initialized by splash screen");
+      ESP_LOGD(TAG, "Display already initialized by splash screen");
     }
 
     // Initialize touch input
     if (touchModuleAddress != 0x00) {
-      Serial.printf("[LVGL] Touch module found at 0x%02X\n",
+      ESP_LOGI(TAG, "Touch module found at 0x%02X",
                     touchModuleAddress);
       if (touchModuleAddress == 0x14) {
         touch =
@@ -513,9 +516,9 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       indev_drv.type = LV_INDEV_TYPE_POINTER;
       indev_drv.read_cb = touch_read_cb;
       lv_indev_drv_register(&indev_drv);
-      Serial.println("[LVGL] Touch input registered");
+      ESP_LOGI(TAG, "Touch input registered");
     } else {
-      Serial.println("[LVGL] No touch module detected");
+      ESP_LOGW(TAG, "No touch module detected");
     }
 
     // Create the UI (dashboard module)
@@ -535,12 +538,12 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     // Force initial refresh
     lv_obj_invalidate(lv_scr_act());
     lv_refr_now(NULL);
-    Serial.println("[LVGL] Forced initial refresh");
+    ESP_LOGD(TAG, "Forced initial refresh");
 
     // Initialize activity timer for eco mode
     lastActivityTime = millis();
 
-    Serial.println("[LVGL] UI Ready");
+    ESP_LOGI(TAG, "UI Ready");
   }
 
   static uint32_t last_data_update = 0;
@@ -558,7 +561,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     static uint32_t lastHeartbeat = 0;
     if (now - lastHeartbeat >= 5000) {
       lastHeartbeat = now;
-      Serial.printf("[LVGL-HB] heap=%u eco=%d dimmed=%d bright=%d\n",
+      ESP_LOGD(TAG, "HB heap=%u eco=%d dimmed=%d bright=%d",
                     ESP.getFreeHeap(), displayEcoMode ? 1 : 0,
                     screenDimmed ? 1 : 0, screenBrightness);
     }
@@ -585,11 +588,11 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
         // Reduce CPU to 80 MHz if on map screen
         if (lv_scr_act() == UIMapManager::screen_map) {
           setCpuFrequencyMhz(80);
-          Serial.printf(
-              "[LVGL] Screen dimmed (eco mode), CPU reduced to %d MHz (map)\n",
+          ESP_LOGI(TAG,
+              "Screen dimmed (eco mode), CPU reduced to %d MHz (map)",
               getCpuFrequencyMhz());
         } else {
-          Serial.println("[LVGL] Screen dimmed (eco mode)");
+          ESP_LOGI(TAG, "Screen dimmed (eco mode)");
         }
         SD_Logger::logScreenState(true); // Log screen dimmed
       }

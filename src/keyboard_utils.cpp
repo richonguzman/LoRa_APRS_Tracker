@@ -16,7 +16,10 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <APRSPacketLib.h>
+
+static const char *TAG = "Keyboard";
 #include <TinyGPS++.h>
 #include <logger.h>
 #include <Wire.h>
@@ -888,7 +891,7 @@ namespace KEYBOARD_Utils {
             while (Wire.available()) {
                 char c = Wire.read();
                 if (c != 0) {
-                    Serial.printf("[KB] Key: %d (0x%02X) '%c'\n", c, c, (c >= 32 && c < 127) ? c : '?');
+                    ESP_LOGD(TAG, "Key: %d (0x%02X) '%c'", c, c, (c >= 32 && c < 127) ? c : '?');
                     keyboardTime = millis();
                     processPressedKey(c);
                 }

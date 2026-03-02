@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <TinyGPS++.h>
 #include "TimeLib.h"
 #include <sys/time.h>
@@ -59,6 +60,8 @@ extern SmartBeaconValues    currentSmartBeaconValues;
 double      currentHeading  = 0;
 double      previousHeading = 0;
 float       bearing         = 0;
+
+static const char *TAG = "GPS";
 
 bool        gpsIsActive     = true;
 
@@ -121,10 +124,7 @@ namespace GPS_Utils {
                 sendStandingUpdate = false;
             } else {
                 if (currentBeacon->gpsEcoMode) {
-                    //
-                    Serial.print("minTxDistance not achieved : ");
-                    Serial.println(lastTxDistance);
-                    //
+                    ESP_LOGD(TAG, "minTxDistance not achieved: %f", lastTxDistance);
                     gpsShouldSleep = true;
                 }
             }

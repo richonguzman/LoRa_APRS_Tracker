@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <NimBLEDevice.h>
 #include <esp_wifi.h>
 #include "configuration.h"
@@ -51,6 +52,8 @@ extern Beacon           *currentBeacon;
 extern logging::Logger  logger;
 extern bool             bluetoothConnected;
 extern bool             bluetoothActive;
+
+static const char *TAG = "BLE";
 
 bool    shouldSendBLEtoLoRa     = false;
 String  BLEToLoRaPacket         = "";
@@ -288,10 +291,10 @@ namespace BLE_Utils {
             // BT controller needs ~40KB DRAM to init — skip if not enough
             size_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
             if (freeDram < 50000) {
-                Serial.printf("[BLE] Not enough DRAM to restart (%u bytes free, need 50000)\n", (unsigned)freeDram);
+                ESP_LOGW(TAG, "Not enough DRAM to restart (%u bytes free, need 50000)", (unsigned)freeDram);
                 return;
             }
-            Serial.println("[BLE] Waking up from eco mode (deferred)");
+            ESP_LOGI(TAG, "Waking up from eco mode (deferred)");
             bleSleeping = false;
             bleLastActivityTime = millis();
             setup();
@@ -309,7 +312,7 @@ namespace BLE_Utils {
             bleSleeping = true;
             BLEDevice::deinit();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
-            Serial.println("[BLE] Eco mode: BLE stopped (5 min timeout)");
+            ESP_LOGI(TAG, "Eco mode: BLE stopped (5 min timeout)");
         }
     }
 
@@ -317,7 +320,7 @@ namespace BLE_Utils {
     void wake() {
         if (!bleSleeping) return;
         bleWakeRequested = true;
-        Serial.println("[BLE] Wake requested (deferred to main loop)");
+        ESP_LOGI(TAG, "Wake requested (deferred to main loop)");
     }
 
     // Check if BLE is sleeping

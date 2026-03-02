@@ -16,7 +16,10 @@
 #include <esp_task_wdt.h>
 #include <esp_wifi.h>
 #include <esp_heap_caps.h>
+#include <esp_log.h>
 #include <math.h>
+
+static const char *TAG = "UISettings";
 
 // External dependencies from other modules
 #include "ble_utils.h"
@@ -132,18 +135,18 @@ static void nav_to_setup_timer_cb(lv_timer_t *timer);
 // =============================================================================
 
 static void btn_back_clicked(lv_event_t *e) {
-    Serial.println("[UISettings] BACK to dashboard");
+    ESP_LOGD(TAG, "BACK to dashboard");
     UIPopups::closeAll();
     lv_scr_load_anim(UIScreens::getMainScreen(), LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
 }
 
 static void btn_back_to_setup_clicked(lv_event_t *e) {
-    Serial.println("[UISettings] BACK to setup");
+    ESP_LOGD(TAG, "BACK to setup");
     lv_scr_load_anim(screen_setup, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, false);
 }
 
 static void btn_wifi_back_clicked(lv_event_t *e) {
-    Serial.println("[UISettings] WiFi BACK");
+    ESP_LOGD(TAG, "WiFi BACK");
     if (wifi_update_timer) {
         lv_timer_del(wifi_update_timer);
         wifi_update_timer = nullptr;
@@ -152,7 +155,7 @@ static void btn_wifi_back_clicked(lv_event_t *e) {
 }
 
 static void btn_bluetooth_back_clicked(lv_event_t *e) {
-    Serial.println("[UISettings] Bluetooth BACK");
+    ESP_LOGD(TAG, "Bluetooth BACK");
     if (bluetooth_update_timer) {
         lv_timer_del(bluetooth_update_timer);
         bluetooth_update_timer = nullptr;
@@ -170,7 +173,7 @@ static void nav_to_setup_timer_cb(lv_timer_t *timer) {
 // =============================================================================
 
 static void setup_item_callsign(lv_event_t *e) {
-    Serial.println("[UISettings] Callsign selected");
+    ESP_LOGD(TAG, "Callsign selected");
     if (screen_callsign) {
         lv_obj_del(screen_callsign);
         screen_callsign = nullptr;
@@ -181,7 +184,7 @@ static void setup_item_callsign(lv_event_t *e) {
 }
 
 static void setup_item_frequency(lv_event_t *e) {
-    Serial.println("[UISettings] Frequency selected");
+    ESP_LOGD(TAG, "Frequency selected");
     if (screen_freq) {
         lv_obj_del(screen_freq);
         screen_freq = nullptr;
@@ -192,7 +195,7 @@ static void setup_item_frequency(lv_event_t *e) {
 }
 
 static void setup_item_speed(lv_event_t *e) {
-    Serial.println("[UISettings] Speed selected");
+    ESP_LOGD(TAG, "Speed selected");
     if (screen_speed) {
         lv_obj_del(screen_speed);
         screen_speed = nullptr;
@@ -203,7 +206,7 @@ static void setup_item_speed(lv_event_t *e) {
 }
 
 static void setup_item_display(lv_event_t *e) {
-    Serial.println("[UISettings] Display selected");
+    ESP_LOGD(TAG, "Display selected");
     if (!screen_display) {
         UISettings::createDisplayScreen();
     }
@@ -211,7 +214,7 @@ static void setup_item_display(lv_event_t *e) {
 }
 
 static void setup_item_sound(lv_event_t *e) {
-    Serial.println("[UISettings] Sound selected");
+    ESP_LOGD(TAG, "Sound selected");
     if (!screen_sound) {
         UISettings::createSoundScreen();
     }
@@ -219,7 +222,7 @@ static void setup_item_sound(lv_event_t *e) {
 }
 
 static void setup_item_repeater(lv_event_t *e) {
-    Serial.println("[UISettings] Repeater selected");
+    ESP_LOGD(TAG, "Repeater selected");
     if (!screen_repeater) {
         UISettings::createRepeaterScreen();
     }
@@ -227,7 +230,7 @@ static void setup_item_repeater(lv_event_t *e) {
 }
 
 static void setup_item_wifi(lv_event_t *e) {
-    Serial.println("[UISettings] WiFi selected");
+    ESP_LOGD(TAG, "WiFi selected");
     if (screen_wifi) {
         if (wifi_update_timer) {
             lv_timer_del(wifi_update_timer);
@@ -247,7 +250,7 @@ static void setup_item_wifi(lv_event_t *e) {
 }
 
 static void setup_item_bluetooth(lv_event_t *e) {
-    Serial.println("[UISettings] Bluetooth selected");
+    ESP_LOGD(TAG, "Bluetooth selected");
     if (BLE_Utils::isSleeping()) {
         BLE_Utils::wake();
     }
@@ -268,12 +271,12 @@ static void setup_item_bluetooth(lv_event_t *e) {
 }
 
 static void setup_item_reboot(lv_event_t *e) {
-    Serial.println("[UISettings] Reboot selected");
+    ESP_LOGD(TAG, "Reboot selected");
     ESP.restart();
 }
 
 static void setup_item_about(lv_event_t *e) {
-    Serial.println("[UISettings] About selected");
+    ESP_LOGD(TAG, "About selected");
     if (screen_about) {
         lv_obj_del(screen_about);
         screen_about = nullptr;
@@ -359,7 +362,7 @@ void UISettings::createSetupScreen() {
     btn = lv_list_add_btn(list, LV_SYMBOL_FILE, "About");
     lv_obj_add_event_cb(btn, setup_item_about, LV_EVENT_CLICKED, NULL);
 
-    Serial.println("[UISettings] Setup screen created");
+    ESP_LOGD(TAG, "Setup screen created");
 }
 
 // =============================================================================
@@ -369,7 +372,7 @@ void UISettings::createSetupScreen() {
 static void freq_item_clicked(lv_event_t *e) {
     lv_obj_t *btn = lv_event_get_current_target(e);
     int index = (int)(intptr_t)lv_event_get_user_data(e);
-    Serial.printf("[UISettings] Frequency %d selected\n", index);
+    ESP_LOGD(TAG, "Frequency %d selected", index);
     LoRa_Utils::requestFrequencyChange(index);
 
     if (current_freq_btn && current_freq_btn != btn) {
@@ -450,7 +453,7 @@ void UISettings::createFreqScreen() {
         }
     }
 
-    Serial.println("[UISettings] Frequency screen created");
+    ESP_LOGD(TAG, "Frequency screen created");
 }
 
 // =============================================================================
@@ -460,7 +463,7 @@ void UISettings::createFreqScreen() {
 static void speed_item_clicked(lv_event_t *e) {
     lv_obj_t *btn = lv_event_get_current_target(e);
     int dataRate = (int)(intptr_t)lv_event_get_user_data(e);
-    Serial.printf("[UISettings] Speed %d bps selected\n", dataRate);
+    ESP_LOGD(TAG, "Speed %d bps selected", dataRate);
     LoRa_Utils::requestDataRateChange(dataRate);
 
     if (current_speed_btn && current_speed_btn != btn) {
@@ -539,7 +542,7 @@ void UISettings::createSpeedScreen() {
         }
     }
 
-    Serial.println("[UISettings] Speed screen created");
+    ESP_LOGD(TAG, "Speed screen created");
 }
 
 // =============================================================================
@@ -549,7 +552,7 @@ void UISettings::createSpeedScreen() {
 static void callsign_item_clicked(lv_event_t *e) {
     lv_obj_t *btn = lv_event_get_current_target(e);
     int index = (int)(intptr_t)lv_event_get_user_data(e);
-    Serial.printf("[UISettings] Callsign %d selected\n", index);
+    ESP_LOGD(TAG, "Callsign %d selected", index);
 
     // Update beacon index and save
     myBeaconsIndex = index;
@@ -632,7 +635,7 @@ void UISettings::createCallsignScreen() {
         }
     }
 
-    Serial.println("[UISettings] Callsign screen created");
+    ESP_LOGD(TAG, "Callsign screen created");
 }
 
 // =============================================================================
@@ -674,7 +677,7 @@ static int pwmToPercent(uint8_t pwm) {
 static void eco_switch_changed(lv_event_t *e) {
     lv_obj_t *sw = lv_event_get_target(e);
     displayEcoMode = lv_obj_has_state(sw, LV_STATE_CHECKED);
-    Serial.printf("[UISettings] ECO Mode: %s\n", displayEcoMode ? "ON" : "OFF");
+    ESP_LOGI(TAG, "ECO Mode: %s", displayEcoMode ? "ON" : "OFF");
 
     STATION_Utils::saveIndex(3, displayEcoMode ? 1 : 0);
 
@@ -712,8 +715,8 @@ static void eco_switch_changed(lv_event_t *e) {
 #endif
             if (lv_scr_act() == UIMapManager::screen_map) {
                 setCpuFrequencyMhz(240);
-                Serial.printf("[UISettings] Eco mode disabled, CPU boosted to %d MHz (map)\n",
-                              getCpuFrequencyMhz());
+                ESP_LOGI(TAG, "Eco mode disabled, CPU boosted to %d MHz (map)",
+                         getCpuFrequencyMhz());
             }
         }
     }
@@ -733,7 +736,7 @@ static void timeout_slider_changed(lv_event_t *e) {
 
 static void timeout_slider_released(lv_event_t *e) {
     STATION_Utils::saveIndex(4, (uint8_t)Config.display.timeout);
-    Serial.printf("[UISettings] ECO Timeout saved: %ds\n", Config.display.timeout);
+    ESP_LOGI(TAG, "ECO Timeout saved: %ds", Config.display.timeout);
 }
 
 static void brightness_slider_changed(lv_event_t *e) {
@@ -755,7 +758,7 @@ static void brightness_slider_changed(lv_event_t *e) {
 
 static void brightness_slider_released(lv_event_t *e) {
     STATION_Utils::saveIndex(2, screenBrightness);
-    Serial.printf("[UISettings] Brightness saved: %d\n", screenBrightness);
+    ESP_LOGI(TAG, "Brightness saved: %d", screenBrightness);
 }
 
 void UISettings::createDisplayScreen() {
@@ -901,7 +904,7 @@ void UISettings::createDisplayScreen() {
     lv_obj_add_event_cb(brightness_slider, brightness_slider_changed, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(brightness_slider, brightness_slider_released, LV_EVENT_RELEASED, NULL);
 
-    Serial.println("[UISettings] Display settings screen created");
+    ESP_LOGD(TAG, "Display settings screen created");
 }
 
 // =============================================================================
@@ -915,7 +918,7 @@ static lv_obj_t *volume_label = nullptr;
 static void sound_switch_changed(lv_event_t *e) {
     lv_obj_t *sw = lv_event_get_target(e);
     Config.notification.buzzerActive = lv_obj_has_state(sw, LV_STATE_CHECKED);
-    Serial.printf("[UISettings] Sound: %s\n", Config.notification.buzzerActive ? "ON" : "OFF");
+    ESP_LOGI(TAG, "Sound: %s", Config.notification.buzzerActive ? "ON" : "OFF");
 }
 
 static void volume_slider_changed(lv_event_t *e) {
@@ -1116,7 +1119,7 @@ void UISettings::createSoundScreen() {
         lv_obj_add_state(sta_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(sta_sw, station_beep_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
-    Serial.println("[UISettings] Sound settings screen created");
+    ESP_LOGD(TAG, "Sound settings screen created");
 }
 
 // =============================================================================
@@ -1129,7 +1132,7 @@ static void wifi_switch_changed(lv_event_t *e) {
     extern int wifiRetryCount;
 
     if (is_on) {
-        Serial.println("[UISettings] WiFi: User enabled");
+        ESP_LOGI(TAG, "WiFi: User enabled");
         WiFiUserDisabled = false;
         WiFiEcoMode = false;
         wifiRetryCount = 0;
@@ -1142,7 +1145,7 @@ static void wifi_switch_changed(lv_event_t *e) {
         // Start connection immediately
         WIFI_Utils::startStationMode();
     } else {
-        Serial.println("[UISettings] WiFi: User disabled");
+        ESP_LOGI(TAG, "WiFi: User disabled");
         WiFiUserDisabled = true;
         WiFiConnected = false;
         WiFiEcoMode = false;
@@ -1152,7 +1155,7 @@ static void wifi_switch_changed(lv_event_t *e) {
 
         wifi_mode_t mode;
         if (esp_wifi_get_mode(&mode) == ESP_OK) {
-            Serial.printf("[UISettings] WiFi hardware mode: %d (0=OFF)\n", mode);
+            ESP_LOGD(TAG, "WiFi hardware mode: %d (0=OFF)", mode);
         }
 
         if (wifi_status_label) {
@@ -1169,7 +1172,7 @@ static void wifi_switch_changed(lv_event_t *e) {
 
     Config.wifiEnabled = is_on;
     Config.writeFile();
-    Serial.printf("[UISettings] WiFi setting saved: %s\n", is_on ? "enabled" : "disabled");
+    ESP_LOGI(TAG, "WiFi setting saved: %s", is_on ? "enabled" : "disabled");
 }
 
 static void update_wifi_screen_status() {
@@ -1236,7 +1239,7 @@ static void repeater_switch_changed(lv_event_t *e) {
     lv_obj_t *sw = lv_event_get_target(e);
     Config.lora.repeaterMode = lv_obj_has_state(sw, LV_STATE_CHECKED);
     Config.writeFile();
-    Serial.printf("[UISettings] Repeater mode: %s\n", Config.lora.repeaterMode ? "ON" : "OFF");
+    ESP_LOGI(TAG, "Repeater mode: %s", Config.lora.repeaterMode ? "ON" : "OFF");
 }
 
 void UISettings::createRepeaterScreen() {
@@ -1314,7 +1317,7 @@ void UISettings::createRepeaterScreen() {
     lv_obj_set_style_text_color(desc_label, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(desc_label, &lv_font_montserrat_12, 0);
 
-    Serial.println("[UISettings] Repeater screen created");
+    ESP_LOGD(TAG, "Repeater screen created");
 }
 
 // =============================================================================
@@ -1460,7 +1463,7 @@ void UISettings::createWifiScreen() {
     // Start update timer
     wifi_update_timer = lv_timer_create(wifi_screen_timer_cb, 1000, NULL);
 
-    Serial.println("[UISettings] WiFi settings screen created");
+    ESP_LOGD(TAG, "WiFi settings screen created");
 }
 
 // =============================================================================
@@ -1517,33 +1520,33 @@ static void bluetooth_screen_timer_cb(lv_timer_t *timer) {
 static void ble_setup_timer_cb(lv_timer_t *timer) {
     uint32_t currentFreeHeap = ESP.getFreeHeap();
     uint32_t largestBlock = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
-    Serial.printf("[UISettings] BLE setup timer: Free heap: %u bytes, Largest block: %u bytes\n",
-                  currentFreeHeap, largestBlock);
+    ESP_LOGI(TAG, "BLE setup timer: Free heap: %u bytes, Largest block: %u bytes",
+             currentFreeHeap, largestBlock);
 
     const uint32_t MIN_CONTIGUOUS_HEAP_FOR_BLE = 40 * 1024;
 
     if (Config.bluetooth.useBLE) {
         // Stop WiFi to free DRAM for BLE
         WIFI_Utils::stop();
-        Serial.printf("[UISettings] WiFi stopped. Free heap: %u bytes\n", ESP.getFreeHeap());
+        ESP_LOGI(TAG, "WiFi stopped. Free heap: %u bytes", ESP.getFreeHeap());
 
         BLE_Utils::setup();
-        Serial.printf("[UISettings] BLE setup done (deferred). Free heap: %u bytes\n", ESP.getFreeHeap());
+        ESP_LOGI(TAG, "BLE setup done (deferred). Free heap: %u bytes", ESP.getFreeHeap());
     }
     lv_timer_del(timer);
 }
 
 static void ble_stop_timer_cb(lv_timer_t *timer) {
-    Serial.printf("[UISettings] BLE stop timer: Free heap before stop: %u bytes\n", ESP.getFreeHeap());
+    ESP_LOGI(TAG, "BLE stop timer: Free heap before stop: %u bytes", ESP.getFreeHeap());
     if (Config.bluetooth.useBLE) {
         BLE_Utils::stop();
-        Serial.printf("[UISettings] BLE stop done (deferred). Free heap: %u bytes\n", ESP.getFreeHeap());
+        ESP_LOGI(TAG, "BLE stop done (deferred). Free heap: %u bytes", ESP.getFreeHeap());
     }
 
     // Restart WiFi after BLE release
     if (Config.wifiEnabled) {
         WIFI_Utils::startStationMode();
-        Serial.println("[UISettings] WiFi restarted after BLE stop");
+        ESP_LOGI(TAG, "WiFi restarted after BLE stop");
     }
 
     lv_timer_del(timer);
@@ -1554,7 +1557,7 @@ static void bluetooth_switch_changed(lv_event_t *e) {
     bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
 
     if (is_on) {
-        Serial.println("[UISettings] Bluetooth: Scheduling ON");
+        ESP_LOGI(TAG, "Bluetooth: Scheduling ON");
         bluetoothActive = true;
         lv_timer_create(ble_setup_timer_cb, 50, NULL);
 
@@ -1563,7 +1566,7 @@ static void bluetooth_switch_changed(lv_event_t *e) {
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
         }
     } else {
-        Serial.println("[UISettings] Bluetooth: Scheduling OFF");
+        ESP_LOGI(TAG, "Bluetooth: Scheduling OFF");
         bluetoothActive = false;
         lv_timer_create(ble_stop_timer_cb, 50, NULL);
 
@@ -1722,7 +1725,7 @@ void UISettings::createBluetoothScreen() {
     // Start update timer
     bluetooth_update_timer = lv_timer_create(bluetooth_screen_timer_cb, 1000, NULL);
 
-    Serial.println("[UISettings] Bluetooth settings screen created");
+    ESP_LOGD(TAG, "Bluetooth settings screen created");
 }
 
 // =============================================================================
@@ -1730,7 +1733,7 @@ void UISettings::createBluetoothScreen() {
 // =============================================================================
 
 static void webconf_reboot_cb(lv_event_t *e) {
-    Serial.println("[UISettings] Reboot button pressed!");
+    ESP_LOGI(TAG, "Reboot button pressed!");
     webconf_reboot_requested = true;
 }
 
@@ -1738,7 +1741,7 @@ static void webconf_reboot_cb(lv_event_t *e) {
 volatile bool webconf_pending = false;
 
 static void setup_item_webconf(lv_event_t *e) {
-    Serial.println("[UISettings] Web-Conf Mode selected");
+    ESP_LOGI(TAG, "Web-Conf Mode selected");
     // Set flag — actual openWebConf() runs from LVGL_UI::loop() to avoid reentrancy
     webconf_pending = true;
 }
@@ -1753,7 +1756,7 @@ bool UISettings::checkPendingWebConf() {
 }
 
 void UISettings::openWebConf() {
-    Serial.println("[UISettings] Web-Conf Mode - entering blocking mode");
+    ESP_LOGI(TAG, "Web-Conf Mode - entering blocking mode");
 
     // Create web-conf screen
     screen_webconf = lv_obj_create(NULL);
@@ -1841,7 +1844,7 @@ void UISettings::openWebConf() {
         lv_refr_now(NULL);
 
         // *** BLOCKING LOOP ***
-        Serial.println("[UISettings] Entering Web-Conf blocking loop");
+        ESP_LOGI(TAG, "Entering Web-Conf blocking loop");
         webconf_reboot_requested = false;
 
         while (!webconf_reboot_requested) {
@@ -1854,7 +1857,7 @@ void UISettings::openWebConf() {
             delay(10);
         }
 
-        Serial.println("[UISettings] Rebooting from Web-Conf mode");
+        ESP_LOGI(TAG, "Rebooting from Web-Conf mode");
         ESP.restart();
 
     } else {
@@ -1875,7 +1878,7 @@ void UISettings::openWebConf() {
 }
 
 void UISettings::showBootWebConfig() {
-    Serial.println("[UISettings] First boot web-conf mode (NOCALL detected)");
+    ESP_LOGI(TAG, "First boot web-conf mode (NOCALL detected)");
 
     // Create web-conf screen
     screen_webconf = lv_obj_create(NULL);
@@ -1966,7 +1969,7 @@ void UISettings::showBootWebConfig() {
         lv_timer_handler();
 
         // *** BLOCKING LOOP ***
-        Serial.println("[UISettings] Entering First Boot Web-Conf blocking loop");
+        ESP_LOGI(TAG, "Entering First Boot Web-Conf blocking loop");
         webconf_reboot_requested = false;
 
         while (!webconf_reboot_requested) {
@@ -1978,7 +1981,7 @@ void UISettings::showBootWebConfig() {
             delay(10);
         }
 
-        Serial.println("[UISettings] Rebooting from First Boot Web-Conf");
+        ESP_LOGI(TAG, "Rebooting from First Boot Web-Conf");
         ESP.restart();
 
     } else {
@@ -2087,7 +2090,7 @@ void UISettings::createAboutScreen() {
     lv_obj_set_style_text_color(lbl_author, lv_color_hex(UIColors::TEXT_GRAY), 0);
     lv_obj_set_style_text_font(lbl_author, &lv_font_montserrat_12, 0);
 
-    Serial.println("[UISettings] About screen created");
+    ESP_LOGD(TAG, "About screen created");
 }
 
 // =============================================================================
@@ -2141,7 +2144,7 @@ void UISettings::stopBluetoothTimer() {
 // =============================================================================
 
 void UISettings::init() {
-    Serial.println("[UISettings] Module initialized");
+    ESP_LOGI(TAG, "Module initialized");
 }
 
 #endif // USE_LVGL_UI

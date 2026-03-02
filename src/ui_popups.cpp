@@ -10,7 +10,10 @@
 #include "ui_common.h"
 #include "storage_utils.h"
 #include <Arduino.h>
+#include <esp_log.h>
 #include <lvgl.h>
+
+static const char *TAG = "UIPopups";
 
 namespace UIPopups {
 
@@ -36,7 +39,7 @@ static void hide_rx_popup(lv_timer_t *timer) {
 }
 
 void showMessage(const char *from, const char *message) {
-    Serial.printf("[UIPopups] showMessage from %s: %s\n", from, message);
+    ESP_LOGD(TAG, "showMessage from %s: %s", from, message);
 
     // Close existing msgbox if any
     if (rx_msgbox) {
@@ -68,7 +71,7 @@ void showMessage(const char *from, const char *message) {
     rx_popup_timer = lv_timer_create(hide_rx_popup, 4000, NULL);
     lv_timer_set_repeat_count(rx_popup_timer, 1);
 
-    Serial.println("[UIPopups] RX msgbox created");
+    ESP_LOGD(TAG, "RX msgbox created");
 }
 
 // =============================================================================
@@ -87,14 +90,14 @@ static void hide_tx_popup(lv_timer_t *timer) {
 }
 
 void showTxPacket(const char *packet) {
-    Serial.printf("[UIPopups] showTxPacket: %s\n", packet);
+    ESP_LOGD(TAG, "showTxPacket: %s", packet);
 
     // Always close beacon pending popup when TX happens
     hideBeaconPending();
 
     // Only show popup on dashboard
     if (lv_scr_act() != UIScreens::getMainScreen()) {
-        Serial.println("[UIPopups] TX popup skipped (not on dashboard)");
+        ESP_LOGD(TAG, "TX popup skipped (not on dashboard)");
         return;
     }
 
@@ -124,7 +127,7 @@ void showTxPacket(const char *packet) {
     tx_popup_timer = lv_timer_create(hide_tx_popup, 3000, NULL);
     lv_timer_set_repeat_count(tx_popup_timer, 1);
 
-    Serial.println("[UIPopups] TX msgbox created");
+    ESP_LOGD(TAG, "TX msgbox created");
 }
 
 // =============================================================================
@@ -143,11 +146,11 @@ static void hide_rx_lora_popup(lv_timer_t *timer) {
 }
 
 void showRxPacket(const char *packet) {
-    Serial.printf("[UIPopups] showRxPacket: %s\n", packet);
+    ESP_LOGD(TAG, "showRxPacket: %s", packet);
 
     // Only show popup on dashboard
     if (lv_scr_act() != UIScreens::getMainScreen()) {
-        Serial.println("[UIPopups] RX popup skipped (not on dashboard)");
+        ESP_LOGD(TAG, "RX popup skipped (not on dashboard)");
         return;
     }
 
@@ -177,7 +180,7 @@ void showRxPacket(const char *packet) {
     rx_lora_timer = lv_timer_create(hide_rx_lora_popup, 3000, NULL);
     lv_timer_set_repeat_count(rx_lora_timer, 1);
 
-    Serial.println("[UIPopups] RX LoRa msgbox created");
+    ESP_LOGD(TAG, "RX LoRa msgbox created");
 }
 
 // =============================================================================
@@ -196,7 +199,7 @@ static void hide_beacon_pending_popup(lv_timer_t *timer) {
 }
 
 void showBeaconPending() {
-    Serial.println("[UIPopups] showBeaconPending");
+    ESP_LOGD(TAG, "showBeaconPending");
 
     if (beacon_pending_msgbox && lv_obj_is_valid(beacon_pending_msgbox)) {
         lv_obj_del(beacon_pending_msgbox);
@@ -223,7 +226,7 @@ void showBeaconPending() {
     beacon_pending_timer = lv_timer_create(hide_beacon_pending_popup, 5000, NULL);
     lv_timer_set_repeat_count(beacon_pending_timer, 1);
 
-    Serial.println("[UIPopups] Beacon pending msgbox created");
+    ESP_LOGD(TAG, "Beacon pending msgbox created");
 }
 
 void hideBeaconPending() {
@@ -244,7 +247,7 @@ void hideBeaconPending() {
 static lv_obj_t *map_loading_msgbox = nullptr;
 
 void showMapLoading() {
-    Serial.println("[UIPopups] showMapLoading");
+    ESP_LOGD(TAG, "showMapLoading");
 
     if (map_loading_msgbox && lv_obj_is_valid(map_loading_msgbox)) {
         lv_obj_del(map_loading_msgbox);
@@ -263,7 +266,7 @@ void showMapLoading() {
 
     lv_refr_now(NULL);
 
-    Serial.println("[UIPopups] Map loading msgbox created");
+    ESP_LOGD(TAG, "Map loading msgbox created");
 }
 
 void hideMapLoading() {
@@ -289,10 +292,10 @@ static void hide_wifi_eco_popup(lv_timer_t *timer) {
 }
 
 void showWiFiEcoMode() {
-    Serial.println("[UIPopups] showWiFiEcoMode");
+    ESP_LOGD(TAG, "showWiFiEcoMode");
 
     if (!UIScreens::isInitialized()) {
-        Serial.println("[UIPopups] UI not initialized, skipping popup");
+        ESP_LOGD(TAG, "UI not initialized, skipping popup");
         return;
     }
 
@@ -321,7 +324,7 @@ void showWiFiEcoMode() {
     wifi_eco_timer = lv_timer_create(hide_wifi_eco_popup, 2000, NULL);
     lv_timer_set_repeat_count(wifi_eco_timer, 1);
 
-    Serial.println("[UIPopups] WiFi Eco msgbox created");
+    ESP_LOGD(TAG, "WiFi Eco msgbox created");
 }
 
 // =============================================================================
@@ -340,10 +343,10 @@ static void hide_capslock_popup(lv_timer_t *timer) {
 }
 
 void showCapsLockPopup(bool active) {
-    Serial.printf("[UIPopups] showCapsLockPopup: %s\n", active ? "ON" : "OFF");
+    ESP_LOGD(TAG, "showCapsLockPopup: %s", active ? "ON" : "OFF");
 
     if (!UIScreens::isInitialized()) {
-        Serial.println("[UIPopups] UI not initialized, skipping popup");
+        ESP_LOGD(TAG, "UI not initialized, skipping popup");
         return;
     }
 
@@ -379,7 +382,7 @@ void showCapsLockPopup(bool active) {
     capslock_timer = lv_timer_create(hide_capslock_popup, 1500, NULL);
     lv_timer_set_repeat_count(capslock_timer, 1);
 
-    Serial.println("[UIPopups] Caps Lock popup created");
+    ESP_LOGD(TAG, "Caps Lock popup created");
 }
 
 // =============================================================================
@@ -402,12 +405,12 @@ static void add_contact_btn_callback(lv_event_t *e) {
         newContact.comment = "Auto-added";
 
         if (STORAGE_Utils::addContact(newContact)) {
-            Serial.printf("[UIPopups] Contact %s added\n", pending_contact_callsign.c_str());
+            ESP_LOGI(TAG, "Contact %s added", pending_contact_callsign.c_str());
         } else {
-            Serial.printf("[UIPopups] Failed to add contact %s\n", pending_contact_callsign.c_str());
+            ESP_LOGW(TAG, "Failed to add contact %s", pending_contact_callsign.c_str());
         }
     } else {
-        Serial.printf("[UIPopups] User declined contact %s\n", pending_contact_callsign.c_str());
+        ESP_LOGD(TAG, "User declined contact %s", pending_contact_callsign.c_str());
     }
 
     if (add_contact_msgbox && lv_obj_is_valid(add_contact_msgbox)) {
@@ -424,16 +427,16 @@ static void add_contact_btn_callback(lv_event_t *e) {
             lv_scr_load_anim(msgScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
             lv_tabview_set_act(tabview, 2, LV_ANIM_ON); // 2 = Contacts tab
             UIScreens::populateContactsList();
-            Serial.println("[UIPopups] Navigated to Contacts tab");
+            ESP_LOGI(TAG, "Navigated to Contacts tab");
         }
     }
 }
 
 void showAddContactPrompt(const char *callsign) {
-    Serial.printf("[UIPopups] showAddContactPrompt: %s\n", callsign);
+    ESP_LOGD(TAG, "showAddContactPrompt: %s", callsign);
 
     if (!UIScreens::isInitialized()) {
-        Serial.println("[UIPopups] UI not initialized, skipping popup");
+        ESP_LOGD(TAG, "UI not initialized, skipping popup");
         return;
     }
 
@@ -466,7 +469,7 @@ void showAddContactPrompt(const char *callsign) {
 
     lv_refr_now(NULL);
 
-    Serial.println("[UIPopups] Add contact popup created");
+    ESP_LOGD(TAG, "Add contact popup created");
 }
 
 // =============================================================================
@@ -533,7 +536,7 @@ void closeAll() {
 
 void init() {
     initialized = true;
-    Serial.println("[UIPopups] Module initialized");
+    ESP_LOGI(TAG, "Module initialized");
 }
 
 } // namespace UIPopups

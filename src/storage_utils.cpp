@@ -23,8 +23,11 @@
 #include <algorithm>
 #include <ArduinoJson.h>
 #include <TimeLib.h>
+#include <esp_log.h>
 #include "board_pinout.h"
 #include "storage_utils.h"
+
+static const char *TAG = "Storage";
 
 static bool sdAvailable = false;
 
@@ -50,48 +53,48 @@ namespace STORAGE_Utils {
         // Create root directory
         if (!SD.exists(ROOT_DIR)) {
             SD.mkdir(ROOT_DIR);
-            Serial.printf("[Storage] Created %s\n", ROOT_DIR);
+            ESP_LOGI(TAG, "Created %s", ROOT_DIR);
         }
 
         // Create Messages directories
         if (!SD.exists(MESSAGES_DIR)) {
             SD.mkdir(MESSAGES_DIR);
-            Serial.printf("[Storage] Created %s\n", MESSAGES_DIR);
+            ESP_LOGI(TAG, "Created %s", MESSAGES_DIR);
         }
         if (!SD.exists(INBOX_DIR)) {
             SD.mkdir(INBOX_DIR);
-            Serial.printf("[Storage] Created %s\n", INBOX_DIR);
+            ESP_LOGI(TAG, "Created %s", INBOX_DIR);
         }
         if (!SD.exists(OUTBOX_DIR)) {
             SD.mkdir(OUTBOX_DIR);
-            Serial.printf("[Storage] Created %s\n", OUTBOX_DIR);
+            ESP_LOGI(TAG, "Created %s", OUTBOX_DIR);
         }
 
         // Create Contacts directory
         if (!SD.exists(CONTACTS_DIR)) {
             SD.mkdir(CONTACTS_DIR);
-            Serial.printf("[Storage] Created %s\n", CONTACTS_DIR);
+            ESP_LOGI(TAG, "Created %s", CONTACTS_DIR);
         }
 
         // Create Maps directory for offline tiles
         if (!SD.exists(MAPS_DIR)) {
             SD.mkdir(MAPS_DIR);
-            Serial.printf("[Storage] Created %s\n", MAPS_DIR);
+            ESP_LOGI(TAG, "Created %s", MAPS_DIR);
         }
 
         // Create Symbols directory for APRS symbols
         if (!SD.exists(SYMBOLS_DIR)) {
             SD.mkdir(SYMBOLS_DIR);
-            Serial.printf("[Storage] Created %s\n", SYMBOLS_DIR);
+            ESP_LOGI(TAG, "Created %s", SYMBOLS_DIR);
         }
     }
 
     void setup() {
         // Always init SPIFFS as fallback (format on fail for first boot)
         if (!SPIFFS.begin(true)) {
-            Serial.println("[Storage] SPIFFS mount failed");
+            ESP_LOGE(TAG, "SPIFFS mount failed");
         } else {
-            Serial.println("[Storage] SPIFFS mounted");
+            ESP_LOGI(TAG, "SPIFFS mounted");
         }
 
         #ifdef BOARD_SDCARD_CS
@@ -104,7 +107,7 @@ namespace STORAGE_Utils {
                 uint8_t cardType = SD.cardType();
 
                 if (cardType == CARD_NONE) {
-                    Serial.println("[Storage] No SD card inserted");
+                    ESP_LOGW(TAG, "No SD card inserted");
                     sdAvailable = false;
                 } else {
                     const char* typeStr = "UNKNOWN";
@@ -112,7 +115,7 @@ namespace STORAGE_Utils {
                     else if (cardType == CARD_SD) typeStr = "SDSC";
                     else if (cardType == CARD_SDHC) typeStr = "SDHC";
 
-                    Serial.printf("[Storage] SD card mounted (%s, %lluMB)\n",
+                    ESP_LOGI(TAG, "SD card mounted (%s, %lluMB)",
                         typeStr, SD.cardSize() / (1024 * 1024));
 
 
@@ -123,11 +126,11 @@ namespace STORAGE_Utils {
                     loadFramesFromSD();
                 }
             } else {
-                Serial.println("[Storage] SD card init failed, using SPIFFS");
+                ESP_LOGE(TAG, "SD card init failed, using SPIFFS");
                 sdAvailable = false;
             }
         #else
-            Serial.println("[Storage] No SD card support, using SPIFFS");
+            ESP_LOGW(TAG, "No SD card support, using SPIFFS");
         #endif
     }
 
@@ -292,13 +295,13 @@ namespace STORAGE_Utils {
         contactsCache.clear();
 
         if (!sdAvailable) {
-            Serial.println("[Storage] No SD card, contacts not available");
+            ESP_LOGW(TAG, "No SD card, contacts not available");
             return contactsCache;
         }
 
         File file = SD.open(CONTACTS_FILE, FILE_READ);
         if (!file) {
-            Serial.println("[Storage] No contacts file, starting fresh");
+            ESP_LOGW(TAG, "No contacts file, starting fresh");
             contactsLoaded = true;
             return contactsCache;
         }
@@ -309,7 +312,7 @@ namespace STORAGE_Utils {
         file.close();
 
         if (error) {
-            Serial.printf("[Storage] JSON parse error: %s\n", error.c_str());
+            ESP_LOGE(TAG, "JSON parse error: %s", error.c_str());
             contactsLoaded = true;
             return contactsCache;
         }
@@ -326,14 +329,14 @@ namespace STORAGE_Utils {
             }
         }
 
-        Serial.printf("[Storage] Loaded %d contacts\n", contactsCache.size());
+        ESP_LOGI(TAG, "Loaded %d contacts", contactsCache.size());
         contactsLoaded = true;
         return contactsCache;
     }
 
     bool saveContacts(const std::vector<Contact>& contacts) {
         if (!sdAvailable) {
-            Serial.println("[Storage] No SD card, cannot save contacts");
+            ESP_LOGW(TAG, "No SD card, cannot save contacts");
             return false;
         }
 
@@ -351,7 +354,7 @@ namespace STORAGE_Utils {
         // Write to file
         File file = SD.open(CONTACTS_FILE, FILE_WRITE);
         if (!file) {
-            Serial.println("[Storage] Failed to open contacts file for writing");
+            ESP_LOGE(TAG, "Failed to open contacts file for writing");
             return false;
         }
 
@@ -362,7 +365,7 @@ namespace STORAGE_Utils {
         contactsCache = contacts;
         contactsLoaded = true;
 
-        Serial.printf("[Storage] Saved %d contacts\n", contacts.size());
+        ESP_LOGI(TAG, "Saved %d contacts", contacts.size());
         return true;
     }
 
@@ -375,7 +378,7 @@ namespace STORAGE_Utils {
         // Check if callsign already exists
         for (const Contact& c : contactsCache) {
             if (c.callsign.equalsIgnoreCase(contact.callsign)) {
-                Serial.printf("[Storage] Contact %s already exists\n", contact.callsign.c_str());
+                ESP_LOGW(TAG, "Contact %s already exists", contact.callsign.c_str());
                 return false;
             }
         }
@@ -395,12 +398,12 @@ namespace STORAGE_Utils {
         for (auto it = contactsCache.begin(); it != contactsCache.end(); ++it) {
             if (it->callsign.equalsIgnoreCase(callsign)) {
                 contactsCache.erase(it);
-                Serial.printf("[Storage] Removed contact %s\n", callsign.c_str());
+                ESP_LOGI(TAG, "Removed contact %s", callsign.c_str());
                 return saveContacts(contactsCache);
             }
         }
 
-        Serial.printf("[Storage] Contact %s not found\n", callsign.c_str());
+        ESP_LOGW(TAG, "Contact %s not found", callsign.c_str());
         return false;
     }
 
@@ -414,12 +417,12 @@ namespace STORAGE_Utils {
                 c.callsign = newData.callsign;
                 c.name = newData.name;
                 c.comment = newData.comment;
-                Serial.printf("[Storage] Updated contact %s\n", callsign.c_str());
+                ESP_LOGI(TAG, "Updated contact %s", callsign.c_str());
                 return saveContacts(contactsCache);
             }
         }
 
-        Serial.printf("[Storage] Contact %s not found for update\n", callsign.c_str());
+        ESP_LOGW(TAG, "Contact %s not found for update", callsign.c_str());
         return false;
     }
 
@@ -465,14 +468,14 @@ namespace STORAGE_Utils {
         file.close();
 
         if (fileSize >= MAX_FRAMES_SIZE) {
-            Serial.printf("[Storage] Rotating frames log (%u bytes)...\n", fileSize);
+            ESP_LOGI(TAG, "Rotating frames log (%u bytes)...", fileSize);
             // Remove old backup if exists
             if (SD.exists(FRAMES_OLD_FILE)) {
                 SD.remove(FRAMES_OLD_FILE);
             }
             // Rename current to old
             SD.rename(FRAMES_FILE, FRAMES_OLD_FILE);
-            Serial.println("[Storage] Frames log rotated");
+            ESP_LOGI(TAG, "Frames log rotated");
         }
     }
 
@@ -540,13 +543,13 @@ const std::vector<String>& getLastFrames(int count) {
     // Load last 20 frames from SD card into RAM cache (called at boot)
     void loadFramesFromSD() {
         if (!sdAvailable) {
-            Serial.println("[Storage] No SD card, frames not loaded");
+            ESP_LOGW(TAG, "No SD card, frames not loaded");
             return;
         }
 
         File file = SD.open(FRAMES_FILE, FILE_READ);
         if (!file) {
-            Serial.println("[Storage] No frames file, starting fresh");
+            ESP_LOGW(TAG, "No frames file, starting fresh");
             return;
         }
 
@@ -573,7 +576,7 @@ const std::vector<String>& getLastFrames(int count) {
             if (framesCacheCount < FRAMES_CACHE_SIZE) framesCacheCount++;
         }
 
-        Serial.printf("[Storage] Loaded %d frames from SD\n", loadCount);
+        ESP_LOGI(TAG, "Loaded %d frames from SD", loadCount);
         framesDirty = true;
     }
 
@@ -602,7 +605,7 @@ const std::vector<String>& getLastFrames(int count) {
         historyHead = 0;
         rssiHistoryOrdered.clear();
         snrHistoryOrdered.clear();
-        Serial.println("[Storage] Stats reset");
+        ESP_LOGI(TAG, "Stats reset");
     }
 
     void updateRxStats(int rssi, float snr) {
@@ -832,13 +835,13 @@ const std::vector<String>& getLastFrames(int count) {
 
     void loadStats() {
         if (!sdAvailable) {
-            Serial.println("[Storage] No SD card, stats not loaded");
+            ESP_LOGW(TAG, "No SD card, stats not loaded");
             return;
         }
 
         File file = SD.open(STATS_FILE, FILE_READ);
         if (!file) {
-            Serial.println("[Storage] No stats file, starting fresh");
+            ESP_LOGW(TAG, "No stats file, starting fresh");
             return;
         }
 
@@ -847,7 +850,7 @@ const std::vector<String>& getLastFrames(int count) {
         file.close();
 
         if (error) {
-            Serial.printf("[Storage] Stats JSON parse error: %s\n", error.c_str());
+            ESP_LOGE(TAG, "Stats JSON parse error: %s", error.c_str());
             return;
         }
 
@@ -893,7 +896,7 @@ const std::vector<String>& getLastFrames(int count) {
             }
         }
 
-        Serial.printf("[Storage] Loaded %d station stats\n", stationStats.size());
+        ESP_LOGI(TAG, "Loaded %d station stats", stationStats.size());
     }
 
     bool saveStats() {
@@ -931,14 +934,14 @@ const std::vector<String>& getLastFrames(int count) {
 
         File file = SD.open(STATS_FILE, FILE_WRITE);
         if (!file) {
-            Serial.println("[Storage] Failed to open stats file for writing");
+            ESP_LOGE(TAG, "Failed to open stats file for writing");
             return false;
         }
 
         serializeJson(doc, file);
         file.close();
 
-        Serial.printf("[Storage] Saved stats (%d stations)\n", stationStats.size());
+        ESP_LOGI(TAG, "Saved stats (%d stations)", stationStats.size());
         return true;
     }
 

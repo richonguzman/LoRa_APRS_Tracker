@@ -35,6 +35,9 @@
 #include "lvgl_ui.h" // To call LVGL_UI::open_compose_with_callsign
 #include "gpx_writer.h"
 #include <esp_task_wdt.h> //
+#include <esp_log.h>
+
+static const char *TAG = "Map";
 
 namespace UIMapManager {
 
@@ -201,10 +204,10 @@ namespace UIMapManager {
             bool posChanged = (map_center_lat != prevLat || map_center_lon != prevLon);
 
             if (posChanged) {
-                Serial.println("[MAP] Periodic refresh (GPS moved, full redraw)");
+                ESP_LOGD(TAG, "Periodic refresh (GPS moved, full redraw)");
                 redraw_map_canvas();
             } else {
-                Serial.println("[MAP] Periodic refresh (station overlay only)");
+                ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
                 refreshStationOverlay();
             }
         }
@@ -229,7 +232,7 @@ namespace UIMapManager {
 
     // Task running on Core 1 to preload tiles in background
     static void tilePreloadTaskFunc(void* param) {
-        Serial.println("[MAP] Tile preload task started on Core 1");
+        ESP_LOGI(TAG, "Tile preload task started on Core 1");
         TileRequest req;
 
         while (preloadTaskRunning) {
@@ -248,13 +251,13 @@ namespace UIMapManager {
                 int cacheIdx = MapEngine::findCachedTile(req.zoom, req.tileX, req.tileY);
                 if (cacheIdx < 0) {
                     // Not in cache - preload it
-                    Serial.printf("[MAP-ASYNC] Preloading tile %d/%d/%d\n", req.zoom, req.tileX, req.tileY);
+                    ESP_LOGD(TAG, "Preloading tile %d/%d/%d", req.zoom, req.tileX, req.tileY);
                     preloadTileToCache(req.tileX, req.tileY, req.zoom);
                 }
             }
         }
 
-        Serial.println("[MAP] Tile preload task stopped");
+        ESP_LOGI(TAG, "Tile preload task stopped");
         vTaskDelete(NULL);
     }
 
@@ -535,7 +538,7 @@ namespace UIMapManager {
             symbolCache[i].lastAccess = 0;
         }
         symbolCacheInitialized = true;
-        Serial.println("[MAP] Symbol cache initialized");
+        ESP_LOGI(TAG, "Symbol cache initialized");
     }
 
     // Forward declarations for PNG callbacks
@@ -656,7 +659,7 @@ namespace UIMapManager {
         String path = String("/LoRa_Tracker/Symbols/") + tableName + "/" + hexCode + ".png";
 
         if (!STORAGE_Utils::isSDAvailable()) {
-            Serial.println("[SYMBOL] SD not available");
+            ESP_LOGE(TAG, "SD not available for symbol load");
             return nullptr;
         }
 
@@ -667,7 +670,7 @@ namespace UIMapManager {
         // Single allocation: combined RGB565A8 buffer in PSRAM
         uint8_t* combined = (uint8_t*)ps_malloc(totalSize);
         if (!combined) {
-            Serial.println("[SYMBOL] PSRAM allocation failed");
+            ESP_LOGE(TAG, "PSRAM allocation failed for symbol");
             return nullptr;
         }
         memset(combined, 0, totalSize);  // Zero-init (transparent black)
@@ -683,7 +686,7 @@ namespace UIMapManager {
 
             if (rc == PNG_SUCCESS) {
                 symbolCombinedBuffer = nullptr;
-                Serial.printf("[SYMBOL] Loaded RGB565A8: %c%c from %s\n", table, symbol, path.c_str());
+                ESP_LOGI(TAG, "Loaded RGB565A8: %c%c from %s", table, symbol, path.c_str());
                 return combined;
             }
         }
@@ -692,7 +695,7 @@ namespace UIMapManager {
         symbolPNG.close();
         symbolCombinedBuffer = nullptr;
         free(combined);
-        Serial.printf("[SYMBOL] Failed to load: %s\n", path.c_str());
+        ESP_LOGE(TAG, "Failed to load symbol: %s", path.c_str());
         return nullptr;
     }
 
@@ -805,7 +808,7 @@ namespace UIMapManager {
         LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
         newSprite->setPsram(true);
         if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
-            Serial.println("[PRELOAD] Sprite creation failed");
+            ESP_LOGE(TAG, "Sprite creation failed");
             delete newSprite;
             return false;
         }
@@ -864,7 +867,7 @@ namespace UIMapManager {
         MapStation* station = STATION_Utils::getMapStation(stationIndex);
 
         if (station && station->valid && station->callsign.length() > 0) {
-            Serial.printf("[MAP] Station clicked : %s\n", station->callsign.c_str());
+            ESP_LOGI(TAG, "Station clicked: %s", station->callsign.c_str());
             map_prefill_callsign = station->callsign;
             LVGL_UI::open_compose_with_callsign(station->callsign); // Call public function
         }
@@ -872,7 +875,7 @@ namespace UIMapManager {
 */
     // Map back button handler
     void btn_map_back_clicked(lv_event_t* e) {
-        Serial.println("[LVGL] MAP BACK button pressed");
+        ESP_LOGI(TAG, "MAP BACK button pressed");
         MapEngine::stopRenderTask();
         cleanup_station_buttons();
         map_follow_gps = true;  // Reset to follow GPS when leaving map
@@ -887,8 +890,8 @@ namespace UIMapManager {
         // See CLAUDE.md: "Sprites persistants — allouer une seule fois, ne jamais libérer/recréer"
         // Return CPU to 80 MHz for power saving
         setCpuFrequencyMhz(80);
-        Serial.printf("[MAP] CPU reduced to %d MHz\n", getCpuFrequencyMhz());
-        Serial.printf("[MEM] After MAP exit - DRAM: %u  PSRAM: %u  Largest DRAM block: %u\n",
+        ESP_LOGI(TAG, "CPU reduced to %d MHz", getCpuFrequencyMhz());
+        ESP_LOGI(TAG, "After MAP exit - DRAM: %u  PSRAM: %u  Largest DRAM block: %u",
                       heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
                       heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
                       heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
@@ -918,17 +921,17 @@ namespace UIMapManager {
 
     // Map recenter button handler - return to GPS position
     void btn_map_recenter_clicked(lv_event_t* e) {
-        Serial.println("[MAP] Recentering on GPS");
+        ESP_LOGI(TAG, "Recentering on GPS");
         map_follow_gps = true;
         if (gps.location.isValid()) {
             map_center_lat = gps.location.lat();
             map_center_lon = gps.location.lng();
-            Serial.printf("[MAP] Recentered on GPS : %.4f, %.4f\n", map_center_lat, map_center_lon);
+            ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", map_center_lat, map_center_lon);
         } else {
             // No GPS - return to default Ariège position
             map_center_lat = 42.9667f;
             map_center_lon = 1.6053f;
-            Serial.printf("[MAP] No GPS, recentered on default position : %.4f, %.4f\n", map_center_lat, map_center_lon);
+            ESP_LOGW(TAG, "No GPS, recentered on default position: %.4f, %.4f", map_center_lat, map_center_lon);
         }
         schedule_map_reload();
     }
@@ -988,7 +991,7 @@ namespace UIMapManager {
             ownTraceCount++;
         }
 
-        Serial.printf("[MAP] Own trace point added: %.6f, %.6f (count=%d)\n", lat, lon, ownTraceCount);
+        ESP_LOGD(TAG, "Own trace point added: %.6f, %.6f (count=%d)", lat, lon, ownTraceCount);
     }
 
     // Draw GPS traces for mobile stations on the canvas
@@ -1109,7 +1112,7 @@ namespace UIMapManager {
         int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
         int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
 
-        Serial.printf("[MAP] Center tile: %d/%d, sub-tile offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
+        ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
         // Load tiles — two paths:
         // 1) NAV viewport (IceNav-v3 pattern): loads ALL tiles, renders in single z-ordered pass
@@ -1142,7 +1145,7 @@ namespace UIMapManager {
                     }
                     xSemaphoreGive(spiMutex);
                 } else {
-                    Serial.printf("[NAV] isNavMode check TIMEOUT (spiMutex busy) at Z%d\n", map_current_zoom);
+                    ESP_LOGW(TAG, "isNavMode check TIMEOUT (spiMutex busy) at Z%d", map_current_zoom);
                 }
             }
 
@@ -1151,7 +1154,7 @@ namespace UIMapManager {
                 if (!navModeActive) {
                     navModeActive = true;
                     MapEngine::clearTileCache();
-                    Serial.printf("[MEM] After clearTileCache - PSRAM free: %u KB, largest block: %u KB\n",
+                    ESP_LOGI(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     switchZoomTable(nav_zooms, nav_zoom_count);
@@ -1167,7 +1170,7 @@ namespace UIMapManager {
                 for (int r = 0; r < navRegionCount; r++) regionPtrs[r] = navRegions[r].c_str();
 
                 if (persistentViewportSprite) {
-                    Serial.printf("[MEM] Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB\n",
+                    ESP_LOGI(TAG, "Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     hasTiles = MapEngine::renderNavViewport(
@@ -1183,7 +1186,7 @@ namespace UIMapManager {
                         }
                     }
                 } else {
-                    Serial.println("[MAP] No viewport sprite available for NAV rendering");
+                    ESP_LOGW(TAG, "No viewport sprite available for NAV rendering");
                 }
 
                 // Re-subscribe loopTask to WDT
@@ -1286,12 +1289,12 @@ namespace UIMapManager {
             switchZoomTable(nav_zooms, nav_zoom_count);
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
-            Serial.printf("[MAP] Zoom in: %d (raster→NAV)\n", map_current_zoom);
+            ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
-            Serial.printf("[MAP] Zoom in: %d\n", map_current_zoom);
+            ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
             if (navModeActive) MapEngine::clearTileCache();
             redraw_map_canvas();
         }
@@ -1302,7 +1305,7 @@ namespace UIMapManager {
         if (map_zoom_index > 0) {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
-            Serial.printf("[MAP] Zoom out: %d\n", map_current_zoom);
+            ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
             if (navModeActive) MapEngine::clearTileCache();
             redraw_map_canvas();
         } else if (navModeActive) {
@@ -1310,7 +1313,7 @@ namespace UIMapManager {
             navModeActive = false;
             MapEngine::clearTileCache();
             switchZoomTable(raster_zooms, raster_zoom_count);
-            Serial.printf("[MAP] Zoom out: %d (NAV→raster)\n", map_current_zoom);
+            ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
             redraw_map_canvas();
         }
     }
@@ -1341,7 +1344,7 @@ namespace UIMapManager {
                 pending_reload_timer = nullptr;
             }
 
-            Serial.printf("[MAP] Touch PRESSED at %d,%d - start pos: %.4f, %.4f\n",
+            ESP_LOGD(TAG, "Touch PRESSED at %d,%d - start pos: %.4f, %.4f",
                           point.x, point.y, drag_start_lat, drag_start_lon);
         }
         else if (code == LV_EVENT_PRESSING) {
@@ -1353,7 +1356,7 @@ namespace UIMapManager {
             if (!touch_dragging && (abs(dx) > PAN_THRESHOLD || abs(dy) > PAN_THRESHOLD)) {
                 touch_dragging = true;
                 map_follow_gps = false;
-                Serial.println("[MAP] Touch pan started");
+                ESP_LOGD(TAG, "Touch pan started");
 
                 // Immediate preload: queue tiles in direction of movement (raster only)
                 if (tilePreloadQueue != nullptr && !navModeActive) {
@@ -1381,7 +1384,7 @@ namespace UIMapManager {
                             xQueueSend(tilePreloadQueue, &req, 0);
                         }
                     }
-                    Serial.printf("[MAP] Preload queued for direction dx=%d dy=%d\n", dir_x, dir_y);
+                    ESP_LOGD(TAG, "Preload queued for direction dx=%d dy=%d", dir_x, dir_y);
                 }
             }
 
@@ -1439,7 +1442,7 @@ namespace UIMapManager {
                 if (new_y_world > 1.0) new_y_world = 1.0;
                 map_center_lat = atan(sinh(PI * (1.0 - 2.0 * new_y_world))) * 180.0 / PI;
 
-                Serial.printf("[MAP] Touch pan end: %.4f,%.4f -> %.4f,%.4f\n",
+                ESP_LOGD(TAG, "Touch pan end: %.4f,%.4f -> %.4f,%.4f",
                               drag_start_lat, drag_start_lon, map_center_lat, map_center_lon);
 
                 // Schedule redraw (canvas will be recentered after new tiles are drawn)
@@ -1464,7 +1467,7 @@ namespace UIMapManager {
                         int stationIdx = stationHitZones[i].stationIdx;
                         MapStation* station = STATION_Utils::getMapStation(stationIdx);
                         if (station && station->valid && station->callsign.length() > 0) {
-                            Serial.printf("[MAP] Station tapped: %s\n", station->callsign.c_str());
+                            ESP_LOGI(TAG, "Station tapped: %s", station->callsign.c_str());
                             LVGL_UI::open_compose_with_callsign(station->callsign);
                         }
                         break;
@@ -1480,7 +1483,7 @@ namespace UIMapManager {
             return; // Region is already set
         }
 
-        Serial.println("[MAP] Map region not set, attempting to discover...");
+        ESP_LOGI(TAG, "Map region not set, attempting to discover...");
         if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(200)) == pdTRUE) {
             if (STORAGE_Utils::isSDAvailable()) {
                 File mapsDir = SD.open("/LoRa_Tracker/Maps");
@@ -1491,7 +1494,7 @@ namespace UIMapManager {
                             String dirName = String(entry.name());
                             // Extract just the directory name from the full path
                             map_current_region = dirName.substring(dirName.lastIndexOf('/') + 1);
-                            Serial.printf("[MAP] Discovered and set map region: %s\n", map_current_region.c_str());
+                            ESP_LOGI(TAG, "Discovered and set map region: %s", map_current_region.c_str());
                             entry.close();
                             break; // Use the first one we find
                         }
@@ -1499,17 +1502,17 @@ namespace UIMapManager {
                         entry = mapsDir.openNextFile();
                     }
                 } else {
-                    Serial.println("[MAP] ERROR: Could not open /LoRa_Tracker/Maps directory.");
+                    ESP_LOGE(TAG, "Could not open /LoRa_Tracker/Maps directory");
                 }
                 mapsDir.close();
             }
             xSemaphoreGive(spiMutex);
         } else {
-            Serial.println("[MAP] ERROR: Could not get SPI Mutex for region discovery.");
+            ESP_LOGE(TAG, "Could not get SPI Mutex for region discovery");
         }
 
         if (map_current_region.isEmpty()) {
-            Serial.println("[MAP] WARNING: No map region found on SD card.");
+            ESP_LOGW(TAG, "No map region found on SD card");
         }
     }
 
@@ -1540,7 +1543,7 @@ namespace UIMapManager {
             return; // Already discovered
         }
 
-        Serial.println("[MAP] Discovering NAV regions...");
+        ESP_LOGI(TAG, "Discovering NAV regions...");
 
         // Compute center tile at a mid-range zoom for bounding box check
         const int checkZoom = 10;
@@ -1564,10 +1567,10 @@ namespace UIMapManager {
                             // Check if this region covers our GPS position
                             if (gpsMatchIdx < 0 && regionContainsTile(regionName.c_str(), checkZoom, centerTX, centerTY)) {
                                 gpsMatchIdx = navRegionCount;
-                                Serial.printf("[MAP] NAV region GPS match: %s (tile %d/%d at Z%d)\n",
+                                ESP_LOGI(TAG, "NAV region GPS match: %s (tile %d/%d at Z%d)",
                                               regionName.c_str(), centerTX, centerTY, checkZoom);
                             } else {
-                                Serial.printf("[MAP] NAV region found: %s\n", regionName.c_str());
+                                ESP_LOGI(TAG, "NAV region found: %s", regionName.c_str());
                             }
                             navRegionCount++;
                         }
@@ -1588,9 +1591,9 @@ namespace UIMapManager {
         }
 
         if (navRegionCount == 0) {
-            Serial.println("[MAP] No NAV region found on SD card.");
+            ESP_LOGW(TAG, "No NAV region found on SD card");
         } else {
-            Serial.printf("[MAP] Discovered %d NAV region(s), primary: %s\n",
+            ESP_LOGI(TAG, "Discovered %d NAV region(s), primary: %s",
                           navRegionCount, navRegions[0].c_str());
         }
     }
@@ -1598,7 +1601,7 @@ namespace UIMapManager {
 
 bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offsetX, int offsetY) {
     if (spiMutex == NULL) {
-        Serial.println("[MAP] ERROR: spiMutex is NULL. Skipping SD access.");
+        ESP_LOGE(TAG, "spiMutex is NULL, skipping SD access");
         return false;
     }
 
@@ -1625,7 +1628,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
     bool found = false;
     
     if (map_current_region.isEmpty()) {
-        Serial.printf("[MAP] loadTileFromSD: map_current_region is empty! Cannot load %d/%d/%d\n",
+        ESP_LOGE(TAG, "loadTileFromSD: map_current_region is empty! Cannot load %d/%d/%d",
                       zoom, tileX, tileY);
         return false;
     }
@@ -1645,7 +1648,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         }
         xSemaphoreGive(spiMutex);
     } else {
-        Serial.println("[MAP] ERROR: Could not get SPI Mutex for SD access");
+        ESP_LOGE(TAG, "Could not get SPI Mutex for SD access");
     }
 
     // --- 4. If file not found, add to negative cache and return ---
@@ -1676,7 +1679,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         newSprite->deleteSprite();
         delete newSprite;
     } else {
-        Serial.println("[MAP] ERROR: Sprite creation failed (Out of PSRAM?)");
+        ESP_LOGE(TAG, "Sprite creation failed (Out of PSRAM?)");
         delete newSprite;
     }
     return false;
@@ -1687,7 +1690,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
     void create_map_screen() {
         // Boost CPU to 240 MHz for smooth map rendering
         setCpuFrequencyMhz(240);
-        Serial.printf("[MAP] CPU boosted to %d MHz\n", getCpuFrequencyMhz());
+        ESP_LOGI(TAG, "CPU boosted to %d MHz", getCpuFrequencyMhz());
 
         // Set initial position before region discovery (needed for GPS-based region matching)
         if (map_follow_gps && gps.location.isValid()) {
@@ -1702,7 +1705,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         discoverAndSetMapRegion();
         discoverNavRegions();
 
-        Serial.printf("[MAP] Regions discovered - Maps: '%s', VectMaps: %d region(s)\n",
+        ESP_LOGI(TAG, "Regions discovered - Maps: '%s', VectMaps: %d region(s)",
                       map_current_region.c_str(), navRegionCount);
 
         // Load Unicode font for map labels (VLW from SD)
@@ -1718,14 +1721,14 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         if (map_follow_gps && gps.location.isValid()) {
             map_center_lat = gps.location.lat();
             map_center_lon = gps.location.lng();
-            Serial.printf("[MAP] Using GPS position: %.4f, %.4f\n", map_center_lat, map_center_lon);
+            ESP_LOGI(TAG, "Using GPS position: %.4f, %.4f", map_center_lat, map_center_lon);
         } else if (map_center_lat == 0.0f && map_center_lon == 0.0f) {
             // Default to Ariège (Foix) if no GPS - matches OCC tiles
             map_center_lat = 42.9667f;
             map_center_lon = 1.6053f;
-            Serial.printf("[MAP] No GPS, using default Ariège position: %.4f, %.4f\n", map_center_lat, map_center_lon);
+            ESP_LOGW(TAG, "No GPS, using default position: %.4f, %.4f", map_center_lat, map_center_lon);
         } else {
-            Serial.printf("[MAP] Using pan position: %.4f, %.4f\n", map_center_lat, map_center_lon);
+            ESP_LOGI(TAG, "Using pan position: %.4f, %.4f", map_center_lat, map_center_lon);
         }
 
         // Title bar (green for map)
@@ -1820,14 +1823,14 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             persistentViewportSprite = new LGFX_Sprite(&tft);
             persistentViewportSprite->setPsram(true);
             if (persistentViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
-                Serial.println("[MAP] Failed to create persistent viewport sprite");
+                ESP_LOGE(TAG, "Failed to create persistent viewport sprite");
                 delete persistentViewportSprite;
                 persistentViewportSprite = nullptr;
             } else {
-                Serial.printf("[MAP] Viewport sprite allocated: %dx%d (%u KB PSRAM)\n",
+                ESP_LOGI(TAG, "Viewport sprite allocated: %dx%d (%u KB PSRAM)",
                               MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT,
                               MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * 2 / 1024);
-                Serial.printf("[MEM] PSRAM free: %u KB, largest block: %u KB\n",
+                ESP_LOGI(TAG, "PSRAM free: %u KB, largest block: %u KB",
                               ESP.getFreePsram() / 1024,
                               heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
             }
@@ -1866,7 +1869,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
             int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
 
-            Serial.printf("[MAP] Center tile: %d/%d, sub-tile offset: %d,%d\n", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
+            ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
             // Pause async preloading while we load tiles (avoid SD contention)
             mainThreadLoading = true;
@@ -1900,7 +1903,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                         }
                         xSemaphoreGive(spiMutex);
                     } else {
-                        Serial.printf("[NAV] isNavMode check TIMEOUT (spiMutex busy) at Z%d\n", map_current_zoom);
+                        ESP_LOGW(TAG, "isNavMode check TIMEOUT (spiMutex busy) at Z%d", map_current_zoom);
                     }
                 }
 
@@ -1908,7 +1911,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                     // NAV priority: free all raster cache to maximize PSRAM for NAV tiles
                     navModeActive = true;
                     MapEngine::clearTileCache();
-                    Serial.printf("[MEM] After clearTileCache - PSRAM free: %u KB, largest block: %u KB\n",
+                    ESP_LOGI(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     switchZoomTable(nav_zooms, nav_zoom_count);
@@ -1922,7 +1925,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                     for (int r = 0; r < navRegionCount; r++) regionPtrs[r] = navRegions[r].c_str();
 
                     if (persistentViewportSprite) {
-                        Serial.printf("[MEM] Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB\n",
+                        ESP_LOGI(TAG, "Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB",
                                       ESP.getFreePsram() / 1024,
                                       heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                         hasTiles = MapEngine::renderNavViewport(
@@ -1935,7 +1938,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                             }
                         }
                     } else {
-                        Serial.println("[MAP] No viewport sprite available for NAV rendering");
+                        ESP_LOGW(TAG, "No viewport sprite available for NAV rendering");
                     }
 
                     esp_task_wdt_add(xTaskGetCurrentTaskHandle());
@@ -1952,7 +1955,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                             int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
 
                             if (dx == 0 && dy == 0) {
-                                Serial.printf("[MAP] Center tile offset: %d,%d\n", offsetX, offsetY);
+                                ESP_LOGD(TAG, "Center tile offset: %d,%d", offsetX, offsetY);
                             }
 
                             if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
@@ -2015,7 +2018,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         // Start tile preload task on Core 1 for directional preloading during touch pan
         startTilePreloadTask();
 
-        Serial.println("[LVGL] Map screen created");
+        ESP_LOGD(TAG, "Map screen created");
     }
 
 

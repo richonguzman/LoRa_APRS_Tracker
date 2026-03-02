@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include "configuration.h"
@@ -23,17 +24,19 @@
 #include "display.h"
 #include "logger.h"
 
+static const char *TAG = "Config";
+
 extern logging::Logger logger;
 
 bool Configuration::writeFile() {
 
-    Serial.println("Saving config..");
+    ESP_LOGI(TAG, "Saving config..");
 
     DynamicJsonDocument data(8192);
     File configFile = SPIFFS.open("/tracker_conf.json", "w");
 
     if (!configFile) {
-        Serial.println("Error: Could not open config file for writing");
+        ESP_LOGE(TAG, "Could not open config file for writing");
         return false;
     }
     try {
@@ -150,7 +153,7 @@ bool Configuration::writeFile() {
         data["other"]["email"]                      = email;
 
         if (data.overflowed()) {
-            Serial.println("Error: JSON buffer overflow! Config truncated.");
+            ESP_LOGE(TAG, "JSON buffer overflow! Config truncated.");
             configFile.close();
             return false;
         }
@@ -159,14 +162,14 @@ bool Configuration::writeFile() {
         configFile.close();
         return true;
     } catch (...) {
-        Serial.println("Error: Exception occurred while saving config");
+        ESP_LOGE(TAG, "Exception occurred while saving config");
         configFile.close();
         return false;
     }
 }
 
 bool Configuration::readFile() {
-    Serial.println("Reading config..");
+    ESP_LOGI(TAG, "Reading config..");
     File configFile = SPIFFS.open("/tracker_conf.json", "r");
 
     if (configFile) {
@@ -175,7 +178,7 @@ bool Configuration::readFile() {
 
         DeserializationError error = deserializeJson(data, configFile);
         if (error) {
-            Serial.println("Failed to read file, using default configuration");
+            ESP_LOGW(TAG, "Failed to read file, using default configuration");
         }
 
         JsonArray WifiAPArray = data["wifi"]["AP"];
@@ -360,7 +363,7 @@ bool Configuration::readFile() {
             defaultWifi.password = "";
             wifiAPs.push_back(defaultWifi);
             needsRewrite = true;
-            Serial.println("Added default WiFi AP entry");
+            ESP_LOGI(TAG, "Added default WiFi AP entry");
         }
         if (beacons.size() == 0) {
             Beacon bcn;
@@ -372,7 +375,7 @@ bool Configuration::readFile() {
             bcn.gpsEcoMode = false;
             beacons.push_back(bcn);
             needsRewrite = true;
-            Serial.println("Added default beacon entry");
+            ESP_LOGI(TAG, "Added default beacon entry");
         }
         if (loraTypes.size() == 0) {
             LoraType loraType;
@@ -384,19 +387,19 @@ bool Configuration::readFile() {
             loraType.dataRate = 300;
             loraTypes.push_back(loraType);
             needsRewrite = true;
-            Serial.println("Added default LoRa entry");
+            ESP_LOGI(TAG, "Added default LoRa entry");
         }
 
         if (needsRewrite) {
-            Serial.println("Config JSON incomplete, rewriting...");
+            ESP_LOGW(TAG, "Config JSON incomplete, rewriting...");
             writeFile();
             delay(1000);
             ESP.restart();
         }
-        Serial.println("Config read successfuly");
+        ESP_LOGI(TAG, "Config read successfully");
         return true;
     } else {
-        Serial.println("Config file not found");
+        ESP_LOGW(TAG, "Config file not found");
         return false;
     }
 }
@@ -521,7 +524,7 @@ void Configuration::setDefaultValues() {
     disableGPS                      = false;
     email                           = "";
 
-    Serial.println("New Data Created... All is Written!");
+    ESP_LOGI(TAG, "New Data Created... All is Written!");
 }
 
 Configuration::Configuration() {

@@ -5,6 +5,7 @@
 
 #include "map_engine.h"
 #include "ui_map_manager.h"
+#include <esp_log.h>
 #include <JPEGDEC.h>
 #undef INTELSHORT
 #undef INTELLONG
@@ -21,6 +22,8 @@
 
 // Global sprite pointer for raster decoder callbacks
 static LGFX_Sprite* targetSprite_ = nullptr;
+
+static const char *TAG = "MapEngine";
 
 namespace MapEngine {
 
@@ -288,7 +291,7 @@ namespace MapEngine {
     // Background task to render map tiles on Core 0
     static void mapRenderTask(void* param) {
         RenderRequest request;
-        Serial.println("[MAP] Render task started on Core 0");
+        ESP_LOGI(TAG, "Render task started on Core 0");
 
         while (true) {
             if (xQueueReceive(mapRenderQueue, &request, portMAX_DELAY) == pdTRUE) {
@@ -307,7 +310,7 @@ namespace MapEngine {
                         addToCache(request.path, request.zoom, request.tileX, request.tileY, request.targetSprite);
                     } else {
                         // If render failed, delete the sprite to prevent memory leaks
-                        Serial.printf("[MAP] Render failed for %s, cleaning up sprite.\n", request.path);
+                        ESP_LOGE(TAG, "Render failed for %s, cleaning up sprite.", request.path);
                         request.targetSprite->deleteSprite();
                         delete request.targetSprite;
                     }
@@ -334,7 +337,7 @@ namespace MapEngine {
             spriteMutex = nullptr;
         }
         canvas_to_invalidate_ = nullptr;
-        Serial.println("[MAP] Render task stopped.");
+        ESP_LOGI(TAG, "Render task stopped.");
     }
 
     void startRenderTask(lv_obj_t* canvas_to_invalidate) {
@@ -386,7 +389,7 @@ namespace MapEngine {
         for (int i = 0; i < 16; i++) globalLayers[i].reserve(256);
         navCache.reserve(NAV_CACHE_SIZE);
 
-        Serial.printf("[MAP] Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)\n",
+        ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
                       maxCachedTiles, NAV_CACHE_SIZE);
     }
 
@@ -489,7 +492,7 @@ namespace MapEngine {
             evicted++;
         }
         if (evicted > 0) {
-            Serial.printf("[NAV-CACHE] Evicted %d unused entries, largest block: %u KB\n",
+            ESP_LOGD(TAG, "Evicted %d unused entries, largest block: %u KB",
                           evicted, (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
         }
         return heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed;
@@ -501,7 +504,7 @@ namespace MapEngine {
         for (auto& e : navCache) free(e.data);
         navCache.clear();
         navCacheAccessCounter = 0;
-        Serial.println("[NAV-CACHE] Cleared");
+        ESP_LOGI(TAG, "NAV cache cleared");
     }
 
     // --- NPK2 pack file functions (multi-region slot system) ---
@@ -551,7 +554,7 @@ namespace MapEngine {
                     slotIdx = i;
                 }
             }
-            Serial.printf("[NPK] Evicting slot %d (%s/Z%d split%d) for %s/Z%d\n",
+            ESP_LOGD(TAG, "Evicting slot %d (%s/Z%d split%d) for %s/Z%d",
                           slotIdx, npkSlots[slotIdx].region, npkSlots[slotIdx].zoom,
                           npkSlots[slotIdx].splitIdx, region, zoom);
             closeNpkSlot(slotIdx);
@@ -586,14 +589,14 @@ namespace MapEngine {
         // Read NPK2 header (25 bytes)
         if (s.file.read((uint8_t*)&s.header, sizeof(s.header)) != sizeof(s.header) ||
             memcmp(s.header.magic, "NPK2", 4) != 0) {
-            Serial.printf("[NPK] Invalid magic in %s (expected NPK2)\n", packPath);
+            ESP_LOGE(TAG, "Invalid magic in %s (expected NPK2)", packPath);
             s.file.close();
             markSlot();
             return &s;
         }
 
         if (s.header.tile_count == 0 || s.header.y_max < s.header.y_min) {
-            Serial.printf("[NPK] Invalid header in %s (tiles=%u, y_min=%u, y_max=%u)\n",
+            ESP_LOGE(TAG, "Invalid header in %s (tiles=%u, y_min=%u, y_max=%u)",
                           packPath, s.header.tile_count, s.header.y_min, s.header.y_max);
             s.file.close();
             markSlot();
@@ -605,7 +608,7 @@ namespace MapEngine {
         size_t ytableSize = ySpan * sizeof(UIMapManager::Npk2YEntry);
         s.yTable = (UIMapManager::Npk2YEntry*)heap_caps_malloc(ytableSize, MALLOC_CAP_SPIRAM);
         if (!s.yTable) {
-            Serial.printf("[NPK] Failed to alloc Y-table (%u bytes)\n", (unsigned)ytableSize);
+            ESP_LOGE(TAG, "Failed to alloc Y-table (%u bytes)", (unsigned)ytableSize);
             s.file.close();
             markSlot();
             return &s;
@@ -613,7 +616,7 @@ namespace MapEngine {
 
         s.file.seek(s.header.ytable_offset);
         if (s.file.read((uint8_t*)s.yTable, ytableSize) != ytableSize) {
-            Serial.printf("[NPK] Failed to read Y-table from %s\n", packPath);
+            ESP_LOGE(TAG, "Failed to read Y-table from %s", packPath);
             heap_caps_free(s.yTable);
             s.yTable = nullptr;
             s.file.close();
@@ -622,7 +625,7 @@ namespace MapEngine {
         }
 
         markSlot();
-        Serial.printf("[NPK] Opened pack: %s (%u tiles, Y %u-%u, Y-table %u bytes)\n",
+        ESP_LOGI(TAG, "Opened pack: %s (%u tiles, Y %u-%u, Y-table %u bytes)",
                       packPath, s.header.tile_count, s.header.y_min, s.header.y_max, (unsigned)ytableSize);
         return &s;
     }
@@ -689,7 +692,7 @@ namespace MapEngine {
             if (!headerOk) continue;
 
             if (tileY >= splitHeader.y_min && tileY <= splitHeader.y_max) {
-                Serial.printf("[NPK] Split Z%d_%d.nav covers tileY=%u (Y %u-%u)\n",
+                ESP_LOGD(TAG, "Split Z%d_%d.nav covers tileY=%u (Y %u-%u)",
                               zoom, si, tileY, splitHeader.y_min, splitHeader.y_max);
                 return openNpkFile(slotIdx, packPath, region, zoom, si);
             }
@@ -868,20 +871,20 @@ namespace MapEngine {
 
         const char* fontPath = "/LoRa_Tracker/fonts/OpenSans-Bold-12.vlw";
         if (!SD.exists(fontPath)) {
-            Serial.printf("[MAP] VLW font not found: %s (will use fallback GFX font)\n", fontPath);
+            ESP_LOGW(TAG, "VLW font not found: %s (will use fallback GFX font)", fontPath);
             return false;
         }
 
         File file = SD.open(fontPath, FILE_READ);
         if (!file) {
-            Serial.printf("[MAP] Failed to open VLW font: %s\n", fontPath);
+            ESP_LOGE(TAG, "Failed to open VLW font: %s", fontPath);
             return false;
         }
 
         size_t fileSize = file.size();
         vlwFontData = (uint8_t*)heap_caps_malloc(fileSize, MALLOC_CAP_SPIRAM);
         if (!vlwFontData) {
-            Serial.printf("[MAP] Failed to allocate %d bytes in PSRAM for VLW font\n", fileSize);
+            ESP_LOGE(TAG, "Failed to allocate %d bytes in PSRAM for VLW font", fileSize);
             file.close();
             return false;
         }
@@ -890,7 +893,7 @@ namespace MapEngine {
         file.close();
 
         if (bytesRead != fileSize) {
-            Serial.printf("[MAP] Failed to read VLW font: read %d/%d bytes\n", bytesRead, fileSize);
+            ESP_LOGE(TAG, "Failed to read VLW font: read %d/%d bytes", bytesRead, fileSize);
             heap_caps_free(vlwFontData);
             vlwFontData = nullptr;
             return false;
@@ -899,11 +902,11 @@ namespace MapEngine {
         vlwFontWrapper.set(vlwFontData, fileSize);
         if (vlwFont.loadFont(&vlwFontWrapper)) {
             vlwFontLoaded = true;
-            Serial.printf("[MAP] Loaded VLW font: %s (%d bytes in PSRAM)\n", fontPath, fileSize);
+            ESP_LOGI(TAG, "Loaded VLW font: %s (%d bytes in PSRAM)", fontPath, fileSize);
             return true;
         }
 
-        Serial.printf("[MAP] VLW font validation failed\n");
+        ESP_LOGE(TAG, "VLW font validation failed");
         heap_caps_free(vlwFontData);
         vlwFontData = nullptr;
         return false;
@@ -940,7 +943,7 @@ namespace MapEngine {
             }
         }
 
-        Serial.printf("[CACHE] Evicting tile: %s\n", lruIt->filePath);
+        ESP_LOGD(TAG, "Evicting tile: %s", lruIt->filePath);
         if (lruIt->sprite) {
             lruIt->sprite->deleteSprite();
             delete lruIt->sprite;
@@ -973,8 +976,8 @@ namespace MapEngine {
         newEntry.tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
 
         tileCache.push_back(newEntry);
-        Serial.printf("[CACHE] Added tile: %s\n", filePath);
-        Serial.printf("[MAP] Cache size: %d, Free PSRAM: %u\n", tileCache.size(), ESP.getFreePsram());
+        ESP_LOGI(TAG, "Cache add tile: %s", filePath);
+        ESP_LOGD(TAG, "Cache size: %d, Free PSRAM: %u", tileCache.size(), ESP.getFreePsram());
     }
     
     // Helper function to safely copy a sprite to the canvas with clipping
@@ -1299,7 +1302,7 @@ namespace MapEngine {
                 }
             }
             if (preEvicted > 0) {
-                Serial.printf("[NAV-CACHE] Pre-evicted %d wrong-zoom entries, free: %u KB, largest: %u KB\n",
+                ESP_LOGD(TAG, "Pre-evicted %d wrong-zoom entries, free: %u KB, largest: %u KB",
                               preEvicted, (unsigned)(ESP.getFreePsram() / 1024),
                               (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
             }
@@ -1501,7 +1504,7 @@ namespace MapEngine {
             if (!data) continue;
 
             if (memcmp(data, "NAV1", 4) != 0) {
-                Serial.printf("[NAV-FAIL] Tile %d/%d: invalid header\n", pr.tileX, pr.tileY);
+                ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
                 free(data);
                 continue;
             }
@@ -1516,7 +1519,7 @@ namespace MapEngine {
         uint64_t loadEnd = esp_timer_get_time();
         int totalFeatures = 0;
         for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
-        Serial.printf("[NAV] Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]\n",
+        ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]",
                       (loadEnd - startTime) / 1000, (int)tileBuffers.size(), totalFeatures,
                       minDx, maxDx, minDy, maxDy);
 
@@ -1820,7 +1823,7 @@ namespace MapEngine {
         // Tile buffers are now owned by navCache — do NOT free here
 
         uint64_t endTime = esp_timer_get_time();
-        Serial.printf("[NAV] Viewport: %llu ms (load %llu ms), %d features, cache: %d hit / %d miss, PSRAM free: %u\n",
+        ESP_LOGI(TAG, "Viewport: %llu ms (load %llu ms), %d features, cache: %d hit / %d miss, PSRAM free: %u",
                       (endTime - startTime) / 1000, (loadEnd - startTime) / 1000,
                       totalFeatures, navCacheHits, navCacheMisses, ESP.getFreePsram());
 

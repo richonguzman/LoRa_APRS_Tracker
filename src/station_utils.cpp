@@ -16,6 +16,9 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
+static const char *TAG = "Station";
+
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
@@ -212,7 +215,7 @@ namespace STATION_Utils {
         station->traceCount = newCount;
         station->traceHead = newCount % TRACE_MAX_POINTS;
 
-        Serial.printf("[STATION] Trace simplified: %d -> %d points\n", TRACE_MAX_POINTS, newCount);
+        ESP_LOGD(TAG, "Trace simplified: %d -> %d points", TRACE_MAX_POINTS, newCount);
     }
 
     // Add or update a station for the map

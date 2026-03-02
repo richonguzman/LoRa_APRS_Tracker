@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <algorithm>
@@ -64,6 +65,8 @@ extern uint32_t             wxRequestTime;
 extern APRSPacket           lastReceivedPacket;
 
 extern bool                 SleepModeActive;
+
+static const char *TAG = "MSG";
 
 String  lastMessageSaved        = "";
 int     numAPRSMessages         = 0;
@@ -115,7 +118,7 @@ namespace MSG_Utils {
 
         for (const auto& msg : recentMessagesBuffer) {
             if (msg.sender == sender && msg.content == content) {
-                Serial.printf("[MSG] Duplicate detected: %s from %s\n", content.c_str(), sender.c_str());
+                ESP_LOGD(TAG, "Duplicate detected: %s from %s", content.c_str(), sender.c_str());
                 return true;
             }
         }
@@ -235,13 +238,13 @@ namespace MSG_Utils {
         std::vector<String> callsigns;
 
         if (!STORAGE_Utils::fileExists("/conversations")) {
-            Serial.println("[MSG] No /conversations directory found");
+            ESP_LOGD(TAG, "No /conversations directory found");
             return callsigns;
         }
 
         File dir = STORAGE_Utils::openFile("/conversations", "r");
         if (!dir || !dir.isDirectory()) {
-            Serial.println("[MSG] Failed to open /conversations directory");
+            ESP_LOGW(TAG, "Failed to open /conversations directory");
             return callsigns;
         }
 
@@ -262,7 +265,7 @@ namespace MSG_Utils {
                     String callsign = filename.substring(0, filename.length() - 4);
                     time_t lastWrite = entry.getLastWrite();
                     conversationsWithTime.push_back(std::make_pair(callsign, lastWrite));
-                    Serial.printf("[MSG] Found conversation: %s (time: %ld)\n", callsign.c_str(), lastWrite);
+                    ESP_LOGD(TAG, "Found conversation: %s (time: %ld)", callsign.c_str(), lastWrite);
                 }
             }
             entry.close();
@@ -281,7 +284,7 @@ namespace MSG_Utils {
             callsigns.push_back(conv.first);
         }
 
-        Serial.printf("[MSG] Found %d conversations (sorted by recent)\n", callsigns.size());
+        ESP_LOGD(TAG, "Found %d conversations (sorted by recent)", callsigns.size());
         return callsigns;
     }
 
@@ -291,13 +294,13 @@ namespace MSG_Utils {
         // Read from conversation file
         String filename = "/conversations/" + callsign + ".txt";
         if (!STORAGE_Utils::fileExists(filename)) {
-            Serial.printf("[MSG] No conversation file for %s\n", callsign.c_str());
+            ESP_LOGD(TAG, "No conversation file for %s", callsign.c_str());
             return result;
         }
 
         File conversationFile = STORAGE_Utils::openFile(filename, "r");
         if (!conversationFile) {
-            Serial.printf("[MSG] Failed to open conversation file for %s\n", callsign.c_str());
+            ESP_LOGW(TAG, "Failed to open conversation file for %s", callsign.c_str());
             return result;
         }
 
@@ -310,7 +313,7 @@ namespace MSG_Utils {
         }
         conversationFile.close();
 
-        Serial.printf("[MSG] Loaded %d messages for %s\n", result.size(), callsign.c_str());
+        ESP_LOGD(TAG, "Loaded %d messages for %s", result.size(), callsign.c_str());
         return result;
     }
 
@@ -358,7 +361,7 @@ namespace MSG_Utils {
                 displayShow("   INFO", "", " NO APRS MSG SAVED", 1500);
             } else {
                 if(!fileToRead) {
-                    Serial.println("Failed to open file for reading");
+                    ESP_LOGE(TAG, "Failed to open APRS messages file for reading");
                     return;
                 }
                 while (fileToRead.available()) {
@@ -378,7 +381,7 @@ namespace MSG_Utils {
                 displayShow("   INFO", "", " NO WLNK MAILS SAVED", 1500);
             } else {
                 if(!fileToRead) {
-                    Serial.println("Failed to open file for reading");
+                    ESP_LOGE(TAG, "Failed to open Winlink mails file for reading");
                     return;
                 }
                 while (fileToRead.available()) {
@@ -530,11 +533,11 @@ namespace MSG_Utils {
             // Save to global messages file (backward compatibility)
             File fileToAppendAPRS = STORAGE_Utils::openFile("/aprsMessages.txt", FILE_APPEND);
             if(!fileToAppendAPRS) {
-                Serial.println("There was an error opening the file for appending");
+                ESP_LOGE(TAG, "Failed to open APRS messages file for appending");
                 return;
             }
             if(!fileToAppendAPRS.println(station + "," + message)) {
-                Serial.println("File append failed");
+                ESP_LOGE(TAG, "APRS message append failed");
             }
             numAPRSMessages++;
             fileToAppendAPRS.close();
@@ -568,11 +571,11 @@ namespace MSG_Utils {
         } else if (typeMessage == 1) {    //WLNK
             File fileToAppendWLNK = STORAGE_Utils::openFile("/winlinkMails.txt", FILE_APPEND);
             if(!fileToAppendWLNK) {
-                Serial.println("There was an error opening the file for appending");
+                ESP_LOGE(TAG, "Failed to open Winlink mails file for appending");
                 return;
             }
             if(!fileToAppendWLNK.println(station + "," + message)) {
-                Serial.println("File append failed");
+                ESP_LOGE(TAG, "Winlink mail append failed");
             }
             numWLNKMessages++;
             fileToAppendWLNK.close();
@@ -785,7 +788,7 @@ namespace MSG_Utils {
                         }
 
                         if (lastReceivedPacket.sender == "CA2RXU-15" && lastReceivedPacket.payload.indexOf("WX") == 0) {    // WX = WeatherReport
-                            Serial.println("Weather Report Received");
+                            ESP_LOGI(TAG, "Weather Report Received");
                             const String& wxCleaning     = lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("WX ") + 3);
                             const String& place          = wxCleaning.substring(0,wxCleaning.indexOf(","));
                             const String& placeCleaning  = wxCleaning.substring(wxCleaning.indexOf(",")+1);

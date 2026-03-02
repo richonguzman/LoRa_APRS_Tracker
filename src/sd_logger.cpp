@@ -3,9 +3,12 @@
 #include "sd_logger.h"
 #include "storage_utils.h"
 #include <SD.h>
+#include <esp_log.h>
 #include <esp_system.h>
 #include <rom/rtc.h>
 #include <sys/time.h>
+
+static const char *TAG = "SD_Log";
 
 #define SD_LOG_FILE "/LoRa_Tracker/system.log"
 #define SD_LOG_MAX_SIZE 102400  // 100KB
@@ -51,7 +54,7 @@ namespace SD_Logger {
 
     void init() {
         if (!STORAGE_Utils::isSDAvailable()) {
-            Serial.println("[SD_LOG] SD not available, logging disabled");
+            ESP_LOGW(TAG, "SD not available, logging disabled");
             return;
         }
 
@@ -66,7 +69,7 @@ namespace SD_Logger {
         }
 
         initialized = true;
-        Serial.println("[SD_LOG] Initialized");
+        ESP_LOGI(TAG, "Initialized");
     }
 
     void log(LogLevel level, const char* module, const char* message) {
@@ -74,13 +77,13 @@ namespace SD_Logger {
 
         // Take mutex
         if (sdLogMutex && xSemaphoreTake(sdLogMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-            Serial.println("[SD_LOG] Failed to get mutex");
+            ESP_LOGW(TAG, "Failed to get mutex");
             return;
         }
 
         File logFile = SD.open(SD_LOG_FILE, FILE_APPEND);
         if (!logFile) {
-            Serial.println("[SD_LOG] Failed to open log file");
+            ESP_LOGE(TAG, "Failed to open log file");
             if (sdLogMutex) xSemaphoreGive(sdLogMutex);
             return;
         }
@@ -161,7 +164,7 @@ namespace SD_Logger {
     void rotateLogs() {
         if (!initialized || !STORAGE_Utils::isSDAvailable()) return;
 
-        Serial.println("[SD_LOG] Rotating log file");
+        ESP_LOGI(TAG, "Rotating log file");
 
         if (sdLogMutex && xSemaphoreTake(sdLogMutex, pdMS_TO_TICKS(2000)) != pdTRUE) {
             return;
@@ -174,7 +177,7 @@ namespace SD_Logger {
 
         if (sdLogMutex) xSemaphoreGive(sdLogMutex);
 
-        Serial.println("[SD_LOG] Log rotation complete");
+        ESP_LOGI(TAG, "Log rotation complete");
     }
 
     String getLogFilePath() {

@@ -1,9 +1,12 @@
 #ifdef USE_LVGL_UI
 
+#include <esp_log.h>
 #include "gpx_writer.h"
 #include <SD.h>
 #include <TinyGPS++.h>
 #include <freertos/semphr.h>
+
+static const char *TAG = "GPX";
 
 extern TinyGPSPlus gps;
 extern SemaphoreHandle_t spiMutex;
@@ -33,7 +36,7 @@ namespace GPXWriter {
         }
 
         if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-            Serial.println("[GPX] Failed to acquire SPI mutex");
+            ESP_LOGE(TAG, "Failed to acquire SPI mutex");
             return false;
         }
 
@@ -45,7 +48,7 @@ namespace GPXWriter {
         File file = SD.open(filename, FILE_WRITE);
         if (!file) {
             xSemaphoreGiveRecursive(spiMutex);
-            Serial.printf("[GPX] Failed to create file: %s\n", filename);
+            ESP_LOGE(TAG, "Failed to create file: %s", filename);
             return false;
         }
 
@@ -61,7 +64,7 @@ namespace GPXWriter {
 
         strncpy(currentFilePath, filename, sizeof(currentFilePath));
         recording = true;
-        Serial.printf("[GPX] Recording started: %s\n", filename);
+        ESP_LOGI(TAG, "Recording started: %s", filename);
         return true;
     }
 
@@ -79,7 +82,7 @@ namespace GPXWriter {
             xSemaphoreGiveRecursive(spiMutex);
         }
 
-        Serial.printf("[GPX] Recording stopped: %s\n", currentFilePath);
+        ESP_LOGI(TAG, "Recording stopped: %s", currentFilePath);
         recording = false;
         currentFilePath[0] = '\0';
     }

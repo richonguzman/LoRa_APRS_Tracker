@@ -16,8 +16,11 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <TinyGPS++.h>
 #include <logger.h>
+
+static const char *TAG = "WX";
 #ifdef LIGHTTRACKER_PLUS_1_0
     #include "Adafruit_SHTC3.h"
 #endif
@@ -185,7 +188,7 @@ namespace WX_Utils {
         
         String sensorTelemetry;
         if (isnan(newTemp) || isnan(newHum) || isnan(newPress) || (!wxModuleFound)) {
-            Serial.println("WX Sensor data failed/not found");
+            ESP_LOGW(TAG, "Sensor data failed/not found");
             sensorTelemetry = ((type == 1) ? " - C    - %    - hPa" : "");
         } else {
             if (type == 0) {

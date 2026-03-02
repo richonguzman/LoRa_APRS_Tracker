@@ -37,6 +37,9 @@
              (donations : http://paypal.me/richonguzman)
 ____________________________________________________________________*/
 
+#include <esp_log.h>
+static const char *TAG = "Main";
+
 #include <BluetoothSerial.h>
 #include <APRSPacketLib.h>
 #include <esp_task_wdt.h>
@@ -145,7 +148,7 @@ void setup() {
 
     // Boost CPU to 240MHz for fast init
     setCpuFrequencyMhz(240);
-    Serial.printf("[Boot] CPU frequency: %d MHz\n", getCpuFrequencyMhz());
+    ESP_LOGI(TAG, "CPU frequency: %d MHz", getCpuFrequencyMhz());
 
     // Turn off backlight immediately to avoid garbage display during init
     #if defined(USE_LVGL_UI) && defined(BOARD_BL_PIN)
@@ -234,9 +237,9 @@ void setup() {
 
     // Memory stats
     #ifdef BOARD_HAS_PSRAM
-        Serial.printf("[Memory] PSRAM: %u KB total, %u KB free\n", ESP.getPsramSize()/1024, ESP.getFreePsram()/1024);
+        ESP_LOGI(TAG, "PSRAM: %u KB total, %u KB free", ESP.getPsramSize()/1024, ESP.getFreePsram()/1024);
     #endif
-    Serial.printf("[Memory] Heap: %u KB total, %u KB free\n", ESP.getHeapSize()/1024, ESP.getFreeHeap()/1024);
+    ESP_LOGI(TAG, "Heap: %u KB total, %u KB free", ESP.getHeapSize()/1024, ESP.getFreeHeap()/1024);
 
     // Initialize watchdog timer (30 seconds timeout)
     esp_task_wdt_init(30, true);  // 30 seconds, panic on timeout
@@ -431,7 +434,7 @@ void loop() {
     static uint32_t lastHeartbeat = 0;
     if (millis() - lastMemLog >= 10000) {  // 10 seconds
         lastMemLog = millis();
-        Serial.printf("[MEM] DRAM: %u  PSRAM: %u  Largest DRAM: %u\n",
+        ESP_LOGI(TAG, "DRAM: %u  PSRAM: %u  Largest DRAM: %u",
                       heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
                       heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
                       heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));

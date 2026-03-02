@@ -16,10 +16,13 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include "configuration.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "touch_utils.h"
+
+static const char *TAG = "Touch";
 
 #ifdef HAS_TOUCHSCREEN
 
@@ -79,11 +82,11 @@
                 if (touchButtonPressed(x, y, touchButtons_0[i].Xmin, touchButtons_0[i].Xmax, touchButtons_0[i].Ymin, touchButtons_0[i].Ymax)) {
 
                     if (touchButtons_0[i].action != nullptr && touchButtons_0[i].action != lastCalledAction) {                      // Call the action function associated with the button
-                        Serial.println(touchButtons_0[i].label + " pressed");
+                        ESP_LOGD(TAG, "%s pressed", touchButtons_0[i].label.c_str());
                         touchButtons_0[i].action();                     // Call the function pointer
                         lastCalledAction = touchButtons_0[i].action;    // Update the last called action
                     } else {
-                        Serial.println("No action assigned to this button!");
+                        ESP_LOGW(TAG, "No action assigned to this button");
                     }
                 }
             }
@@ -111,7 +114,7 @@
                         touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
                         touch.init();
                     } else {
-                        Serial.println("No Touch Module Address found");
+                        ESP_LOGW(TAG, "No Touch Module Address found");
                     }
                 }
             }

@@ -13,6 +13,7 @@
 #include "lvgl_ui.h"
 
 #include <Arduino.h>
+#include <esp_log.h>
 #include <lvgl.h>
 #include <vector>
 #include <algorithm>
@@ -21,6 +22,8 @@
 #include "configuration.h"
 #include "msg_utils.h"
 #include "storage_utils.h"
+
+static const char *TAG = "UIMessaging";
 
 // External variables
 extern Configuration Config;
@@ -174,10 +177,10 @@ static void show_message_detail(const char *msg) {
 // =============================================================================
 
 static void delete_confirm_msgbox_timer_cb(lv_timer_t *timer) {
-    Serial.println("[UIMessaging] delete_confirm_msgbox_timer_cb called");
+    ESP_LOGD(TAG, "delete_confirm_msgbox_timer_cb called");
     if (confirm_msgbox_to_delete && lv_obj_is_valid(confirm_msgbox_to_delete)) {
         lv_obj_del(confirm_msgbox_to_delete);
-        Serial.println("[UIMessaging] Msgbox deleted");
+        ESP_LOGD(TAG, "Msgbox deleted");
     }
     confirm_msgbox_to_delete = nullptr;
 
@@ -186,7 +189,7 @@ static void delete_confirm_msgbox_timer_cb(lv_timer_t *timer) {
 
     if (need_aprs_list_refresh) {
         if (list_aprs_global) {
-            Serial.println("[UIMessaging] Refreshing APRS list after delete");
+            ESP_LOGD(TAG, "Refreshing APRS list after delete");
             populate_msg_list(list_aprs_global, 0);
         }
         if (list_wlnk_global) {
@@ -204,19 +207,19 @@ static void confirm_delete_cb(lv_event_t *e) {
         return;
 
     const char *btn_text = lv_msgbox_get_active_btn_text(confirm_msgbox);
-    Serial.printf("[UIMessaging] confirm_delete_cb: btn=%s, pending_index=%d\n",
-                  btn_text ? btn_text : "NULL", pending_delete_msg_index);
+    ESP_LOGI(TAG, "confirm_delete_cb: btn=%s, pending_index=%d",
+             btn_text ? btn_text : "NULL", pending_delete_msg_index);
 
     need_aprs_list_refresh = false;
     if (btn_text && strcmp(btn_text, "Yes") == 0) {
         if (pending_delete_msg_index == -1) {
-            Serial.printf("[UIMessaging] Deleting ALL messages type %d\n", current_msg_type);
+            ESP_LOGI(TAG, "Deleting ALL messages type %d", current_msg_type);
             MSG_Utils::deleteFile(current_msg_type);
         } else {
             MSG_Utils::deleteMessageByIndex(current_msg_type, pending_delete_msg_index);
         }
         need_aprs_list_refresh = true;
-        Serial.println("[UIMessaging] need_aprs_list_refresh set to true");
+        ESP_LOGD(TAG, "need_aprs_list_refresh set to true");
     }
 
     confirm_msgbox_to_delete = confirm_msgbox;
@@ -261,7 +264,7 @@ static void msg_item_clicked(lv_event_t *e) {
 
 static void msg_item_longpress(lv_event_t *e) {
     int msg_index = (int)(intptr_t)lv_event_get_user_data(e);
-    Serial.printf("[UIMessaging] Message long-press: index %d\n", msg_index);
+    ESP_LOGD(TAG, "Message long-press: index %d", msg_index);
     msg_longpress_handled = true;
     show_delete_confirmation("Delete this message?", msg_index);
 }
@@ -276,7 +279,7 @@ static void conversation_item_clicked(lv_event_t *e) {
     if (!callsign)
         return;
 
-    Serial.printf("[UIMessaging] Conversation clicked: %s\n", callsign);
+    ESP_LOGD(TAG, "Conversation clicked: %s", callsign);
     create_conversation_screen(String(callsign));
 }
 
@@ -428,7 +431,7 @@ static void show_conversation_delete_confirmation(int msg_index) {
 
 static void conversation_msg_longpress(lv_event_t *e) {
     int msg_index = (int)(intptr_t)lv_event_get_user_data(e);
-    Serial.printf("[UIMessaging] Conversation message long-press: index %d\n", msg_index);
+    ESP_LOGD(TAG, "Conversation message long-press: index %d", msg_index);
     conversation_msg_longpress_handled = true;
     show_conversation_delete_confirmation(msg_index);
 }
@@ -503,7 +506,7 @@ static void refresh_conversation_messages() {
     }
 
     lv_obj_scroll_to_y(conversation_list, 0, LV_ANIM_OFF);
-    Serial.printf("[UIMessaging] Conversation messages refreshed: %d messages\n", messages.size());
+    ESP_LOGD(TAG, "Conversation messages refreshed: %d messages", messages.size());
 }
 
 static void btn_conversation_back_clicked(lv_event_t *e) {
@@ -642,7 +645,7 @@ static void create_conversation_screen(const String &callsign) {
         }
         lv_scr_load_anim(screen_conversation, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
     }
-    Serial.printf("[UIMessaging] Conversation screen created for %s with %d messages\n",
+    ESP_LOGD(TAG, "Conversation screen created for %s with %d messages",
                   callsign.c_str(), messages.size());
 }
 
@@ -715,7 +718,7 @@ static void contact_item_clicked(lv_event_t *e) {
     if (!contact)
         return;
 
-    Serial.printf("[UIMessaging] Contact clicked: %s - opening compose\n", contact->callsign.c_str());
+    ESP_LOGD(TAG, "Contact clicked: %s - opening compose", contact->callsign.c_str());
     openComposeWithCallsign(contact->callsign);
 }
 
@@ -723,7 +726,7 @@ static void contact_item_longpress(lv_event_t *e) {
     Contact *contact = (Contact *)lv_event_get_user_data(e);
     if (!contact)
         return;
-    Serial.printf("[UIMessaging] Contact long-press: %s\n", contact->callsign.c_str());
+    ESP_LOGD(TAG, "Contact long-press: %s", contact->callsign.c_str());
     contact_longpress_handled = true;
     show_contact_edit_screen(contact);
 }
@@ -767,7 +770,7 @@ static void btn_contact_save_clicked(lv_event_t *e) {
     }
 
     if (success) {
-        Serial.printf("[UIMessaging] Contact saved: %s\n", contact.callsign.c_str());
+        ESP_LOGI(TAG, "Contact saved: %s", contact.callsign.c_str());
         lv_scr_load(screen_msg);
         if (list_contacts_global) {
             populate_contacts_list(list_contacts_global);
@@ -781,7 +784,7 @@ static void btn_contact_delete_clicked(lv_event_t *e) {
     if (editing_contact_callsign.length() > 0) {
         bool success = STORAGE_Utils::removeContact(editing_contact_callsign);
         if (success) {
-            Serial.printf("[UIMessaging] Contact deleted: %s\n", editing_contact_callsign.c_str());
+            ESP_LOGI(TAG, "Contact deleted: %s", editing_contact_callsign.c_str());
             lv_scr_load(screen_msg);
             if (list_contacts_global) {
                 populate_contacts_list(list_contacts_global);
@@ -1005,7 +1008,7 @@ static void init_frame_pool(lv_obj_t *list) {
     }
 
     frame_pool_initialized = true;
-    Serial.println("[UIMessaging] Frame pool initialized (20 items)");
+    ESP_LOGD(TAG, "Frame pool initialized (20 items)");
 }
 
 // Update a single frame item in the pool (no String alloc - uses static buffer)
@@ -1237,7 +1240,7 @@ static void msg_tab_changed(lv_event_t *e) {
 
     if (current_msg_type != (int)tab_idx) {
         current_msg_type = (int)tab_idx;
-        Serial.printf("[UIMessaging] Messages tab changed to %d\n", current_msg_type);
+        ESP_LOGD(TAG, "Messages tab changed to %d", current_msg_type);
 
         if (current_msg_type == 1 && list_wlnk_global) {
             populate_msg_list(list_wlnk_global, 1);
@@ -1261,7 +1264,7 @@ static void msg_tab_changed(lv_event_t *e) {
 // =============================================================================
 
 static void btn_delete_msgs_clicked(lv_event_t *e) {
-    Serial.printf("[UIMessaging] Delete all button pressed, type %d\n", current_msg_type);
+    ESP_LOGI(TAG, "Delete all button pressed, type %d", current_msg_type);
 
     if (current_msg_type >= 2) {
         return;
@@ -1294,7 +1297,7 @@ static void btn_send_msg_clicked(lv_event_t *e) {
     const char *msg = lv_textarea_get_text(compose_msg_input);
 
     if (strlen(to) > 0 && strlen(msg) > 0) {
-        Serial.printf("[UIMessaging] Sending message to %s: %s\n", to, msg);
+        ESP_LOGI(TAG, "Sending message to %s: %s", to, msg);
         MSG_Utils::addToOutputBuffer(1, String(to), String(msg)); // String copies still occur within addToOutputBuffer
 
         // Save sent message
@@ -1432,7 +1435,7 @@ void createComposeScreen() {
     lv_label_set_text(lbl_kbd, LV_SYMBOL_KEYBOARD);
     lv_obj_center(lbl_kbd);
 
-    Serial.println("[UIMessaging] Compose screen created");
+    ESP_LOGD(TAG, "Compose screen created");
 }
 
 // Reply button uses compose
@@ -1453,7 +1456,7 @@ static void btn_conversation_reply_clicked(lv_event_t *e) {
 // =============================================================================
 
 static void btn_back_clicked(lv_event_t *e) {
-    Serial.println("[UIMessaging] BACK button pressed");
+    ESP_LOGD(TAG, "BACK button pressed");
     UIPopups::closeAll();
     UIDashboard::returnToDashboard();
 }
@@ -1536,7 +1539,7 @@ void createMsgScreen() {
     // Tabview
     msg_tabview = lv_tabview_create(screen_msg, LV_DIR_TOP, 30);
     if (!msg_tabview) {
-        Serial.println("[UIMessaging] ERROR: Failed to create msg_tabview!");
+        ESP_LOGE(TAG, "Failed to create msg_tabview!");
         return;
     }
     lv_obj_set_size(msg_tabview, SCREEN_WIDTH, SCREEN_HEIGHT - 35);
@@ -1634,7 +1637,7 @@ void createMsgScreen() {
         }
     }
 
-    Serial.println("[UIMessaging] Messages screen created with tabs");
+    ESP_LOGD(TAG, "Messages screen created with tabs");
 }
 
 // =============================================================================
@@ -1665,7 +1668,7 @@ void openComposeWithCallsign(const String& callsign) {
     lv_keyboard_set_textarea(compose_keyboard, compose_msg_input);
 
     lv_scr_load_anim(screen_compose, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
-    Serial.printf("[UIMessaging] Opening compose for: %s\n", callsign.c_str());
+    ESP_LOGD(TAG, "Opening compose for: %s", callsign.c_str());
 }
 
 void refreshConversationsList() {
@@ -1793,7 +1796,7 @@ void handleComposeKeyboard(char key) {
             capsLockActive = !capsLockActive;
             symbolLockActive = false;
             UIPopups::showCapsLockPopup(capsLockActive);
-            Serial.printf("[UIMessaging] Caps Lock %s\n", capsLockActive ? "ON" : "OFF");
+            ESP_LOGD(TAG, "Caps Lock %s", capsLockActive ? "ON" : "OFF");
         }
         lastShiftTime = now;
         return;
@@ -1803,7 +1806,7 @@ void handleComposeKeyboard(char key) {
         if (now - lastSymbolTime < DOUBLE_TAP_MS) {
             symbolLockActive = !symbolLockActive;
             capsLockActive = false;
-            Serial.printf("[UIMessaging] Symbol Lock %s\n", symbolLockActive ? "ON" : "OFF");
+            ESP_LOGD(TAG, "Symbol Lock %s", symbolLockActive ? "ON" : "OFF");
         }
         lastSymbolTime = now;
         return;

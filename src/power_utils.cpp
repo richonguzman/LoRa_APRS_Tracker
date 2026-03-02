@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <esp_task_wdt.h>
 #include <SPI.h>
 #include "notification_utils.h"
@@ -55,6 +56,8 @@ extern  Configuration                   Config;
 extern  logging::Logger                 logger;
 extern  bool                            transmitFlag;
 extern  bool                            gpsIsActive;
+
+static const char *TAG = "Power";
 
 bool    pmuInterrupt;
 bool    disableGPS;
@@ -419,9 +422,9 @@ namespace POWER_Utils {
 
     void lowerCpuFrequency() {
         if (setCpuFrequencyMhz(80)) {
-            Serial.printf("[Power] CPU frequency lowered to %d MHz\n", getCpuFrequencyMhz());
+            ESP_LOGI(TAG, "CPU frequency lowered to %d MHz", getCpuFrequencyMhz());
         } else {
-            Serial.println("[Power] CPU frequency unchanged");
+            ESP_LOGW(TAG, "CPU frequency unchanged");
         }
     }
 

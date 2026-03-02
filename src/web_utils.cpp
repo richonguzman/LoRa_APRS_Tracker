@@ -16,11 +16,14 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <ArduinoJson.h>
 #include "configuration.h"
 #include "web_utils.h"
 #include "display.h"
 #include "utils.h"
+
+static const char *TAG = "WebServer";
 
 extern Configuration               Config;
 
@@ -64,7 +67,7 @@ namespace WEB_Utils {
     }
 
     void handleHome(AsyncWebServerRequest *request) {
-        Serial.printf("[WebServer] GET / from %s\n", request->client()->remoteIP().toString().c_str());
+        ESP_LOGI(TAG, "GET / from %s", request->client()->remoteIP().toString().c_str());
         AsyncWebServerResponse *response = request->beginResponse(200, "text/html", (const uint8_t*)web_index_html, web_index_html_len);
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
@@ -116,7 +119,7 @@ namespace WEB_Utils {
     }
 
     void handleWriteConfiguration(AsyncWebServerRequest *request) {
-        Serial.println("Got new config from www");
+        ESP_LOGI(TAG, "Got new config from www");
 
         auto getParamStringSafe = [&](const String& name, const String& defaultValue = "") -> String {
             if (request->hasParam(name, true)) {
@@ -277,7 +280,7 @@ namespace WEB_Utils {
         bool saveSuccess = Config.writeFile();
 
         if (saveSuccess) {
-            Serial.println("Configuration saved successfully");
+            ESP_LOGI(TAG, "Configuration saved successfully");
             AsyncWebServerResponse *response = request->beginResponse(302, "text/html", "");
             response->addHeader("Location", "/?success=1");
             request->send(response);
@@ -286,7 +289,7 @@ namespace WEB_Utils {
             delay(500);
             ESP.restart();
         } else {
-            Serial.println("Error saving configuration!");
+            ESP_LOGE(TAG, "Error saving configuration!");
             String errorPage = "<!DOCTYPE html><html><head><title>Error</title></head><body>";
             errorPage += "<h1>Configuration Error:</h1>";
             errorPage += "<p>Couldn't save new configuration. Please try again.</p>";
@@ -341,7 +344,7 @@ namespace WEB_Utils {
     void setup() {
         static bool initialized = false;
         if (initialized) {
-            Serial.println("[WebServer] Already initialized, skipping");
+            ESP_LOGW(TAG, "Already initialized, skipping");
             return;
         }
         initialized = true;
@@ -361,11 +364,11 @@ namespace WEB_Utils {
         server.onNotFound(handleNotFound);
 
         server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            Serial.printf("[WebServer] Body: %s %s (%d bytes)\n", request->methodToString(), request->url().c_str(), total);
+            ESP_LOGD(TAG, "Body: %s %s (%d bytes)", request->methodToString(), request->url().c_str(), total);
         });
 
         server.begin();
-        Serial.println("[WebServer] Started on port 80");
+        ESP_LOGI(TAG, "Started on port 80");
     }
 
 }

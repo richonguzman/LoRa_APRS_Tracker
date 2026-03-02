@@ -16,6 +16,7 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include <RadioLib.h>
 #include <logger.h>
 #include <SPI.h>
@@ -35,6 +36,8 @@ extern Configuration    Config;
 extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;
 extern int              loraIndexSize;
+
+static const char *TAG = "LoRa";
 
 bool operationDone   = true;
 bool transmitFlag    = true;
@@ -381,8 +384,7 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             STORAGE_Utils::updateTxStats();
         } else {
-            Serial.print(F("Tx failed, code "));
-            Serial.println(state);
+            ESP_LOGE(TAG, "Tx failed, code %d", state);
         }
         
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
@@ -430,8 +432,7 @@ namespace LoRa_Utils {
                         receivedLoraPacket.freqError  = radio.getFrequencyError();
                     }
                 } else {
-                    Serial.print(F("Rx failed, code "));   // 7 = CRC mismatch
-                    Serial.println(state);
+                    ESP_LOGE(TAG, "Rx failed, code %d", state);  // 7 = CRC mismatch
                 }
             }
         }

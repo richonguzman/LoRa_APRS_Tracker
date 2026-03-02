@@ -16,9 +16,12 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <esp_log.h>
 #include "board_pinout.h"
 #include "sleep_utils.h"
 #include "power_utils.h"
+
+static const char *TAG = "Sleep";
 
 
 extern uint32_t         lastGPSTime;
@@ -35,7 +38,7 @@ namespace SLEEP_Utils {
                 POWER_Utils::deactivateGPS();
                 lastGPSTime = millis();
                 //
-                Serial.println("GPS SLEEPING");
+                ESP_LOGI(TAG, "GPS sleeping");
                 //
             }
         #endif
@@ -47,7 +50,7 @@ namespace SLEEP_Utils {
                 POWER_Utils::activateGPS();
                 gpsShouldSleep = false;
                 //
-                Serial.println("GPS WAKEUP");
+                ESP_LOGI(TAG, "GPS wakeup");
                 //
             }
         #endif
