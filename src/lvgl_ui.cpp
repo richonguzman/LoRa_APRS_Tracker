@@ -145,17 +145,17 @@ uint32_t last_tick = 0;  // Non-static: accessed by UISettings for blocking loop
 // Track if LVGL display is already initialized
 static bool lvgl_display_initialized = false;
 
-// Display flush callback — uses DMA (non-blocking) when available via LovyanGFX
-// LovyanGFX manages DMA completion internally; we signal LVGL immediately after
-// queuing the transfer since the buffer remains valid until the next flush call.
-static void IRAM_ATTR disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
-                                    lv_color_t *color_p) {
+// Display flush callback — uses DMA for non-blocking SPI transfer via LovyanGFX.
+// pushImageDMA() queues the pixel data for DMA transfer ; LovyanGFX waits for any
+// previous DMA to finish before starting, so the buffer is safe to reuse after return.
+// Note: no setSwapBytes() — LVGL already produces pixels in the byte order expected
+// by the ST7789 panel (matching the original pushImage() behavior).
+static void disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
+                          lv_color_t *color_p) {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
     if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY) == pdTRUE) {
-        tft.setSwapBytes(true);
         tft.pushImageDMA(area->x1, area->y1, w, h, (uint16_t *)color_p);
-        tft.setSwapBytes(false);
         xSemaphoreGiveRecursive(spiMutex);
     }
     lv_disp_flush_ready(drv);
