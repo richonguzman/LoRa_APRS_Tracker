@@ -1,7 +1,7 @@
 # LoRa APRS Tracker - LVGL UI Edition
 
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-ready-orange)
-![Version](https://img.shields.io/badge/version-2.6.0%2Bdev-blue)
+![Version](https://img.shields.io/badge/version-2.7.3%2Bdev-blue)
 ![License](https://img.shields.io/badge/license-GPL-green)
 
 **ESP32-S3 LoRa APRS tracker with modern touchscreen interface for Lilygo T-Deck Plus**
@@ -18,10 +18,15 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 
 ---
 
-## What's New in v2.6.0+dev
-
-- **Delta+ZigZag+VarInt NAV format** - 30-50% smaller tiles, compatible with Python and C++ generators (IceNav-v3)
+## What's New in v2.7.x
+- **SD DMA + Display DMA** - Ported from IceNav-v3 for ultra-fast tile loading and smooth rendering
+- **ESP_LOG migration** - Replaced standard Serial.print with native ESP-IDF logging framework
+- **PSRAM LVGL Allocator** - Redirected UI memory to PSRAM to free up critical DRAM
+- **NPK2 Multi-region support** - Support for "split packs" NPK2 map files with multi-region roaming
+- **Wide Zoom Range** - Map support from Zoom 6 up to 17 with adaptive raster/vector switching
+- **Web-Conf Stability** - Fixed touch reentrancy and watchdog issues in configuration mode
 - **GPX trace recorder** - Start/Stop button on map, saves tracks to SD card
+- **Delta+ZigZag+VarInt NAV format** - 30-50% smaller tiles, compatible with IceNav-v3
 - **HDOP adaptive jitter filter** - GPS trace smoothing based on signal quality
 - **NAV raw data cache** - PSRAM cache avoids SD re-reads after pan (30 tiles LRU)
 - **Station traces with TTL** - 60-minute time-to-live for received station positions
@@ -204,6 +209,8 @@ Tracker works in degraded mode without SD:
 **Memory**: ~88KB DRAM free during operation, PSRAM for tile/symbol cache and sprites
 
 **Optimizations**:
+- **Direct Memory Access (DMA)**: Hardware acceleration for SD card reads (32KB chunks) and display flushing
+- **PSRAM Asset Management**: UI allocator and tile/symbol cache redirected to PSRAM
 - Synchronous tile rendering (decode + copy + cache)
 - RGB565 byte-swap for correct LVGL colors
 - Persistent viewport sprite (no fragmentation)
