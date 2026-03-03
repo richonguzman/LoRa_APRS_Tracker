@@ -1,36 +1,36 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "IU1BOT-1",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
-			"comment": "",
+			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
 			"profileLabel": ""
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "IU1BOT-2",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
-			"comment": "",
+			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
 			"profileLabel": ""
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "IU1BOT-3",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
-			"comment": "",
+			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
@@ -44,7 +44,7 @@
 		"turn180" : false
     },
 	"battery": {
-		"sendVoltage": false,
+		"sendVoltage": true,
 		"voltageAsTelemetry": false,
 		"sendVoltageAlways": false,
 		"monitorVoltage": false,
@@ -59,10 +59,10 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
-		"email": ""
+		"email": "iu1bot@xzgroup.net"
 	},
 	"winlink": {
-		"password": "ABCDEF"
+		"password": "orde44"
 	},
 	"telemetry": {
 		"active": false,
@@ -70,9 +70,9 @@
 		"temperatureCorrection": 0.0		
 	},
 	"notification": {
-		"ledTx": false,
+		"ledTx": true,
 		"ledTxPin": 13,
-		"ledMessage": false,
+		"ledMessage": true,
 		"ledMessagePin": 2,
 		"ledFlashlight": false,
 		"ledFlashlightPin": 14,
@@ -80,8 +80,8 @@
 		"buzzerPinTone": 33,
 		"buzzerPinVcc": 25,
 		"bootUpBeep": false,
-		"txBeep": false,
-		"messageRxBeep": false,
+		"txBeep": true,
+		"messageRxBeep": true,
 		"stationBeep": false,
 		"lowBatteryBeep": false,
 		"shutDownBeep": false
@@ -117,9 +117,9 @@
 		}
 	],
 	"bluetooth": {
-		"active": false,
+		"active": true,
 		"deviceName": "LoRaTracker",
-		"useBLE": false,
+		"useBLE": true,
 		"useKISS": false
 	},
 	"pttTrigger": {

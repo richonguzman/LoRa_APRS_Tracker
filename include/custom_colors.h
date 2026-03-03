@@ -35,4 +35,9 @@ uint16_t greenColor         = 0x1482;
 uint16_t greenColorLight    = 0x1d63;
 uint16_t greenColorDark     = 0x0b22;
 
+// New primary color palette for improved T-Deck Plus UI.
+uint16_t primaryColor       = 0x051F;
+uint16_t primaryColorLight  = 0x5ABF;
+uint16_t primaryColorDark   = 0x0210;
+
 #endif

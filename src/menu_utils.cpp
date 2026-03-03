@@ -262,6 +262,11 @@ namespace MENU_Utils {
             case 13:    // 1.Messages ---> APRSThursday
                 displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
+
+            case 14:    // 1.Messages ---> APRSPH Check-in
+                // Display APRSPH Check-in option. We keep other menu entries unchanged.
+                displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSPH Check-in", lastLine);
+                break;
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 displayShow(" APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;

@@ -89,9 +89,9 @@ namespace KEYBOARD_Utils {
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay--;
             if (menuDisplay < 1) menuDisplay = 6;
-        } else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        } else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay--;
-            if (menuDisplay < 10) menuDisplay = 13;
+            if (menuDisplay < 10) menuDisplay = 14;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay--;
             if (menuDisplay < 130) menuDisplay = 133;
@@ -164,9 +164,9 @@ namespace KEYBOARD_Utils {
             menuDisplay++;
             if (menuDisplay > 6) menuDisplay = 1;
         }
-        else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay++;
-            if (menuDisplay > 13) menuDisplay = 10;
+            if (menuDisplay > 14) menuDisplay = 10;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay++;
             if (menuDisplay > 133) menuDisplay = 130;
@@ -342,6 +342,13 @@ namespace KEYBOARD_Utils {
             displayShow("   INFO", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
+        } else if (menuDisplay == 14) {
+            // APRSPH Check‑in action: send a canned APRS message to APRSPH and show a brief confirmation
+            displayShow("  APRSPH", "Sending:", "CQ Checked-in via LoRa Tracker", "", "", "", 2000);
+            MSG_Utils::addToOutputBuffer(0, "APRSPH", "CQ Checked-in via LoRa Tracker");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 14;
+            #endif
         } else if (menuDisplay == 130 || menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay *= 10;
