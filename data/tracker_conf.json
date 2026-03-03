@@ -1,12 +1,12 @@
 {
 	"beacons": [
 		{
-			"callsign": "IU1BOT-1",
+			"callsign": "",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
-			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
+			"comment": "",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
@@ -18,7 +18,7 @@
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
-			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
+			"comment": "",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
@@ -30,7 +30,7 @@
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
-			"comment": "LoRa T-DECK APRS - iu1bot@xzgroup.net",
+			"comment": "",
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
@@ -59,10 +59,10 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
-		"email": "iu1bot@xzgroup.net"
+		"email": ""
 	},
 	"winlink": {
-		"password": "orde44"
+		"password": "YOURPWD"
 	},
 	"telemetry": {
 		"active": false,
