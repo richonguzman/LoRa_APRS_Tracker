@@ -435,7 +435,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                     while (text.length() > 0) {
                         String chunk = text.substring(0, maxLineLength);
                         #if defined(TTGO_T_DECK_PLUS)
-                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 8); // simbolo + margini
+                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 2); // symbol and margins
                         while (sprite.textWidth(chunk) + 35 > maxX && chunk.length() > 0) {
                         chunk.remove(chunk.length() - 1);
                     }
@@ -449,7 +449,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                         }
                         #endif
                         sprite.drawString(chunk, 35, yLineOffset);
-                        text = text.substring(maxLineLength);
+                        text = text.substring(chunk.length());
                         yLineOffset += lineSpacing;
                     }
                 } else {
@@ -583,7 +583,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                     while (text.length() > 0) {
                         String chunk = text.substring(0, maxLineLength);
                         #if defined(TTGO_T_DECK_PLUS)
-                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 8); // symbol + margin
+                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 2); // symbol + margin
                         while (sprite.textWidth(chunk) + 35 > maxX && chunk.length() > 0) {
                         chunk.remove(chunk.length() - 1);
                     }
@@ -597,7 +597,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                         }
                         #endif
                         sprite.drawString(chunk, 35, yLineOffset);
-                        text = text.substring(maxLineLength);
+                        text = text.substring(chunk.length());
                         yLineOffset += lineSpacing;
                     }
                 } else {
