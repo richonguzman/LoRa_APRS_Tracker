@@ -62,7 +62,7 @@
 		"email": ""
 	},
 	"winlink": {
-		"password": "YOURPWD"
+		"password": ""
 	},
 	"telemetry": {
 		"active": false,
