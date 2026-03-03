@@ -208,7 +208,10 @@ void loop() {
     #endif
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
-
+    
+    if (packet.text.length() > 0) {
+  displaySetLastRxMetrics(packet.rssi, packet.snr);
+    }
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();

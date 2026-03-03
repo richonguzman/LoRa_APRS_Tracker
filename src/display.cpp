@@ -101,6 +101,13 @@ int         lastMenuDisplay         = 0;
 uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of screens
 bool        symbolAvailable         = true;
 
+// Last received RSSI (used for on-screen indicator on T-Deck Plus)
+static int g_lastRxRssi = 0;
+
+void displaySetLastRxMetrics(int rssi, float /*snr*/) {
+    g_lastRxRssi = rssi;
+}
+
 extern logging::Logger logger;
 
 
@@ -193,8 +200,19 @@ sprite.drawString(timeStr, xTime, 28);
     sprite.setTextColor(TFT_WHITE, primaryColorLight);
     sprite.drawString(topHeader2, 8, 54);
 
+    // RSSI indicator aligned to the far right on the coordinate/satellite bar
+    {
+        String rssiStr = String(g_lastRxRssi) + "dBm";
+        int padRight2 = 8;
+        int xRssi = 320 - padRight2 - sprite.textWidth(rssiStr);
+        // Clear behind the RSSI area to avoid artifacts when the number of digits changes
+        sprite.fillRect(xRssi - 2, 50, sprite.textWidth(rssiStr) + 4, 24, primaryColorLight);
+        sprite.drawString(rssiStr, xRssi, 54);
+    }
+
     // Bottom separator line.
-    sprite.fillRect(0, 74, 320, 2, primaryColorDark);
+
+    // Body background (everything below the coordinate bar)
     sprite.fillRect(0, 76, 320, 240 - 76, TFT_BLACK);
 #else
     // Original header design for T-Deck GPS and other variants.
@@ -404,7 +422,12 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             const String* const lines[] = {&header, &line1, &line2};
-            int yLineOffset = 82;
+            int yLineOffset =
+            #if defined(TTGO_T_DECK_PLUS)
+                82;
+            #else
+                82;
+            #endif
 
             for (int i = 0; i < 3; i++) {
                 String text = *lines[i];
@@ -417,11 +440,25 @@ void displayShow(const String& header, const String& line1, const String& line2,
                         chunk.remove(chunk.length() - 1);
                     }
                     #endif
+                        // Prevent text from going under the bottom buttons
+                        #if defined(TTGO_T_DECK_PLUS)
+                        if (yLineOffset + lineSpacing > 206) {
+                            sprite.drawString("...", 35, yLineOffset);
+                            text = "";
+                            break;
+                        }
+                        #endif
                         sprite.drawString(chunk, 35, yLineOffset);
                         text = text.substring(maxLineLength);
                         yLineOffset += lineSpacing;
                     }
                 } else {
+                    #if defined(TTGO_T_DECK_PLUS)
+                    if (yLineOffset + lineSpacing > 206) {
+                        sprite.drawString("...", 35, yLineOffset);
+                        break;
+                    }
+                    #endif
                     sprite.drawString(text, 3, yLineOffset);
                     yLineOffset += lineSpacing;
                 }
@@ -487,43 +524,41 @@ void displayShow(const String& header, const String& line1, const String& line2,
 }
 
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
-#ifdef HAS_TFT
-    // Guard: invalid index
-    if (symbolIndex < 0 || symbolIndex >= symbolArraySize) {
+    #if defined(HAS_TFT)
+if (symbolIndex < 0 || symbolIndex >= symbolArraySize) {
     #if defined(TTGO_T_DECK_PLUS)
-        int x = 320 - SYMBOL_WIDTH - 8;
-        int y = 90;
-        sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
-        sprite.setTextFont(2);
-        sprite.setTextSize(1);
-        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-        sprite.drawString("?", x + 3, y - 1);
+    int x = 320 - SYMBOL_WIDTH - 8;
+    int y = 106;
+    sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
+    sprite.setTextFont(2);
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString("?", x + 3, y - 1);
     #endif
-        return;
-    }
-
-    // Pick bitmap
-    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
-    if (bluetoothActive) bitMap = bluetoothSymbol;
-
-    #if defined(HELTEC_WIRELESS_TRACKER)
-        sprite.drawBitmap(128 - SYMBOL_WIDTH, 3, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
-    #endif
-
-    #if defined(TTGO_T_DECK_PLUS)
-        // Draw symbol in the BODY (background is black)
-        int x = 320 - SYMBOL_WIDTH - 8;
-        int y = 90;
-        sprite.drawBitmap(x, y, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
-        sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
-    #elif defined(TTGO_T_DECK_GPS)
-        sprite.drawBitmap(280, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
-    #endif
-#else
-    // OLED path
-    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
-    display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
+    return;
+}
 #endif
+    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
+    #ifdef HAS_TFT
+        if (bluetoothActive) bitMap = bluetoothSymbol;
+        #if defined(HELTEC_WIRELESS_TRACKER)
+            sprite.drawBitmap(128 - SYMBOL_WIDTH, 3, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+        #endif
+        #if defined(TTGO_T_DECK_PLUS)
+    // Place symbol on the right side of the BODY (below the header)
+    int x = 320 - SYMBOL_WIDTH - 8;
+    int y = 106; // moved down to avoid the RSSI strip and body text
+    // Draw in white so it is visible on the black body background
+    sprite.drawBitmap(x, y, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+
+    // Optional: small frame around the symbol to make it pop
+    sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
+    #else
+    sprite.drawBitmap(280, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+    #endif
+    #else
+        display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
+    #endif
 }
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
@@ -535,7 +570,12 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             const String* const lines[] = {&header, &line1, &line2, &line3, &line4, &line5};
-            int yLineOffset = 82;
+            int yLineOffset =
+            #if defined(TTGO_T_DECK_PLUS)
+                82;
+            #else
+                82;
+            #endif
 
             for (int i = 0; i < 6; i++) {
                 String text = *lines[i];
@@ -548,11 +588,25 @@ void displayShow(const String& header, const String& line1, const String& line2,
                         chunk.remove(chunk.length() - 1);
                     }
                         #endif
+                        // Prevent text from going under the bottom buttons
+                        #if defined(TTGO_T_DECK_PLUS)
+                        if (yLineOffset + lineSpacing > 206) {
+                            sprite.drawString("...", 35, yLineOffset);
+                            text = "";
+                            break;
+                        }
+                        #endif
                         sprite.drawString(chunk, 35, yLineOffset);
                         text = text.substring(maxLineLength);
                         yLineOffset += lineSpacing;
                     }
                 } else {
+                    #if defined(TTGO_T_DECK_PLUS)
+                    if (yLineOffset + lineSpacing > 206) {
+                        sprite.drawString("...", 35, yLineOffset);
+                        break;
+                    }
+                    #endif
                     sprite.drawString(text, 3, yLineOffset);
                     yLineOffset += lineSpacing;
                 }
@@ -679,8 +733,8 @@ void startupScreen(uint8_t index, const String& version) {
         case 2: workingFreq += "UK]"; break;
         case 3: workingFreq += "US]"; break;
     }
-    displayShow(" LoRa APRS", "      T-DECK Plus", workingFreq, "", "", "  CA2RXU (IU1BOT mod)  " + version, 4000);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CA2RXU + IU1BOT mod --> LoRa APRS Tracker");
+    displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
 }
 
