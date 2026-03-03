@@ -410,10 +410,20 @@ namespace UIMapManager {
         if (callsign) {
             int textY = canvasY + SYMBOL_SIZE / 2 + 2;
             if (textY >= 0 && textY < MAP_CANVAS_HEIGHT) {
-                // Estimate text width (~7px per char at 12px font) for centering
-                int textLen = strlen(callsign);
-                int textW = textLen * 7 + 6;
-                int textH = 16;
+                
+                // 1. Calculate the EXACT text size in pixels based on the font
+                lv_point_t text_size;
+                lv_txt_get_size(&text_size, callsign, &lv_font_montserrat_12, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+
+                // 2. Define margins (padding) around the text
+                int padding_x = 8; // 4 pixels on the left, 4 pixels on the right
+                int padding_y = 4; // 2 pixels on top, 2 pixels on the bottom
+
+                // 3. Calculate background dimensions based on text size + padding
+                int textW = text_size.x + padding_x;
+                int textH = text_size.y + padding_y; 
+                
+                // Center the background horizontally relative to the symbol
                 int textX = canvasX - textW / 2;
                 if (textX < 0) textX = 0;
 
@@ -430,7 +440,9 @@ namespace UIMapManager {
                 lv_draw_label_dsc_init(&label_dsc);
                 label_dsc.color = lv_color_hex(0x332221);
                 label_dsc.font = &lv_font_montserrat_12;
-                lv_canvas_draw_text(map_canvas, textX + 2, textY + 1, textW, &label_dsc, callsign);
+
+                // 4. Draw the text offset by half the padding to center it inside the background box
+                lv_canvas_draw_text(map_canvas, textX + (padding_x / 2), textY + (padding_y / 2), textW, &label_dsc, callsign);
             }
         }*/
        
