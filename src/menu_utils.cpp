@@ -883,12 +883,37 @@ namespace MENU_Utils {
                 } else {
                     sixthRowMainMenu = "No Battery Connected";
                 }
+                #if defined(TTGO_T_DECK_PLUS)
+                {
+                    // On the T‑Deck Plus, the date/time, coordinates and satellites are shown in
+                    // the header bars, so omit them from the body.  To make room for the APRS
+                    // path at the bottom, shift the remaining lines up.  The last parameter is
+                    // left empty to avoid drawing an unused extra line.
+                    String pathLine;
+                    if (lastReceivedPacket.path.length() > 0) {
+                        // display only the path of the last received packet (no label)
+                        pathLine = lastReceivedPacket.path;
+                    } else {
+                        pathLine = "";
+                    }
+                    // Pass a blank string as the fourth line to keep spacing consistent, then
+                    // place the path in the fifth line.  The sixth line is unused.
+                    displayShow(firstRowMainMenu,
+                                fourthRowMainMenu,
+                                fifthRowMainMenu,
+                                sixthRowMainMenu,
+                                "",                 // blank line 4
+                                pathLine);            // path at the very bottom
+                }
+                #else
+                // For devices other than T‑Deck Plus, retain the original menu with all lines.
                 displayShow(firstRowMainMenu,
                             secondRowMainMenu,
                             thirdRowMainMenu,
                             fourthRowMainMenu,
                             fifthRowMainMenu,
                             sixthRowMainMenu);
+                #endif
                 break;
         }
     }
