@@ -81,11 +81,12 @@ namespace WEB_Utils {
 
     void handleReadConfiguration(AsyncWebServerRequest *request) {
         File file = SPIFFS.open("/tracker_conf.json");
-
-        String fileContent;
-        while(file.available()){
-            fileContent += String((char)file.read());
+        if (!file) {
+            request->send(404, "text/plain", "Config file not found");
+            return;
         }
+
+        String fileContent = file.readString();
         file.close();
 
         // Add board-specific frequency limits dynamically
@@ -342,33 +343,37 @@ namespace WEB_Utils {
     }
 
     void setup() {
-        static bool initialized = false;
-        if (initialized) {
-            ESP_LOGW(TAG, "Already initialized, skipping");
-            return;
+        static bool routesRegistered = false;
+        static bool serverStarted = false;
+
+        if (!routesRegistered) {
+            server.on("/", HTTP_GET, handleHome);
+            server.on("/status", HTTP_GET, handleStatus);
+            server.on("/configuration.json", HTTP_GET, handleReadConfiguration);
+            server.on("/configuration.json", HTTP_POST, handleWriteConfiguration);
+            server.on("/action", HTTP_POST, handleAction);
+            server.on("/style.css", HTTP_GET, handleStyle);
+            server.on("/script.js", HTTP_GET, handleScript);
+            server.on("/bootstrap.css", HTTP_GET, handleBootstrapStyle);
+            server.on("/bootstrap.js", HTTP_GET, handleBootstrapScript);
+            server.on("/favicon.png", HTTP_GET, handleFavicon);
+
+            server.onNotFound(handleNotFound);
+
+            server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                ESP_LOGD(TAG, "Body: %s %s (%d bytes)", request->methodToString(), request->url().c_str(), total);
+            });
+            routesRegistered = true;
+            ESP_LOGI(TAG, "Routes registered");
         }
-        initialized = true;
 
-        server.on("/", HTTP_GET, handleHome);
-        server.on("/status", HTTP_GET, handleStatus);
-        //server.on("/received-packets.json", HTTP_GET, handleReceivedPackets);
-        server.on("/configuration.json", HTTP_GET, handleReadConfiguration);
-        server.on("/configuration.json", HTTP_POST, handleWriteConfiguration);
-        server.on("/action", HTTP_POST, handleAction);
-        server.on("/style.css", HTTP_GET, handleStyle);
-        server.on("/script.js", HTTP_GET, handleScript);
-        server.on("/bootstrap.css", HTTP_GET, handleBootstrapStyle);
-        server.on("/bootstrap.js", HTTP_GET, handleBootstrapScript);
-        server.on("/favicon.png", HTTP_GET, handleFavicon);
-
-        server.onNotFound(handleNotFound);
-
-        server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            ESP_LOGD(TAG, "Body: %s %s (%d bytes)", request->methodToString(), request->url().c_str(), total);
-        });
-
-        server.begin();
-        ESP_LOGI(TAG, "Started on port 80");
+        if (!serverStarted) {
+            server.begin();
+            serverStarted = true;
+            ESP_LOGI(TAG, "Started on port 80");
+        } else {
+            ESP_LOGI(TAG, "Server already running, skipping begin()");
+        }
     }
 
 }
