@@ -1440,6 +1440,11 @@ namespace MapEngine {
                     }
                     textRefs.push_back(ref);
                 } else if (geomType == GEOM_TEXT_LINE) {
+                    // Waterway curvilinear labels: pas utiles sous Z12 (police fixe, trop de bruit)
+                    if (zoom < 12) {
+                        p += 13 + payloadSize;
+                        continue;
+                    }
                     // Curvilinear waterway label — collected for dedicated render pass
                     if (waterwayRefs.size() == waterwayRefs.capacity()) {
                         size_t needed = (waterwayRefs.capacity() < 1 ? 1 : waterwayRefs.capacity() * 2) * sizeof(FeatureRef);
@@ -1883,7 +1888,8 @@ namespace MapEngine {
 
             uint8_t pathCount = payload[0];
             if (pathCount < 2) continue;
-            if (pathCount > 64) pathCount = 64;  // cap: évite stack overflow sur paths longs
+            const uint8_t pathCountOrig = pathCount;  // garde le vrai count pour afterPath
+            if (pathCount > 128) pathCount = 128;  // cap rendu, mais afterPath utilise pathCountOrig
 
             // Sanity check: need pathCount * 4 bytes + 1 byte text_len
             size_t minSize = 1u + (size_t)pathCount * 4u + 1u;
@@ -1895,15 +1901,18 @@ namespace MapEngine {
             // Project to screen pixels
             // static: keep off the stack (renderNavViewport already deep, loopTask stack overflow)
             static int screenX[256], screenY[256];
+            static float arcLen[256];
             for (uint8_t j = 0; j < pathCount; j++) {
                 int16_t cx = rawPts[j * 2];
                 int16_t cy = rawPts[j * 2 + 1];
-                screenX[j] = (cx >> 4) + ref.tileOffsetX;
-                screenY[j] = (cy >> 4) + ref.tileOffsetY;
+                // GEOM_TEXT_LINE coords sont en tile-relative 0-4095 (comme GEOM_TEXT),
+                // pas en subpixel ×16 — pas de >> 4 ici
+                screenX[j] = (int)(cx * MAP_TILE_SIZE / 4096) + ref.tileOffsetX;
+                screenY[j] = (int)(cy * MAP_TILE_SIZE / 4096) + ref.tileOffsetY;
             }
 
-            // Read text
-            const uint8_t* afterPath = payload + 1 + (size_t)pathCount * 4;
+            // Read text — utilise pathCountOrig pour pointer après TOUS les points du payload
+            const uint8_t* afterPath = payload + 1 + (size_t)pathCountOrig * 4;
             uint8_t textLen = afterPath[0];
             if (textLen == 0 || textLen >= 128) continue;
             if (ref.payloadSize < minSize + textLen) continue;
@@ -1922,7 +1931,6 @@ namespace MapEngine {
             }
 
             // --- Compute cumulative arc length of path in pixels ---
-            static float arcLen[256];
             arcLen[0] = 0.0f;
             for (uint8_t j = 1; j < pathCount; j++) {
                 float dx = (float)(screenX[j] - screenX[j - 1]);
@@ -1970,26 +1978,20 @@ namespace MapEngine {
             placedLabels.push_back({(int16_t)minSX, (int16_t)minSY,
                                     (int16_t)(maxSX - minSX), (int16_t)(maxSY - minSY)});
 
-            // If text is wider than path, skip (would look bad)
-            if ((float)textWidth > totalLen * 1.5f) {
-                ESP_LOGD(TAG, "WLABEL '%s' SKIP textW=%d > totalLen*1.5=%.1f", textBuf, textWidth, totalLen * 1.5f);
+            // If text is wider than path, skip
+            if ((float)textWidth > totalLen) {
+                ESP_LOGD(TAG, "WLABEL '%s' SKIP textW=%d > totalLen=%.1f", textBuf, textWidth, totalLen);
                 continue;
             }
 
-            ESP_LOGD(TAG, "WLABEL '%s' DRAW totalLen=%.1f textW=%d angle=%.1f reverseText=%d",
-                     textBuf, totalLen, textWidth,
-                     atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) * 180.0f / (float)M_PI,
-                     (int)(atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) > M_PI_2 ||
-                           atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) < -M_PI_2));
+            ESP_LOGD(TAG, "WLABEL '%s' DRAW totalLen=%.1f textW=%d firstDx=%.1f reverseText=%d",
+                     textBuf, totalLen, textWidth, firstDx, (int)reverseText);
 
             // --- Render each character along the path ---
-            // Determine if path goes right-to-left overall; if so, reverse text
-            // (so glyphs always read left-to-right from the reader's perspective)
-            float overallAngle = atan2f(
-                (float)(screenY[pathCount - 1] - screenY[0]),
-                (float)(screenX[pathCount - 1] - screenX[0])
-            );
-            bool reverseText = (overallAngle > M_PI_2 || overallAngle < -M_PI_2);
+            // Determine if path goes right-to-left: use first segment direction,
+            // not first→last (global direction trompeuse sur paths qui serpentent)
+            float firstDx = (float)(screenX[1] - screenX[0]);
+            bool reverseText = (firstDx < 0.0f);
 
             // Build a working copy we can reverse in-place
             char drawBuf[128];
