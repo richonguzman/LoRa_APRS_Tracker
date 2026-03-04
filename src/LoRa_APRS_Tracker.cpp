@@ -385,12 +385,16 @@ void loop() {
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
-            // Rate-limited log: 1 message every 30 suppressions to avoid serial flood
+            // Rate-limited log: at most once every 30 seconds to avoid serial flood
+            static uint32_t lastGpsQualityLogMs = 0;
             static uint32_t gpsQualitySkipCount = 0;
             gpsQualitySkipCount++;
-            if (gpsQualitySkipCount % 30 == 1) {
+            uint32_t now = millis();
+            if (now - lastGpsQualityLogMs >= 30000) {
                 ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon (x%u)",
                          gps.satellites.value(), gps.hdop.hdop(), gpsQualitySkipCount);
+                lastGpsQualityLogMs = now;
+                gpsQualitySkipCount = 0;
             }
         }
 
