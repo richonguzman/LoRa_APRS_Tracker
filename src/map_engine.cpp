@@ -51,6 +51,12 @@ namespace MapEngine {
     // Decoded coords buffer for Delta+ZigZag+VarInt features (PSRAM, reused per feature)
     static std::vector<int16_t, PSRAMAllocator<int16_t>> decodedCoords;
 
+    // npkRowBuf: PSRAM buffer for full index-row reads (allocated in initTileCache).
+    // Declared here (before initTileCache) so the function can see the symbol.
+    // Capacity 8192 covers Z16/Z17 dense rows; avoids on-disk binary-search fallback.
+    static UIMapManager::Npk2IndexEntry* npkRowBuf    = nullptr;
+    static uint32_t                      npkRowBufCap = 0;
+
     // --- VarInt decoding (protobuf-style LEB128) ---
     static uint32_t readVarInt(const uint8_t* buf, uint32_t& offset, uint32_t limit) {
         uint32_t result = 0;
@@ -721,13 +727,6 @@ namespace MapEngine {
         return &s;
     }
 
-    // Row buffer for bulk index reads — 2048 entries = 32 KB (static, no fragmentation)
-    // npkRowBuf: temporary buffer for full index-row reads from SD.
-    // Kept in PSRAM (allocated once in initTileCache) to save ~24-32 KB DRAM.
-    // Capacity 8192 entries covers Z16/Z17 dense rows and avoids the slow
-    // on-disk binary-search fallback that was triggered at >2048 entries.
-    static UIMapManager::Npk2IndexEntry* npkRowBuf    = nullptr;
-    static uint32_t                      npkRowBufCap = 0;
 
     // --- Index row cache in PSRAM (avoids re-reading the same Y-row from SD) ---
     struct IndexRowCache {
