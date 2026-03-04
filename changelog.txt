@@ -27,3 +27,8 @@ New “APRSPH Check‑in” Menu Item
   When selected, this option sends a canned APRS message (“CQ Checked‑in via LoRa Tracker”) to APRSPH using MSG_Utils::addToOutputBuffer(...) and displays a confirmation message, then returns to the Messages menu.
 
 - These updates collectively modernize the T‑Deck Plus interface, improve readability, reposition and enlarge the APRS icon, and add a convenient APRSPH check‑in option—all while maintaining compatibility with the original menu structure.
+
+-----------------------------------------------------------
+
+- Added RSSI indication (coordinates and sat number bar)
+
