@@ -542,6 +542,66 @@ namespace UIMapManager {
         }
     }
 
+    // Add a point to the own-trace circular buffer, applying jitter filtering
+    void addOwnTracePoint() {
+        static float centroidLat = 0.0f;
+        static float centroidLon = 0.0f;
+        static uint32_t centroidCount = 0;
+        static float lastHdop = 0.0f;
+
+        if (!gps.location.isValid()) return;
+        // Reject unreliable fixes: need ≥6 sats for decent 3D geometry
+        if (gps.satellites.value() < 6) return;
+        float lat = gps.location.lat();
+        float lon = gps.location.lng();
+
+        // Initialize centroid on first valid fix
+        if (centroidCount == 0) {
+            centroidLat = lat;
+            centroidLon = lon;
+            centroidCount = 1;
+        } else {
+            // Update running centroid with every GPS reading
+            float alpha = (centroidCount < 10) ? 1.0f / (centroidCount + 1) : 0.1f;
+            centroidLat += alpha * (lat - centroidLat);
+            centroidLon += alpha * (lon - centroidLon);
+            centroidCount++;
+
+            // Threshold: 15m min, +5m per HDOP unit
+            float hdop = gps.hdop.isValid() ? gps.hdop.hdop() : 2.0f;
+            float thresholdM = fmax(15.0f, hdop * 5.0f);
+            float thresholdLat = thresholdM / 111320.0f;
+            float thresholdLon = thresholdM / (111320.0f * cosf(lat * M_PI / 180.0f));
+
+            // Compare to centroid, not to last accepted point
+            if (fabs(lat - centroidLat) < thresholdLat && fabs(lon - centroidLon) < thresholdLon) {
+                return;
+            }
+
+            // Real movement — reset centroid to new position
+            centroidLat = lat;
+            centroidLon = lon;
+            centroidCount = 1;
+        }
+
+        // Retrieve current HDOP (same logic used above)
+        float hdop = gps.hdop.isValid() ? gps.hdop.hdop() : 2.0f;
+        lastHdop = hdop;
+
+        // Anti-jitter: use the smoothed filtered position instead of the raw jumping coordinate
+        // This relies on filteredOwnLat/Lon which are constantly smoothed by the UI refresh loop
+        float traceLat = lat;
+        float traceLon = lon;
+        if (filteredOwnValid) {
+            traceLat = filteredOwnLat;
+            traceLon = filteredOwnLon;
+        }
+
+        // Add point to circular buffer
+        ownTrace[ownTraceHead].lat = traceLat;
+        ownTrace[ownTraceHead].lon = traceLon;
+    }
+
     // Draw all stations directly on the canvas (zero LVGL objects, all PSRAM)
     void update_station_objects() {
         if (!map_canvas || !map_canvas_buf) return;
@@ -990,60 +1050,43 @@ namespace UIMapManager {
 
     // Add a point to own GPS trace (called from sendBeacon when position changes)
     void addOwnTracePoint(float lat, float lon, float hdop) {
-        static float centroidLat = 0.0f;  // Running centroid of GPS readings
-        static float centroidLon = 0.0f;
-        static uint32_t centroidCount = 0; // Number of readings in centroid
-        static float lastHdop = 99.0f;
-
         // Reject bad GPS fix entirely
         if (hdop > 5.0f) return;
         if (gps.satellites.value() < 6) return;
 
-        // Centroid-based jitter filter: compare to average of all recent GPS readings,
-        // not just the last accepted point. This prevents drift from accumulated jitter.
+        // Use the continuously-updated filtered position (computed every second by
+        // updateFilteredOwnPosition) instead of the raw instantaneous fix passed in.
+        // The local centroid approach used previously was ineffective because this function
+        // is only called at beacon-send time (sparse), so its centroid never converged
+        // correctly. filteredOwnLat/Lon is already smoothed over many GPS readings and
+        // eliminates zigzag caused by GPS glitches at send time.
+        if (!filteredOwnValid) return;
+        float traceLat = filteredOwnLat;
+        float traceLon = filteredOwnLon;
+
+        // Skip if the filtered point is still within noise range of the last stored vertex
+        // (standing update while truly immobile — avoids duplicate collinear points).
         if (ownTraceCount > 0) {
-            // Update running centroid with this reading (accepted or not)
-            if (centroidCount == 0) {
-                centroidLat = lat;
-                centroidLon = lon;
-                centroidCount = 1;
-            } else {
-                // Exponential moving average (alpha ~0.1 for smooth convergence)
-                float alpha = (centroidCount < 10) ? 1.0f / (centroidCount + 1) : 0.1f;
-                centroidLat += alpha * (lat - centroidLat);
-                centroidLon += alpha * (lon - centroidLon);
-                centroidCount++;
-            }
-
-            // Threshold based on HDOP: 15m min, +5m per HDOP unit
-            float worstHdop = fmax(lastHdop, hdop);
-            float thresholdM = fmax(15.0f, worstHdop * 5.0f);
+            int   lastIdx      = (ownTraceHead - 1 + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+            float thresholdM   = fmaxf(15.0f, hdop * 5.0f);
             float thresholdLat = thresholdM / 111320.0f;
-            float thresholdLon = thresholdM / (111320.0f * cosf(lat * M_PI / 180.0f));
-
-            // Compare to centroid, not to last accepted point
-            if (fabs(lat - centroidLat) < thresholdLat && fabs(lon - centroidLon) < thresholdLon) {
+            float thresholdLon = thresholdM / (111320.0f * cosf(traceLat * (float)M_PI / 180.0f));
+            if (fabsf(traceLat - ownTrace[lastIdx].lat) < thresholdLat &&
+                fabsf(traceLon - ownTrace[lastIdx].lon) < thresholdLon) {
                 return;
             }
-
-            // Real movement — reset centroid to new position
-            centroidLat = lat;
-            centroidLon = lon;
-            centroidCount = 1;
         }
 
-        lastHdop = hdop;
-
-        // Add point to circular buffer
-        ownTrace[ownTraceHead].lat = lat;
-        ownTrace[ownTraceHead].lon = lon;
+        // Add filtered point to circular buffer
+        ownTrace[ownTraceHead].lat  = traceLat;
+        ownTrace[ownTraceHead].lon  = traceLon;
         ownTrace[ownTraceHead].time = millis();
         ownTraceHead = (ownTraceHead + 1) % TRACE_MAX_POINTS;
         if (ownTraceCount < TRACE_MAX_POINTS) {
             ownTraceCount++;
         }
 
-        ESP_LOGD(TAG, "Own trace point added: %.6f, %.6f (count=%d)", lat, lon, ownTraceCount);
+        ESP_LOGD(TAG, "Own trace point added (filtered): %.6f, %.6f (count=%d)", traceLat, traceLon, ownTraceCount);
     }
 
     // Draw GPS traces for mobile stations on the canvas

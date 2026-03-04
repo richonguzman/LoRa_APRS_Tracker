@@ -513,7 +513,7 @@ namespace STATION_Utils {
 
             // Add own position to GPS trace on map + GPX recording
             #ifdef USE_LVGL_UI
-                UIMapManager::addOwnTracePoint(lastTxLat, lastTxLng, gps.hdop.hdop());
+                UIMapManager::addOwnTracePoint();
                 GPXWriter::addPoint(lastTxLat, lastTxLng,
                                     gps.altitude.meters(), gps.hdop.hdop(), gps.speed.kmph());
             #endif

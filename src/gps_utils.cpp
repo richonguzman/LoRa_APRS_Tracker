@@ -113,7 +113,19 @@ namespace GPS_Utils {
 
     void calculateDistanceTraveled() {
         currentHeading  = gps.course.deg();
-        lastTxDistance  = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
+        
+        // Anti-jitter filter: Calculate raw distance jump
+        double rawDistance = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
+        
+        // If speed is very low (< 5 km/h) but distance jump is large (> 50m), it's likely GPS multipath jitter.
+        // We only accept large distances at low speeds if enough time has passed (standing update).
+        if (gps.speed.kmph() < 5.0 && rawDistance > 50.0 && lastTx < Config.standingUpdateTime * 60 * 1000) {
+            ESP_LOGD(TAG, "Suppressed GPS jitter: speed %.1f km/h, raw jump %.1f m", gps.speed.kmph(), rawDistance);
+            lastTxDistance = 0.0; // Ignore this jump for beaconing logic
+        } else {
+            lastTxDistance = rawDistance;
+        }
+
         if (lastTx >= txInterval) {
             if (lastTxDistance > currentSmartBeaconValues.minTxDist) {
                 sendUpdate = true;
