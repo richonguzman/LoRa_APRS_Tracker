@@ -1,14 +1,12 @@
 # LoRa APRS Tracker - LVGL UI Edition
 
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-ready-orange)
-![Version](https://img.shields.io/badge/version-2.7.3%2Bdev-blue)
+![Version](https://img.shields.io/badge/version-2.7.4-blue)
 ![License](https://img.shields.io/badge/license-GPL-green)
 
 **ESP32-S3 LoRa APRS tracker with modern touchscreen interface for Lilygo T-Deck Plus**
 
 This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) featuring a complete LVGL-based touchscreen interface with vector map rendering (NAV format compatible with [IceNav-v3](https://github.com/jgauchia/IceNav-v3)), LovyanGFX graphics library for enhanced performance, advanced APRS messaging, and optimized memory management.
-
-**⚠️ Development Branch** - This version includes experimental features. For stable release, see [main branch](https://github.com/moricef/LoRa_APRS_Tracker/tree/main).
 
 ## Screenshots
 
@@ -19,24 +17,25 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 ---
 
 ## What's New in v2.7.x
-- **SD DMA + Display DMA** - Ported from IceNav-v3 for ultra-fast tile loading and smooth rendering
-- **ESP_LOG migration** - Replaced standard Serial.print with native ESP-IDF logging framework
+- **ESP_LOG migration** - Replaced standard Serial.print with native ESP-IDF logging framework with colored terminal output
 - **PSRAM LVGL Allocator** - Redirected UI memory to PSRAM to free up critical DRAM
 - **NPK2 Multi-region support** - Support for "split packs" NPK2 map files with multi-region roaming
 - **Wide Zoom Range** - Map support from Zoom 6 up to 17 with adaptive raster/vector switching
-- **Web-Conf Stability** - Fixed touch reentrancy and watchdog issues in configuration mode
+- **Vector map optimizations** - Increased NPK2 row buffer to 8KB in PSRAM for processing complex tiles
+- **Web-Conf Stability** - Hardened against memory fragmentation and CPU starvation in configuration mode
 - **GPX trace recorder** - Start/Stop button on map, saves tracks to SD card
 - **Delta+ZigZag+VarInt NAV format** - 30-50% smaller tiles, compatible with IceNav-v3
-- **HDOP adaptive jitter filter** - GPS trace smoothing based on signal quality
+- **Robust GPS filtering** - Advanced HDOP adaptive jitter filtering to prevent fake beacons and map spikes
 - **NAV raw data cache** - PSRAM cache avoids SD re-reads after pan (30 tiles LRU)
 - **Station traces with TTL** - 60-minute time-to-live for received station positions
 - **Vector map rendering** - NAV format tiles with roads, paths, water bodies, buildings
 - **Dual map modes** - Raster (JPEG/PNG) and Vector (NAV) with adaptive zoom
 - **Statistics persistence** - LinkStats and per-station data saved to SD card
 - **WiFi Station mode** - Connect to existing networks for internet access
+- **APRS-IS Stability** - Extended logresp timeout to 10s with better connection cleanup
 - **Display ECO slider** - Configurable timeout for screen dimming
 - **Memory optimizations** - Fixed leaks, improved PSRAM usage
-- **Stability fixes** - BLE wake crash, SD logger infinite loop, color rendering
+- **Stability and UI fixes** - BLE wake crash, SD logger infinite loop, dynamic callsign background width calculation
 
 ## Key Features
 
@@ -143,15 +142,8 @@ python download_tiles.py --region france --zoom 8 10 12 14 16 18
 3. Output format: "OSMTracker tile storage"
 4. Copy to SD:/LoRa_Tracker/Maps/
 
-**Vector tiles (NAV format)** - Using [Tile-Generator](https://github.com/jgauchia/Tile-Generator):
-```bash
-git clone https://github.com/jgauchia/Tile-Generator.git
-cd Tile-Generator
-python3 -m venv venv
-source venv/bin/activate
-pip install shapely pygame osmium
+**Vector tiles (NAV format)** - Using [Tile-Generator](https://github.com/moricef/Tile-Generator/tree/devel_pack):
 
-python tile_generator.py region.pbf output_dir features.json --zoom 8-18
 # Copy output_dir/* to SD:/LoRa_Tracker/VectMaps/
 ```
 
@@ -209,7 +201,6 @@ Tracker works in degraded mode without SD:
 **Memory**: ~88KB DRAM free during operation, PSRAM for tile/symbol cache and sprites
 
 **Optimizations**:
-- **Direct Memory Access (DMA)**: Hardware acceleration for SD card reads (32KB chunks) and display flushing
 - **PSRAM Asset Management**: UI allocator and tile/symbol cache redirected to PSRAM
 - Synchronous tile rendering (decode + copy + cache)
 - RGB565 byte-swap for correct LVGL colors
