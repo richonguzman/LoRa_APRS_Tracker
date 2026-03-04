@@ -60,6 +60,11 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
+- 2026.03.04 **v2.7.4 Stable Release**:
+    - Robust GPS Jitter filtering to prevent fake beacons.
+    - Cleaned up OwnStation trace logic on vector maps.
+    - Optimized Map Engine with 8KB PSRAM index buffer.
+    - Full migration to `ESP_LOG` with terminal colors.
 - 2025-12-01 APRSPacketLib update.
 - 2025-11-26 Custom Status Selection.
 - 2025-08-11 New improved Battery Monitor for Heltec Boards. Thanks Tilen S54B.

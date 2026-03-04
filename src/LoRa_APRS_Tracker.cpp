@@ -78,8 +78,8 @@ static const char *TAG = "Main";
 #endif
 
 
-String      versionDate             = "2026-02-02";
-String      versionNumber           = "2.4.1";
+String      versionDate             = "2026-03-04";
+String      versionNumber           = "2.7.4";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
