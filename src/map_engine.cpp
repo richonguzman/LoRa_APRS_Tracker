@@ -1883,6 +1883,7 @@ namespace MapEngine {
 
             uint8_t pathCount = payload[0];
             if (pathCount < 2) continue;
+            if (pathCount > 64) pathCount = 64;  // cap: évite stack overflow sur paths longs
 
             // Sanity check: need pathCount * 4 bytes + 1 byte text_len
             size_t minSize = 1u + (size_t)pathCount * 4u + 1u;
@@ -1892,8 +1893,8 @@ namespace MapEngine {
             const int16_t* rawPts = (const int16_t*)(payload + 1);
 
             // Project to screen pixels
-            // Use a small stack buffer (pathCount is uint8_t → max 255 points)
-            int screenX[256], screenY[256];
+            // static: keep off the stack (renderNavViewport already deep, loopTask stack overflow)
+            static int screenX[256], screenY[256];
             for (uint8_t j = 0; j < pathCount; j++) {
                 int16_t cx = rawPts[j * 2];
                 int16_t cy = rawPts[j * 2 + 1];
@@ -1911,6 +1912,9 @@ namespace MapEngine {
             memcpy(textBuf, afterPath + 1, textLen);
             textBuf[textLen] = '\0';
 
+            ESP_LOGD(TAG, "WLABEL '%s' pts=%d fontSize=%d color=0x%04x screen0=(%d,%d)",
+                     textBuf, pathCount, fontSize, colorRgb565, screenX[0], screenY[0]);
+
             // Scale font
             if (vlwFontLoaded) {
                 float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
@@ -1918,7 +1922,7 @@ namespace MapEngine {
             }
 
             // --- Compute cumulative arc length of path in pixels ---
-            float arcLen[256];
+            static float arcLen[256];
             arcLen[0] = 0.0f;
             for (uint8_t j = 1; j < pathCount; j++) {
                 float dx = (float)(screenX[j] - screenX[j - 1]);
@@ -1926,7 +1930,10 @@ namespace MapEngine {
                 arcLen[j] = arcLen[j - 1] + sqrtf(dx * dx + dy * dy);
             }
             float totalLen = arcLen[pathCount - 1];
-            if (totalLen < 4.0f) continue;  // Path too short to label
+            if (totalLen < 4.0f) {
+                ESP_LOGD(TAG, "WLABEL '%s' SKIP totalLen=%.1f", textBuf, totalLen);
+                continue;
+            }
 
             // Measure total text width so we can center it
             int textWidth = map.textWidth(textBuf);
@@ -1954,14 +1961,26 @@ namespace MapEngine {
                     break;
                 }
             }
-            if (collision) continue;
+            if (collision) {
+                ESP_LOGD(TAG, "WLABEL '%s' SKIP collision", textBuf);
+                continue;
+            }
 
             // Reserve collision slot for this label
             placedLabels.push_back({(int16_t)minSX, (int16_t)minSY,
                                     (int16_t)(maxSX - minSX), (int16_t)(maxSY - minSY)});
 
             // If text is wider than path, skip (would look bad)
-            if ((float)textWidth > totalLen * 1.5f) continue;
+            if ((float)textWidth > totalLen * 1.5f) {
+                ESP_LOGD(TAG, "WLABEL '%s' SKIP textW=%d > totalLen*1.5=%.1f", textBuf, textWidth, totalLen * 1.5f);
+                continue;
+            }
+
+            ESP_LOGD(TAG, "WLABEL '%s' DRAW totalLen=%.1f textW=%d angle=%.1f reverseText=%d",
+                     textBuf, totalLen, textWidth,
+                     atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) * 180.0f / (float)M_PI,
+                     (int)(atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) > M_PI_2 ||
+                           atan2f((float)(screenY[pathCount-1]-screenY[0]),(float)(screenX[pathCount-1]-screenX[0])) < -M_PI_2));
 
             // --- Render each character along the path ---
             // Determine if path goes right-to-left overall; if so, reverse text
@@ -2010,10 +2029,9 @@ namespace MapEngine {
 
                 // Only draw if the character is within the viewport
                 if (cx >= -charW && cx < viewportW + charW && cy >= -charH && cy < viewportH + charH) {
-                    // Angle of current segment (radians)
+                    // Angle of current segment (radians) — used directly in pushRotateZoom
                     float dx = (float)(screenX[seg + 1] - screenX[seg]);
                     float dy = (float)(screenY[seg + 1] - screenY[seg]);
-                    float angle = atan2f(dy, dx);
 
                     // Draw character rotated along path.
                     // LGFX doesn't have a per-glyph rotation API, so we render the
@@ -2036,14 +2054,16 @@ namespace MapEngine {
                         charSprite.setTextDatum(lgfx::top_left);
                         charSprite.drawString(chBuf, 1, 0);
 
-                        // Rotate and blit onto the map sprite
-                        // angle is in radians; pushRotateZoom expects degrees
-                        float angleDeg = angle * (180.0f / (float)M_PI);
+                        // Rotate and blit onto the map sprite.
+                        // pushRotateZoom pivots around the sprite's center by default,
+                        // so we pass the sprite center as the source pivot and cx/cy as
+                        // the destination center on the map.
+                        float angleDeg = atan2f(dy, dx) * (180.0f / (float)M_PI);
                         charSprite.pushRotateZoom(&map,
-                            (int)cx, (int)cy,       // pivot on map
-                            angleDeg,               // rotation
-                            1.0f, 1.0f,             // no zoom
-                            0x0000                  // transparent colour key (black)
+                            (int)cx, (int)cy,
+                            angleDeg,
+                            1.0f, 1.0f,
+                            0x0000
                         );
                         charSprite.deleteSprite();
                     } else {
