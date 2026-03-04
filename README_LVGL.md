@@ -144,8 +144,7 @@ python download_tiles.py --region france --zoom 8 10 12 14 16 18
 
 **Vector tiles (NAV format)** - Using [Tile-Generator](https://github.com/moricef/Tile-Generator/tree/devel_pack):
 
-# Copy output_dir/* to SD:/LoRa_Tracker/VectMaps/
-```
+Copy output_dir/* to SD:/LoRa_Tracker/VectMaps/
 
 **Note**: Vector mode activates automatically when `/LoRa_Tracker/VectMaps/` directory exists.
 
