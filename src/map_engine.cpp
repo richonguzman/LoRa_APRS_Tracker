@@ -391,6 +391,18 @@ namespace MapEngine {
 
         ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
                       maxCachedTiles, NAV_CACHE_SIZE);
+
+        // Allocate npkRowBuf in PSRAM once — persists for the whole map session.
+        // 8192 entries covers Z16/Z17 dense index rows; frees ~24-32 KB DRAM
+        // that the old static array consumed.
+        if (!npkRowBuf) {
+            npkRowBuf    = (UIMapManager::Npk2IndexEntry*)
+                            heap_caps_malloc(8192 * sizeof(UIMapManager::Npk2IndexEntry),
+                                             MALLOC_CAP_SPIRAM);
+            npkRowBufCap = npkRowBuf ? 8192 : 0;
+            ESP_LOGI(TAG, "npkRowBuf: %u entries in %s",
+                          npkRowBufCap, npkRowBuf ? "PSRAM" : "FAILED (fallback to on-disk search)");
+        }
     }
 
     void clearTileCache() {
@@ -710,7 +722,12 @@ namespace MapEngine {
     }
 
     // Row buffer for bulk index reads — 2048 entries = 32 KB (static, no fragmentation)
-    static UIMapManager::Npk2IndexEntry npkRowBuf[2048];
+    // npkRowBuf: temporary buffer for full index-row reads from SD.
+    // Kept in PSRAM (allocated once in initTileCache) to save ~24-32 KB DRAM.
+    // Capacity 8192 entries covers Z16/Z17 dense rows and avoids the slow
+    // on-disk binary-search fallback that was triggered at >2048 entries.
+    static UIMapManager::Npk2IndexEntry* npkRowBuf    = nullptr;
+    static uint32_t                      npkRowBufCap = 0;
 
     // --- Index row cache in PSRAM (avoids re-reading the same Y-row from SD) ---
     struct IndexRowCache {
@@ -781,7 +798,7 @@ namespace MapEngine {
         uint32_t baseOff = slot->header.index_offset + row.idx_start * sizeof(UIMapManager::Npk2IndexEntry);
         bool found = false;
 
-        if (row.idx_count <= 2048) {
+        if (npkRowBuf && row.idx_count <= npkRowBufCap) {
             // Fast path: read entire row in one SD read, binary search in RAM
             size_t readSize = row.idx_count * sizeof(UIMapManager::Npk2IndexEntry);
             bool readOk = false;
