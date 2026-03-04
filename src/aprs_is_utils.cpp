@@ -88,9 +88,11 @@ namespace APRS_IS_Utils {
             aprsIsClient.print(aprsAuth + "\r\n");
             ESP_LOGD(TAG, "Auth sent: %s", aprsAuth.c_str());
 
-            // Wait for server response to validate passcode
+            // Wait for server response to validate passcode.
+            // Some servers send the banner (#aprsc) first, then logresp — allow up to 10 s.
+            bool logrexpReceived = false;
             uint32_t startWait = millis();
-            while (millis() - startWait < 5000) {
+            while (millis() - startWait < 10000) {
                 esp_task_wdt_reset();  // Reset watchdog during server response wait
                 if (aprsIsClient.available()) {
                     String response = aprsIsClient.readStringUntil('\n');
@@ -100,16 +102,25 @@ namespace APRS_IS_Utils {
                     if (response.indexOf("verified") != -1 && response.indexOf("unverified") == -1) {
                         passcodeValid = true;
                         aprsIsConnected = true;
+                        logrexpReceived = true;
                         ESP_LOGI(TAG, "Passcode verified");
                         break;
                     } else if (response.indexOf("unverified") != -1) {
                         passcodeValid = false;
                         aprsIsConnected = true;  // Connected but read-only
+                        logrexpReceived = true;
                         ESP_LOGW(TAG, "Passcode invalid - read-only mode");
                         break;
                     }
+                    // Banner or other line — keep waiting
                 }
                 delay(100);
+            }
+            if (!logrexpReceived) {
+                ESP_LOGW(TAG, "logresp timeout (10s) — server did not confirm passcode, will retry");
+                aprsIsClient.stop();
+                aprsIsConnected = false;
+                passcodeValid = false;
             }
         }
         lastConnectionTry = millis();
