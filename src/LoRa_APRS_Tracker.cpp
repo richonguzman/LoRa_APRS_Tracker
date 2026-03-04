@@ -385,9 +385,13 @@ void loop() {
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
-            // Log only in debug mode to avoid spam
-            ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon",
-                       gps.satellites.value(), gps.hdop.hdop());
+            // Rate-limited log: 1 message every 30 suppressions to avoid serial flood
+            static uint32_t gpsQualitySkipCount = 0;
+            gpsQualitySkipCount++;
+            if (gpsQualitySkipCount % 30 == 1) {
+                ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon (x%u)",
+                         gps.satellites.value(), gps.hdop.hdop(), gpsQualitySkipCount);
+            }
         }
 
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
