@@ -1,6 +1,6 @@
 {
   "name": "LoRa APRS Tracker - T-Deck Plus 433MHz (Stable)",
-  "version": "2.4.2",
+  "version": "2.7.4 (2026-03-04)",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
