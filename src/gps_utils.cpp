@@ -112,6 +112,13 @@ namespace GPS_Utils {
     }
 
     void calculateDistanceTraveled() {
+        // Guard against being called twice per GPS cycle (e.g. from two call sites in the main loop).
+        // TinyGPS++ clears isUpdated() after the first read, so we use our own flag on age.
+        static uint32_t lastCalcMs = 0;
+        uint32_t now = millis();
+        if (now - lastCalcMs < 500) return;   // same GPS epoch → skip duplicate call
+        lastCalcMs = now;
+
         currentHeading  = gps.course.deg();
         
         // Anti-jitter filter: Calculate raw distance jump
@@ -120,7 +127,12 @@ namespace GPS_Utils {
         // If speed is very low (< 5 km/h) but distance jump is large (> 50m), it's likely GPS multipath jitter.
         // We only accept large distances at low speeds if enough time has passed (standing update).
         if (gps.speed.kmph() < 5.0 && rawDistance > 50.0 && lastTx < Config.standingUpdateTime * 60 * 1000) {
-            ESP_LOGD(TAG, "Suppressed GPS jitter: speed %.1f km/h, raw jump %.1f m", gps.speed.kmph(), rawDistance);
+            // Rate-limit this log to once every 30 s to avoid serial flood
+            static uint32_t lastJitterLog = 0;
+            if (now - lastJitterLog >= 30000) {
+                lastJitterLog = now;
+                ESP_LOGD(TAG, "Suppressed GPS jitter: speed %.1f km/h, raw jump %.1f m", gps.speed.kmph(), rawDistance);
+            }
             lastTxDistance = 0.0; // Ignore this jump for beaconing logic
         } else {
             lastTxDistance = rawDistance;
