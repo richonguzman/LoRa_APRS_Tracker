@@ -139,10 +139,17 @@ namespace MapEngine {
         return true;
     }
 
+    // Geometry type constants
+    static constexpr uint8_t GEOM_POINT      = 1;
+    static constexpr uint8_t GEOM_LINE       = 2;
+    static constexpr uint8_t GEOM_POLYGON    = 3;
+    static constexpr uint8_t GEOM_TEXT       = 4;
+    static constexpr uint8_t GEOM_TEXT_LINE  = 5;  // Curvilinear waterway label
+
     // Feature reference for zero-copy rendering (IceNav-v3 pattern: pointer into tile buffer)
     struct FeatureRef {
         uint8_t* ptr;           // Pointer to feature header in data buffer
-        uint8_t geomType;       // 1=Point, 2=Line, 3=Polygon, 4=Text
+        uint8_t geomType;       // 1=Point, 2=Line, 3=Polygon, 4=Text, 5=TextLine
         uint16_t payloadSize;   // Total payload size in bytes
         uint16_t coordCount;    // Number of coordinates
         int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetX)
@@ -1289,6 +1296,10 @@ namespace MapEngine {
         std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> textRefs;
         textRefs.reserve(128);
 
+        // Waterway curvilinear labels (GEOM_TEXT_LINE) — rendered in a dedicated pass
+        std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
+        waterwayRefs.reserve(64);
+
         uint16_t bgColor = 0xF7BE;  // Default OSM beige (0xF2EFE9) if no tiles loaded
         bool bgColorExtracted = false;
 
@@ -1419,7 +1430,7 @@ namespace MapEngine {
                 ref.tileOffsetX = tileOffsetX;
                 ref.tileOffsetY = tileOffsetY;
 
-                if (geomType == 4) {
+                if (geomType == GEOM_TEXT) {
                     if (textRefs.size() == textRefs.capacity()) {
                         size_t needed = (textRefs.capacity() < 1 ? 1 : textRefs.capacity() * 2) * sizeof(FeatureRef);
                         if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
@@ -1428,6 +1439,16 @@ namespace MapEngine {
                         }
                     }
                     textRefs.push_back(ref);
+                } else if (geomType == GEOM_TEXT_LINE) {
+                    // Curvilinear waterway label — collected for dedicated render pass
+                    if (waterwayRefs.size() == waterwayRefs.capacity()) {
+                        size_t needed = (waterwayRefs.capacity() < 1 ? 1 : waterwayRefs.capacity() * 2) * sizeof(FeatureRef);
+                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
+                            p += 13 + payloadSize;
+                            continue;
+                        }
+                    }
+                    waterwayRefs.push_back(ref);
                 } else {
                     auto& layer = globalLayers[priority];
                     if (layer.size() == layer.capacity()) {
@@ -1835,6 +1856,208 @@ namespace MapEngine {
             placedLabels.push_back({(int16_t)lx, (int16_t)ly, (int16_t)tw, (int16_t)th});
         }
         textRefs.clear();
+
+        // ---- Waterway curvilinear label pass (GEOM_TEXT_LINE) ----
+        // Text follows the waterway path geometry (text-along-path, OSM style).
+        // Payload format: uint8_t path_count | [int16_t px, int16_t py] x N | uint8_t text_len | uint8_t[text_len] text
+        map.clearClipRect();
+        if (vlwFontLoaded) {
+            map.setFont(&vlwFont);
+            map.setTextSize(1.0f);
+        } else {
+            map.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
+            map.setTextSize(1);
+        }
+
+        for (const auto& ref : waterwayRefs) {
+            if ((++featureCount & 31) == 0) esp_task_wdt_reset();
+
+            uint8_t* fp = ref.ptr;
+            uint16_t colorRgb565;
+            memcpy(&colorRgb565, fp + 1, 2);
+            uint8_t fontSize = fp[4];
+
+            // --- Parse GEOM_TEXT_LINE payload (raw int16, NOT VarInt) ---
+            const uint8_t* payload = fp + 13;
+            if (ref.payloadSize < 2) continue;
+
+            uint8_t pathCount = payload[0];
+            if (pathCount < 2) continue;
+
+            // Sanity check: need pathCount * 4 bytes + 1 byte text_len
+            size_t minSize = 1u + (size_t)pathCount * 4u + 1u;
+            if (ref.payloadSize < minSize) continue;
+
+            // Read path points (raw int16 tile-relative coordinates)
+            const int16_t* rawPts = (const int16_t*)(payload + 1);
+
+            // Project to screen pixels
+            // Use a small stack buffer (pathCount is uint8_t → max 255 points)
+            int screenX[256], screenY[256];
+            for (uint8_t j = 0; j < pathCount; j++) {
+                int16_t cx = rawPts[j * 2];
+                int16_t cy = rawPts[j * 2 + 1];
+                screenX[j] = (cx >> 4) + ref.tileOffsetX;
+                screenY[j] = (cy >> 4) + ref.tileOffsetY;
+            }
+
+            // Read text
+            const uint8_t* afterPath = payload + 1 + (size_t)pathCount * 4;
+            uint8_t textLen = afterPath[0];
+            if (textLen == 0 || textLen >= 128) continue;
+            if (ref.payloadSize < minSize + textLen) continue;
+
+            char textBuf[128];
+            memcpy(textBuf, afterPath + 1, textLen);
+            textBuf[textLen] = '\0';
+
+            // Scale font
+            if (vlwFontLoaded) {
+                float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
+                map.setTextSize(scale);
+            }
+
+            // --- Compute cumulative arc length of path in pixels ---
+            float arcLen[256];
+            arcLen[0] = 0.0f;
+            for (uint8_t j = 1; j < pathCount; j++) {
+                float dx = (float)(screenX[j] - screenX[j - 1]);
+                float dy = (float)(screenY[j] - screenY[j - 1]);
+                arcLen[j] = arcLen[j - 1] + sqrtf(dx * dx + dy * dy);
+            }
+            float totalLen = arcLen[pathCount - 1];
+            if (totalLen < 4.0f) continue;  // Path too short to label
+
+            // Measure total text width so we can center it
+            int textWidth = map.textWidth(textBuf);
+            int charH = map.fontHeight();
+
+            // Visibility: label must fit at least partially on-screen
+            // Quick check: bounding box of path
+            int minSX = screenX[0], maxSX = screenX[0];
+            int minSY = screenY[0], maxSY = screenY[0];
+            for (uint8_t j = 1; j < pathCount; j++) {
+                if (screenX[j] < minSX) minSX = screenX[j];
+                if (screenX[j] > maxSX) maxSX = screenX[j];
+                if (screenY[j] < minSY) minSY = screenY[j];
+                if (screenY[j] > maxSY) maxSY = screenY[j];
+            }
+            if (maxSX < 0 || minSX >= viewportW || maxSY < 0 || minSY >= viewportH) continue;
+
+            // Check collision against already-placed labels using path bbox
+            const int PAD = 4;
+            bool collision = false;
+            for (const auto& r : placedLabels) {
+                if (minSX - PAD < r.x + r.w && maxSX + PAD > r.x &&
+                    minSY - PAD < r.y + r.h && maxSY + PAD > r.y) {
+                    collision = true;
+                    break;
+                }
+            }
+            if (collision) continue;
+
+            // Reserve collision slot for this label
+            placedLabels.push_back({(int16_t)minSX, (int16_t)minSY,
+                                    (int16_t)(maxSX - minSX), (int16_t)(maxSY - minSY)});
+
+            // If text is wider than path, skip (would look bad)
+            if ((float)textWidth > totalLen * 1.5f) continue;
+
+            // --- Render each character along the path ---
+            // Determine if path goes right-to-left overall; if so, reverse text
+            // (so glyphs always read left-to-right from the reader's perspective)
+            float overallAngle = atan2f(
+                (float)(screenY[pathCount - 1] - screenY[0]),
+                (float)(screenX[pathCount - 1] - screenX[0])
+            );
+            bool reverseText = (overallAngle > M_PI_2 || overallAngle < -M_PI_2);
+
+            // Build a working copy we can reverse in-place
+            char drawBuf[128];
+            memcpy(drawBuf, textBuf, textLen + 1);
+            if (reverseText) {
+                // Reverse byte order (ASCII/Latin; for multi-byte UTF-8 this is approximate)
+                int lo = 0, hi = (int)textLen - 1;
+                while (lo < hi) { char tmp = drawBuf[lo]; drawBuf[lo] = drawBuf[hi]; drawBuf[hi] = tmp; lo++; hi--; }
+            }
+
+            // Starting arc distance: center the string on the path
+            float startDist = (totalLen - (float)textWidth) / 2.0f;
+            if (startDist < 0.0f) startDist = 0.0f;
+
+            map.setTextColor(colorRgb565);
+
+            // Helper: interpolate position + angle at a given arc distance
+            // Returns segment index (for reuse across chars)
+            int seg = 0;
+            float charDist = startDist;
+
+            for (int ci = 0; drawBuf[ci] != '\0'; ci++) {
+                char chBuf[2] = { drawBuf[ci], '\0' };
+                int charW = map.textWidth(chBuf);
+
+                // Advance along the path to charDist
+                while (seg < pathCount - 2 && arcLen[seg + 1] < charDist)
+                    seg++;
+
+                // Interpolation ratio within current segment
+                float segLen = arcLen[seg + 1] - arcLen[seg];
+                float t = (segLen > 0.001f) ? (charDist - arcLen[seg]) / segLen : 0.0f;
+
+                // Position
+                float cx = screenX[seg] + t * (screenX[seg + 1] - screenX[seg]);
+                float cy = screenY[seg] + t * (screenY[seg + 1] - screenY[seg]);
+
+                // Only draw if the character is within the viewport
+                if (cx >= -charW && cx < viewportW + charW && cy >= -charH && cy < viewportH + charH) {
+                    // Angle of current segment (radians)
+                    float dx = (float)(screenX[seg + 1] - screenX[seg]);
+                    float dy = (float)(screenY[seg + 1] - screenY[seg]);
+                    float angle = atan2f(dy, dx);
+
+                    // Draw character rotated along path.
+                    // LGFX doesn't have a per-glyph rotation API, so we render the
+                    // character upright and use a rotation transformation via the
+                    // sprite's pushRotateZoom helper.
+                    // We create a tiny 32×32 temp sprite for the single character.
+                    LGFX_Sprite charSprite(&map);
+                    charSprite.setPsram(true);
+                    if (charSprite.createSprite(charW + 2, charH + 2)) {
+                        charSprite.fillSprite(0x0000);  // black transparent key
+                        charSprite.setColorDepth(16);
+                        if (vlwFontLoaded) {
+                            charSprite.setFont(&vlwFont);
+                            float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
+                            charSprite.setTextSize(scale);
+                        } else {
+                            charSprite.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
+                        }
+                        charSprite.setTextColor(colorRgb565);
+                        charSprite.setTextDatum(lgfx::top_left);
+                        charSprite.drawString(chBuf, 1, 0);
+
+                        // Rotate and blit onto the map sprite
+                        // angle is in radians; pushRotateZoom expects degrees
+                        float angleDeg = angle * (180.0f / (float)M_PI);
+                        charSprite.pushRotateZoom(&map,
+                            (int)cx, (int)cy,       // pivot on map
+                            angleDeg,               // rotation
+                            1.0f, 1.0f,             // no zoom
+                            0x0000                  // transparent colour key (black)
+                        );
+                        charSprite.deleteSprite();
+                    } else {
+                        // Fallback: draw upright if sprite alloc fails
+                        map.setTextDatum(lgfx::top_left);
+                        map.drawString(chBuf, (int)cx, (int)cy - charH / 2);
+                    }
+                }
+
+                // Advance to next character position
+                charDist += (float)charW;
+            }
+        }
+        waterwayRefs.clear();
 
         map.endWrite();
 
