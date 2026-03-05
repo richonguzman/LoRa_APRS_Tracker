@@ -54,6 +54,7 @@ namespace MapEngine {
     void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite);
     void copySpriteToCanvasWithClip(lv_obj_t* canvas, LGFX_Sprite* sprite, int offsetX, int offsetY);
     LGFX_Sprite* getCachedTileSprite(int index);
+    bool preloadNavTile(const char* region, uint8_t regionIdx, uint8_t zoom, int tileX, int tileY);
 
 } // namespace MapEngine
 

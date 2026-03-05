@@ -219,13 +219,16 @@ namespace UIMapManager {
         int tileX;
         int tileY;
         int zoom;
+        bool isNav;              // true = NAV tile (navCache), false = raster tile
+        uint8_t regionIdx;       // NAV only: region index for navCache key
+        char regionName[32];     // NAV only: region name for NPK lookup
     };
 
     static QueueHandle_t tilePreloadQueue = nullptr;
     static TaskHandle_t tilePreloadTask = nullptr;
     static bool preloadTaskRunning = false;
     static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads
-    #define TILE_PRELOAD_QUEUE_SIZE 20
+    #define TILE_PRELOAD_QUEUE_SIZE 32
 
     // Forward declaration
     bool preloadTileToCache(int tileX, int tileY, int zoom);
@@ -247,12 +250,19 @@ namespace UIMapManager {
                 // Re-check flag after queue receive
                 if (mainThreadLoading) continue;
 
-                // Check if tile already in cache
-                int cacheIdx = MapEngine::findCachedTile(req.zoom, req.tileX, req.tileY);
-                if (cacheIdx < 0) {
-                    // Not in cache - preload it
-                    ESP_LOGD(TAG, "Preloading tile %d/%d/%d", req.zoom, req.tileX, req.tileY);
-                    preloadTileToCache(req.tileX, req.tileY, req.zoom);
+                if (req.isNav) {
+                    // NAV tile preload → read from NPK into navCache
+                    if (MapEngine::preloadNavTile(req.regionName, req.regionIdx,
+                                                  (uint8_t)req.zoom, req.tileX, req.tileY)) {
+                        ESP_LOGD(TAG, "NAV preloaded Z%d/%d/%d", req.zoom, req.tileX, req.tileY);
+                    }
+                } else {
+                    // Raster tile preload → render PNG/JPG into sprite cache
+                    int cacheIdx = MapEngine::findCachedTile(req.zoom, req.tileX, req.tileY);
+                    if (cacheIdx < 0) {
+                        ESP_LOGD(TAG, "Preloading tile %d/%d/%d", req.zoom, req.tileX, req.tileY);
+                        preloadTileToCache(req.tileX, req.tileY, req.zoom);
+                    }
                 }
             }
         }
@@ -274,7 +284,7 @@ namespace UIMapManager {
         xTaskCreatePinnedToCore(
             tilePreloadTaskFunc,
             "TilePreload",
-            4096,
+            6144,  // NAV preload needs more stack (NPK index parsing)
             NULL,
             1,  // Low priority
             &tilePreloadTask,
@@ -291,11 +301,12 @@ namespace UIMapManager {
         tilePreloadTask = nullptr;
     }
 
-    // Queue tiles from adjacent zoom levels for preloading
+    // Queue tiles from adjacent zoom levels for preloading (raster only)
     void queueAdjacentZoomTiles(int centerTileX, int centerTileY, int currentZoom) {
         if (tilePreloadQueue == nullptr || navModeActive) return;
 
-        TileRequest req;
+        TileRequest req = {};
+        req.isNav = false;
 
         // Get adjacent zoom levels
         int prevZoom = -1, nextZoom = -1;
@@ -339,6 +350,91 @@ namespace UIMapManager {
                     xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
                 }
             }
+        }
+    }
+
+    // Queue NAV tiles ahead of the pan direction for preloading.
+    // deltaLat/deltaLon = 0 means no direction (initial load) → skip preload.
+    void queueNavPreloadAhead(float centerLat, float centerLon, int zoom,
+                              float deltaLat, float deltaLon) {
+        if (tilePreloadQueue == nullptr || !navModeActive) return;
+        if (navRegionCount <= 0) return;
+        // No direction → nothing to predict
+        if (deltaLat == 0.0f && deltaLon == 0.0f) return;
+
+        // Compute tile grid (same math as renderNavViewport)
+        const double latRad = (double)centerLat * M_PI / 180.0;
+        const double n = pow(2.0, (double)zoom);
+        const float centerTileX = (float)((centerLon + 180.0) / 360.0 * n);
+        const float centerTileY = (float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n);
+
+        const int centerTileIdxX = (int)floorf(centerTileX);
+        const int centerTileIdxY = (int)floorf(centerTileY);
+
+        float fracX = centerTileX - centerTileIdxX;
+        float fracY = centerTileY - centerTileIdxY;
+        int originX = MAP_CANVAS_WIDTH / 2 - (int)(fracX * MAP_TILE_SIZE);
+        int originY = MAP_CANVAS_HEIGHT / 2 - (int)(fracY * MAP_TILE_SIZE);
+
+        // Viewport tile range
+        int minDx = -(originX / MAP_TILE_SIZE + 1);
+        int maxDx = (MAP_CANVAS_WIDTH - originX + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
+        int minDy = -(originY / MAP_TILE_SIZE + 1);
+        int maxDy = (MAP_CANVAS_HEIGHT - originY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
+
+        // Determine which edges to preload based on pan direction:
+        // deltaLon > 0 → user moved east → preload east edge (maxDx + 1)
+        // deltaLon < 0 → user moved west → preload west edge (minDx - 1)
+        // deltaLat > 0 → user moved north → preload north edge (minDy - 1)  (lat↑ = tileY↓)
+        // deltaLat < 0 → user moved south → preload south edge (maxDy + 1)
+
+        // Flush old requests
+        TileRequest dummy;
+        while (xQueueReceive(tilePreloadQueue, &dummy, 0) == pdTRUE) {}
+
+        TileRequest req = {};
+        req.isNav = true;
+        req.zoom = zoom;
+
+        int queued = 0;
+
+        auto enqueue = [&](int tileX, int tileY) {
+            req.tileX = tileX;
+            req.tileY = tileY;
+            for (int r = 0; r < navRegionCount; r++) {
+                req.regionIdx = (uint8_t)r;
+                strncpy(req.regionName, navRegions[r].c_str(), sizeof(req.regionName) - 1);
+                req.regionName[sizeof(req.regionName) - 1] = '\0';
+                if (xQueueSend(tilePreloadQueue, &req, 0) != pdTRUE) return;
+                queued++;
+            }
+        };
+
+        // East/West edge (full column)
+        if (deltaLon > 0) {
+            int col = centerTileIdxX + maxDx + 1;
+            for (int dy = minDy; dy <= maxDy; dy++)
+                enqueue(col, centerTileIdxY + dy);
+        } else if (deltaLon < 0) {
+            int col = centerTileIdxX + minDx - 1;
+            for (int dy = minDy; dy <= maxDy; dy++)
+                enqueue(col, centerTileIdxY + dy);
+        }
+
+        // North/South edge (full row)
+        if (deltaLat > 0) {
+            int row = centerTileIdxY + minDy - 1;  // lat↑ = tileY↓
+            for (int dx = minDx; dx <= maxDx; dx++)
+                enqueue(centerTileIdxX + dx, row);
+        } else if (deltaLat < 0) {
+            int row = centerTileIdxY + maxDy + 1;
+            for (int dx = minDx; dx <= maxDx; dx++)
+                enqueue(centerTileIdxX + dx, row);
+        }
+
+        if (queued > 0) {
+            ESP_LOGI(TAG, "NAV preload: queued %d tiles ahead (Z%d, dLat=%.4f dLon=%.4f)",
+                          queued, zoom, deltaLat, deltaLon);
         }
     }
     // ============ END ASYNC TILE PRELOADING ============
@@ -1207,8 +1303,6 @@ namespace UIMapManager {
                     if (hasTiles) {
                         uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
                         if (src && map_canvas_buf) {
-                            // NAV rendering uses LGFX native format (big-endian on ESP32)
-                            // No byte-swap needed - direct copy
                             memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
                         }
                     }
@@ -1219,6 +1313,11 @@ namespace UIMapManager {
                 // Re-subscribe loopTask to WDT
                 esp_task_wdt_add(xTaskGetCurrentTaskHandle());
                 esp_task_wdt_reset();
+
+                // Pre-cache tiles ahead of pan direction
+                queueNavPreloadAhead(map_center_lat, map_center_lon, map_current_zoom,
+                                     map_center_lat - drag_start_lat,
+                                     map_center_lon - drag_start_lon);
             } else {
                 if (navModeActive) {
                     navModeActive = false;
@@ -1970,6 +2069,9 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
 
                     esp_task_wdt_add(xTaskGetCurrentTaskHandle());
                     esp_task_wdt_reset();
+
+                    // Initial load — no pan direction, no preload
+                    // (preload happens after subsequent pans)
                 } else {
                     navModeActive = false;
                     switchZoomTable(raster_zooms, raster_zoom_count);
