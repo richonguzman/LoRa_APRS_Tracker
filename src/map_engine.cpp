@@ -57,6 +57,16 @@ namespace MapEngine {
     static UIMapManager::Npk2IndexEntry* npkRowBuf    = nullptr;
     static uint32_t                      npkRowBufCap = 0;
 
+    // Waterway label buffers (PSRAM, allocated/freed with render task)
+    static constexpr int WLABEL_MAX_PTS = 256;
+    static int*   wlScreenX = nullptr;   // [WLABEL_MAX_PTS]
+    static int*   wlScreenY = nullptr;   // [WLABEL_MAX_PTS]
+    static float* wlArcLen  = nullptr;   // [WLABEL_MAX_PTS]
+
+    // Reusable glyph sprite for curvilinear labels (avoids alloc/free per character)
+    static LGFX_Sprite* glyphSprite = nullptr;
+    static int glyphSpriteW = 0, glyphSpriteH = 0;
+
     // --- VarInt decoding (protobuf-style LEB128) ---
     static uint32_t readVarInt(const uint8_t* buf, uint32_t& offset, uint32_t limit) {
         uint32_t result = 0;
@@ -349,6 +359,12 @@ namespace MapEngine {
             vSemaphoreDelete(spriteMutex);
             spriteMutex = nullptr;
         }
+        // Free waterway label buffers
+        if (glyphSprite) { glyphSprite->deleteSprite(); delete glyphSprite; glyphSprite = nullptr; }
+        glyphSpriteW = glyphSpriteH = 0;
+        heap_caps_free(wlScreenX); wlScreenX = nullptr;
+        heap_caps_free(wlScreenY); wlScreenY = nullptr;
+        heap_caps_free(wlArcLen);  wlArcLen  = nullptr;
         canvas_to_invalidate_ = nullptr;
         ESP_LOGI(TAG, "Render task stopped.");
     }
@@ -359,6 +375,11 @@ namespace MapEngine {
         canvas_to_invalidate_ = canvas_to_invalidate;
         spriteMutex = xSemaphoreCreateMutex();
         mapRenderQueue = xQueueCreate(10, sizeof(RenderRequest));
+
+        // Allocate waterway label buffers in PSRAM (freed in stopRenderTask)
+        if (!wlScreenX) wlScreenX = (int*)heap_caps_malloc(WLABEL_MAX_PTS * sizeof(int), MALLOC_CAP_SPIRAM);
+        if (!wlScreenY) wlScreenY = (int*)heap_caps_malloc(WLABEL_MAX_PTS * sizeof(int), MALLOC_CAP_SPIRAM);
+        if (!wlArcLen)  wlArcLen  = (float*)heap_caps_malloc(WLABEL_MAX_PTS * sizeof(float), MALLOC_CAP_SPIRAM);
 
         xTaskCreatePinnedToCore(
             mapRenderTask,
@@ -1864,7 +1885,7 @@ namespace MapEngine {
 
         // ---- Waterway curvilinear label pass (GEOM_TEXT_LINE) ----
         // Text follows the waterway path geometry (text-along-path, OSM style).
-        // Payload format: uint8_t path_count | [int16_t px, int16_t py] x N | uint8_t text_len | uint8_t[text_len] text
+        // Payload: uint8_t path_count | [int16_t px, int16_t py] x N | uint8_t text_len | uint8_t[text_len] text
         map.clearClipRect();
         if (vlwFontLoaded) {
             map.setFont(&vlwFont);
@@ -1874,7 +1895,28 @@ namespace MapEngine {
             map.setTextSize(1);
         }
 
+        // Ensure glyph sprite exists (reused across all characters)
+        int maxGlyphH = map.fontHeight() + 2;
+        int maxGlyphW = maxGlyphH * 2;  // widest glyph won't exceed 2× height
+        if (glyphSprite && (glyphSpriteW < maxGlyphW || glyphSpriteH < maxGlyphH)) {
+            glyphSprite->deleteSprite(); delete glyphSprite;
+            glyphSprite = nullptr;
+        }
+        if (!glyphSprite) {
+            glyphSprite = new LGFX_Sprite(&map);
+            glyphSprite->setColorDepth(16);
+            glyphSprite->setPsram(true);
+            if (glyphSprite->createSprite(maxGlyphW, maxGlyphH)) {
+                glyphSpriteW = maxGlyphW;
+                glyphSpriteH = maxGlyphH;
+            } else {
+                delete glyphSprite; glyphSprite = nullptr;
+                glyphSpriteW = glyphSpriteH = 0;
+            }
+        }
+
         for (const auto& ref : waterwayRefs) {
+            if (!wlScreenX || !wlScreenY || !wlArcLen) break;  // PSRAM alloc failed
             if ((++featureCount & 31) == 0) esp_task_wdt_reset();
 
             uint8_t* fp = ref.ptr;
@@ -1888,30 +1930,23 @@ namespace MapEngine {
 
             uint8_t pathCount = payload[0];
             if (pathCount < 2) continue;
-            const uint8_t pathCountOrig = pathCount;  // garde le vrai count pour afterPath
-            if (pathCount > 128) pathCount = 128;  // cap rendu, mais afterPath utilise pathCountOrig
+            const uint8_t pathCountOrig = pathCount;
+            if (pathCount > WLABEL_MAX_PTS - 1) pathCount = WLABEL_MAX_PTS - 1;
 
-            // Sanity check: need pathCount * 4 bytes + 1 byte text_len
-            size_t minSize = 1u + (size_t)pathCount * 4u + 1u;
+            size_t minSize = 1u + (size_t)pathCountOrig * 4u + 1u;
             if (ref.payloadSize < minSize) continue;
 
-            // Read path points (raw int16 tile-relative coordinates)
             const int16_t* rawPts = (const int16_t*)(payload + 1);
 
-            // Project to screen pixels
-            // static: keep off the stack (renderNavViewport already deep, loopTask stack overflow)
-            static int screenX[256], screenY[256];
-            static float arcLen[256];
+            // Project to screen pixels (buffers in PSRAM)
             for (uint8_t j = 0; j < pathCount; j++) {
                 int16_t cx = rawPts[j * 2];
                 int16_t cy = rawPts[j * 2 + 1];
-                // GEOM_TEXT_LINE coords sont en tile-relative 0-4095 (comme GEOM_TEXT),
-                // pas en subpixel ×16 — pas de >> 4 ici
-                screenX[j] = (int)(cx * MAP_TILE_SIZE / 4096) + ref.tileOffsetX;
-                screenY[j] = (int)(cy * MAP_TILE_SIZE / 4096) + ref.tileOffsetY;
+                wlScreenX[j] = (int)(cx * MAP_TILE_SIZE / 4096) + ref.tileOffsetX;
+                wlScreenY[j] = (int)(cy * MAP_TILE_SIZE / 4096) + ref.tileOffsetY;
             }
 
-            // Read text — utilise pathCountOrig pour pointer après TOUS les points du payload
+            // Read text — use pathCountOrig to skip ALL path points in payload
             const uint8_t* afterPath = payload + 1 + (size_t)pathCountOrig * 4;
             uint8_t textLen = afterPath[0];
             if (textLen == 0 || textLen >= 128) continue;
@@ -1921,45 +1956,55 @@ namespace MapEngine {
             memcpy(textBuf, afterPath + 1, textLen);
             textBuf[textLen] = '\0';
 
-            ESP_LOGD(TAG, "WLABEL '%s' pts=%d fontSize=%d color=0x%04x screen0=(%d,%d)",
-                     textBuf, pathCount, fontSize, colorRgb565, screenX[0], screenY[0]);
-
             // Scale font
+            float fontScale = 1.0f;
             if (vlwFontLoaded) {
-                float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
-                map.setTextSize(scale);
+                fontScale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
+                map.setTextSize(fontScale);
             }
 
-            // --- Compute cumulative arc length of path in pixels ---
-            arcLen[0] = 0.0f;
+            // RTL detection: if path goes right-to-left, reverse the path
+            // (not the text) so characters face left-to-right
+            float firstDx = (float)(wlScreenX[1] - wlScreenX[0]);
+            bool reversePath = (firstDx < 0.0f);
+            if (reversePath) {
+                for (int i = 0, j = pathCount - 1; i < j; i++, j--) {
+                    int tx = wlScreenX[i]; wlScreenX[i] = wlScreenX[j]; wlScreenX[j] = tx;
+                    int ty = wlScreenY[i]; wlScreenY[i] = wlScreenY[j]; wlScreenY[j] = ty;
+                }
+            }
+
+            ESP_LOGD(TAG, "WLABEL '%s' pts=%d fontSize=%d reversePath=%d",
+                     textBuf, pathCount, fontSize, (int)reversePath);
+
+            // Cumulative arc length (buffers in PSRAM)
+            wlArcLen[0] = 0.0f;
             for (uint8_t j = 1; j < pathCount; j++) {
-                float dx = (float)(screenX[j] - screenX[j - 1]);
-                float dy = (float)(screenY[j] - screenY[j - 1]);
-                arcLen[j] = arcLen[j - 1] + sqrtf(dx * dx + dy * dy);
+                float dx = (float)(wlScreenX[j] - wlScreenX[j - 1]);
+                float dy = (float)(wlScreenY[j] - wlScreenY[j - 1]);
+                wlArcLen[j] = wlArcLen[j - 1] + sqrtf(dx * dx + dy * dy);
             }
-            float totalLen = arcLen[pathCount - 1];
-            if (totalLen < 4.0f) {
-                ESP_LOGD(TAG, "WLABEL '%s' SKIP totalLen=%.1f", textBuf, totalLen);
-                continue;
-            }
+            float totalLen = wlArcLen[pathCount - 1];
+            if (totalLen < 4.0f) continue;
 
-            // Measure total text width so we can center it
             int textWidth = map.textWidth(textBuf);
             int charH = map.fontHeight();
 
-            // Visibility: label must fit at least partially on-screen
-            // Quick check: bounding box of path
-            int minSX = screenX[0], maxSX = screenX[0];
-            int minSY = screenY[0], maxSY = screenY[0];
+            // Skip if text wider than path
+            if ((float)textWidth > totalLen) continue;
+
+            // Visibility: bounding box of path
+            int minSX = wlScreenX[0], maxSX = wlScreenX[0];
+            int minSY = wlScreenY[0], maxSY = wlScreenY[0];
             for (uint8_t j = 1; j < pathCount; j++) {
-                if (screenX[j] < minSX) minSX = screenX[j];
-                if (screenX[j] > maxSX) maxSX = screenX[j];
-                if (screenY[j] < minSY) minSY = screenY[j];
-                if (screenY[j] > maxSY) maxSY = screenY[j];
+                if (wlScreenX[j] < minSX) minSX = wlScreenX[j];
+                if (wlScreenX[j] > maxSX) maxSX = wlScreenX[j];
+                if (wlScreenY[j] < minSY) minSY = wlScreenY[j];
+                if (wlScreenY[j] > maxSY) maxSY = wlScreenY[j];
             }
             if (maxSX < 0 || minSX >= viewportW || maxSY < 0 || minSY >= viewportH) continue;
 
-            // Check collision against already-placed labels using path bbox
+            // Collision detection
             const int PAD = 4;
             bool collision = false;
             for (const auto& r : placedLabels) {
@@ -1969,113 +2014,73 @@ namespace MapEngine {
                     break;
                 }
             }
-            if (collision) {
-                ESP_LOGD(TAG, "WLABEL '%s' SKIP collision", textBuf);
-                continue;
-            }
+            if (collision) continue;
 
-            // Reserve collision slot for this label
             placedLabels.push_back({(int16_t)minSX, (int16_t)minSY,
                                     (int16_t)(maxSX - minSX), (int16_t)(maxSY - minSY)});
 
-            // If text is wider than path, skip
-            if ((float)textWidth > totalLen) {
-                ESP_LOGD(TAG, "WLABEL '%s' SKIP textW=%d > totalLen=%.1f", textBuf, textWidth, totalLen);
-                continue;
-            }
-
-            ESP_LOGD(TAG, "WLABEL '%s' DRAW totalLen=%.1f textW=%d firstDx=%.1f reverseText=%d",
-                     textBuf, totalLen, textWidth, firstDx, (int)reverseText);
-
-            // --- Render each character along the path ---
-            // Determine if path goes right-to-left: use first segment direction,
-            // not first→last (global direction trompeuse sur paths qui serpentent)
-            float firstDx = (float)(screenX[1] - screenX[0]);
-            bool reverseText = (firstDx < 0.0f);
-
-            // Build a working copy we can reverse in-place
-            char drawBuf[128];
-            memcpy(drawBuf, textBuf, textLen + 1);
-            if (reverseText) {
-                // Reverse byte order (ASCII/Latin; for multi-byte UTF-8 this is approximate)
-                int lo = 0, hi = (int)textLen - 1;
-                while (lo < hi) { char tmp = drawBuf[lo]; drawBuf[lo] = drawBuf[hi]; drawBuf[hi] = tmp; lo++; hi--; }
-            }
-
-            // Starting arc distance: center the string on the path
+            // Center text on path
             float startDist = (totalLen - (float)textWidth) / 2.0f;
             if (startDist < 0.0f) startDist = 0.0f;
 
             map.setTextColor(colorRgb565);
-
-            // Helper: interpolate position + angle at a given arc distance
-            // Returns segment index (for reuse across chars)
             int seg = 0;
             float charDist = startDist;
 
-            for (int ci = 0; drawBuf[ci] != '\0'; ci++) {
-                char chBuf[2] = { drawBuf[ci], '\0' };
+            // Iterate by UTF-8 codepoints
+            for (int ci = 0; textBuf[ci] != '\0'; ) {
+                // Extract one UTF-8 codepoint
+                uint8_t c0 = (uint8_t)textBuf[ci];
+                int cpLen;
+                if      (c0 < 0x80) cpLen = 1;
+                else if (c0 < 0xE0) cpLen = 2;
+                else if (c0 < 0xF0) cpLen = 3;
+                else                cpLen = 4;
+
+                char chBuf[5];
+                memcpy(chBuf, textBuf + ci, cpLen);
+                chBuf[cpLen] = '\0';
+                ci += cpLen;
+
                 int charW = map.textWidth(chBuf);
 
-                // Advance along the path to charDist
-                while (seg < pathCount - 2 && arcLen[seg + 1] < charDist)
+                // Advance along path
+                while (seg < pathCount - 2 && wlArcLen[seg + 1] < charDist)
                     seg++;
 
-                // Interpolation ratio within current segment
-                float segLen = arcLen[seg + 1] - arcLen[seg];
-                float t = (segLen > 0.001f) ? (charDist - arcLen[seg]) / segLen : 0.0f;
+                float segLen = wlArcLen[seg + 1] - wlArcLen[seg];
+                float t = (segLen > 0.001f) ? (charDist - wlArcLen[seg]) / segLen : 0.0f;
 
-                // Position
-                float cx = screenX[seg] + t * (screenX[seg + 1] - screenX[seg]);
-                float cy = screenY[seg] + t * (screenY[seg + 1] - screenY[seg]);
+                float px = wlScreenX[seg] + t * (wlScreenX[seg + 1] - wlScreenX[seg]);
+                float py = wlScreenY[seg] + t * (wlScreenY[seg + 1] - wlScreenY[seg]);
 
-                // Only draw if the character is within the viewport
-                if (cx >= -charW && cx < viewportW + charW && cy >= -charH && cy < viewportH + charH) {
-                    // Angle of current segment (radians) — used directly in pushRotateZoom
-                    float dx = (float)(screenX[seg + 1] - screenX[seg]);
-                    float dy = (float)(screenY[seg + 1] - screenY[seg]);
+                if (px >= -charW && px < viewportW + charW && py >= -charH && py < viewportH + charH) {
+                    float dx = (float)(wlScreenX[seg + 1] - wlScreenX[seg]);
+                    float dy = (float)(wlScreenY[seg + 1] - wlScreenY[seg]);
+                    float angleDeg = atan2f(dy, dx) * (180.0f / (float)M_PI);
 
-                    // Draw character rotated along path.
-                    // LGFX doesn't have a per-glyph rotation API, so we render the
-                    // character upright and use a rotation transformation via the
-                    // sprite's pushRotateZoom helper.
-                    // We create a tiny 32×32 temp sprite for the single character.
-                    LGFX_Sprite charSprite(&map);
-                    charSprite.setPsram(true);
-                    if (charSprite.createSprite(charW + 2, charH + 2)) {
-                        charSprite.fillSprite(0x0000);  // black transparent key
-                        charSprite.setColorDepth(16);
+                    if (glyphSprite) {
+                        // Reuse persistent glyph sprite — draw character centered
+                        // so pushRotateZoom pivot (sprite center) aligns with glyph center
+                        glyphSprite->fillSprite(0x0000);
                         if (vlwFontLoaded) {
-                            charSprite.setFont(&vlwFont);
-                            float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
-                            charSprite.setTextSize(scale);
+                            glyphSprite->setFont(&vlwFont);
+                            glyphSprite->setTextSize(fontScale);
                         } else {
-                            charSprite.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
+                            glyphSprite->setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
                         }
-                        charSprite.setTextColor(colorRgb565);
-                        charSprite.setTextDatum(lgfx::top_left);
-                        charSprite.drawString(chBuf, 1, 0);
-
-                        // Rotate and blit onto the map sprite.
-                        // pushRotateZoom pivots around the sprite's center by default,
-                        // so we pass the sprite center as the source pivot and cx/cy as
-                        // the destination center on the map.
-                        float angleDeg = atan2f(dy, dx) * (180.0f / (float)M_PI);
-                        charSprite.pushRotateZoom(&map,
-                            (int)cx, (int)cy,
-                            angleDeg,
-                            1.0f, 1.0f,
-                            0x0000
-                        );
-                        charSprite.deleteSprite();
+                        glyphSprite->setTextColor(colorRgb565);
+                        glyphSprite->setTextDatum(lgfx::middle_center);
+                        glyphSprite->drawString(chBuf, glyphSpriteW / 2, glyphSpriteH / 2);
+                        glyphSprite->pushRotateZoom(&map,
+                            (int)px, (int)py, angleDeg, 1.0f, 1.0f, 0x0000);
                     } else {
-                        // Fallback: draw upright if sprite alloc fails
+                        // Fallback: draw upright
                         map.setTextDatum(lgfx::top_left);
-                        map.drawString(chBuf, (int)cx, (int)cy - charH / 2);
+                        map.drawString(chBuf, (int)px, (int)py - charH / 2);
                     }
                 }
 
-                // Advance to next character position
                 charDist += (float)charW;
             }
         }
