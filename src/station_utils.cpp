@@ -548,7 +548,7 @@ namespace STATION_Utils {
                 case 4: logMessage = "ECO Timeout"; break;
                 default: return; // Invalid type, exit function
             }
-            ESP_LOGD(TAG, "%s saved to SPIFFS", logMessage.c_str());
+            ESP_LOGD(TAG, "%s = %d saved to SPIFFS", logMessage.c_str(), index);
         }
         fileIndex.close();
     }
@@ -604,7 +604,7 @@ namespace STATION_Utils {
                     }
                     logMessage = "ECO Timeout:";
                 }
-                ESP_LOGD(TAG, "%s %s", logMessage.c_str(), firstLine);
+                ESP_LOGD(TAG, "%s %d (from SPIFFS)", logMessage.c_str(), index);
             }
             fileIndex.close();
         }

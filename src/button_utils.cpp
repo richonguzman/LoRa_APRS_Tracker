@@ -96,7 +96,11 @@
         void setup() {
             if (!Config.simplifiedTrackerMode) {
                 userButton.attachClick(singlePress1);
-                userButton.attachLongPressStart(longPress1);
+                // Skip longPress on GPIO 0 (boot strapping pin) — prone to
+                // false triggers from SPI/RF noise (e.g. LoRa reception)
+                #if BUTTON_PIN != 0
+                    userButton.attachLongPressStart(longPress1);
+                #endif
                 userButton.attachDoubleClick(doublePress1);
                 userButton.attachMultiClick(multiPress1);
                 #ifdef RPC_Electronics_1W_LoRa_GPS

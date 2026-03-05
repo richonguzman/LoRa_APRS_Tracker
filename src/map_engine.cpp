@@ -915,7 +915,11 @@ namespace MapEngine {
     bool loadMapFont() {
         if (vlwFontLoaded) return true;
 
-        const char* fontPath = "/LoRa_Tracker/fonts/OpenSans-Bold-12.vlw";
+        // Try 16pt first (better readability on 480×320), fallback to 12pt
+        const char* fontPath = "/LoRa_Tracker/fonts/OpenSans-Bold-14.vlw";
+        if (!SD.exists(fontPath)) {
+            fontPath = "/LoRa_Tracker/fonts/OpenSans-Bold-12.vlw";
+        }
         if (!SD.exists(fontPath)) {
             ESP_LOGW(TAG, "VLW font not found: %s (will use fallback GFX font)", fontPath);
             return false;
@@ -1461,8 +1465,7 @@ namespace MapEngine {
                     }
                     textRefs.push_back(ref);
                 } else if (geomType == GEOM_TEXT_LINE) {
-                    // Waterway curvilinear labels: pas utiles sous Z12 (police fixe, trop de bruit)
-                    if (zoom < 12) {
+                    if (zoom < 15) {
                         p += 13 + payloadSize;
                         continue;
                     }
@@ -1887,13 +1890,10 @@ namespace MapEngine {
         // Text follows the waterway path geometry (text-along-path, OSM style).
         // Payload: uint8_t path_count | [int16_t px, int16_t py] x N | uint8_t text_len | uint8_t[text_len] text
         map.clearClipRect();
-        if (vlwFontLoaded) {
-            map.setFont(&vlwFont);
-            map.setTextSize(1.0f);
-        } else {
-            map.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
-            map.setTextSize(1);
-        }
+        // Waterway labels use bitmap font (no anti-aliasing) for clean
+        // color-key transparency with pushRotateZoom
+        map.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
+        map.setTextSize(1);
 
         // Ensure glyph sprite exists (reused across all characters)
         int maxGlyphH = map.fontHeight() + 2;
@@ -1956,12 +1956,7 @@ namespace MapEngine {
             memcpy(textBuf, afterPath + 1, textLen);
             textBuf[textLen] = '\0';
 
-            // Scale font
-            float fontScale = 1.0f;
-            if (vlwFontLoaded) {
-                fontScale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
-                map.setTextSize(fontScale);
-            }
+            // Bitmap font — no scaling needed
 
             // RTL detection: if path goes right-to-left, reverse the path
             // (not the text) so characters face left-to-right
@@ -2062,18 +2057,13 @@ namespace MapEngine {
                     if (glyphSprite) {
                         // Reuse persistent glyph sprite — draw character centered
                         // so pushRotateZoom pivot (sprite center) aligns with glyph center
-                        glyphSprite->fillSprite(0x0000);
-                        if (vlwFontLoaded) {
-                            glyphSprite->setFont(&vlwFont);
-                            glyphSprite->setTextSize(fontScale);
-                        } else {
-                            glyphSprite->setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
-                        }
-                        glyphSprite->setTextColor(colorRgb565);
+                        glyphSprite->fillSprite(0xF81F);
+                        glyphSprite->setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
                         glyphSprite->setTextDatum(lgfx::middle_center);
+                        glyphSprite->setTextColor(colorRgb565);
                         glyphSprite->drawString(chBuf, glyphSpriteW / 2, glyphSpriteH / 2);
                         glyphSprite->pushRotateZoom(&map,
-                            (int)px, (int)py, angleDeg, 1.0f, 1.0f, 0x0000);
+                            (int)px, (int)py, angleDeg, 1.0f, 1.0f, 0xF81F);
                     } else {
                         // Fallback: draw upright
                         map.setTextDatum(lgfx::top_left);
