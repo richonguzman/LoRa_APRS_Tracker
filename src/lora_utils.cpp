@@ -132,33 +132,20 @@ namespace LoRa_Utils {
     }
 
     int calculateDataRate(int sf, int cr, int bw) {
-        // Simplified lookup table for BW=125kHz (most common)
-        // Based on actual LoRa specifications
+        // Match the 6 standard presets first (keeps compatibility with speed selector UI)
         if (bw == 125000) {
-            // Lookup table: [SF][CR-5] (CR stored as 5,6,7,8)
-            const int dataRates[13][4] = {
-                {0, 0, 0, 0},      // SF 0 (unused)
-                {0, 0, 0, 0},      // SF 1 (unused)
-                {0, 0, 0, 0},      // SF 2 (unused)
-                {0, 0, 0, 0},      // SF 3 (unused)
-                {0, 0, 0, 0},      // SF 4 (unused)
-                {0, 0, 0, 0},      // SF 5 (unused)
-                {0, 0, 0, 0},      // SF 6 (unused)
-                {5470, 4440, 3810, 3330},   // SF 7
-                {3125, 2540, 2180, 1910},   // SF 8
-                {1760, 1430, 1200, 1070},   // SF 9
-                {980, 800, 680, 610},       // SF 10
-                {540, 440, 380, 330},       // SF 11
-                {300, 244, 209, 183}        // SF 12
+            const struct { int sf; int cr; int rate; } presets[] = {
+                {12, 5, 300}, {12, 6, 244}, {12, 7, 209}, {12, 8, 183},
+                {10, 8, 610}, {9, 7, 1200}
             };
-
-            if (sf >= 7 && sf <= 12 && cr >= 5 && cr <= 8) {
-                return dataRates[sf][cr - 5];
+            for (const auto& p : presets) {
+                if (p.sf == sf && p.cr == cr) return p.rate;
             }
         }
-
-        // Fallback for other bandwidths or invalid values
-        return 0;
+        // Compute exact rate for all other SF/CR/BW combinations
+        if (sf < 5 || sf > 12 || cr < 5 || cr > 8 || bw <= 0) return 0;
+        double rate = (double)sf * ((double)bw / (1 << sf)) * (4.0 / cr);
+        return (int)(rate + 0.5);
     }
 
     DataRateConfig getDataRateConfig(int dataRate) {

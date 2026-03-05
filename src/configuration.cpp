@@ -20,6 +20,7 @@
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include "configuration.h"
+#include "lora_utils.h"
 #include "board_pinout.h"
 #include "display.h"
 static const char *TAG = "Config";
@@ -249,14 +250,7 @@ bool Configuration::readFile() {
             loraType.codingRate4        = LoraTypesArray[j]["codingRate4"] | 5;
             loraType.power              = LoraTypesArray[j]["power"] | 20;
 
-            // Map SF+CR4 to nominal data rate for the 6 standard presets
-            if      (loraType.spreadingFactor == 12 && loraType.codingRate4 == 5) loraType.dataRate = 300;
-            else if (loraType.spreadingFactor == 12 && loraType.codingRate4 == 6) loraType.dataRate = 244;
-            else if (loraType.spreadingFactor == 12 && loraType.codingRate4 == 7) loraType.dataRate = 209;
-            else if (loraType.spreadingFactor == 12 && loraType.codingRate4 == 8) loraType.dataRate = 183;
-            else if (loraType.spreadingFactor == 10 && loraType.codingRate4 == 8) loraType.dataRate = 610;
-            else if (loraType.spreadingFactor == 9  && loraType.codingRate4 == 7) loraType.dataRate = 1200;
-            else                                                                  loraType.dataRate = 300;
+            loraType.dataRate = LoRa_Utils::calculateDataRate(loraType.spreadingFactor, loraType.codingRate4, loraType.signalBandwidth);
 
             loraTypes.push_back(loraType);
         }

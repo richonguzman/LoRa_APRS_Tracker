@@ -226,8 +226,9 @@ function loadSettings(settings) {
         const loraElement = document.createElement("div");
         loraElement.classList.add("row", "lora", "border-bottom", "py-2");
 
-        // Build dataRate key from current SF+CR4 to pre-select the right option
-        const drKey = `${lora.spreadingFactor}_${lora.codingRate4}`;
+        const bw = lora.signalBandwidth || 125000;
+        const sf = lora.spreadingFactor || 12;
+        const cr = lora.codingRate4 || 5;
 
         loraElement.innerHTML = `
             <div class="col-1 px-1 mb-2 d-flex align-items-center">
@@ -245,19 +246,36 @@ function loadSettings(settings) {
                     title="${freqMinMHz}-${freqMaxMHz} MHz">
                 <label for="lora.${index}.frequency">Freq (${freqMinMHz}-${freqMaxMHz})</label>
             </div>
-            <div class="form-floating col-6 col-md-5 px-1 mb-2">
+            <div class="form-floating col-4 col-md-2 px-1 mb-2">
                 <select
                     class="form-select form-select-sm"
-                    name="lora.${index}.dataRate"
-                    id="lora.${index}.dataRate">
-                    <option value="300"  ${drKey === "12_5" ? "selected" : ""}>SF12 CR4:5 — 300 bps</option>
-                    <option value="244"  ${drKey === "12_6" ? "selected" : ""}>SF12 CR4:6 — 244 bps</option>
-                    <option value="209"  ${drKey === "12_7" ? "selected" : ""}>SF12 CR4:7 — 209 bps</option>
-                    <option value="183"  ${drKey === "12_8" ? "selected" : ""}>SF12 CR4:8 — 183 bps</option>
-                    <option value="610"  ${drKey === "10_8" ? "selected" : ""}>SF10 CR4:8 — 610 bps</option>
-                    <option value="1200" ${drKey === "9_7"  ? "selected" : ""}>SF9  CR4:7 — 1200 bps</option>
+                    name="lora.${index}.signalBandwidth"
+                    id="lora.${index}.signalBandwidth">
+                    <option value="62500"  ${bw === 62500  ? "selected" : ""}>62.5</option>
+                    <option value="125000" ${bw === 125000 ? "selected" : ""}>125</option>
                 </select>
-                <label for="lora.${index}.dataRate">Data Rate</label>
+                <label for="lora.${index}.signalBandwidth">BW (kHz)</label>
+            </div>
+            <div class="form-floating col-3 col-md-2 px-1 mb-2">
+                <select
+                    class="form-select form-select-sm"
+                    name="lora.${index}.spreadingFactor"
+                    id="lora.${index}.spreadingFactor">
+                    ${[5,6,7,8,9,10,11,12].map(v => `<option value="${v}" ${sf === v ? "selected" : ""}>SF${v}</option>`).join("\n                    ")}
+                </select>
+                <label for="lora.${index}.spreadingFactor">SF</label>
+            </div>
+            <div class="form-floating col-3 col-md-2 px-1 mb-2">
+                <select
+                    class="form-select form-select-sm"
+                    name="lora.${index}.codingRate4"
+                    id="lora.${index}.codingRate4">
+                    <option value="5" ${cr === 5 ? "selected" : ""}>4:5</option>
+                    <option value="6" ${cr === 6 ? "selected" : ""}>4:6</option>
+                    <option value="7" ${cr === 7 ? "selected" : ""}>4:7</option>
+                    <option value="8" ${cr === 8 ? "selected" : ""}>4:8</option>
+                </select>
+                <label for="lora.${index}.codingRate4">CR</label>
             </div>
             <div class="form-floating col-3 col-md-2 px-1 mb-2">
                 <input
