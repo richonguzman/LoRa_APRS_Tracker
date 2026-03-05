@@ -908,40 +908,6 @@ namespace MapEngine {
         return true;
     }
 
-    // Preload a single NAV tile into navCache (for background preloading).
-    // Returns true if the tile is now in cache (either already was or successfully loaded).
-    // Guards: never evicts existing entries, stops when PSRAM headroom is low.
-    bool preloadNavTile(const char* region, uint8_t regionIdx, uint8_t zoom, int tileX, int tileY) {
-        // Already cached?
-        if (findNavCache(regionIdx, zoom, tileX, tileY) >= 0) return true;
-
-        // Never evict viewport tiles — only use free cache slots
-        if ((int)navCache.size() >= NAV_CACHE_SIZE) return false;
-
-        // Keep PSRAM headroom for next viewport render
-        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < 768 * 1024) return false;
-
-        NpkSlot* slot = openNpkRegion(region, zoom, (uint32_t)tileY);
-        if (!slot || !slot->yTable) return false;
-
-        UIMapManager::Npk2IndexEntry entry;
-        if (!findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)) return false;
-
-        // Re-check headroom with actual tile size known
-        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < entry.size + 512 * 1024) return false;
-
-        uint8_t* data = nullptr;
-        size_t fileSize = 0;
-        if (!readNpkTileData(slot, &entry, &data, &fileSize)) return false;
-
-        if (memcmp(data, "NAV1", 4) != 0) {
-            free(data);
-            return false;
-        }
-
-        addNavCache(regionIdx, zoom, tileX, tileY, data, fileSize);
-        return true;
-    }
 
     // Load VLW Unicode font for map labels from SD card
     static uint8_t* vlwFontData = nullptr;
