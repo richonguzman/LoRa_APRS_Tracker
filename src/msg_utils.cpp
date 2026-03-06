@@ -189,15 +189,10 @@ void loadNumMessages() {
             String line = fileToRead.readStringUntil('\n');
             line.trim();
             if (line.length() == 0) continue;
-            loadedWLNKMails.push_back(line);
+            loadedAPRSMessages.push_back(line);
             }
 
             fileToRead.close();
-
-            if (loadedWLNKMails.empty()) {
-            noWLNKMsgWarning = true;
-            displayShow(" INFO", "", " NO WLNK MSG SAVED", 1500);
-            }
 
             if (loadedAPRSMessages.empty()) {
                 noAPRSMsgWarning = true;
