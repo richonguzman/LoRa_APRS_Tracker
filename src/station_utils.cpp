@@ -511,9 +511,8 @@ namespace STATION_Utils {
             previousHeading = currentHeading;
             lastTxDistance  = 0.0;
 
-            // Add own position to GPS trace on map + GPX recording
+            // GPX recording on beacon TX (trace is now decoupled — see main loop)
             #ifdef USE_LVGL_UI
-                UIMapManager::addOwnTracePoint();
                 GPXWriter::addPoint(lastTxLat, lastTxLng,
                                     gps.altitude.meters(), gps.hdop.hdop(), gps.speed.kmph());
             #endif

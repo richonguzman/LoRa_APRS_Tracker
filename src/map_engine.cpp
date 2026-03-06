@@ -169,7 +169,7 @@ namespace MapEngine {
     static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> globalLayers[16];
 
     // Tile cache system
-    #define TILE_CACHE_SIZE 40  // Number of tiles to cache (40 × 128KB = 5.2MB PSRAM)
+    #define TILE_CACHE_SIZE 20  // Max 20 tiles × 128KB = 2.5MB PSRAM
     static std::vector<CachedTile> tileCache;
     static size_t maxCachedTiles = TILE_CACHE_SIZE;
     static uint32_t cacheAccessCounter = 0;
@@ -420,7 +420,7 @@ namespace MapEngine {
         proj32X.reserve(1024);
         proj32Y.reserve(1024);
         decodedCoords.reserve(4096);
-        for (int i = 0; i < 16; i++) globalLayers[i].reserve(256);
+        for (int i = 0; i < 16; i++) globalLayers[i].reserve(4096);
         navCache.reserve(NAV_CACHE_SIZE);
 
         ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
@@ -1013,7 +1013,9 @@ namespace MapEngine {
             return;
         }
 
-        if (tileCache.size() >= maxCachedTiles) {
+        // Evict if cache full OR PSRAM low (keep >= 1MB free)
+        while (tileCache.size() >= maxCachedTiles ||
+               (!tileCache.empty() && heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < 1024 * 1024)) {
             evictLRUTile();
         }
 
@@ -1312,19 +1314,31 @@ namespace MapEngine {
         std::vector<uint8_t*> tileBuffers;  // Pointers into navCache — do NOT free
         int navCacheHits = 0, navCacheMisses = 0;
         for (int i = 0; i < 16; i++) globalLayers[i].clear();
-        // One-time PSRAM reserve: reduces reallocations on first render
+        // One-time PSRAM reserve: 4096/layer avoids repeated reallocations
+        // that fragment PSRAM and cause feature drops at Z9 (36K features).
+        // Cost: 16 × 4096 × 16B = 1 MB one-shot (clear() preserves capacity).
         static bool layersReserved = false;
         if (!layersReserved) {
-            for (int i = 0; i < 16; i++) globalLayers[i].reserve(256);
+            for (int i = 0; i < 16; i++) globalLayers[i].reserve(4096);
             layersReserved = true;
         }
         // Text labels collected separately — rendered last, on top of all geometry
-        std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> textRefs;
-        textRefs.reserve(128);
+        static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> textRefs;
+        textRefs.clear();
+        static bool textReserved = false;
+        if (!textReserved) {
+            textRefs.reserve(512);
+            textReserved = true;
+        }
 
         // Waterway curvilinear labels (GEOM_TEXT_LINE) — rendered in a dedicated pass
-        std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
-        waterwayRefs.reserve(64);
+        static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
+        waterwayRefs.clear();
+        static bool wwReserved = false;
+        if (!wwReserved) {
+            waterwayRefs.reserve(64);
+            wwReserved = true;
+        }
 
         uint16_t bgColor = 0xF7BE;  // Default OSM beige (0xF2EFE9) if no tiles loaded
         bool bgColorExtracted = false;
@@ -1557,31 +1571,41 @@ namespace MapEngine {
         }
 
         // --- Phase 3: Read tile data and dispatch features ---
-        for (int i = 0; i < pendingCount; i++) {
-            esp_task_wdt_reset();
-            auto& pr = pendingReads[i];
-            uint8_t* data = nullptr;
-            size_t fileSize = 0;
+        // Take SPI mutex ONCE for the entire batch — avoids 13× mutex overhead
+        if (pendingCount > 0 && spiMutex != NULL &&
+            xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(5000)) == pdTRUE) {
+            for (int i = 0; i < pendingCount; i++) {
+                esp_task_wdt_reset();
+                auto& pr = pendingReads[i];
 
-            if (!readNpkTileData(pr.slot, &pr.entry, &data, &fileSize)) {
-                if (evictUnusedNavCache(tileBuffers, pr.entry.size)) {
-                    readNpkTileData(pr.slot, &pr.entry, &data, &fileSize);
+                uint8_t* data = (uint8_t*)ps_malloc(pr.entry.size);
+                if (!data) {
+                    // PSRAM full — evict and retry
+                    if (evictUnusedNavCache(tileBuffers, pr.entry.size)) {
+                        data = (uint8_t*)ps_malloc(pr.entry.size);
+                    }
+                    if (!data) continue;
                 }
-                if (!data) continue;  // Skip this tile, try smaller ones
+
+                pr.slot->file.seek(pr.entry.offset);
+                size_t bytesRead = STORAGE_Utils::readChunked(pr.slot->file, data, pr.entry.size);
+                if (bytesRead != pr.entry.size) {
+                    free(data);
+                    continue;
+                }
+
+                if (memcmp(data, "NAV1", 4) != 0) {
+                    ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
+                    free(data);
+                    continue;
+                }
+
+                addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, pr.entry.size);
+                navCacheMisses++;
+
+                dispatchFeatures(data, pr.entry.size, pr.tileOffsetX, pr.tileOffsetY);
             }
-
-            if (!data) continue;
-
-            if (memcmp(data, "NAV1", 4) != 0) {
-                ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
-                free(data);
-                continue;
-            }
-
-            addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, fileSize);
-            navCacheMisses++;
-
-            dispatchFeatures(data, fileSize, pr.tileOffsetX, pr.tileOffsetY);
+            xSemaphoreGiveRecursive(spiMutex);
         }
 
         // Log load stats (IceNav-v3 pattern: maps.cpp:1582-1587)

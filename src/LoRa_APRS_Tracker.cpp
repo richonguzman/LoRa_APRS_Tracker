@@ -97,6 +97,7 @@ namespace UIMapManager {
     TinyGPSPlus& gps = ::gps;
     Configuration& Config = ::Config;
     uint8_t& myBeaconsIndex = ::myBeaconsIndex;
+    void addOwnTracePoint();
 }
 #endif
 
@@ -371,6 +372,14 @@ void loop() {
         int currentSpeed = (int) gps.speed.kmph();
 
         if (gps_loc_update) Utils::checkStatus();
+
+        // Record GPS trace independently from beacon TX — trace only needs
+        // a valid fix (4+ sats), not the strict quality for LoRa emission.
+        #ifdef USE_LVGL_UI
+        if (gps_loc_update && gps.satellites.value() >= 4) {
+            UIMapManager::addOwnTracePoint();
+        }
+        #endif
 
         if (!sendUpdate && gps_loc_update && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();

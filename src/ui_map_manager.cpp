@@ -291,57 +291,6 @@ namespace UIMapManager {
         tilePreloadTask = nullptr;
     }
 
-    // Queue tiles from adjacent zoom levels for preloading
-    void queueAdjacentZoomTiles(int centerTileX, int centerTileY, int currentZoom) {
-        if (tilePreloadQueue == nullptr || navModeActive) return;
-
-        TileRequest req;
-
-        // Get adjacent zoom levels
-        int prevZoom = -1, nextZoom = -1;
-        for (int i = 0; i < map_zoom_count; i++) {
-            if (map_available_zooms[i] == currentZoom) {
-                if (i > 0) prevZoom = map_available_zooms[i - 1];
-                if (i < map_zoom_count - 1) nextZoom = map_available_zooms[i + 1];
-                break;
-            }
-        }
-
-        // Queue tiles for previous zoom (zoom out = tiles cover larger area)
-        if (prevZoom > 0) {
-            int scale = 1 << (currentZoom - prevZoom);  // e.g., zoom 12->10 = scale 4
-            int prevTileX = centerTileX / scale;
-            int prevTileY = centerTileY / scale;
-
-            // Queue 3x3 grid around the corresponding tile
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    req.tileX = prevTileX + dx;
-                    req.tileY = prevTileY + dy;
-                    req.zoom = prevZoom;
-                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
-                }
-            }
-        }
-
-        // Queue tiles for next zoom (zoom in = tiles cover smaller area)
-        if (nextZoom > 0) {
-            int scale = 1 << (nextZoom - currentZoom);  // e.g., zoom 12->14 = scale 4
-            int nextTileX = centerTileX * scale;
-            int nextTileY = centerTileY * scale;
-
-            // Queue 3x3 grid around the corresponding tile
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    req.tileX = nextTileX + dx;
-                    req.tileY = nextTileY + dy;
-                    req.zoom = nextZoom;
-                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
-                }
-            }
-        }
-    }
-
     // ============ END ASYNC TILE PRELOADING ============
 
     // Clear station hit zones
@@ -506,8 +455,8 @@ namespace UIMapManager {
         static uint32_t iconCentroidCount = 0;
 
         if (!gps.location.isValid()) return;
-        // Reject unreliable fixes: need ≥6 sats for decent 3D geometry
-        if (gps.satellites.value() < 6) return;
+        // 4 sats minimum — same threshold as GPS trace (local display only)
+        if (gps.satellites.value() < 4) return;
         float lat = gps.location.lat();
         float lon = gps.location.lng();
 
@@ -864,6 +813,11 @@ namespace UIMapManager {
         // 1. Check if already in cache
         if (MapEngine::findCachedTile(zoom, tileX, tileY) >= 0) {
             return true;
+        }
+
+        // 1b. Skip preload if PSRAM is too low for sprite allocation (~128KB + decode overhead)
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < 256 * 1024) {
+            return false;
         }
 
         // 2. Find file path (PNG, then JPG) — under SPI mutex
@@ -1473,11 +1427,6 @@ namespace UIMapManager {
 
                 // Schedule redraw (canvas will be recentered after new tiles are drawn)
                 schedule_map_reload();
-
-                // Preload tiles at adjacent zoom levels for fast zoom switch
-                int cX, cY;
-                latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &cX, &cY);
-                queueAdjacentZoomTiles(cX, cY, map_current_zoom);
             } else {
                 // Tap (no drag) - check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
