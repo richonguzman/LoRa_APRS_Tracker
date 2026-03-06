@@ -24,6 +24,7 @@
 namespace BLUETOOTH_Utils {
 
     void setup();
+    void stop();
     void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
     void getData(const uint8_t *buffer, size_t size);
     void sendToLoRa();

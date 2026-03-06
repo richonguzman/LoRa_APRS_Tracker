@@ -20,6 +20,8 @@
 #include <TinyGPS++.h>
 #include <vector>
 #include "notification_utils.h"
+#include "bluetooth_utils.h"
+#include "ble_utils.h"
 #include "custom_characters.h"
 #include "station_utils.h"
 #include "configuration.h"
@@ -52,6 +54,7 @@ extern bool                 flashlight;
 extern bool                 digipeaterActive;
 extern bool                 sosActive;
 extern bool                 bluetoothActive;
+extern bool                 bluetoothConnected;
 extern bool                 displayEcoMode;
 extern bool                 screenBrightness;
 extern bool                 disableGPS;
@@ -442,9 +445,27 @@ namespace MENU_Utils {
             case 230:
                 if (bluetoothActive) {
                     bluetoothActive = false;
+                    bluetoothConnected = false;
+                    Config.bluetooth.active = false;
+                    if (Config.bluetooth.useBLE) {
+                        BLE_Utils::stop();
+                    } else {
+                        #ifdef HAS_BT_CLASSIC
+                            BLUETOOTH_Utils::stop();
+                        #endif
+                    }
                     displayShow("BLUETOOTH>", "", " Bluetooth --> OFF", 1000);
                 } else {
                     bluetoothActive = true;
+                    bluetoothConnected = false;
+                    Config.bluetooth.active = true;
+                    if (Config.bluetooth.useBLE) {
+                        BLE_Utils::setup();
+                    } else {
+                        #ifdef HAS_BT_CLASSIC
+                            BLUETOOTH_Utils::setup();
+                        #endif
+                    }
                     displayShow("BLUETOOTH>", "", " Bluetooth --> ON", 1000);
                 }
                 menuDisplay = 23;

@@ -87,6 +87,7 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             bluetoothConnected;
+extern bool             bluetoothActive;
 extern TinyGPSPlus      gps;
 extern APRSPacket       lastReceivedPacket;
 
@@ -274,7 +275,7 @@ extern logging::Logger logger;
     uint32_t rxAgeDisplay = (rxAgeSec > 999U) ? 999U : rxAgeSec;
     String rxAgeTxt = (g_lastRxMs == 0) ? "RX:-" : ("RX:" + String(rxAgeDisplay) + "s");
     String snrTxt = "SNR:" + String(g_lastRxSnr, 1);
-    String btTxt = bluetoothConnected ? "BT:ON" : "BT:OFF";
+    String btTxt = bluetoothActive ? (bluetoothConnected ? "BT:LINK" : "BT:ON") : "BT:OFF";
 
     int btX = 320 - 8 - sprite.textWidth(btTxt);
     int snrX = (320 - sprite.textWidth(snrTxt)) / 2;

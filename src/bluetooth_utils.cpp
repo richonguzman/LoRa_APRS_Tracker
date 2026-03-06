@@ -39,6 +39,14 @@ namespace BLUETOOTH_Utils {
     bool shouldSendToLoRa = false;
     bool useKiss = Config.bluetooth.useKISS? true : false;
 
+    void stop() {
+        bluetoothConnected = false;
+        SerialBT.end();
+        btStop();
+        esp_bt_controller_disable();
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Bluetooth Classic stopped");
+    }
+
     void setup() {
         if (!bluetoothActive) {
             btStop();
