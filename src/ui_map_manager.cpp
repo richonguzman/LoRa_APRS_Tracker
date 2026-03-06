@@ -1153,6 +1153,10 @@ namespace UIMapManager {
                     MapEngine::enqueueNavRender(req);
                     navRenderPending = true;
 
+                    // Reset canvas position immediately (don't wait for render)
+                    // Prevents visual "snap back" when async render completes
+                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+
                     // Start 100ms poll timer to detect render completion
                     if (nav_poll_timer) lv_timer_del(nav_poll_timer);
                     nav_poll_timer = lv_timer_create(nav_render_poll_cb, 100, NULL);
