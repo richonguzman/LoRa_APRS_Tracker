@@ -97,7 +97,6 @@ const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
 //#define OLED_DISPLAY_HAS_RST_PIN
 
-int         lastMenuDisplay         = 0;
 uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of screens
 bool        symbolAvailable         = true;
 // --- RX Signal meter ---
@@ -112,6 +111,48 @@ void displaySetLastRxMetrics(int rssi, float snr) {
 }
 
 extern logging::Logger logger;
+
+#if defined(HAS_TFT) && defined(TTGO_T_DECK_PLUS)
+    static const int kTDeckPlusBodyTopY      = 90;
+    static const int kTDeckPlusStatusStripY  = 76;
+    static const int kTDeckPlusStatusStripH  = 12;
+    static const int kTDeckPlusTextX         = 35;
+#endif
+
+#if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
+    static String trimToPixelWidth(const String& text, int maxWidth) {
+        if (maxWidth <= 0) return "";
+        String trimmed = text;
+        while (trimmed.length() > 0 && sprite.textWidth(trimmed) > maxWidth) {
+            trimmed.remove(trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
+    static void drawWrappedLines(const String* const lines[], int lineCount, int textX, int yStart) {
+        int yLineOffset = yStart;
+        for (int i = 0; i < lineCount; i++) {
+            String text = *lines[i];
+            if (text.length() > 0) {
+                while (text.length() > 0) {
+                    String chunk = text.substring(0, maxLineLength);
+                    #if defined(TTGO_T_DECK_PLUS)
+                    int maxX = 320 - (SYMBOL_WIDTH + 8 + 8);
+                    while (chunk.length() > 0 && (textX + sprite.textWidth(chunk)) > maxX) {
+                        chunk.remove(chunk.length() - 1);
+                    }
+                    #endif
+                    sprite.drawString(chunk, textX, yLineOffset);
+                    text = text.substring(maxLineLength);
+                    yLineOffset += lineSpacing;
+                }
+            } else {
+                sprite.drawString(text, textX, yLineOffset);
+                yLineOffset += lineSpacing;
+            }
+        }
+    }
+#endif
 
 
 #if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
@@ -193,30 +234,53 @@ extern logging::Logger logger;
     int xDate = 320 - padRight - sprite.textWidth(dateStr);
     int xTime = 320 - padRight - sprite.textWidth(timeStr);
 
-sprite.drawString(dateStr, xDate, 10);
-sprite.drawString(timeStr, xTime, 28);
+    sprite.drawString(dateStr, xDate, 10);
+    sprite.drawString(timeStr, xTime, 28);
 
     // Second bar: coordinates and satellites.
     sprite.fillRect(0, 50, 320, 24, primaryColorLight);
     sprite.setTextFont(2);
     sprite.setTextSize(1);
     sprite.setTextColor(TFT_WHITE, primaryColorLight);
-    sprite.drawString(topHeader2, 8, 54);
 
     // RSSI on the right side of the coordinate bar
     sprite.setTextFont(2);
     sprite.setTextSize(1);
-    String rssiTxt = String(g_lastRxRssi) + "dBm";
+    String rssiTxt = (g_lastRxMs == 0) ? "RSSI --" : (String(g_lastRxRssi) + "dBm");
     int rssiX = 320 - 8 - sprite.textWidth(rssiTxt);
+
+    String coordTxt = trimToPixelWidth(topHeader2, rssiX - 16);
     sprite.setTextColor(TFT_WHITE, primaryColorLight);
+    sprite.drawString(coordTxt, 8, 54);
     sprite.drawString(rssiTxt, rssiX, 54);
 
     // Separator line below the coordinate bar
     sprite.fillRect(0, 74, 320, 2, primaryColorDark);
 
-    // Body area: fill black from y=76 to the bottom of the screen.  We no longer
-    // draw a meter here so there is more space for text lines.
-    sprite.fillRect(0, 76, 320, 240 - 76, TFT_BLACK);
+    // Status strip: keep compact telemetry in a dedicated row to avoid text overlap.
+    sprite.fillRect(0, kTDeckPlusStatusStripY, 320, kTDeckPlusStatusStripH, primaryColorDark);
+    sprite.setTextFont(1);
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE, primaryColorDark);
+
+    uint32_t rxAgeSec = (g_lastRxMs == 0) ? 0 : ((millis() - g_lastRxMs) / 1000);
+    uint32_t rxAgeDisplay = (rxAgeSec > 999U) ? 999U : rxAgeSec;
+    String rxAgeTxt = (g_lastRxMs == 0) ? "RX:-" : ("RX:" + String(rxAgeDisplay) + "s");
+    String snrTxt = "SNR:" + String(g_lastRxSnr, 1);
+    String btTxt = bluetoothConnected ? "BT:ON" : "BT:OFF";
+
+    int btX = 320 - 8 - sprite.textWidth(btTxt);
+    int snrX = (320 - sprite.textWidth(snrTxt)) / 2;
+    if (snrX + sprite.textWidth(snrTxt) > btX - 8) {
+        snrX = btX - 8 - sprite.textWidth(snrTxt);
+    }
+
+    sprite.drawString(rxAgeTxt, 8, kTDeckPlusStatusStripY + 2);
+    sprite.drawString(snrTxt, snrX, kTDeckPlusStatusStripY + 2);
+    sprite.drawString(btTxt, btX, kTDeckPlusStatusStripY + 2);
+
+    // Body area starts below the status strip.
+    sprite.fillRect(0, kTDeckPlusBodyTopY, 320, 240 - kTDeckPlusBodyTopY, TFT_BLACK);
 #else
     // Original header design for T-Deck GPS and other variants.
     sprite.fillSprite(TFT_BLACK);
@@ -241,6 +305,28 @@ sprite.drawString(timeStr, xTime, 28);
     sprite.fillRect(0, 60, 320, 2, greyColorDark);
 #endif
     }
+
+    #if defined(TTGO_T_DECK_PLUS)
+    void draw_T_DECK_PlusToast(const String& text) {
+        if (text.length() == 0) return;
+        sprite.setTextFont(2);
+        sprite.setTextSize(1);
+        String toastText = trimToPixelWidth(text, 280);
+        int toastW = sprite.textWidth(toastText) + 24;
+        if (toastW < 120) toastW = 120;
+        if (toastW > 292) toastW = 292;
+
+        int toastH = 24;
+        int toastX = (320 - toastW) / 2;
+        int toastY = 200;
+
+        sprite.fillRoundRect(toastX, toastY, toastW, toastH, 8, primaryColorDark);
+        sprite.drawRoundRect(toastX, toastY, toastW, toastH, 8, primaryColorLight);
+        sprite.setTextColor(TFT_WHITE, primaryColorDark);
+        int tx = toastX + (toastW - sprite.textWidth(toastText)) / 2;
+        sprite.drawString(toastText, tx, toastY + 5);
+    }
+    #endif
 
     void draw_T_DECK_MenuButtons(int menu) {
         // Improved menu buttons for T-Deck Plus: larger hit targets,
@@ -425,28 +511,15 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             const String* const lines[] = {&header, &line1, &line2};
-            int yLineOffset = 98;
-
-            for (int i = 0; i < 3; i++) {
-                String text = *lines[i];
-                if (text.length() > 0) {
-                    while (text.length() > 0) {
-                        String chunk = text.substring(0, maxLineLength);
-                        #if defined(TTGO_T_DECK_PLUS)
-                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 8); // simbolo + margini
-                        while (sprite.textWidth(chunk) + 35 > maxX && chunk.length() > 0) {
-                        chunk.remove(chunk.length() - 1);
-                    }
-                    #endif
-                        sprite.drawString(chunk, 35, yLineOffset);
-                        text = text.substring(maxLineLength);
-                        yLineOffset += lineSpacing;
-                    }
-                } else {
-                    sprite.drawString(text, 3, yLineOffset);
-                    yLineOffset += lineSpacing;
+            #if defined(TTGO_T_DECK_PLUS)
+                drawWrappedLines(lines, 3, kTDeckPlusTextX, 98);
+                if (wait >= 700) {
+                    String toastMessage = line2.length() > 0 ? line2 : line1;
+                    draw_T_DECK_PlusToast(toastMessage);
                 }
-            }
+            #else
+                drawWrappedLines(lines, 3, 35, 98);
+            #endif
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
             sprite.fillSprite(TFT_BLACK);
@@ -513,7 +586,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
     if (symbolIndex < 0 || symbolIndex >= symbolArraySize) {
     #if defined(TTGO_T_DECK_PLUS)
         int x = 320 - SYMBOL_WIDTH - 8;
-        int y = 102;
+        int y = 96;
         sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
         sprite.setTextFont(2);
         sprite.setTextSize(1);
@@ -534,7 +607,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
     #if defined(TTGO_T_DECK_PLUS)
         // Draw symbol in the BODY (background is black)
         int x = 320 - SYMBOL_WIDTH - 8;
-        int y = 90;
+        int y = 96;
         sprite.drawBitmap(x, y, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
         sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
     #elif defined(TTGO_T_DECK_GPS)
@@ -556,30 +629,11 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
             const String* const lines[] = {&header, &line1, &line2, &line3, &line4, &line5};
-            // Start drawing body text immediately below the coordinate bar.  On the T‑Deck Plus
-            // the header occupies 74px (top bar + coord bar + separator), so begin at 82px.
-            int yLineOffset = 82;
-
-            for (int i = 0; i < 6; i++) {
-                String text = *lines[i];
-                if (text.length() > 0) {
-                    while (text.length() > 0) {
-                        String chunk = text.substring(0, maxLineLength);
-                        #if defined(TTGO_T_DECK_PLUS)
-                        int maxX = 320 - (SYMBOL_WIDTH + 8 + 8); // symbol + margin
-                        while (sprite.textWidth(chunk) + 35 > maxX && chunk.length() > 0) {
-                        chunk.remove(chunk.length() - 1);
-                    }
-                        #endif
-                        sprite.drawString(chunk, 35, yLineOffset);
-                        text = text.substring(maxLineLength);
-                        yLineOffset += lineSpacing;
-                    }
-                } else {
-                    sprite.drawString(text, 3, yLineOffset);
-                    yLineOffset += lineSpacing;
-                }
-            }
+            #if defined(TTGO_T_DECK_PLUS)
+                drawWrappedLines(lines, 6, kTDeckPlusTextX, kTDeckPlusBodyTopY);
+            #else
+                drawWrappedLines(lines, 6, 35, 82);
+            #endif
 
             drawButton(30,  210, 80, 28, "Send", 3);
             drawButton(125, 210, 80, 28, "Menu", 3);
