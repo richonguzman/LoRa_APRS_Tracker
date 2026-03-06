@@ -263,7 +263,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=14) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -324,7 +324,7 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 && menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -342,14 +342,19 @@ namespace KEYBOARD_Utils {
             displayShow("   INFO", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
-        } else if (menuDisplay == 14) {
-            // APRSPH Check‑in action: send a canned APRS message to APRSPH and show a brief confirmation
-            displayShow("  APRSPH", "Sending:", "CQ Checked-in via LoRa Tracker", "", "", "", 2000);
+            } else if (menuDisplay == 14) {
+
+            displayShow(" APRSPH", "Sending:", "CQ Checked-in via LoRa Tracker", "", "", "", 2000);
+
             MSG_Utils::addToOutputBuffer(0, "APRSPH", "CQ Checked-in via LoRa Tracker");
+
             #ifdef HAS_JOYSTICK
-                menuDisplay = 14;
+            menuDisplay = 10;
+            #else
+            menuDisplay = 10;
             #endif
-        } else if (menuDisplay == 130 || menuDisplay == 131) {
+            }
+        else if (menuDisplay == 130 || menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay *= 10;
             } else {
@@ -769,6 +774,10 @@ namespace KEYBOARD_Utils {
             } else if (key == 8) {
                 messageText = messageText.substring(0, messageText.length() - 1);
             }
+        }
+
+        else if (key == 13) {   // Enter as Select in menu contexts
+            rightArrow();
         }
 
         else if (key == 181) {  // Arrow Up

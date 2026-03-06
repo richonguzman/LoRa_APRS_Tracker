@@ -104,48 +104,67 @@ namespace MSG_Utils {
         return numWLNKMessages;
     }
 
-    void loadNumMessages() {
-        if(!SPIFFS.begin(true)) {
-            Serial.println("An Error has occurred while mounting SPIFFS");
-            return;
-        }
+void loadNumMessages() {
+  if(!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    numAPRSMessages = 0;
+    numWLNKMessages = 0;
+    return;
+  }
 
-        File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
-        if(!fileToReadAPRS) {
-            Serial.println("Failed to open APRS_Msg for reading");
-            return;
-        }
+  File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
+  if(!fileToReadAPRS) {
+    Serial.println("Failed to open APRS_Msg for reading");
+    numAPRSMessages = 0;
+  } else {
+    std::vector<String> v1;
 
-        std::vector<String> v1;
-        while (fileToReadAPRS.available()) {
-            v1.push_back(fileToReadAPRS.readStringUntil('\n'));
-        }
-        fileToReadAPRS.close();
+    while (fileToReadAPRS.available()) {
+      String line = fileToReadAPRS.readStringUntil('\n');
+      line.trim();
 
-        numAPRSMessages = 0;
-        for (String s1 : v1) {
-            numAPRSMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
-    
-        File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
-        if(!fileToReadWLNK) {
-            Serial.println("Failed to open Winlink_Msg for reading");
-            return;
-        }
+      if (line.length() == 0) continue;
+      if (line.indexOf(",") < 0) continue;
 
-        std::vector<String> v2;
-        while (fileToReadWLNK.available()) {
-            v2.push_back(fileToReadWLNK.readStringUntil('\n'));
-        }
-        fileToReadWLNK.close();
-
-        numWLNKMessages = 0;
-        for (String s2 : v2) {
-            numWLNKMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+      v1.push_back(line);
     }
+
+    fileToReadAPRS.close();
+
+    numAPRSMessages = 0;
+    for (String s1 : v1) {
+      (void)s1;
+      numAPRSMessages++;
+    }
+  }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
+
+  File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
+  if(!fileToReadWLNK) {
+    Serial.println("Failed to open Winlink_Msg for reading");
+    numWLNKMessages = 0;
+  } else {
+    std::vector<String> v2;
+
+    while (fileToReadWLNK.available()) {
+      String line = fileToReadWLNK.readStringUntil('\n');
+      line.trim();
+      if (line.length() == 0) continue;
+      v2.push_back(line);
+    }
+
+    fileToReadWLNK.close();
+
+    numWLNKMessages = 0;
+    for (String s2 : v2) {
+      (void)s2;
+      numWLNKMessages++;
+    }
+  }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+}
 
     void loadMessagesFromMemory(uint8_t typeOfMessage) {
         File fileToRead;
@@ -158,18 +177,35 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/aprsMessages.txt");
             }
             if (noAPRSMsgWarning) {
-                displayShow("   INFO", "", " NO APRS MSG SAVED", 1500);
+            displayShow(" INFO", "", " NO APRS MSG SAVED", 1500);
             } else {
-                if(!fileToRead) {
-                    Serial.println("Failed to open file for reading");
-                    return;
-                }
-                while (fileToRead.available()) {
-                    loadedAPRSMessages.push_back(fileToRead.readStringUntil('\n'));
-                }
-                fileToRead.close();
+            if(!fileToRead) {
+                Serial.println("Failed to open file for reading");
+                noAPRSMsgWarning = true;
+                return;
             }
-        } else if (typeOfMessage == 1) { // WLNK
+
+            while (fileToRead.available()) {
+            String line = fileToRead.readStringUntil('\n');
+            line.trim();
+            if (line.length() == 0) continue;
+            loadedWLNKMails.push_back(line);
+            }
+
+            fileToRead.close();
+
+            if (loadedWLNKMails.empty()) {
+            noWLNKMsgWarning = true;
+            displayShow(" INFO", "", " NO WLNK MSG SAVED", 1500);
+            }
+
+            if (loadedAPRSMessages.empty()) {
+                noAPRSMsgWarning = true;
+                displayShow(" INFO", "", " NO APRS MSG SAVED", 1500);
+            }
+            }
+                    } 
+        else if (typeOfMessage == 1) { // WLNK
             noWLNKMsgWarning = false;
             if (numWLNKMessages == 0) {
                 noWLNKMsgWarning = true;

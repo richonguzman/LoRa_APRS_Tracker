@@ -184,22 +184,53 @@ namespace MENU_Utils {
             case 10:    // 1.Messages ---> Messages Read
                 displayShow(" MESSAGES>", "> Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "  APRSThursday", lastLine);
                 break;
-            case 100:   // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
-                {
-                    String msgSender    = loadedAPRSMessages[messagesIterator].substring(0, loadedAPRSMessages[messagesIterator].indexOf(","));
-                    String msgText      = loadedAPRSMessages[messagesIterator].substring(loadedAPRSMessages[messagesIterator].indexOf(",") + 1);
-
-                    #ifdef HAS_TFT
-                        #if defined(HELTEC_WIRELESS_TRACKER)
-                            displayShow(" MSG APRS>", "From --> " + msgSender, msgText,"                 Next=Down", "", "");
-                        #else   // T-Deck
-                            displayShow("MSG APRS>", "From --> " + msgSender, msgText,"             Next=Down", "", "");
-                        #endif
-                    #else
-                        displayShow(" MSG APRS>", "From --> " + msgSender, msgText, "", "", "           Next=Down");
-                    #endif
-                }
+            case 100: // 1.Messages ---> Messages Read ---> Display Received/Saved APRS Messages
+            {
+            if (loadedAPRSMessages.empty()) {
+                displayShow(" INFO", "", " NO APRS MSG SAVED", 1500);
+                messagesIterator = 0;
+                menuDisplay = 10;
                 break;
+            }
+
+            if (messagesIterator < 0 || messagesIterator >= loadedAPRSMessages.size()) {
+                displayShow(" INFO", "", " INVALID MSG INDEX", 1500);
+                messagesIterator = 0;
+                menuDisplay = 10;
+                break;
+            }
+
+            String rawMessage = loadedAPRSMessages[messagesIterator];
+            rawMessage.trim();
+
+            int commaPos = rawMessage.indexOf(",");
+            if (rawMessage.length() == 0 || commaPos < 0) {
+                #ifdef HAS_TFT
+                #if defined(HELTEC_WIRELESS_TRACKER)
+                displayShow(" MSG APRS>", "From --> INVALID", rawMessage.length() ? rawMessage : "(empty)", " Next=Down", "", "");
+                #else // T-Deck
+                displayShow("MSG APRS>", "From --> INVALID", rawMessage.length() ? rawMessage : "(empty)", " Next=Down", "", "");
+                #endif
+                #else
+                displayShow(" MSG APRS>", "From --> INVALID", rawMessage.length() ? rawMessage : "(empty)", "", "", " Next=Down");
+                #endif
+                break;
+            }
+
+            String msgSender = rawMessage.substring(0, commaPos);
+            String msgText = rawMessage.substring(commaPos + 1);
+
+            #ifdef HAS_TFT
+            #if defined(HELTEC_WIRELESS_TRACKER)
+            displayShow(" MSG APRS>", "From --> " + msgSender, msgText," Next=Down", "", "");
+            #else // T-Deck
+            displayShow("MSG APRS>", "From --> " + msgSender, msgText," Next=Down", "", "");
+            #endif
+            #else
+            displayShow(" MSG APRS>", "From --> " + msgSender, msgText, "", "", " Next=Down");
+            #endif
+            }
+            break;
             case 11:    // 1.Messages ---> Messages Write
                 displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "> Write", "  Delete", "  APRSThursday", lastLine);
                 break;
