@@ -133,6 +133,10 @@ namespace UIMapManager {
     // NAV priority flag: when true, raster cache is disabled
     static volatile bool navModeActive = false;
 
+    // Async NAV render state
+    static volatile bool navRenderPending = false;
+    static lv_timer_t* nav_poll_timer = nullptr;
+
     // Switch zoom table and recalculate index to nearest available zoom
     void switchZoomTable(const int* newTable, int newCount) {
         map_available_zooms = newTable;
@@ -157,6 +161,7 @@ namespace UIMapManager {
     // Cost: ~10-50ms (memcpy 1.2MB + station icons) vs 500-3000ms for full NAV re-render.
     static void refreshStationOverlay() {
         if (!map_canvas || !map_canvas_buf) return;
+        if (navRenderPending) return;  // Core 0 is writing to the sprite — don't read it
 
         if (navModeActive && persistentViewportSprite) {
             // NAV mode: restore clean background from cached sprite (no station artifacts)
@@ -191,7 +196,7 @@ namespace UIMapManager {
     // This eliminates the 500-3000ms UI freeze every 10 seconds when stationary.
     static void map_refresh_timer_cb(lv_timer_t* timer) {
         if (screen_map && lv_scr_act() == screen_map
-            && !touch_dragging && !redraw_in_progress) {
+            && !touch_dragging && !redraw_in_progress && !navRenderPending) {
             float prevLat = map_center_lat;
             float prevLon = map_center_lon;
 
@@ -1101,6 +1106,55 @@ namespace UIMapManager {
     }
 
     // Redraw only canvas content without recreating screen (for zoom)
+    // Poll timer: checks if async NAV render on Core 0 is done, applies result
+    static void nav_render_poll_cb(lv_timer_t* timer) {
+        if (!navRenderPending || !MapEngine::mapEventGroup) return;
+
+        EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
+        if (!(bits & MAP_EVENT_NAV_DONE)) return;
+
+        // Render complete — apply result on Core 1
+        xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
+        navRenderPending = false;
+
+        // Copy rendered sprite to canvas
+        if (persistentViewportSprite && map_canvas_buf) {
+            uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
+            if (src) {
+                memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
+            }
+        }
+
+        // Draw stations on top
+        cleanup_station_buttons();
+        draw_station_traces();
+        update_station_objects();
+
+        if (map_info_label) {
+            char info_text[64];
+            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
+                     map_center_lat, map_center_lon, mapStationsCount);
+            lv_label_set_text(map_info_label, info_text);
+        }
+
+        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+        lv_obj_invalidate(map_canvas);
+
+        if (map_refresh_timer) lv_timer_reset(map_refresh_timer);
+
+        mainThreadLoading = false;
+        redraw_in_progress = false;
+
+        // Stop poll timer
+        if (nav_poll_timer) {
+            lv_timer_del(nav_poll_timer);
+            nav_poll_timer = nullptr;
+        }
+
+        ESP_LOGI(TAG, "Async NAV render applied");
+    }
+
     void redraw_map_canvas() {
         if (!map_canvas || !map_canvas_buf || !map_title_label) {
             screen_map = nullptr; // Force recreation
@@ -1109,7 +1163,8 @@ namespace UIMapManager {
             return;
         }
 
-        if (redraw_in_progress) return;  // Prevent overlapping redraws
+        // Allow re-enqueue during async NAV render (xQueueOverwrite keeps latest)
+        if (redraw_in_progress && !navRenderPending) return;
         redraw_in_progress = true;
 
         // Pause async preloading while we load tiles (avoid SD contention)
@@ -1122,9 +1177,6 @@ namespace UIMapManager {
 
         // Clean up old station buttons before redrawing
         cleanup_station_buttons();
-
-        // Clear canvas with dark slate gray background
-        lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
 
         // Recalculate tile positions
         int centerTileX, centerTileY;
@@ -1193,41 +1245,41 @@ namespace UIMapManager {
                     switchZoomTable(nav_zooms, nav_zoom_count);
                 }
 
-                // NAV viewport rendering (IceNav-v3 pattern)
-                // Temporarily unsubscribe loopTask from WDT — rendering at low zoom
-                // can take 10-30s with thousands of features (IceNav doesn't subscribe either)
-                esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
-
-                // Build region pointer array for renderNavViewport
-                const char* regionPtrs[NAV_MAX_REGIONS];
-                for (int r = 0; r < navRegionCount; r++) regionPtrs[r] = navRegions[r].c_str();
-
+                // Enqueue async NAV render on Core 0 (non-blocking)
                 if (persistentViewportSprite) {
-                    ESP_LOGI(TAG, "Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB",
+                    MapEngine::NavRenderRequest req;
+                    req.centerLat = map_center_lat;
+                    req.centerLon = map_center_lon;
+                    req.zoom = (uint8_t)map_current_zoom;
+                    req.targetSprite = persistentViewportSprite;
+                    req.regionCount = navRegionCount;
+                    for (int r = 0; r < navRegionCount && r < 8; r++) {
+                        strncpy(req.regions[r], navRegions[r].c_str(), 63);
+                        req.regions[r][63] = '\0';
+                    }
+
+                    MapEngine::enqueueNavRender(req);
+                    navRenderPending = true;
+
+                    // Start 100ms poll timer to detect render completion
+                    if (nav_poll_timer) lv_timer_del(nav_poll_timer);
+                    nav_poll_timer = lv_timer_create(nav_render_poll_cb, 100, NULL);
+
+                    ESP_LOGI(TAG, "NAV render enqueued - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
-                    hasTiles = MapEngine::renderNavViewport(
-                        map_center_lat, map_center_lon, (uint8_t)map_current_zoom,
-                        *persistentViewportSprite, regionPtrs, navRegionCount);
-
-                    if (hasTiles) {
-                        uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
-                        if (src && map_canvas_buf) {
-                            memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
-                        }
-                    }
-                } else {
-                    ESP_LOGW(TAG, "No viewport sprite available for NAV rendering");
                 }
 
-                // Re-subscribe loopTask to WDT
-                esp_task_wdt_add(xTaskGetCurrentTaskHandle());
-                esp_task_wdt_reset();
+                // Return early — poll timer handles memcpy + stations when done
+                // Keep redraw_in_progress = true until poll timer clears it
+                return;
             } else {
                 if (navModeActive) {
                     navModeActive = false;
                     switchZoomTable(raster_zooms, raster_zoom_count);
                 }
+                // Clear canvas background (raster only — NAV keeps previous frame visible)
+                lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
                 // Raster per-tile rendering (PNG/JPG via cache)
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {

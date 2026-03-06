@@ -38,12 +38,17 @@ namespace MapEngine {
     static lv_obj_t* canvas_to_invalidate_ = nullptr;
 
     // Render lock: held for the entire renderNavViewport() duration.
-    // clearTileCache/closeAllNpkSlots defer when this is held (Phase 2: cross-core safety).
+    // clearTileCache/closeAllNpkSlots defer when this is held.
     SemaphoreHandle_t renderLock = nullptr;
     static volatile bool renderActive_ = false;
+    static volatile bool renderPending_ = false;   // Request queued, not yet started
     static volatile bool deferredClearRequested = false;
 
-    bool isRenderActive() { return renderActive_; }
+    bool isRenderActive() { return renderActive_ || renderPending_; }
+
+    // Async NAV rendering
+    EventGroupHandle_t mapEventGroup = nullptr;
+    QueueHandle_t navRenderQueue = nullptr;
 
     // Static vectors for AEL polygon filler (PSRAM to preserve DRAM)
     static std::vector<UIMapManager::Edge, PSRAMAllocator<UIMapManager::Edge>> edgePool;
@@ -319,35 +324,52 @@ namespace MapEngine {
         return success;
     }
 
-    // Background task to render map tiles on Core 0
+    // Background task on Core 0: handles raster tile decoding + async NAV viewport rendering
     static void mapRenderTask(void* param) {
         RenderRequest request;
+        NavRenderRequest navReq;
         ESP_LOGI(TAG, "Render task started on Core 0");
 
         while (true) {
-            if (xQueueReceive(mapRenderQueue, &request, portMAX_DELAY) == pdTRUE) {
+            // Priority: NAV viewport requests (latest-wins — drain queue)
+            if (navRenderQueue && xQueueReceive(navRenderQueue, &navReq, 0) == pdTRUE) {
+                NavRenderRequest latest = navReq;
+                while (xQueueReceive(navRenderQueue, &latest, 0) == pdTRUE) {}
+
+                renderPending_ = false;
+                xEventGroupClearBits(mapEventGroup, MAP_EVENT_NAV_DONE);
+
+                const char* regionPtrs[8];
+                for (int r = 0; r < latest.regionCount && r < 8; r++)
+                    regionPtrs[r] = latest.regions[r];
+
+                ESP_LOGI(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
+                              latest.zoom, latest.centerLat, latest.centerLon);
+
+                renderNavViewport(latest.centerLat, latest.centerLon, latest.zoom,
+                                  *latest.targetSprite, regionPtrs, latest.regionCount);
+
+                xEventGroupSetBits(mapEventGroup, MAP_EVENT_NAV_DONE);
+                continue;
+            }
+
+            // Raster tile requests (50ms timeout to re-check NAV queue promptly)
+            if (xQueueReceive(mapRenderQueue, &request, pdMS_TO_TICKS(50)) == pdTRUE) {
                 if (request.targetSprite) {
                     bool success = false;
-                    // The renderTile function handles its own mutex for file access.
-                    // We only need to lock when accessing the shared sprite, which renderTile does internally.
-                    // No, wait, renderTile takes a reference to the sprite. We should lock here.
                     if (xSemaphoreTake(spriteMutex, portMAX_DELAY) == pdTRUE) {
                         success = renderTile(request.path, request.xOffset, request.yOffset, *request.targetSprite, (uint8_t)request.zoom);
                         xSemaphoreGive(spriteMutex);
                     }
 
                     if (success) {
-                        // Caching is done here, after the sprite is successfully rendered
                         addToCache(request.path, request.zoom, request.tileX, request.tileY, request.targetSprite);
                     } else {
-                        // If render failed, delete the sprite to prevent memory leaks
                         ESP_LOGE(TAG, "Render failed for %s, cleaning up sprite.", request.path);
                         request.targetSprite->deleteSprite();
                         delete request.targetSprite;
                     }
 
-                    // Request a redraw on the LVGL thread regardless of success
-                    // to show either the new tile or a cleared area.
                     lv_async_call(invalidate_map_canvas_cb, canvas_to_invalidate_);
                 }
             }
@@ -355,6 +377,14 @@ namespace MapEngine {
     }
 
     void stopRenderTask() {
+        // Wait for any active render to finish before killing the task
+        if (renderLock) {
+            xSemaphoreTake(renderLock, pdMS_TO_TICKS(15000));
+            xSemaphoreGive(renderLock);
+        }
+        renderPending_ = false;
+        renderActive_ = false;
+
         if (mapRenderTaskHandle) {
             vTaskDelete(mapRenderTaskHandle);
             mapRenderTaskHandle = nullptr;
@@ -362,6 +392,14 @@ namespace MapEngine {
         if (mapRenderQueue) {
             vQueueDelete(mapRenderQueue);
             mapRenderQueue = nullptr;
+        }
+        if (navRenderQueue) {
+            vQueueDelete(navRenderQueue);
+            navRenderQueue = nullptr;
+        }
+        if (mapEventGroup) {
+            vEventGroupDelete(mapEventGroup);
+            mapEventGroup = nullptr;
         }
         if (spriteMutex) {
             vSemaphoreDelete(spriteMutex);
@@ -377,12 +415,20 @@ namespace MapEngine {
         ESP_LOGI(TAG, "Render task stopped.");
     }
 
+    void enqueueNavRender(const NavRenderRequest& req) {
+        if (!navRenderQueue) return;
+        renderPending_ = true;
+        xQueueOverwrite(navRenderQueue, &req);
+    }
+
     void startRenderTask(lv_obj_t* canvas_to_invalidate) {
         if (mapRenderTaskHandle) return;
 
         canvas_to_invalidate_ = canvas_to_invalidate;
         spriteMutex = xSemaphoreCreateMutex();
         mapRenderQueue = xQueueCreate(10, sizeof(RenderRequest));
+        navRenderQueue = xQueueCreate(1, sizeof(NavRenderRequest));
+        mapEventGroup = xEventGroupCreate();
 
         // Allocate waterway label buffers in PSRAM (freed in stopRenderTask)
         if (!wlScreenX) wlScreenX = (int*)heap_caps_malloc(WLABEL_MAX_PTS * sizeof(int), MALLOC_CAP_SPIRAM);
@@ -453,10 +499,15 @@ namespace MapEngine {
     }
 
     void clearTileCache() {
-        // If render is active (Phase 2: on another core), defer the clear
+        // Defer if render is active or queued on Core 0
+        if (isRenderActive()) {
+            deferredClearRequested = true;
+            ESP_LOGW(TAG, "clearTileCache deferred (render active/pending)");
+            return;
+        }
         if (renderLock && xSemaphoreTake(renderLock, 0) != pdTRUE) {
             deferredClearRequested = true;
-            ESP_LOGW(TAG, "clearTileCache deferred (render active)");
+            ESP_LOGW(TAG, "clearTileCache deferred (render lock held)");
             return;
         }
         clearNavCache();
@@ -2120,8 +2171,7 @@ namespace MapEngine {
         if (deferredClearRequested) {
             deferredClearRequested = false;
             ESP_LOGI(TAG, "Processing deferred clearTileCache");
-            clearNavCache();
-            initTileCache();
+            clearTileCache();
         }
 
         return result;

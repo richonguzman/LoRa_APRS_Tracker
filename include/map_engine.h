@@ -11,6 +11,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include <freertos/event_groups.h>
 #include <vector>
 #include "nav_types.h"
 
@@ -42,11 +43,27 @@ namespace MapEngine {
 
     // Render lock: protects the entire render cycle.
     // Prevents clearTileCache / closeAllNpkSlots from running during render.
-    // Phase 1: synchronous (no contention), infrastructure for Phase 2 async.
     extern SemaphoreHandle_t renderLock;
 
-    // True when renderNavViewport is executing (fast check without mutex)
+    // True when renderNavViewport is executing or queued (fast check without mutex)
     bool isRenderActive();
+
+    // Async NAV rendering: EventGroup + request queue
+    #define MAP_EVENT_NAV_DONE  (1 << 0)
+    extern EventGroupHandle_t mapEventGroup;
+    extern QueueHandle_t navRenderQueue;
+
+    // NAV viewport render request (Core 1 → Core 0)
+    struct NavRenderRequest {
+        float centerLat;
+        float centerLon;
+        uint8_t zoom;
+        LGFX_Sprite* targetSprite;
+        char regions[8][64];
+        int regionCount;
+    };
+
+    void enqueueNavRender(const NavRenderRequest& req);
 
     // Function declarations
     void startRenderTask(lv_obj_t* canvas_to_invalidate);
