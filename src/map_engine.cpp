@@ -37,6 +37,14 @@ namespace MapEngine {
     static TaskHandle_t mapRenderTaskHandle = nullptr;
     static lv_obj_t* canvas_to_invalidate_ = nullptr;
 
+    // Render lock: held for the entire renderNavViewport() duration.
+    // clearTileCache/closeAllNpkSlots defer when this is held (Phase 2: cross-core safety).
+    SemaphoreHandle_t renderLock = nullptr;
+    static volatile bool renderActive_ = false;
+    static volatile bool deferredClearRequested = false;
+
+    bool isRenderActive() { return renderActive_; }
+
     // Static vectors for AEL polygon filler (PSRAM to preserve DRAM)
     static std::vector<UIMapManager::Edge, PSRAMAllocator<UIMapManager::Edge>> edgePool;
     static std::vector<int, PSRAMAllocator<int>> edgeBuckets;
@@ -401,6 +409,11 @@ namespace MapEngine {
 
     // Initialize tile cache and pre-reserve render buffers
     void initTileCache() {
+        // Create render lock once (persists for the entire session)
+        if (!renderLock) {
+            renderLock = xSemaphoreCreateMutex();
+        }
+
         for (auto& cachedTile : tileCache) {
             if (cachedTile.sprite) {
                 cachedTile.sprite->deleteSprite();
@@ -440,8 +453,15 @@ namespace MapEngine {
     }
 
     void clearTileCache() {
+        // If render is active (Phase 2: on another core), defer the clear
+        if (renderLock && xSemaphoreTake(renderLock, 0) != pdTRUE) {
+            deferredClearRequested = true;
+            ESP_LOGW(TAG, "clearTileCache deferred (render active)");
+            return;
+        }
         clearNavCache();
         initTileCache();
+        if (renderLock) xSemaphoreGive(renderLock);
     }
 
     // Shrink projection buffers to baseline capacity to prevent memory bloat
@@ -1281,6 +1301,10 @@ namespace MapEngine {
     // =========================================================================
     bool renderNavViewport(float centerLat, float centerLon, uint8_t zoom,
                            LGFX_Sprite &map, const char** regions, int regionCount) {
+        // Acquire render lock — prevents clearTileCache/closeAllNpkSlots during render
+        if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+        renderActive_ = true;
+
         esp_task_wdt_reset();
         uint64_t startTime = esp_timer_get_time();
 
@@ -2087,7 +2111,20 @@ namespace MapEngine {
                       (endTime - startTime) / 1000, (loadEnd - startTime) / 1000,
                       totalFeatures, navCacheHits, navCacheMisses, ESP.getFreePsram());
 
-        return !tileBuffers.empty();
+        bool result = !tileBuffers.empty();
+
+        // Release render lock + process deferred operations
+        renderActive_ = false;
+        if (renderLock) xSemaphoreGive(renderLock);
+
+        if (deferredClearRequested) {
+            deferredClearRequested = false;
+            ESP_LOGI(TAG, "Processing deferred clearTileCache");
+            clearNavCache();
+            initTileCache();
+        }
+
+        return result;
     }
 
     // Render a NAV1 vector tile using IceNav-v3 patterns:

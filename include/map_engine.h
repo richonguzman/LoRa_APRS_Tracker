@@ -15,7 +15,7 @@
 #include "nav_types.h"
 
 namespace MapEngine {
-    
+
     struct CachedTile
     {
         lgfx::LGFX_Sprite* sprite;
@@ -24,7 +24,7 @@ namespace MapEngine {
         bool isValid;
         char filePath[64];
     };
-    
+
     // Request for the background rendering task
     struct RenderRequest {
         char path[128];
@@ -39,6 +39,14 @@ namespace MapEngine {
     // Handles for the asynchronous rendering system
     extern QueueHandle_t mapRenderQueue;
     extern SemaphoreHandle_t spriteMutex;
+
+    // Render lock: protects the entire render cycle.
+    // Prevents clearTileCache / closeAllNpkSlots from running during render.
+    // Phase 1: synchronous (no contention), infrastructure for Phase 2 async.
+    extern SemaphoreHandle_t renderLock;
+
+    // True when renderNavViewport is executing (fast check without mutex)
+    bool isRenderActive();
 
     // Function declarations
     void startRenderTask(lv_obj_t* canvas_to_invalidate);

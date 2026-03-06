@@ -1152,7 +1152,12 @@ namespace UIMapManager {
             char navCheckPath[128];
             bool isNavMode = false;
             if (navRegionCount > 0 && map_current_zoom >= 9) {
-                if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+                // Skip SD.exists() probe when already in NAV mode — avoids SPI bus
+                // contention with renderNavViewport (Phase 2: runs on another core).
+                // NAV→raster transition only happens on zoom-out below Z9 (handled above).
+                if (navModeActive) {
+                    isNavMode = true;
+                } else if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
                     for (int r = 0; r < navRegionCount && !isNavMode; r++) {
                         // Try NPK2 pack file first
                         snprintf(navCheckPath, sizeof(navCheckPath), "/LoRa_Tracker/VectMaps/%s/Z%d.nav",
@@ -1908,7 +1913,9 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                 char navCheckPath[128];
                 bool isNavMode = false;
                 if (navRegionCount > 0 && map_current_zoom >= 9) {
-                    if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+                    if (navModeActive) {
+                        isNavMode = true;
+                    } else if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
                         for (int r = 0; r < navRegionCount && !isNavMode; r++) {
                             // Try NPK2 pack file first
                             snprintf(navCheckPath, sizeof(navCheckPath), "/LoRa_Tracker/VectMaps/%s/Z%d.nav",
