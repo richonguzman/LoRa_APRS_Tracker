@@ -1,7 +1,7 @@
 {
 	"beacons": [
 		{
-			"callsign": "",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
@@ -13,7 +13,7 @@
 			"profileLabel": ""
 		},
 		{
-			"callsign": "IU1BOT-2",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
@@ -25,7 +25,7 @@
 			"profileLabel": ""
 		},
 		{
-			"callsign": "IU1BOT-3",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",

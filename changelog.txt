@@ -31,4 +31,5 @@ New “APRSPH Check‑in” Menu Item
 -----------------------------------------------------------
 
 - Added RSSI indication (coordinates and sat number bar)
+- Added status bar with last rx callsign, SNR, bluetooth status
 

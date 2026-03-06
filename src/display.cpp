@@ -17,6 +17,9 @@
  */
 
 #include <logger.h>
+#include <APRSPacketLib.h>
+#include <TinyGPS++.h>
+#include <math.h>
 #include <Wire.h>
 #include "custom_characters.h"
 #include "custom_colors.h"
@@ -84,6 +87,8 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             bluetoothConnected;
+extern TinyGPSPlus      gps;
+extern APRSPacket       lastReceivedPacket;
 
 const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                 "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
@@ -117,6 +122,8 @@ extern logging::Logger logger;
     static const int kTDeckPlusStatusStripY  = 76;
     static const int kTDeckPlusStatusStripH  = 12;
     static const int kTDeckPlusTextX         = 35;
+    static const int kTDeckPlusHudRightLimit = 276;
+    static const int kTDeckPlusCompassCx     = 300;
 #endif
 
 #if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
@@ -137,7 +144,7 @@ extern logging::Logger logger;
                 while (text.length() > 0) {
                     String chunk = text.substring(0, maxLineLength);
                     #if defined(TTGO_T_DECK_PLUS)
-                    int maxX = 320 - (SYMBOL_WIDTH + 8 + 8);
+                    int maxX = (menuDisplay == 0) ? kTDeckPlusHudRightLimit : (320 - (SYMBOL_WIDTH + 8 + 8));
                     while (chunk.length() > 0 && (textX + sprite.textWidth(chunk)) > maxX) {
                         chunk.remove(chunk.length() - 1);
                     }
@@ -325,6 +332,89 @@ extern logging::Logger logger;
         sprite.setTextColor(TFT_WHITE, primaryColorDark);
         int tx = toastX + (toastW - sprite.textWidth(toastText)) / 2;
         sprite.drawString(toastText, tx, toastY + 5);
+    }
+
+    static int getLastPacketBearingToMe() {
+        if (!gps.location.isValid()) return -1;
+        if (!(lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4)) return -1;
+        if (lastReceivedPacket.latitude == 0.0 && lastReceivedPacket.longitude == 0.0) return -1;
+
+        double courseTo = TinyGPSPlus::courseTo(
+            gps.location.lat(),
+            gps.location.lng(),
+            lastReceivedPacket.latitude,
+            lastReceivedPacket.longitude
+        );
+        if (courseTo < 0.0 || courseTo > 360.0) return -1;
+
+        int bearing = static_cast<int>(courseTo + 0.5);
+        if (bearing == 360) bearing = 0;
+        return bearing;
+    }
+
+    static float getLastPacketDistanceKmToMe() {
+        if (!gps.location.isValid()) return -1.0f;
+        if (!(lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4)) return -1.0f;
+        if (lastReceivedPacket.latitude == 0.0 && lastReceivedPacket.longitude == 0.0) return -1.0f;
+
+        double meters = TinyGPSPlus::distanceBetween(
+            gps.location.lat(),
+            gps.location.lng(),
+            lastReceivedPacket.latitude,
+            lastReceivedPacket.longitude
+        );
+        if (meters < 0.0) return -1.0f;
+        return static_cast<float>(meters / 1000.0);
+    }
+
+    static void draw_T_DECK_PlusCompass() {
+        const int cx = kTDeckPlusCompassCx;
+        const int cy = 156;
+        const int radius = 14;
+
+        int bearing = getLastPacketBearingToMe();
+        float distanceKm = getLastPacketDistanceKmToMe();
+
+        sprite.drawCircle(cx, cy, radius, primaryColorLight);
+        sprite.drawCircle(cx, cy, radius - 1, primaryColorDark);
+
+        sprite.setTextFont(1);
+        sprite.setTextSize(1);
+        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+        sprite.drawString("RX", cx - 6, cy - radius - 18);
+        sprite.drawString("N", cx - 2, cy - radius - 8);
+
+        String bearingTxt = "--";
+        if (bearing >= 0) {
+            float angle = (bearing - 90) * DEG_TO_RAD;
+            int tipX = cx + static_cast<int>(cosf(angle) * (radius - 2));
+            int tipY = cy + static_cast<int>(sinf(angle) * (radius - 2));
+            int tailX = cx - static_cast<int>(cosf(angle) * (radius - 6));
+            int tailY = cy - static_cast<int>(sinf(angle) * (radius - 6));
+
+            sprite.drawLine(cx, cy, tailX, tailY, redColorDark);
+            sprite.drawLine(cx, cy, tipX, tipY, greenColorLight);
+            sprite.fillCircle(cx, cy, 2, TFT_WHITE);
+
+            bearingTxt = String(bearing) + "d";
+        } else {
+            sprite.drawLine(cx - 4, cy - 4, cx + 4, cy + 4, greyColorLight);
+            sprite.drawLine(cx - 4, cy + 4, cx + 4, cy - 4, greyColorLight);
+        }
+
+        String distanceTxt = "--";
+        if (distanceKm >= 0.0f) {
+            if (distanceKm < 1.0f) {
+                distanceTxt = String(static_cast<int>(distanceKm * 1000.0f)) + "m";
+            } else {
+                distanceTxt = String(distanceKm, 1) + "km";
+            }
+        }
+
+        int bearingX = cx - (sprite.textWidth(bearingTxt) / 2);
+        int distanceX = cx - (sprite.textWidth(distanceTxt) / 2);
+        sprite.drawString(bearingTxt, bearingX, cy + radius + 3);
+        sprite.drawString(distanceTxt, distanceX, cy + radius + 12);
     }
     #endif
 
@@ -585,7 +675,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
     // Guard: invalid index
     if (symbolIndex < 0 || symbolIndex >= symbolArraySize) {
     #if defined(TTGO_T_DECK_PLUS)
-        int x = 320 - SYMBOL_WIDTH - 8;
+        int x = kTDeckPlusCompassCx - (SYMBOL_WIDTH / 2);
         int y = 96;
         sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
         sprite.setTextFont(2);
@@ -606,7 +696,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 
     #if defined(TTGO_T_DECK_PLUS)
         // Draw symbol in the BODY (background is black)
-        int x = 320 - SYMBOL_WIDTH - 8;
+        int x = kTDeckPlusCompassCx - (SYMBOL_WIDTH / 2);
         int y = 96;
         sprite.drawBitmap(x, y, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
         sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
@@ -691,6 +781,11 @@ void displayShow(const String& header, const String& line1, const String& line2,
                     drawSymbol(symbol, true);
                 }
             }
+            #if defined(TTGO_T_DECK_PLUS)
+                if (menuDisplay == 0) {
+                    draw_T_DECK_PlusCompass();
+                }
+            #endif
         sprite.pushSprite(0,0);
     #else
         const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};
