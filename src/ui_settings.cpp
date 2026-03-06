@@ -1485,6 +1485,9 @@ static void update_bluetooth_screen_status() {
         if (!bluetoothActive) {
             lv_label_set_text(bluetooth_status_label, "OFF");
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xff6b6b), 0);
+        } else if (BLE_Utils::isSleeping()) {
+            lv_label_set_text(bluetooth_status_label, "Sleeping (eco)");
+            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0x888888), 0);
         } else if (bluetoothConnected) {
             lv_label_set_text(bluetooth_status_label, "Connected");
             lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(UIColors::TEXT_GREEN), 0);
@@ -1523,8 +1526,6 @@ static void ble_setup_timer_cb(lv_timer_t *timer) {
     ESP_LOGI(TAG, "BLE setup timer: Free heap: %u bytes, Largest block: %u bytes",
              currentFreeHeap, largestBlock);
 
-    const uint32_t MIN_CONTIGUOUS_HEAP_FOR_BLE = 40 * 1024;
-
     if (Config.bluetooth.useBLE) {
         // Stop WiFi to free DRAM for BLE
         WIFI_Utils::stop();
@@ -1557,13 +1558,22 @@ static void bluetooth_switch_changed(lv_event_t *e) {
     bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
 
     if (is_on) {
-        ESP_LOGI(TAG, "Bluetooth: Scheduling ON");
-        bluetoothActive = true;
-        lv_timer_create(ble_setup_timer_cb, 50, NULL);
-
-        if (bluetooth_status_label) {
-            lv_label_set_text(bluetooth_status_label, "Starting...");
-            lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
+        if (BLE_Utils::isSleeping()) {
+            // Wake from eco sleep — no need for full stop/start cycle
+            ESP_LOGI(TAG, "Bluetooth: Waking from eco sleep");
+            BLE_Utils::wake();
+            if (bluetooth_status_label) {
+                lv_label_set_text(bluetooth_status_label, "Waking...");
+                lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
+            }
+        } else {
+            ESP_LOGI(TAG, "Bluetooth: Scheduling ON");
+            bluetoothActive = true;
+            lv_timer_create(ble_setup_timer_cb, 50, NULL);
+            if (bluetooth_status_label) {
+                lv_label_set_text(bluetooth_status_label, "Starting...");
+                lv_obj_set_style_text_color(bluetooth_status_label, lv_color_hex(0xffa500), 0);
+            }
         }
     } else {
         ESP_LOGI(TAG, "Bluetooth: Scheduling OFF");

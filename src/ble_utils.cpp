@@ -20,6 +20,7 @@
 #include <NimBLEDevice.h>
 #include <esp_wifi.h>
 #include "configuration.h"
+#include "wifi_utils.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
 #include "ble_utils.h"
@@ -295,8 +296,11 @@ namespace BLE_Utils {
             ESP_LOGI(TAG, "Waking up from eco mode (deferred)");
             bleSleeping = false;
             bleLastActivityTime = millis();
+            // Stop WiFi before BLE init — BLE controller needs ~47KB DRAM
+            // that can't coexist with WiFi on ESP32-S3
+            WIFI_Utils::stop();
             setup();
-            ESP_LOGI(TAG, "Eco mode: BLE restarted");
+            ESP_LOGI(TAG, "Eco mode: BLE restarted (WiFi stopped)");
             return;
         }
         bleWakeRequested = false;
@@ -309,8 +313,12 @@ namespace BLE_Utils {
         if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
             bleSleeping = true;
             BLEDevice::deinit();
-            ESP_LOGI(TAG, "Eco mode: BLE stopped after %d min inactivity", BLE_ECO_TIMEOUT / 60000);
             ESP_LOGI(TAG, "Eco mode: BLE stopped (5 min timeout)");
+            // Restart WiFi now that BLE released DRAM
+            if (Config.wifiEnabled) {
+                WIFI_Utils::startStationMode();
+                ESP_LOGI(TAG, "Eco mode: WiFi restarted");
+            }
         }
     }
 
