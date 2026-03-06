@@ -680,6 +680,8 @@ namespace MapEngine {
     }
 
     // Helper: open an NPK2 file into a slot, read header + Y-table. Returns slot pointer.
+    // Holds spiMutex for the entire open+read sequence to prevent SPI bus contention
+    // with display flush on Core 1 during async rendering.
     static NpkSlot* openNpkFile(int slotIdx, const char* packPath, const char* region, uint8_t zoom, uint8_t splitIdx) {
         NpkSlot& s = npkSlots[slotIdx];
 
@@ -693,14 +695,18 @@ namespace MapEngine {
             s.lastAccess = ++npkAccessCounter;
         };
 
-        if (spiMutex != NULL && xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
-            s.file = SD.open(packPath, FILE_READ);
-            xSemaphoreGiveRecursive(spiMutex);
+        if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(2000)) != pdTRUE) {
+            ESP_LOGE(TAG, "openNpkFile: failed to acquire spiMutex for %s", packPath);
+            markSlot();
+            return &s;
         }
 
+        // All SD I/O within a single spiMutex hold
+        s.file = SD.open(packPath, FILE_READ);
         if (!s.file) {
+            xSemaphoreGiveRecursive(spiMutex);
             markSlot();
-            return &s;  // findNpkTileInSlot will return false (no yTable)
+            return &s;
         }
 
         // Read NPK2 header (25 bytes)
@@ -708,6 +714,7 @@ namespace MapEngine {
             memcmp(s.header.magic, "NPK2", 4) != 0) {
             ESP_LOGE(TAG, "Invalid magic in %s (expected NPK2)", packPath);
             s.file.close();
+            xSemaphoreGiveRecursive(spiMutex);
             markSlot();
             return &s;
         }
@@ -716,6 +723,7 @@ namespace MapEngine {
             ESP_LOGE(TAG, "Invalid header in %s (tiles=%u, y_min=%u, y_max=%u)",
                           packPath, s.header.tile_count, s.header.y_min, s.header.y_max);
             s.file.close();
+            xSemaphoreGiveRecursive(spiMutex);
             markSlot();
             return &s;
         }
@@ -727,6 +735,7 @@ namespace MapEngine {
         if (!s.yTable) {
             ESP_LOGE(TAG, "Failed to alloc Y-table (%u bytes)", (unsigned)ytableSize);
             s.file.close();
+            xSemaphoreGiveRecursive(spiMutex);
             markSlot();
             return &s;
         }
@@ -737,10 +746,12 @@ namespace MapEngine {
             heap_caps_free(s.yTable);
             s.yTable = nullptr;
             s.file.close();
+            xSemaphoreGiveRecursive(spiMutex);
             markSlot();
             return &s;
         }
 
+        xSemaphoreGiveRecursive(spiMutex);
         markSlot();
         ESP_LOGI(TAG, "Opened pack: %s (%u tiles, Y %u-%u, Y-table %u bytes)",
                       packPath, s.header.tile_count, s.header.y_min, s.header.y_max, (unsigned)ytableSize);
