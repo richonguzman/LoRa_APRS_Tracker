@@ -296,57 +296,6 @@ namespace UIMapManager {
         tilePreloadTask = nullptr;
     }
 
-    // Queue tiles from adjacent zoom levels for preloading
-    void queueAdjacentZoomTiles(int centerTileX, int centerTileY, int currentZoom) {
-        if (tilePreloadQueue == nullptr || navModeActive) return;
-
-        TileRequest req;
-
-        // Get adjacent zoom levels
-        int prevZoom = -1, nextZoom = -1;
-        for (int i = 0; i < map_zoom_count; i++) {
-            if (map_available_zooms[i] == currentZoom) {
-                if (i > 0) prevZoom = map_available_zooms[i - 1];
-                if (i < map_zoom_count - 1) nextZoom = map_available_zooms[i + 1];
-                break;
-            }
-        }
-
-        // Queue tiles for previous zoom (zoom out = tiles cover larger area)
-        if (prevZoom > 0) {
-            int scale = 1 << (currentZoom - prevZoom);  // e.g., zoom 12->10 = scale 4
-            int prevTileX = centerTileX / scale;
-            int prevTileY = centerTileY / scale;
-
-            // Queue 3x3 grid around the corresponding tile
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    req.tileX = prevTileX + dx;
-                    req.tileY = prevTileY + dy;
-                    req.zoom = prevZoom;
-                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
-                }
-            }
-        }
-
-        // Queue tiles for next zoom (zoom in = tiles cover smaller area)
-        if (nextZoom > 0) {
-            int scale = 1 << (nextZoom - currentZoom);  // e.g., zoom 12->14 = scale 4
-            int nextTileX = centerTileX * scale;
-            int nextTileY = centerTileY * scale;
-
-            // Queue 3x3 grid around the corresponding tile
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    req.tileX = nextTileX + dx;
-                    req.tileY = nextTileY + dy;
-                    req.zoom = nextZoom;
-                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
-                }
-            }
-        }
-    }
-
     // ============ END ASYNC TILE PRELOADING ============
 
     // Clear station hit zones
@@ -895,7 +844,14 @@ namespace UIMapManager {
             return false;
         }
 
-        // 3. Allocate a new sprite for the tile
+        // 3. Ensure enough PSRAM before allocating sprite
+        const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2; // RGB565
+        if (!MapEngine::ensurePSRAMAvailable(spriteSize)) {
+            ESP_LOGW(TAG, "Not enough PSRAM for preload after eviction");
+            return false;
+        }
+
+        // 4. Allocate a new sprite for the tile
         LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
         newSprite->setPsram(true);
         if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
@@ -904,10 +860,10 @@ namespace UIMapManager {
             return false;
         }
 
-        // 4. Render the tile directly (synchronous call). The render function handles its own mutex.
+        // 5. Render the tile directly (synchronous call). The render function handles its own mutex.
         bool success = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
 
-        // 5. If rendering is successful, add to cache
+        // 6. If rendering is successful, add to cache
         if (success) {
             MapEngine::addToCache(found_path, zoom, tileX, tileY, newSprite);
         } else {
@@ -915,7 +871,7 @@ namespace UIMapManager {
             newSprite->deleteSprite();
             delete newSprite;
         }
-        
+
         return success;
     }
 
@@ -1531,10 +1487,7 @@ namespace UIMapManager {
                 // Schedule redraw (canvas will be recentered after new tiles are drawn)
                 schedule_map_reload();
 
-                // Preload tiles at adjacent zoom levels for fast zoom switch
-                int cX, cY;
-                latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &cX, &cY);
-                queueAdjacentZoomTiles(cX, cY, map_current_zoom);
+                // Adjacent zoom preload removed — saturates PSRAM (see commit 76eee24)
             } else {
                 // Tap (no drag) - check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
@@ -1746,7 +1699,10 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         return false;
     }
 
-    // --- 5. SYNCHRONOUS decode + copy to canvas + cache ---
+    // --- 5. Ensure PSRAM available, then decode + copy to canvas + cache ---
+    const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2; // RGB565
+    MapEngine::ensurePSRAMAvailable(spriteSize);
+
     LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
     newSprite->setPsram(true);
     if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) != nullptr) {

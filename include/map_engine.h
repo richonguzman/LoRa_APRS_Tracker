@@ -77,6 +77,7 @@ namespace MapEngine {
     bool renderTile(const char* path, int16_t xOffset, int16_t yOffset, LGFX_Sprite &map, uint8_t zoom = 0);
     int findCachedTile(int zoom, int tileX, int tileY);
     void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite);
+    bool ensurePSRAMAvailable(size_t needed);
     void copySpriteToCanvasWithClip(lv_obj_t* canvas, LGFX_Sprite* sprite, int offsetX, int offsetY);
     LGFX_Sprite* getCachedTileSprite(int index);
 

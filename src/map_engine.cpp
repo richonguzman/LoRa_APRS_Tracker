@@ -565,7 +565,9 @@ namespace MapEngine {
     }
 
     // Add a tile to the NAV cache — takes ownership of the data pointer
-    static void addNavCache(uint8_t regionIdx, uint8_t zoom, int tileX, int tileY, uint8_t* data, size_t size) {
+    static void addNavCache(uint8_t regionIdx, uint8_t zoom, int tileX, int tileY,
+                            uint8_t* data, size_t size,
+                            const std::vector<uint8_t*>* inUse = nullptr) {
         NavCacheEntry entry;
         entry.data = data;
         entry.size = size;
@@ -579,17 +581,29 @@ namespace MapEngine {
             navCache.push_back(entry);
             return;
         }
-        // Evict LRU entry
-        int lruIdx = 0;
-        uint32_t lruMin = navCache[0].lastAccess;
-        for (int i = 1; i < (int)navCache.size(); i++) {
+        // Evict LRU entry, skipping any that are currently in use
+        int lruIdx = -1;
+        uint32_t lruMin = UINT32_MAX;
+        for (int i = 0; i < (int)navCache.size(); i++) {
             if (navCache[i].lastAccess < lruMin) {
+                if (inUse) {
+                    bool used = false;
+                    for (const auto* p : *inUse) {
+                        if (p == navCache[i].data) { used = true; break; }
+                    }
+                    if (used) continue;
+                }
                 lruMin = navCache[i].lastAccess;
                 lruIdx = i;
             }
         }
-        free(navCache[lruIdx].data);
-        navCache[lruIdx] = entry;
+        if (lruIdx >= 0) {
+            free(navCache[lruIdx].data);
+            navCache[lruIdx] = entry;
+        } else {
+            // All entries in use — grow beyond NAV_CACHE_SIZE to avoid data loss
+            navCache.push_back(entry);
+        }
     }
 
     // Evict LRU navCache entries NOT referenced by inUse until largest free PSRAM
@@ -1093,6 +1107,20 @@ namespace MapEngine {
         tileCache.erase(lruIt);
     }
 
+    // Proactively evict LRU raster tiles until PSRAM largest free block >= needed
+    bool ensurePSRAMAvailable(size_t needed) {
+        int evicted = 0;
+        while (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed && !tileCache.empty()) {
+            evictLRUTile();
+            evicted++;
+        }
+        if (evicted > 0) {
+            ESP_LOGI(TAG, "Evicted %d raster tile(s), largest PSRAM block: %u KB",
+                          evicted, (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
+        }
+        return heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed;
+    }
+
     // Add a rendered tile sprite to the cache
     void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite) {
         if (maxCachedTiles == 0 || !sourceSprite) {
@@ -1403,7 +1431,15 @@ namespace MapEngine {
         int maxDy = (viewportH - centerTileOriginY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
 
         // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
-        std::vector<uint8_t*> tileBuffers;  // Pointers into navCache — do NOT free
+        struct ResolvedTile {
+            uint8_t* data;
+            size_t   size;
+            int16_t  tileOffsetX, tileOffsetY;
+        };
+        static ResolvedTile resolved[36];  // 6×6 max viewport tiles
+        int resolvedCount = 0;
+        static std::vector<uint8_t*> inUseData;  // Protects resolved tiles from eviction
+        inUseData.clear();
         int navCacheHits = 0, navCacheMisses = 0;
         for (int i = 0; i < 16; i++) globalLayers[i].clear();
         // One-time PSRAM reserve: reduces reallocations on first render
@@ -1426,7 +1462,7 @@ namespace MapEngine {
         // Build tile list sorted center-outward so PSRAM exhaustion
         // degrades edges first instead of cutting a whole quadrant
         struct TileSlot { int dx, dy; int distSq; };
-        TileSlot tileOrder[36];  // 6×6 max
+        static TileSlot tileOrder[36];  // 6×6 max
         int tileCount = 0;
         for (int dy = minDy; dy <= maxDy; dy++) {
             for (int dx = minDx; dx <= maxDx; dx++) {
@@ -1495,13 +1531,176 @@ namespace MapEngine {
             int      tileX, tileY;
             uint8_t  regionIdx;
         };
-        PendingTileRead pendingReads[72];  // 6×6 grid × 2 regions max
+        static PendingTileRead pendingReads[72];  // 6×6 grid × 2 regions max
         int pendingCount = 0;
 
-        // Helper lambda to dispatch features from a loaded tile into globalLayers/textRefs
-        auto dispatchFeatures = [&](uint8_t* data, size_t fileSize,
-                                     int16_t tileOffsetX, int16_t tileOffsetY) {
-            // Extract background color from first feature if it's a background polygon
+        // ================================================================
+        // Phase 1 — LOAD: resolve all tiles before any feature dispatch.
+        // Cache hits are recorded; misses are read from SD.
+        // No FeatureRef exists yet, so eviction is safe.
+        // ================================================================
+        for (int ti = 0; ti < tileCount; ti++) {
+            int dx = tileOrder[ti].dx;
+            int dy = tileOrder[ti].dy;
+            int tileX = centerTileIdxX + dx;
+            int tileY = centerTileIdxY + dy;
+            int16_t tileOffsetX = (int16_t)(centerTileOriginX + dx * MAP_TILE_SIZE);
+            int16_t tileOffsetY = (int16_t)(centerTileOriginY + dy * MAP_TILE_SIZE);
+
+            if (tileOffsetX + MAP_TILE_SIZE <= 0 || tileOffsetX >= viewportW) continue;
+            if (tileOffsetY + MAP_TILE_SIZE <= 0 || tileOffsetY >= viewportH) continue;
+
+            for (int r = 0; r < activeRegionCount; r++) {
+                uint8_t regionIdx = activeRegions[r].origIdx;
+                int cacheIdx = findNavCache(regionIdx, zoom, tileX, tileY);
+                if (cacheIdx >= 0) {
+                    navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
+                    navCacheHits++;
+                    if (resolvedCount < 36) {
+                        resolved[resolvedCount++] = {
+                            navCache[cacheIdx].data, navCache[cacheIdx].size,
+                            tileOffsetX, tileOffsetY
+                        };
+                        inUseData.push_back(navCache[cacheIdx].data);
+                    }
+                } else {
+                    NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
+                    UIMapManager::Npk2IndexEntry entry;
+                    if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)
+                        && pendingCount < 72) {
+                        pendingReads[pendingCount++] = {
+                            slot, entry, tileOffsetX, tileOffsetY,
+                            tileX, tileY, regionIdx
+                        };
+                    }
+                }
+            }
+        }
+
+        // Sort pending reads: by file offset if all fit, center-outward otherwise
+        size_t totalPendingSize = 0;
+        for (int i = 0; i < pendingCount; i++)
+            totalPendingSize += pendingReads[i].entry.size;
+
+        if (totalPendingSize <= heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)) {
+            std::sort(pendingReads, pendingReads + pendingCount,
+                      [](const PendingTileRead& a, const PendingTileRead& b) {
+                          if (a.slot != b.slot) return a.slot < b.slot;
+                          return a.entry.offset < b.entry.offset;
+                      });
+        } else {
+            std::sort(pendingReads, pendingReads + pendingCount,
+                      [centerTileIdxX, centerTileIdxY](const PendingTileRead& a, const PendingTileRead& b) {
+                          int adx = a.tileX - centerTileIdxX, ady = a.tileY - centerTileIdxY;
+                          int bdx = b.tileX - centerTileIdxX, bdy = b.tileY - centerTileIdxY;
+                          return (adx*adx + ady*ady) < (bdx*bdx + bdy*bdy);
+                      });
+        }
+
+        // Read pending tiles from SD into navCache
+        for (int i = 0; i < pendingCount; i++) {
+            esp_task_wdt_reset();
+            auto& pr = pendingReads[i];
+            uint8_t* data = nullptr;
+            size_t fileSize = 0;
+
+            if (!readNpkTileData(pr.slot, &pr.entry, &data, &fileSize)) {
+                if (evictUnusedNavCache(inUseData, pr.entry.size)) {
+                    readNpkTileData(pr.slot, &pr.entry, &data, &fileSize);
+                }
+                if (!data) continue;
+            }
+            if (!data) continue;
+
+            if (memcmp(data, "NAV1", 4) != 0) {
+                ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
+                free(data);
+                continue;
+            }
+
+            addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, fileSize, &inUseData);
+            navCacheMisses++;
+
+            if (resolvedCount < 36) {
+                resolved[resolvedCount++] = { data, fileSize, pr.tileOffsetX, pr.tileOffsetY };
+                inUseData.push_back(data);
+            }
+        }
+
+        uint64_t loadEnd = esp_timer_get_time();
+
+        // ================================================================
+        // Phase 2 — COUNT: scan all resolved tiles to get exact feature
+        // counts per vector. Enables single reserve() per vector.
+        // ================================================================
+        uint32_t layerCounts[16] = {};
+        uint32_t textCount = 0, waterwayCount = 0;
+
+        for (int t = 0; t < resolvedCount; t++) {
+            uint8_t* data = resolved[t].data;
+            size_t fileSize = resolved[t].size;
+            if (fileSize < 22 + 13) continue;
+
+            uint16_t feature_count;
+            memcpy(&feature_count, data + 4, 2);
+            uint8_t* p = data + 22;
+
+            for (uint16_t i = 0; i < feature_count; i++) {
+                if (p + 13 > data + fileSize) break;
+                uint8_t geomType = p[0];
+                uint8_t zoomPriority = p[3];
+                uint16_t payloadSize;
+                memcpy(&payloadSize, p + 11, 2);
+                if (p + 13 + payloadSize > data + fileSize) break;
+
+                uint8_t minZoom = zoomPriority >> 4;
+                if (minZoom > zoom) { p += 13 + payloadSize; continue; }
+
+                uint8_t priority = zoomPriority & 0x0F;
+                if (priority >= 16) priority = 15;
+
+                if (geomType == GEOM_TEXT) textCount++;
+                else if (geomType == GEOM_TEXT_LINE) { if (zoom >= 15) waterwayCount++; }
+                else layerCounts[priority]++;
+
+                p += 13 + payloadSize;
+            }
+        }
+
+        // Pre-reserve vectors — single allocation, no per-feature fragmentation
+        ESP_LOGI(TAG, "Phase 2 counts: text=%u ww=%u layers=[%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u] PSRAM free=%u largest=%u",
+                 textCount, waterwayCount,
+                 layerCounts[0], layerCounts[1], layerCounts[2], layerCounts[3],
+                 layerCounts[4], layerCounts[5], layerCounts[6], layerCounts[7],
+                 layerCounts[8], layerCounts[9], layerCounts[10], layerCounts[11],
+                 layerCounts[12], layerCounts[13], layerCounts[14], layerCounts[15],
+                 (unsigned)ESP.getFreePsram(),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+        for (int i = 0; i < 16; i++) {
+            if (layerCounts[i] > globalLayers[i].capacity()) {
+                globalLayers[i].reserve(layerCounts[i]);
+                if (globalLayers[i].capacity() < layerCounts[i]) {
+                    ESP_LOGE(TAG, "Reserve FAILED for layer %d: requested %u, got %u",
+                             i, layerCounts[i], (unsigned)globalLayers[i].capacity());
+                }
+            }
+        }
+        if (textCount > textRefs.capacity()) textRefs.reserve(textCount);
+        if (waterwayCount > waterwayRefs.capacity()) waterwayRefs.reserve(waterwayCount);
+        ESP_LOGI(TAG, "Phase 2 reserve done, PSRAM free=%u largest=%u",
+                 (unsigned)ESP.getFreePsram(),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+
+        // ================================================================
+        // Phase 3 — DISPATCH: populate globalLayers/textRefs/waterwayRefs.
+        // Vectors are pre-reserved, no reallocation during this loop.
+        // ================================================================
+        for (int t = 0; t < resolvedCount; t++) {
+            uint8_t* data = resolved[t].data;
+            size_t fileSize = resolved[t].size;
+            int16_t tileOffsetX = resolved[t].tileOffsetX;
+            int16_t tileOffsetY = resolved[t].tileOffsetY;
+
             if (!bgColorExtracted && fileSize >= 22 + 13) {
                 uint8_t ft0Type = data[22];
                 uint8_t ft0Prio = data[25] & 0x0F;
@@ -1511,12 +1710,8 @@ namespace MapEngine {
                 bgColorExtracted = true;
             }
 
-            tileBuffers.push_back(data);
-
             uint16_t feature_count;
             memcpy(&feature_count, data + 4, 2);
-
-            // Parse features and dispatch to priority layers (IceNav-v3 zero-copy pattern)
             uint8_t* p = data + 22;
 
             for (uint16_t i = 0; i < feature_count; i++) {
@@ -1529,15 +1724,10 @@ namespace MapEngine {
                 memcpy(&coordCount, p + 9, 2);
                 uint16_t payloadSize;
                 memcpy(&payloadSize, p + 11, 2);
-
                 if (p + 13 + payloadSize > data + fileSize) break;
 
-                // Zoom filtering (IceNav-v3 NavReader pattern)
                 uint8_t minZoom = zoomPriority >> 4;
-                if (minZoom > zoom) {
-                    p += 13 + payloadSize;
-                    continue;
-                }
+                if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
                 uint8_t priority = zoomPriority & 0x0F;
                 if (priority >= 16) priority = 15;
@@ -1550,140 +1740,22 @@ namespace MapEngine {
                 ref.tileOffsetX = tileOffsetX;
                 ref.tileOffsetY = tileOffsetY;
 
-                if (geomType == GEOM_TEXT) {
-                    if (textRefs.size() == textRefs.capacity()) {
-                        size_t needed = (textRefs.capacity() < 1 ? 1 : textRefs.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    textRefs.push_back(ref);
-                } else if (geomType == GEOM_TEXT_LINE) {
-                    if (zoom < 15) {
-                        p += 13 + payloadSize;
-                        continue;
-                    }
-                    // Curvilinear waterway label — collected for dedicated render pass
-                    if (waterwayRefs.size() == waterwayRefs.capacity()) {
-                        size_t needed = (waterwayRefs.capacity() < 1 ? 1 : waterwayRefs.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    waterwayRefs.push_back(ref);
+                if (geomType == GEOM_TEXT) textRefs.push_back(ref);
+                else if (geomType == GEOM_TEXT_LINE) {
+                    if (zoom >= 15) waterwayRefs.push_back(ref);
                 } else {
-                    auto& layer = globalLayers[priority];
-                    if (layer.size() == layer.capacity()) {
-                        size_t needed = (layer.capacity() < 1 ? 1 : layer.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    layer.push_back(ref);
+                    globalLayers[priority].push_back(ref);
                 }
 
                 p += 13 + payloadSize;
             }
-        };
-
-        for (int ti = 0; ti < tileCount; ti++) {
-                int dx = tileOrder[ti].dx;
-                int dy = tileOrder[ti].dy;
-
-                int tileX = centerTileIdxX + dx;
-                int tileY = centerTileIdxY + dy;
-
-                int16_t tileOffsetX = (int16_t)(centerTileOriginX + dx * MAP_TILE_SIZE);
-                int16_t tileOffsetY = (int16_t)(centerTileOriginY + dy * MAP_TILE_SIZE);
-
-                bool skipX = (tileOffsetX + MAP_TILE_SIZE <= 0 || tileOffsetX >= viewportW);
-                bool skipY = (tileOffsetY + MAP_TILE_SIZE <= 0 || tileOffsetY >= viewportH);
-                if (skipX || skipY) continue;
-
-                for (int r = 0; r < activeRegionCount; r++) {
-                    uint8_t regionIdx = activeRegions[r].origIdx;
-
-                    int cacheIdx = findNavCache(regionIdx, zoom, tileX, tileY);
-                    if (cacheIdx >= 0) {
-                        navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
-                        navCacheHits++;
-                        dispatchFeatures(navCache[cacheIdx].data, navCache[cacheIdx].size,
-                                         tileOffsetX, tileOffsetY);
-                    } else {
-                        NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
-                        UIMapManager::Npk2IndexEntry entry;
-                        if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)
-                            && pendingCount < 72) {
-                            pendingReads[pendingCount++] = {
-                                slot, entry, tileOffsetX, tileOffsetY,
-                                tileX, tileY, regionIdx
-                            };
-                        }
-                    }
-                }
         }
 
-        // --- Phase 2: Sort pending reads ---
-        // If all tiles fit in PSRAM, sort by file offset for sequential SD reads.
-        // Otherwise sort center-outward so PSRAM exhaustion drops edge tiles first.
-        size_t totalPendingSize = 0;
-        for (int i = 0; i < pendingCount; i++)
-            totalPendingSize += pendingReads[i].entry.size;
-
-        if (totalPendingSize <= heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)) {
-            // All fit — sequential reads for speed
-            std::sort(pendingReads, pendingReads + pendingCount,
-                      [](const PendingTileRead& a, const PendingTileRead& b) {
-                          if (a.slot != b.slot) return a.slot < b.slot;
-                          return a.entry.offset < b.entry.offset;
-                      });
-        } else {
-            // Won't fit — center-outward for graceful degradation
-            std::sort(pendingReads, pendingReads + pendingCount,
-                      [centerTileIdxX, centerTileIdxY](const PendingTileRead& a, const PendingTileRead& b) {
-                          int adx = a.tileX - centerTileIdxX, ady = a.tileY - centerTileIdxY;
-                          int bdx = b.tileX - centerTileIdxX, bdy = b.tileY - centerTileIdxY;
-                          return (adx*adx + ady*ady) < (bdx*bdx + bdy*bdy);
-                      });
-        }
-
-        // --- Phase 3: Read tile data and dispatch features ---
-        for (int i = 0; i < pendingCount; i++) {
-            esp_task_wdt_reset();
-            auto& pr = pendingReads[i];
-            uint8_t* data = nullptr;
-            size_t fileSize = 0;
-
-            if (!readNpkTileData(pr.slot, &pr.entry, &data, &fileSize)) {
-                if (evictUnusedNavCache(tileBuffers, pr.entry.size)) {
-                    readNpkTileData(pr.slot, &pr.entry, &data, &fileSize);
-                }
-                if (!data) continue;  // Skip this tile, try smaller ones
-            }
-
-            if (!data) continue;
-
-            if (memcmp(data, "NAV1", 4) != 0) {
-                ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
-                free(data);
-                continue;
-            }
-
-            addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, fileSize);
-            navCacheMisses++;
-
-            dispatchFeatures(data, fileSize, pr.tileOffsetX, pr.tileOffsetY);
-        }
-
-        // Log load stats (IceNav-v3 pattern: maps.cpp:1582-1587)
-        uint64_t loadEnd = esp_timer_get_time();
         int totalFeatures = 0;
         for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
+        totalFeatures += textRefs.size() + waterwayRefs.size();
         ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]",
-                      (loadEnd - startTime) / 1000, (int)tileBuffers.size(), totalFeatures,
+                      (loadEnd - startTime) / 1000, resolvedCount, totalFeatures,
                       minDx, maxDx, minDy, maxDy);
 
         // --- Render all layers (IceNav-v3 pattern: maps.cpp:1546-1569) ---
@@ -2181,7 +2253,7 @@ namespace MapEngine {
                       (endTime - startTime) / 1000, (loadEnd - startTime) / 1000,
                       totalFeatures, navCacheHits, navCacheMisses, ESP.getFreePsram());
 
-        bool result = !tileBuffers.empty();
+        bool result = (resolvedCount > 0);
 
         // Release render lock + process deferred operations
         renderActive_ = false;
