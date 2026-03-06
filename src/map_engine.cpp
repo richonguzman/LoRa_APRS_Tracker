@@ -337,6 +337,14 @@ namespace MapEngine {
                 while (xQueueReceive(navRenderQueue, &latest, 0) == pdTRUE) {}
 
                 renderPending_ = false;
+
+                // Process deferred clear BEFORE rendering (not after)
+                if (deferredClearRequested) {
+                    deferredClearRequested = false;
+                    ESP_LOGI(TAG, "Processing deferred clearTileCache (pre-render)");
+                    clearTileCache();
+                }
+
                 xEventGroupClearBits(mapEventGroup, MAP_EVENT_NAV_DONE);
 
                 const char* regionPtrs[8];
@@ -2178,12 +2186,6 @@ namespace MapEngine {
         // Release render lock + process deferred operations
         renderActive_ = false;
         if (renderLock) xSemaphoreGive(renderLock);
-
-        if (deferredClearRequested) {
-            deferredClearRequested = false;
-            ESP_LOGI(TAG, "Processing deferred clearTileCache");
-            clearTileCache();
-        }
 
         return result;
     }
