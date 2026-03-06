@@ -218,32 +218,136 @@ namespace UIMapManager {
         }
     }
 
-    // ============ DIRECTIONAL TILE PRELOAD ============
+    // ============ ASYNC TILE PRELOADING (Core 1) ============
+    // Structure for tile preload request
+    struct TileRequest {
+        int tileX;
+        int tileY;
+        int zoom;
+    };
+
+    static QueueHandle_t tilePreloadQueue = nullptr;
+    static TaskHandle_t tilePreloadTask = nullptr;
+    static bool preloadTaskRunning = false;
+    static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads
+    #define TILE_PRELOAD_QUEUE_SIZE 20
+
     // Forward declaration
     bool preloadTileToCache(int tileX, int tileY, int zoom);
 
-    // Cache 2 tiles in scroll direction (like IceNav-v3)
-    // Synchronous, same zoom, raster only.
-    static void preloadDirectionalTiles(int centerTileX, int centerTileY, int zoom,
-                                         int8_t dirX, int8_t dirY) {
-        if (navModeActive) return;
+    // Task running on Core 1 to preload tiles in background
+    static void tilePreloadTaskFunc(void* param) {
+        ESP_LOGI(TAG, "Tile preload task started on Core 1");
+        TileRequest req;
 
-        for (int i = 0; i < 2; i++) {
-            int tileX = centerTileX + ((dirX != 0) ? dirX : (i - 1));
-            int tileY = centerTileY + ((dirY != 0) ? dirY : (i - 1));
+        while (preloadTaskRunning) {
+            // Wait while main thread is loading tiles (avoid SD contention)
+            if (mainThreadLoading) {
+                vTaskDelay(pdMS_TO_TICKS(50));
+                continue;
+            }
 
-            if (dirX != 0) { tileX = centerTileX + dirX; tileY = centerTileY + i; }
-            else            { tileX = centerTileX + i;    tileY = centerTileY + dirY; }
+            // Wait for tile request (100ms timeout to check if task should stop)
+            if (xQueueReceive(tilePreloadQueue, &req, pdMS_TO_TICKS(100)) == pdTRUE) {
+                // Re-check flag after queue receive
+                if (mainThreadLoading) continue;
 
-            // Already cached?
-            if (MapEngine::findCachedTile(zoom, tileX, tileY) >= 0) continue;
+                // Check if tile already in cache
+                int cacheIdx = MapEngine::findCachedTile(req.zoom, req.tileX, req.tileY);
+                if (cacheIdx < 0) {
+                    // Not in cache - preload it
+                    ESP_LOGD(TAG, "Preloading tile %d/%d/%d", req.zoom, req.tileX, req.tileY);
+                    preloadTileToCache(req.tileX, req.tileY, req.zoom);
+                }
+            }
+        }
 
-            // Try to load from SD
-            preloadTileToCache(tileX, tileY, zoom);
+        ESP_LOGI(TAG, "Tile preload task stopped");
+        vTaskDelete(NULL);
+    }
+
+    // Start the preload task
+    void startTilePreloadTask() {
+        if (tilePreloadTask != nullptr) return;  // Already running
+
+        // Create queue
+        if (tilePreloadQueue == nullptr) {
+            tilePreloadQueue = xQueueCreate(TILE_PRELOAD_QUEUE_SIZE, sizeof(TileRequest));
+        }
+
+        preloadTaskRunning = true;
+        xTaskCreatePinnedToCore(
+            tilePreloadTaskFunc,
+            "TilePreload",
+            4096,
+            NULL,
+            1,  // Low priority
+            &tilePreloadTask,
+            1   // Core 1
+        );
+    }
+
+    // Stop the preload task
+    void stopTilePreloadTask() {
+        if (tilePreloadTask == nullptr) return;
+
+        preloadTaskRunning = false;
+        vTaskDelay(pdMS_TO_TICKS(200));  // Wait for task to finish
+        tilePreloadTask = nullptr;
+    }
+
+    // Queue tiles from adjacent zoom levels for preloading
+    void queueAdjacentZoomTiles(int centerTileX, int centerTileY, int currentZoom) {
+        if (tilePreloadQueue == nullptr || navModeActive) return;
+
+        TileRequest req;
+
+        // Get adjacent zoom levels
+        int prevZoom = -1, nextZoom = -1;
+        for (int i = 0; i < map_zoom_count; i++) {
+            if (map_available_zooms[i] == currentZoom) {
+                if (i > 0) prevZoom = map_available_zooms[i - 1];
+                if (i < map_zoom_count - 1) nextZoom = map_available_zooms[i + 1];
+                break;
+            }
+        }
+
+        // Queue tiles for previous zoom (zoom out = tiles cover larger area)
+        if (prevZoom > 0) {
+            int scale = 1 << (currentZoom - prevZoom);  // e.g., zoom 12->10 = scale 4
+            int prevTileX = centerTileX / scale;
+            int prevTileY = centerTileY / scale;
+
+            // Queue 3x3 grid around the corresponding tile
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    req.tileX = prevTileX + dx;
+                    req.tileY = prevTileY + dy;
+                    req.zoom = prevZoom;
+                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
+                }
+            }
+        }
+
+        // Queue tiles for next zoom (zoom in = tiles cover smaller area)
+        if (nextZoom > 0) {
+            int scale = 1 << (nextZoom - currentZoom);  // e.g., zoom 12->14 = scale 4
+            int nextTileX = centerTileX * scale;
+            int nextTileY = centerTileY * scale;
+
+            // Queue 3x3 grid around the corresponding tile
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    req.tileX = nextTileX + dx;
+                    req.tileY = nextTileY + dy;
+                    req.zoom = nextZoom;
+                    xQueueSend(tilePreloadQueue, &req, 0);  // Don't block
+                }
+            }
         }
     }
 
-    // ============ END DIRECTIONAL TILE PRELOAD ============
+    // ============ END ASYNC TILE PRELOADING ============
 
     // Clear station hit zones
     void cleanup_station_buttons() {
@@ -871,6 +975,8 @@ namespace UIMapManager {
             lv_timer_del(map_refresh_timer);
             map_refresh_timer = nullptr;
         }
+        // Stop tile preload task
+        stopTilePreloadTask();
         // Keep persistent viewport sprite alive (never free — avoids PSRAM fragmentation)
         // See CLAUDE.md: "Sprites persistants — allouer une seule fois, ne jamais libérer/recréer"
         // Return CPU to 80 MHz for power saving
@@ -1037,7 +1143,7 @@ namespace UIMapManager {
 
         if (map_refresh_timer) lv_timer_reset(map_refresh_timer);
 
-
+        mainThreadLoading = false;
         redraw_in_progress = false;
 
         // Stop poll timer
@@ -1061,6 +1167,8 @@ namespace UIMapManager {
         if (redraw_in_progress && !navRenderPending) return;
         redraw_in_progress = true;
 
+        // Pause async preloading while we load tiles (avoid SD contention)
+        mainThreadLoading = true;
 
         // Update title with new zoom level
         char title_text[32];
@@ -1153,10 +1261,6 @@ namespace UIMapManager {
                     MapEngine::enqueueNavRender(req);
                     navRenderPending = true;
 
-                    // Reset canvas position immediately (don't wait for render)
-                    // Prevents visual "snap back" when async render completes
-                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
-
                     // Start 100ms poll timer to detect render completion
                     if (nav_poll_timer) lv_timer_del(nav_poll_timer);
                     nav_poll_timer = lv_timer_create(nav_render_poll_cb, 100, NULL);
@@ -1231,7 +1335,7 @@ namespace UIMapManager {
         }
 
         // Resume async preloading
-
+        mainThreadLoading = false;
         redraw_in_progress = false;
 
         // Flush pending LVGL events immediately so touches during the blocking
@@ -1337,16 +1441,33 @@ namespace UIMapManager {
                 map_follow_gps = false;
                 ESP_LOGD(TAG, "Touch pan started");
 
-                // Directional preload: 2 tiles in scroll direction (raster only)
-                if (!navModeActive) {
+                // Immediate preload: queue tiles in direction of movement (raster only)
+                if (tilePreloadQueue != nullptr && !navModeActive) {
+                    // Get current center tile
                     int centerTileX, centerTileY;
                     latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-                    int8_t dir_x = (dx < 0) ? 1 : (dx > 0) ? -1 : 0;
-                    int8_t dir_y = (dy < 0) ? 1 : (dy > 0) ? -1 : 0;
-                    if (dir_x != 0)
-                        preloadDirectionalTiles(centerTileX, centerTileY, map_current_zoom, dir_x, 0);
-                    if (dir_y != 0)
-                        preloadDirectionalTiles(centerTileX, centerTileY, map_current_zoom, 0, dir_y);
+
+                    // Determine direction (drag left = need tiles on right, etc.)
+                    int dir_x = (dx < 0) ? 1 : (dx > 0) ? -1 : 0;
+                    int dir_y = (dy < 0) ? 1 : (dy > 0) ? -1 : 0;
+
+                    TileRequest req;
+                    req.zoom = map_current_zoom;
+
+                    // Queue tiles in movement direction
+                    for (int i = -1; i <= 1; i++) {
+                        if (dir_x != 0) {
+                            req.tileX = centerTileX + dir_x * 2;
+                            req.tileY = centerTileY + i;
+                            xQueueSend(tilePreloadQueue, &req, 0);
+                        }
+                        if (dir_y != 0) {
+                            req.tileX = centerTileX + i;
+                            req.tileY = centerTileY + dir_y * 2;
+                            xQueueSend(tilePreloadQueue, &req, 0);
+                        }
+                    }
+                    ESP_LOGD(TAG, "Preload queued for direction dx=%d dy=%d", dir_x, dir_y);
                 }
             }
 
@@ -1410,6 +1531,10 @@ namespace UIMapManager {
                 // Schedule redraw (canvas will be recentered after new tiles are drawn)
                 schedule_map_reload();
 
+                // Preload tiles at adjacent zoom levels for fast zoom switch
+                int cX, cY;
+                latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &cX, &cY);
+                queueAdjacentZoomTiles(cX, cY, map_current_zoom);
             } else {
                 // Tap (no drag) - check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
@@ -1829,6 +1954,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
 
             ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
+            // Pause async preloading while we load tiles (avoid SD contention)
+            mainThreadLoading = true;
 
             // Try to load tiles from SD card
             bool hasTiles = false;
@@ -1944,6 +2071,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
             lv_obj_invalidate(map_canvas);
 
+            // Resume async preloading
+            mainThreadLoading = false;
         }
 
         // Info bar at bottom
@@ -1971,6 +2100,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         }
         map_refresh_timer = lv_timer_create(map_refresh_timer_cb, MAP_REFRESH_INTERVAL, NULL);
 
+        // Start tile preload task on Core 1 for directional preloading during touch pan
+        startTilePreloadTask();
 
         ESP_LOGD(TAG, "Map screen created");
     }
