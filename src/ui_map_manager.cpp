@@ -75,16 +75,16 @@ namespace UIMapManager {
     static std::vector<uint32_t> notFoundCache;
     static int notFoundCacheIndex = 0;
 
-    // Touch pan state — IceNav-v3 pixel offset model
+    // Touch pan state — IceNav-v3 scrollMap model (frame-to-frame delta)
     static bool touch_dragging = false;
-    static int16_t panOffsetX = 0;  // Accumulated pixel offset (persists between pans)
+    static int16_t panOffsetX = 0;  // Accumulated pixel offset (never exceeds ~threshold)
     static int16_t panOffsetY = 0;
-    static int16_t panCommittedX = 0;  // Pixels already converted to lat/lon, awaiting render
-    static int16_t panCommittedY = 0;
-    static lv_coord_t press_start_x = 0;  // Touch start point for current gesture
+    static lv_coord_t last_touch_x = 0;  // Last touch position (for frame-to-frame delta)
+    static lv_coord_t last_touch_y = 0;
+    static lv_coord_t press_start_x = 0;  // Touch start point (for drag detection only)
     static lv_coord_t press_start_y = 0;
-    #define PAN_THRESHOLD 5           // Minimum pixels to trigger pan
-    #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render (IceNav pattern)
+    #define PAN_THRESHOLD 5           // Minimum pixels to trigger drag start
+    #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render (IceNav: 128)
 
     // Tile data size for old raster tiles
     #define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
@@ -194,14 +194,8 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        // Subtract committed offset — keep only residual (uncommitted drag pixels)
-        panOffsetX -= panCommittedX;
-        panOffsetY -= panCommittedY;
-        panCommittedX = 0;
-        panCommittedY = 0;
-
-        // Reposition canvas: centered + any residual offset
-        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
+        // IceNav displayMap: just copy buffer. No position change here.
+        // Canvas position is set every 50ms in map_refresh_timer_cb (IceNav: updateMap L326-328).
         lv_canvas_set_buffer(map_canvas, map_canvas_buf,
                              MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
@@ -267,12 +261,16 @@ namespace UIMapManager {
         if (navRenderPending && MapEngine::mapEventGroup) {
             EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
             if (bits & MAP_EVENT_NAV_DONE) {
-                // If user is mid-pan, don't apply yet — keep polling
-                if (!touch_dragging) {
-                    xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
-                    applyRenderedViewport();
-                }
+                xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
+                applyRenderedViewport();
             }
+        }
+
+        // Update canvas position every frame (IceNav: updateMap L326-328)
+        if (map_canvas && !map_follow_gps) {
+            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
+        } else if (map_canvas) {
+            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
         }
 
         // Periodic station refresh (throttle to every ~10s via counter)
@@ -1069,8 +1067,6 @@ namespace UIMapManager {
         }
         panOffsetX = 0;
         panOffsetY = 0;
-        panCommittedX = 0;
-        panCommittedY = 0;
         lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
         redraw_map_canvas();
     }
@@ -1300,8 +1296,6 @@ namespace UIMapManager {
     static inline void resetPanOffset() {
         panOffsetX = 0;
         panOffsetY = 0;
-        panCommittedX = 0;
-        panCommittedY = 0;
         if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
     }
 
@@ -1348,9 +1342,59 @@ namespace UIMapManager {
         }
     }
 
-    // Touch pan handler — IceNav-v3 pixel offset model
-    // Accumulates pixel offset during pan. Only recalculates lat/lon + re-renders
-    // when offset exceeds PAN_TILE_THRESHOLD (128px). Short pans = just visual offset.
+    // IceNav scrollMap threshold + rebase logic (maps.cpp L685-733).
+    // Checks panOffsetX/Y against threshold. When crossed, converts 1 tile worth
+    // of lat/lon and rebases offset by ±MAP_TILE_SIZE. Returns true if re-render needed.
+    static bool panCheckThresholdAndRebase() {
+        bool scrollUpdated = false;
+
+        if (panOffsetX >= PAN_TILE_THRESHOLD) {
+            // Dragged right → shift map center west by 1 tile
+            double n_d = pow(2.0, map_current_zoom);
+            map_center_lon -= 360.0 / n_d;
+            panOffsetX -= MAP_TILE_SIZE;  // Rebase (IceNav: offsetX -= tileSize)
+            scrollUpdated = true;
+        } else if (panOffsetX <= -PAN_TILE_THRESHOLD) {
+            // Dragged left → shift map center east by 1 tile
+            double n_d = pow(2.0, map_current_zoom);
+            map_center_lon += 360.0 / n_d;
+            panOffsetX += MAP_TILE_SIZE;  // Rebase (IceNav: offsetX += tileSize)
+            scrollUpdated = true;
+        }
+
+        if (panOffsetY >= PAN_TILE_THRESHOLD) {
+            // Dragged down → shift map center north by 1 tile
+            double n_d = pow(2.0, map_current_zoom);
+            double lat_rad = map_center_lat * PI / 180.0;
+            double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
+            double ny = cy - 1.0 / n_d;  // -1 tile in Y
+            if (ny < 0.0) ny = 0.0; if (ny > 1.0) ny = 1.0;
+            map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
+            panOffsetY -= MAP_TILE_SIZE;
+            scrollUpdated = true;
+        } else if (panOffsetY <= -PAN_TILE_THRESHOLD) {
+            // Dragged up → shift map center south by 1 tile
+            double n_d = pow(2.0, map_current_zoom);
+            double lat_rad = map_center_lat * PI / 180.0;
+            double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
+            double ny = cy + 1.0 / n_d;  // +1 tile in Y
+            if (ny < 0.0) ny = 0.0; if (ny > 1.0) ny = 1.0;
+            map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
+            panOffsetY += MAP_TILE_SIZE;
+            scrollUpdated = true;
+        }
+
+        if (scrollUpdated) {
+            ESP_LOGD(TAG, "Pan rebase → offset(%d,%d) lat/lon %.4f,%.4f",
+                          panOffsetX, panOffsetY, map_center_lat, map_center_lon);
+            redraw_map_canvas();
+        }
+        return scrollUpdated;
+    }
+
+    // Touch pan handler — IceNav-v3 scrollMap model.
+    // Frame-to-frame delta accumulates in panOffsetX/Y. When threshold is crossed
+    // (mid-drag or on release), offset is converted to lat/lon and rebased to 0.
     void map_touch_event_cb(lv_event_t* e) {
         lv_event_code_t code = lv_event_get_code(e);
         lv_indev_t* indev = lv_indev_get_act();
@@ -1362,89 +1406,74 @@ namespace UIMapManager {
         if (code == LV_EVENT_PRESSED) {
             press_start_x = point.x;
             press_start_y = point.y;
+            last_touch_x = point.x;
+            last_touch_y = point.y;
             touch_dragging = false;
         }
         else if (code == LV_EVENT_PRESSING) {
-            lv_coord_t dx = point.x - press_start_x;
-            lv_coord_t dy = point.y - press_start_y;
+            // Frame-to-frame delta (IceNav: scrollMapEvent L436-437)
+            int16_t dx = point.x - last_touch_x;
+            int16_t dy = point.y - last_touch_y;
 
-            if (!touch_dragging && (abs(dx) > PAN_THRESHOLD || abs(dy) > PAN_THRESHOLD)) {
-                touch_dragging = true;
-                map_follow_gps = false;
+            if (!touch_dragging) {
+                int16_t totalDx = point.x - press_start_x;
+                int16_t totalDy = point.y - press_start_y;
+                if (abs(totalDx) > PAN_THRESHOLD || abs(totalDy) > PAN_THRESHOLD) {
+                    touch_dragging = true;
+                    map_follow_gps = false;
 
-                // Immediate preload: queue tiles in direction of movement (raster only)
-                if (tilePreloadQueue != nullptr && !navModeActive) {
-                    int centerTileX, centerTileY;
-                    latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-                    int dir_x = (dx < 0) ? 1 : (dx > 0) ? -1 : 0;
-                    int dir_y = (dy < 0) ? 1 : (dy > 0) ? -1 : 0;
-                    TileRequest req;
-                    req.zoom = map_current_zoom;
-                    for (int i = -1; i <= 1; i++) {
-                        if (dir_x != 0) { req.tileX = centerTileX + dir_x * 2; req.tileY = centerTileY + i; xQueueSend(tilePreloadQueue, &req, 0); }
-                        if (dir_y != 0) { req.tileX = centerTileX + i; req.tileY = centerTileY + dir_y * 2; xQueueSend(tilePreloadQueue, &req, 0); }
+                    // Immediate preload: queue tiles in direction of movement (raster only)
+                    if (tilePreloadQueue != nullptr && !navModeActive) {
+                        int centerTileX, centerTileY;
+                        latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
+                        int dir_x = (totalDx < 0) ? 1 : (totalDx > 0) ? -1 : 0;
+                        int dir_y = (totalDy < 0) ? 1 : (totalDy > 0) ? -1 : 0;
+                        TileRequest req;
+                        req.zoom = map_current_zoom;
+                        for (int i = -1; i <= 1; i++) {
+                            if (dir_x != 0) { req.tileX = centerTileX + dir_x * 2; req.tileY = centerTileY + i; xQueueSend(tilePreloadQueue, &req, 0); }
+                            if (dir_y != 0) { req.tileX = centerTileX + i; req.tileY = centerTileY + dir_y * 2; xQueueSend(tilePreloadQueue, &req, 0); }
+                        }
                     }
                 }
             }
 
-            if (touch_dragging && map_canvas) {
-                // Compute tentative total offset
-                int16_t newOffX = panOffsetX + dx;
-                int16_t newOffY = panOffsetY + dy;
-                int16_t maxOff = MAP_CANVAS_MARGIN - 10;
-                if (newOffX > maxOff) newOffX = maxOff;
-                if (newOffX < -maxOff) newOffX = -maxOff;
-                if (newOffY > maxOff) newOffY = maxOff;
-                if (newOffY < -maxOff) newOffY = -maxOff;
+            if (touch_dragging && map_canvas && (dx != 0 || dy != 0)) {
+                // Elastic resistance beyond threshold (IceNav: scrollMap L654-658)
+                if (abs(panOffsetX) > PAN_TILE_THRESHOLD &&
+                    ((dx > 0 && panOffsetX > 0) || (dx < 0 && panOffsetX < 0)))
+                    dx /= 2;
+                if (abs(panOffsetY) > PAN_TILE_THRESHOLD &&
+                    ((dy > 0 && panOffsetY > 0) || (dy < 0 && panOffsetY < 0)))
+                    dy /= 2;
 
-                // Move canvas for immediate visual feedback
-                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + newOffX, -MAP_CANVAS_MARGIN + newOffY);
-            }
-        }
-        else if (code == LV_EVENT_RELEASED) {
-            if (touch_dragging) {
-                touch_dragging = false;
-
-                // Accumulate final offset
-                lv_coord_t dx = point.x - press_start_x;
-                lv_coord_t dy = point.y - press_start_y;
+                // Accumulate frame delta
                 panOffsetX += dx;
                 panOffsetY += dy;
+
+                // Clamp to canvas margin
                 int16_t maxOff = MAP_CANVAS_MARGIN - 10;
                 if (panOffsetX > maxOff) panOffsetX = maxOff;
                 if (panOffsetX < -maxOff) panOffsetX = -maxOff;
                 if (panOffsetY > maxOff) panOffsetY = maxOff;
                 if (panOffsetY < -maxOff) panOffsetY = -maxOff;
 
-                // IceNav threshold: if uncommitted offset > 128px → convert to lat/lon + re-render
-                int16_t uncommittedX = panOffsetX - panCommittedX;
-                int16_t uncommittedY = panOffsetY - panCommittedY;
+                // Threshold check mid-drag (IceNav: scrollMap L685-716)
+                panCheckThresholdAndRebase();
 
-                if (abs(uncommittedX) > PAN_TILE_THRESHOLD || abs(uncommittedY) > PAN_TILE_THRESHOLD) {
-                    // Convert ONLY uncommitted pixels → lat/lon delta (Mercator)
-                    double n_d = pow(2.0, map_current_zoom);
-                    double deg_per_px_lon = 360.0 / n_d / MAP_TILE_SIZE;
-                    map_center_lon -= uncommittedX * deg_per_px_lon;
+                // Move canvas for immediate visual feedback
+                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
+            }
 
-                    double lat_rad = map_center_lat * PI / 180.0;
-                    double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
-                    double ny = cy - (double)uncommittedY / (n_d * MAP_TILE_SIZE);
-                    if (ny < 0.0) ny = 0.0;
-                    if (ny > 1.0) ny = 1.0;
-                    map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
+            last_touch_x = point.x;
+            last_touch_y = point.y;
+        }
+        else if (code == LV_EVENT_RELEASED) {
+            if (touch_dragging) {
+                touch_dragging = false;
 
-                    ESP_LOGD(TAG, "Pan threshold reached (%d,%d px uncommitted) → re-render at %.4f,%.4f",
-                                  uncommittedX, uncommittedY, map_center_lat, map_center_lon);
-
-                    // Mark current offset as committed. Do NOT reset to 0 —
-                    // applyRenderedViewport() will subtract committed when render completes.
-                    // Canvas stays at dragged position until then.
-                    panCommittedX = panOffsetX;
-                    panCommittedY = panOffsetY;
-                    redraw_map_canvas();
-                }
-                // If offset < threshold: keep visual offset, no re-render.
-                // Next pan continues accumulating.
+                // Final threshold check on release (residual < 128 stays as visual offset)
+                panCheckThresholdAndRebase();
             } else {
                 // Tap (no drag) - check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
