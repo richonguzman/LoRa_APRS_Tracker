@@ -1368,7 +1368,8 @@ namespace UIMapManager {
             double lat_rad = map_center_lat * PI / 180.0;
             double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
             double ny = cy - 1.0 / n_d;  // -1 tile in Y
-            if (ny < 0.0) ny = 0.0; if (ny > 1.0) ny = 1.0;
+            if (ny < 0.0) ny = 0.0;
+            if (ny > 1.0) ny = 1.0;
             map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
             panOffsetY -= MAP_TILE_SIZE;
             scrollUpdated = true;
@@ -1378,7 +1379,8 @@ namespace UIMapManager {
             double lat_rad = map_center_lat * PI / 180.0;
             double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
             double ny = cy + 1.0 / n_d;  // +1 tile in Y
-            if (ny < 0.0) ny = 0.0; if (ny > 1.0) ny = 1.0;
+            if (ny < 0.0) ny = 0.0;
+            if (ny > 1.0) ny = 1.0;
             map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
             panOffsetY += MAP_TILE_SIZE;
             scrollUpdated = true;
