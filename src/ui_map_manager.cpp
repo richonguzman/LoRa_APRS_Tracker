@@ -75,15 +75,14 @@ namespace UIMapManager {
     static std::vector<uint32_t> notFoundCache;
     static int notFoundCacheIndex = 0;
 
-    // Touch pan state
+    // Touch pan state — IceNav-v3 pixel offset model
     static bool touch_dragging = false;
-    static lv_coord_t touch_start_x = 0;
-    static lv_coord_t touch_start_y = 0;
-    static float drag_start_lat = 0.0f;
-    static float drag_start_lon = 0.0f;
-    static lv_coord_t last_pan_dx = 0;  // Track last pan delta for station sync
-    static lv_coord_t last_pan_dy = 0;
-    #define PAN_THRESHOLD 5  // Minimum pixels to trigger pan
+    static int16_t panOffsetX = 0;  // Accumulated pixel offset (persists between pans)
+    static int16_t panOffsetY = 0;
+    static lv_coord_t press_start_x = 0;  // Touch start point for current gesture
+    static lv_coord_t press_start_y = 0;
+    #define PAN_THRESHOLD 5           // Minimum pixels to trigger pan
+    #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render (IceNav pattern)
 
     // Tile data size for old raster tiles
     #define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
@@ -119,12 +118,11 @@ namespace UIMapManager {
 
     // No LVGL objects for stations — drawn directly on canvas (zero DRAM cost)
 
-    // Periodic refresh timer for stations
+    // Periodic refresh timer — also polls for async render completion (50ms)
     static lv_timer_t* map_refresh_timer = nullptr;
-    #define MAP_REFRESH_INTERVAL 10000  // 10 seconds
+    #define MAP_REFRESH_INTERVAL 50  // 50ms (polls NAV_DONE + periodic station refresh)
 
-    // Redraw synchronization (prevent overlapping redraws and timer pileup)
-    static lv_timer_t* pending_reload_timer = nullptr;
+    // Redraw synchronization (prevent overlapping redraws)
     static volatile bool redraw_in_progress = false;
 
     // Persistent viewport sprite for NAV rendering (avoids PSRAM fragmentation)
@@ -135,7 +133,7 @@ namespace UIMapManager {
 
     // Async NAV render state
     static volatile bool navRenderPending = false;
-    static lv_timer_t* nav_poll_timer = nullptr;
+    static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads tiles on SD
 
     // Switch zoom table and recalculate index to nearest available zoom
     void switchZoomTable(const int* newTable, int newCount) {
@@ -157,20 +155,71 @@ namespace UIMapManager {
     static float filteredOwnLon = 0.0f;
     static bool  filteredOwnValid = false;
 
+    // Apply rendered viewport from sprite to LVGL canvas (byte-swap + stations + invalidate)
+    static void applyRenderedViewport() {
+        navRenderPending = false;
+
+        if (!persistentViewportSprite || !map_canvas_buf) return;
+
+        uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
+        if (!src) return;
+
+        const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
+#if LV_COLOR_16_SWAP
+        // LGFX sprites are little-endian, LVGL canvas is big-endian
+        uint16_t* dst = (uint16_t*)map_canvas_buf;
+        for (int i = 0; i < totalPixels; i++) {
+            uint16_t px = src[i];
+            dst[i] = (px >> 8) | (px << 8);
+        }
+#else
+        memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
+#endif
+
+        cleanup_station_buttons();
+        draw_station_traces();
+        update_station_objects();
+
+        if (map_info_label) {
+            char info_text[64];
+            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
+                     map_center_lat, map_center_lon, mapStationsCount);
+            lv_label_set_text(map_info_label, info_text);
+        }
+
+        // Canvas position is FIXED — never move it here
+        lv_canvas_set_buffer(map_canvas, map_canvas_buf,
+                             MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+        lv_obj_invalidate(map_canvas);
+
+        mainThreadLoading = false;
+        redraw_in_progress = false;
+        ESP_LOGI(TAG, "Viewport applied (Z%d)", map_current_zoom);
+    }
+
     // Lightweight station-only refresh: restore NAV background from sprite, redraw stations.
     // Cost: ~10-50ms (memcpy 1.2MB + station icons) vs 500-3000ms for full NAV re-render.
     static void refreshStationOverlay() {
         if (!map_canvas || !map_canvas_buf) return;
         if (navRenderPending) return;  // Core 0 is writing to the sprite — don't read it
 
-        if (navModeActive && persistentViewportSprite) {
-            // NAV mode: restore clean background from cached sprite (no station artifacts)
+        if (persistentViewportSprite) {
+            // Restore clean background from cached sprite (no station artifacts)
+            // Works for both NAV and raster — both render into persistentViewportSprite
             uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
             if (src) {
-                memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
+                const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
+#if LV_COLOR_16_SWAP
+                uint16_t* dst = (uint16_t*)map_canvas_buf;
+                for (int i = 0; i < totalPixels; i++) {
+                    uint16_t px = src[i];
+                    dst[i] = (px >> 8) | (px << 8);
+                }
+#else
+                memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
+#endif
             }
         } else {
-            // Raster mode: can't restore background without re-decoding PNGs → full redraw
             redraw_map_canvas();
             return;
         }
@@ -186,34 +235,51 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        // Canvas position is FIXED — never move it here
         lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
     }
 
-    // Timer callback for periodic station refresh.
-    // In NAV mode: skip full re-render if position/zoom unchanged — just refresh station overlay.
-    // This eliminates the 500-3000ms UI freeze every 10 seconds when stationary.
+    // Timer callback: polls async render completion + periodic station refresh.
+    // Runs every 50ms. Replaces the old nav_render_poll_cb + 10s station refresh.
     static void map_refresh_timer_cb(lv_timer_t* timer) {
-        if (screen_map && lv_scr_act() == screen_map
-            && !touch_dragging && !redraw_in_progress && !navRenderPending) {
-            float prevLat = map_center_lat;
-            float prevLon = map_center_lon;
+        if (!screen_map || lv_scr_act() != screen_map) return;
 
-            // Follow GPS: update map center with filtered position before redraw
-            if (map_follow_gps && filteredOwnValid) {
-                map_center_lat = filteredOwnLat;
-                map_center_lon = filteredOwnLon;
+        // Check async render completion (replaces nav_render_poll_cb)
+        if (navRenderPending && MapEngine::mapEventGroup) {
+            EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
+            if (bits & MAP_EVENT_NAV_DONE) {
+                // If user is mid-pan, don't apply yet — keep polling
+                if (!touch_dragging) {
+                    xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
+                    applyRenderedViewport();
+                }
             }
+        }
 
-            bool posChanged = (map_center_lat != prevLat || map_center_lon != prevLon);
+        // Periodic station refresh (throttle to every ~10s via counter)
+        static uint16_t refreshCounter = 0;
+        if (++refreshCounter >= 200) {  // 200 × 50ms = 10s
+            refreshCounter = 0;
+            if (!touch_dragging && !redraw_in_progress && !navRenderPending) {
+                float prevLat = map_center_lat;
+                float prevLon = map_center_lon;
 
-            if (posChanged) {
-                ESP_LOGD(TAG, "Periodic refresh (GPS moved, full redraw)");
-                redraw_map_canvas();
-            } else {
-                ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
-                refreshStationOverlay();
+                // Follow GPS: update map center with filtered position before redraw
+                if (map_follow_gps && filteredOwnValid) {
+                    map_center_lat = filteredOwnLat;
+                    map_center_lon = filteredOwnLon;
+                }
+
+                bool posChanged = (map_center_lat != prevLat || map_center_lon != prevLon);
+
+                if (posChanged) {
+                    ESP_LOGD(TAG, "Periodic refresh (GPS moved, full redraw)");
+                    redraw_map_canvas();
+                } else {
+                    ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
+                    refreshStationOverlay();
+                }
             }
         }
     }
@@ -229,7 +295,6 @@ namespace UIMapManager {
     static QueueHandle_t tilePreloadQueue = nullptr;
     static TaskHandle_t tilePreloadTask = nullptr;
     static bool preloadTaskRunning = false;
-    static volatile bool mainThreadLoading = false;  // Pause preload while main thread loads
     #define TILE_PRELOAD_QUEUE_SIZE 20
 
     // Forward declaration
@@ -860,8 +925,12 @@ namespace UIMapManager {
             return false;
         }
 
-        // 5. Render the tile directly (synchronous call). The render function handles its own mutex.
-        bool success = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
+        // 5. Render tile — serialize with spriteMutex (static decoders not thread-safe)
+        bool success = false;
+        if (MapEngine::spriteMutex && xSemaphoreTake(MapEngine::spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+            success = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
+            xSemaphoreGive(MapEngine::spriteMutex);
+        }
 
         // 6. If rendering is successful, add to cache
         if (success) {
@@ -980,7 +1049,10 @@ namespace UIMapManager {
             map_center_lon = 1.6053f;
             ESP_LOGW(TAG, "No GPS, recentered on default position: %.4f, %.4f", map_center_lat, map_center_lon);
         }
-        schedule_map_reload();
+        panOffsetX = 0;
+        panOffsetY = 0;
+        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        redraw_map_canvas();
     }
 
     // Draw GPS traces for mobile stations on the canvas
@@ -1061,56 +1133,6 @@ namespace UIMapManager {
         }
     }
 
-    // Redraw only canvas content without recreating screen (for zoom)
-    // Poll timer: checks if async NAV render on Core 0 is done, applies result
-    static void nav_render_poll_cb(lv_timer_t* timer) {
-        if (!navRenderPending || !MapEngine::mapEventGroup) return;
-
-        EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
-        if (!(bits & MAP_EVENT_NAV_DONE)) return;
-
-        // Render complete — apply result on Core 1
-        xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
-        navRenderPending = false;
-
-        // Copy rendered sprite to canvas
-        if (persistentViewportSprite && map_canvas_buf) {
-            uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
-            if (src) {
-                memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
-            }
-        }
-
-        // Draw stations on top
-        cleanup_station_buttons();
-        draw_station_traces();
-        update_station_objects();
-
-        if (map_info_label) {
-            char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
-                     map_center_lat, map_center_lon, mapStationsCount);
-            lv_label_set_text(map_info_label, info_text);
-        }
-
-        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-        lv_obj_invalidate(map_canvas);
-
-        if (map_refresh_timer) lv_timer_reset(map_refresh_timer);
-
-        mainThreadLoading = false;
-        redraw_in_progress = false;
-
-        // Stop poll timer
-        if (nav_poll_timer) {
-            lv_timer_del(nav_poll_timer);
-            nav_poll_timer = nullptr;
-        }
-
-        ESP_LOGI(TAG, "Async NAV render applied");
-    }
-
     void redraw_map_canvas() {
         if (!map_canvas || !map_canvas_buf || !map_title_label) {
             screen_map = nullptr; // Force recreation
@@ -1150,10 +1172,6 @@ namespace UIMapManager {
 
         ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
 
-        // Load tiles — two paths:
-        // 1) NAV viewport (IceNav-v3 pattern): loads ALL tiles, renders in single z-ordered pass
-        // 2) Raster per-tile (PNG/JPG): loads tiles individually via cache
-        bool hasTiles = false;
         if (STORAGE_Utils::isSDAvailable()) {
             // Check if NAV data available: try each region for pack file or legacy tile
             // Z6-Z8: force raster — NAV feature density too high for ESP32
@@ -1203,11 +1221,12 @@ namespace UIMapManager {
 
                 // Enqueue async NAV render on Core 0 (non-blocking)
                 if (persistentViewportSprite) {
-                    MapEngine::NavRenderRequest req;
+                    MapEngine::NavRenderRequest req = {};
                     req.centerLat = map_center_lat;
                     req.centerLon = map_center_lon;
                     req.zoom = (uint8_t)map_current_zoom;
                     req.targetSprite = persistentViewportSprite;
+                    req.isRaster = false;
                     req.regionCount = navRegionCount;
                     for (int r = 0; r < navRegionCount && r < 8; r++) {
                         strncpy(req.regions[r], navRegions[r].c_str(), 63);
@@ -1217,105 +1236,51 @@ namespace UIMapManager {
                     MapEngine::enqueueNavRender(req);
                     navRenderPending = true;
 
-                    // Start 100ms poll timer to detect render completion
-                    if (nav_poll_timer) lv_timer_del(nav_poll_timer);
-                    nav_poll_timer = lv_timer_create(nav_render_poll_cb, 100, NULL);
-
                     ESP_LOGI(TAG, "NAV render enqueued - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                 }
 
-                // Return early — poll timer handles memcpy + stations when done
-                // Keep redraw_in_progress = true until poll timer clears it
+                // Return early — map_refresh_timer_cb handles memcpy + stations when done
+                // Keep redraw_in_progress = true until applyRenderedViewport clears it
                 return;
             } else {
                 if (navModeActive) {
                     navModeActive = false;
                     switchZoomTable(raster_zooms, raster_zoom_count);
                 }
-                // Clear canvas background (raster only — NAV keeps previous frame visible)
-                lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
-                // Raster per-tile rendering (PNG/JPG via cache)
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        int tileX = centerTileX + dx;
-                        int tileY = centerTileY + dy;
-                        int offsetX = MAP_CANVAS_WIDTH / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
-                        int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
 
-                        if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
-                            hasTiles = true;
-                        }
-                    }
+                // Enqueue async raster compositing on Core 0 (same pattern as NAV)
+                if (persistentViewportSprite) {
+                    MapEngine::NavRenderRequest req = {};
+                    req.centerLat = map_center_lat;
+                    req.centerLon = map_center_lon;
+                    req.zoom = (uint8_t)map_current_zoom;
+                    req.targetSprite = persistentViewportSprite;
+                    req.isRaster = true;
+                    req.regionCount = 1;
+                    strncpy(req.regions[0], map_current_region.c_str(), 63);
+                    req.regions[0][63] = '\0';
+
+                    MapEngine::enqueueNavRender(req);
+                    navRenderPending = true;
+
+                    ESP_LOGI(TAG, "Raster render enqueued Z%d - PSRAM free: %u KB",
+                                  map_current_zoom, ESP.getFreePsram() / 1024);
                 }
+
+                // Return early — map_refresh_timer_cb handles memcpy + stations when done
+                return;
             }
         }
-
-        if (!hasTiles) {
-            lv_draw_label_dsc_t label_dsc;
-            lv_draw_label_dsc_init(&label_dsc);
-            label_dsc.color = lv_color_hex(0xaaaaaa);
-            label_dsc.font = &lv_font_montserrat_14;
-            lv_canvas_draw_text(map_canvas, 40, MAP_CANVAS_HEIGHT / 2 - 30, 240, &label_dsc,
-                "No offline tiles available.");
-        }
-
-        // Draw GPS traces for mobile stations (on canvas, under station icons)
-        draw_station_traces();
-
-        // Update station LVGL objects (own position + received stations)
-        update_station_objects();
-
-        // Update info bar with current coordinates and station count
-        if (map_info_label) {
-            char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
-                     map_center_lat, map_center_lon, mapStationsCount);
-            lv_label_set_text(map_info_label, info_text);
-        }
-
-        // Recenter canvas after drawing new tiles (avoids visual jump)
-        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
-
-        // Force LVGL to re-read the canvas buffer after direct memcpy writes.
-        // Without lv_canvas_set_buffer, LVGL may use a stale cached state and
-        // not repaint tiles that were written via memcpy (not lv_canvas_draw_*).
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
-        lv_obj_invalidate(map_canvas);
-
-        // Reset periodic refresh timer so it doesn't fire right after this redraw
-        // (avoids double-blocking: pan redraw 600ms + immediate periodic refresh 600ms)
-        if (map_refresh_timer) {
-            lv_timer_reset(map_refresh_timer);
-        }
-
-        // Resume async preloading
-        mainThreadLoading = false;
-        redraw_in_progress = false;
-
-        // Flush pending LVGL events immediately so touches during the blocking
-        // render are processed without waiting for the next main loop iteration
-        lv_timer_handler();
     }
 
-    // Timer callback to reload map screen (for panning/recentering)
-    void map_reload_timer_cb(lv_timer_t* timer) {
-        pending_reload_timer = nullptr;
-        lv_timer_del(timer);
-        if (redraw_in_progress) return;  // Skip if previous redraw still running
-        redraw_map_canvas();
-    }
 
-    // Helper function to schedule map reload with delay
-    // Cancels any pending reload to avoid piling up redraws
-    void schedule_map_reload() {
-        if (pending_reload_timer) {
-            lv_timer_del(pending_reload_timer);
-            pending_reload_timer = nullptr;
-        }
-        pending_reload_timer = lv_timer_create(map_reload_timer_cb, 20, NULL);
-        lv_timer_set_repeat_count(pending_reload_timer, 1);
+    // Helper: reset pan offset and canvas position before re-render
+    static inline void resetPanOffset() {
+        panOffsetX = 0;
+        panOffsetY = 0;
+        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
     }
 
     // Map zoom in handler
@@ -1329,12 +1294,14 @@ namespace UIMapManager {
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
             ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
+            resetPanOffset();
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
             if (navModeActive) MapEngine::clearTileCache();
+            resetPanOffset();
             redraw_map_canvas();
         }
     }
@@ -1346,6 +1313,7 @@ namespace UIMapManager {
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
             if (navModeActive) MapEngine::clearTileCache();
+            resetPanOffset();
             redraw_map_canvas();
         } else if (navModeActive) {
             // At min NAV zoom — switch to raster
@@ -1353,11 +1321,14 @@ namespace UIMapManager {
             MapEngine::clearTileCache();
             switchZoomTable(raster_zooms, raster_zoom_count);
             ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
+            resetPanOffset();
             redraw_map_canvas();
         }
     }
 
-    // Touch pan handler for finger drag on map
+    // Touch pan handler — IceNav-v3 pixel offset model
+    // Accumulates pixel offset during pan. Only recalculates lat/lon + re-renders
+    // when offset exceeds PAN_TILE_THRESHOLD (128px). Short pans = just visual offset.
     void map_touch_event_cb(lv_event_t* e) {
         lv_event_code_t code = lv_event_get_code(e);
         lv_indev_t* indev = lv_indev_get_act();
@@ -1367,127 +1338,87 @@ namespace UIMapManager {
         lv_indev_get_point(indev, &point);
 
         if (code == LV_EVENT_PRESSED) {
-            // Finger down - start tracking
-            touch_start_x = point.x;
-            touch_start_y = point.y;
-            last_pan_dx = 0;
-            last_pan_dy = 0;
-            drag_start_lat = map_center_lat;
-            drag_start_lon = map_center_lon;
+            press_start_x = point.x;
+            press_start_y = point.y;
             touch_dragging = false;
-
-            // Cancel pending reload timer to allow immediate pan response
-            // Avoids starting a redraw just as user begins a new pan
-            if (pending_reload_timer) {
-                lv_timer_del(pending_reload_timer);
-                pending_reload_timer = nullptr;
-            }
-
-            ESP_LOGD(TAG, "Touch PRESSED at %d,%d - start pos: %.4f, %.4f",
-                          point.x, point.y, drag_start_lat, drag_start_lon);
         }
         else if (code == LV_EVENT_PRESSING) {
-            // Finger moving - check if we should pan
-            lv_coord_t dx = point.x - touch_start_x;
-            lv_coord_t dy = point.y - touch_start_y;
+            lv_coord_t dx = point.x - press_start_x;
+            lv_coord_t dy = point.y - press_start_y;
 
-            // Only start dragging if moved beyond threshold
             if (!touch_dragging && (abs(dx) > PAN_THRESHOLD || abs(dy) > PAN_THRESHOLD)) {
                 touch_dragging = true;
                 map_follow_gps = false;
-                ESP_LOGD(TAG, "Touch pan started");
 
                 // Immediate preload: queue tiles in direction of movement (raster only)
                 if (tilePreloadQueue != nullptr && !navModeActive) {
-                    // Get current center tile
                     int centerTileX, centerTileY;
                     latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-                    // Determine direction (drag left = need tiles on right, etc.)
                     int dir_x = (dx < 0) ? 1 : (dx > 0) ? -1 : 0;
                     int dir_y = (dy < 0) ? 1 : (dy > 0) ? -1 : 0;
-
                     TileRequest req;
                     req.zoom = map_current_zoom;
-
-                    // Queue tiles in movement direction
                     for (int i = -1; i <= 1; i++) {
-                        if (dir_x != 0) {
-                            req.tileX = centerTileX + dir_x * 2;
-                            req.tileY = centerTileY + i;
-                            xQueueSend(tilePreloadQueue, &req, 0);
-                        }
-                        if (dir_y != 0) {
-                            req.tileX = centerTileX + i;
-                            req.tileY = centerTileY + dir_y * 2;
-                            xQueueSend(tilePreloadQueue, &req, 0);
-                        }
+                        if (dir_x != 0) { req.tileX = centerTileX + dir_x * 2; req.tileY = centerTileY + i; xQueueSend(tilePreloadQueue, &req, 0); }
+                        if (dir_y != 0) { req.tileX = centerTileX + i; req.tileY = centerTileY + dir_y * 2; xQueueSend(tilePreloadQueue, &req, 0); }
                     }
-                    ESP_LOGD(TAG, "Preload queued for direction dx=%d dy=%d", dir_x, dir_y);
                 }
             }
 
-            // Live preview: move canvas within margin bounds
             if (touch_dragging && map_canvas) {
-                // Canvas starts at (-MARGIN, -MARGIN), so new position is (-MARGIN + dx, -MARGIN + dy)
-                lv_coord_t new_x = -MAP_CANVAS_MARGIN + dx;
-                lv_coord_t new_y = -MAP_CANVAS_MARGIN + dy;
+                // Compute tentative total offset
+                int16_t newOffX = panOffsetX + dx;
+                int16_t newOffY = panOffsetY + dy;
+                int16_t maxOff = MAP_CANVAS_MARGIN - 10;
+                if (newOffX > maxOff) newOffX = maxOff;
+                if (newOffX < -maxOff) newOffX = -maxOff;
+                if (newOffY > maxOff) newOffY = maxOff;
+                if (newOffY < -maxOff) newOffY = -maxOff;
 
-                if (abs(dx) > MAP_CANVAS_MARGIN - 10 || abs(dy) > MAP_CANVAS_MARGIN - 10) {
-                    if (dx > MAP_CANVAS_MARGIN - 10) dx = MAP_CANVAS_MARGIN - 10;
-                    if (dx < -(MAP_CANVAS_MARGIN - 10)) dx = -(MAP_CANVAS_MARGIN - 10);
-                    if (dy > MAP_CANVAS_MARGIN - 10) dy = MAP_CANVAS_MARGIN - 10;
-                    if (dy < -(MAP_CANVAS_MARGIN - 10)) dy = -(MAP_CANVAS_MARGIN - 10);
-
-                    new_x = -MAP_CANVAS_MARGIN + dx;
-                    new_y = -MAP_CANVAS_MARGIN + dy;
-                }
-
-                {
-                    // Normal panning within margin
-                    lv_obj_set_pos(map_canvas, new_x, new_y);
-                    last_pan_dx = dx;
-                    last_pan_dy = dy;
-                }
+                // Move canvas for immediate visual feedback
+                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + newOffX, -MAP_CANVAS_MARGIN + newOffY);
             }
         }
         else if (code == LV_EVENT_RELEASED) {
             if (touch_dragging) {
-                // Finger up after pan - finish pan
                 touch_dragging = false;
 
-                // Calculate final displacement (clamped to same range as preview)
-                lv_coord_t dx = point.x - touch_start_x;
-                lv_coord_t dy = point.y - touch_start_y;
-                lv_coord_t max_pan = MAP_CANVAS_MARGIN - 10;
-                if (dx > max_pan) dx = max_pan;
-                if (dx < -max_pan) dx = -max_pan;
-                if (dy > max_pan) dy = max_pan;
-                if (dy < -max_pan) dy = -max_pan;
+                // Accumulate final offset
+                lv_coord_t dx = point.x - press_start_x;
+                lv_coord_t dy = point.y - press_start_y;
+                panOffsetX += dx;
+                panOffsetY += dy;
+                int16_t maxOff = MAP_CANVAS_MARGIN - 10;
+                if (panOffsetX > maxOff) panOffsetX = maxOff;
+                if (panOffsetX < -maxOff) panOffsetX = -maxOff;
+                if (panOffsetY > maxOff) panOffsetY = maxOff;
+                if (panOffsetY < -maxOff) panOffsetY = -maxOff;
 
-                // Convert pixel movement to lat/lon change using Mercator projection
-                double n_d = pow(2.0, map_current_zoom);
-                double degrees_per_pixel_lon = 360.0 / n_d / MAP_TILE_SIZE;
+                // IceNav threshold: if offset > 128px → recalculate lat/lon + re-render
+                if (abs(panOffsetX) > PAN_TILE_THRESHOLD || abs(panOffsetY) > PAN_TILE_THRESHOLD) {
+                    // Convert pixel offset → lat/lon delta (Mercator)
+                    double n_d = pow(2.0, map_current_zoom);
+                    double deg_per_px_lon = 360.0 / n_d / MAP_TILE_SIZE;
+                    map_center_lon -= panOffsetX * deg_per_px_lon;
 
-                // Longitude: linear in Mercator (correct as-is)
-                map_center_lon = drag_start_lon - (dx * degrees_per_pixel_lon);
+                    double lat_rad = map_center_lat * PI / 180.0;
+                    double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
+                    double ny = cy - (double)panOffsetY / (n_d * MAP_TILE_SIZE);
+                    if (ny < 0.0) ny = 0.0;
+                    if (ny > 1.0) ny = 1.0;
+                    map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
 
-                // Latitude: inverse Mercator for correct N/S displacement
-                double start_lat_rad = drag_start_lat * PI / 180.0;
-                double center_y_world = (1.0 - log(tan(start_lat_rad) + 1.0 / cos(start_lat_rad)) / PI) / 2.0;
-                double new_y_world = center_y_world - (double)dy / (n_d * MAP_TILE_SIZE);
-                // Clamp to valid Mercator range
-                if (new_y_world < 0.0) new_y_world = 0.0;
-                if (new_y_world > 1.0) new_y_world = 1.0;
-                map_center_lat = atan(sinh(PI * (1.0 - 2.0 * new_y_world))) * 180.0 / PI;
+                    ESP_LOGD(TAG, "Pan threshold reached (%d,%d px) → re-render at %.4f,%.4f",
+                                  panOffsetX, panOffsetY, map_center_lat, map_center_lon);
 
-                ESP_LOGD(TAG, "Touch pan end: %.4f,%.4f -> %.4f,%.4f",
-                              drag_start_lat, drag_start_lon, map_center_lat, map_center_lon);
-
-                // Schedule redraw (canvas will be recentered after new tiles are drawn)
-                schedule_map_reload();
-
-                // Adjacent zoom preload removed — saturates PSRAM (see commit 76eee24)
+                    // Reset offset + canvas position, then enqueue render
+                    panOffsetX = 0;
+                    panOffsetY = 0;
+                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+                    redraw_map_canvas();
+                }
+                // If offset < threshold: keep visual offset, no re-render.
+                // Next pan continues accumulating.
             } else {
                 // Tap (no drag) - check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
@@ -1496,10 +1427,8 @@ namespace UIMapManager {
                     int16_t hw = stationHitZones[i].w;
                     int16_t hh = stationHitZones[i].h;
 
-                    // Check if tap is within hit zone (centered on station)
                     if (point.x >= hx - hw/2 && point.x <= hx + hw/2 &&
                         point.y >= hy - hh/2 && point.y <= hy + hh/2) {
-
                         int stationIdx = stationHitZones[i].stationIdx;
                         MapStation* station = STATION_Utils::getMapStation(stationIdx);
                         if (station && station->valid && station->callsign.length() > 0) {
@@ -1706,8 +1635,13 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
     LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
     newSprite->setPsram(true);
     if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) != nullptr) {
-        // renderTile() handles its own SPI mutex internally (recursive)
-        if (MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom)) {
+        // Serialize with spriteMutex (static decoders not thread-safe across cores)
+        bool decoded = false;
+        if (MapEngine::spriteMutex && xSemaphoreTake(MapEngine::spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+            decoded = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
+            xSemaphoreGive(MapEngine::spriteMutex);
+        }
+        if (decoded) {
             // Copy to canvas IMMEDIATELY
             MapEngine::copySpriteToCanvasWithClip(canvas, newSprite, offsetX, offsetY);
             // Cache the sprite (addToCache takes ownership)

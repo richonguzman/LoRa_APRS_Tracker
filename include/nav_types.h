@@ -3,11 +3,14 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <new>
 #include "esp_heap_caps.h"
 
 // Allocator that places vectors in PSRAM to preserve scarce DRAM
 // for WiFi, BLE, LoRa, LVGL, and OS stacks.
 // Uses MALLOC_CAP_SPIRAM with fallback to default heap.
+// Throws std::bad_alloc on failure (C++ standard requirement) so that
+// std::vector::reserve/push_back leave the vector in a valid state.
 template <typename T>
 struct PSRAMAllocator {
     using value_type = T;
@@ -19,6 +22,7 @@ struct PSRAMAllocator {
     T* allocate(std::size_t n) {
         void* p = heap_caps_malloc(n * sizeof(T), MALLOC_CAP_SPIRAM);
         if (!p) p = malloc(n * sizeof(T)); // fallback to default heap
+        if (!p) throw std::bad_alloc();
         return static_cast<T*>(p);
     }
     void deallocate(T* p, std::size_t) noexcept {

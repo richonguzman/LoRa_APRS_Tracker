@@ -53,7 +53,8 @@ namespace MapEngine {
     extern EventGroupHandle_t mapEventGroup;
     extern QueueHandle_t navRenderQueue;
 
-    // NAV viewport render request (Core 1 → Core 0)
+    // Viewport render request (Core 1 → Core 0)
+    // Used for both NAV (vector) and raster (PNG/JPG) compositing
     struct NavRenderRequest {
         float centerLat;
         float centerLon;
@@ -61,9 +62,14 @@ namespace MapEngine {
         LGFX_Sprite* targetSprite;
         char regions[8][64];
         int regionCount;
+        bool isRaster;           // true = raster compositing, false = NAV vector
     };
 
     void enqueueNavRender(const NavRenderRequest& req);
+
+    // Raster viewport compositing (runs on Core 0)
+    bool renderRasterViewport(float centerLat, float centerLon, uint8_t zoom,
+                              LGFX_Sprite &map, const char* region);
 
     // Function declarations
     void startRenderTask(lv_obj_t* canvas_to_invalidate);

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <new>
 
 // Global sprite pointer for raster decoder callbacks
 static LGFX_Sprite* targetSprite_ = nullptr;
@@ -351,11 +352,17 @@ namespace MapEngine {
                 for (int r = 0; r < latest.regionCount && r < 8; r++)
                     regionPtrs[r] = latest.regions[r];
 
-                ESP_LOGI(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
-                              latest.zoom, latest.centerLat, latest.centerLon);
-
-                renderNavViewport(latest.centerLat, latest.centerLon, latest.zoom,
-                                  *latest.targetSprite, regionPtrs, latest.regionCount);
+                if (latest.isRaster) {
+                    ESP_LOGI(TAG, "Async raster render: Z%d (%.4f, %.4f)",
+                                  latest.zoom, latest.centerLat, latest.centerLon);
+                    renderRasterViewport(latest.centerLat, latest.centerLon, latest.zoom,
+                                         *latest.targetSprite, latest.regions[0]);
+                } else {
+                    ESP_LOGI(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
+                                  latest.zoom, latest.centerLat, latest.centerLon);
+                    renderNavViewport(latest.centerLat, latest.centerLon, latest.zoom,
+                                      *latest.targetSprite, regionPtrs, latest.regionCount);
+                }
 
                 xEventGroupSetBits(mapEventGroup, MAP_EVENT_NAV_DONE);
                 continue;
@@ -1206,6 +1213,144 @@ namespace MapEngine {
         }
     }
 
+    // =========================================================================
+    // Raster viewport compositing (runs on Core 0)
+    // Loads 3×3 tile grid from cache/SD, composites into target sprite.
+    // Same pattern as renderNavViewport but for PNG/JPG tiles.
+    // =========================================================================
+    bool renderRasterViewport(float centerLat, float centerLon, uint8_t zoom,
+                              LGFX_Sprite &map, const char* region) {
+        if (!region || !region[0]) return false;
+
+        // Acquire render lock (same as NAV) — prevents clearTileCache during render
+        if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+        renderActive_ = true;
+
+        uint64_t startTime = esp_timer_get_time();
+        int viewportW = map.width();
+        int viewportH = map.height();
+
+        // Calculate center tile and sub-tile offset (same as redraw_map_canvas)
+        int n = 1 << zoom;
+        float tileXf = (centerLon + 180.0f) / 360.0f * n;
+        float latRad = centerLat * PI / 180.0f;
+        float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
+
+        int centerTileX = (int)tileXf;
+        int centerTileY = (int)tileYf;
+        int subTileOffsetX = (int)((tileXf - centerTileX) * MAP_TILE_SIZE);
+        int subTileOffsetY = (int)((tileYf - centerTileY) * MAP_TILE_SIZE);
+
+        // Fill background (dark teal — same as raster canvas clear)
+        map.fillSprite(map.color565(0x2F, 0x4F, 0x4F));
+
+        int tilesLoaded = 0;
+
+        // Direct sprite-to-sprite buffer copy with clipping (bypasses LGFX pipeline)
+        auto blitTileToViewport = [&](LGFX_Sprite* src, int dstX, int dstY) {
+            int sx = 0, sy = 0;
+            int w = MAP_TILE_SIZE, h = MAP_TILE_SIZE;
+            if (dstX < 0) { sx = -dstX; w += dstX; dstX = 0; }
+            if (dstY < 0) { sy = -dstY; h += dstY; dstY = 0; }
+            if (dstX + w > viewportW) w = viewportW - dstX;
+            if (dstY + h > viewportH) h = viewportH - dstY;
+            if (w <= 0 || h <= 0) return;
+            uint16_t* srcBuf = (uint16_t*)src->getBuffer();
+            uint16_t* dstBuf = (uint16_t*)map.getBuffer();
+            for (int y = 0; y < h; y++) {
+                memcpy(dstBuf + (dstY + y) * viewportW + dstX,
+                       srcBuf + (sy + y) * MAP_TILE_SIZE + sx,
+                       w * sizeof(uint16_t));
+            }
+        };
+
+        // Load 3×3 grid around center tile
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                esp_task_wdt_reset();
+                vTaskDelay(1);  // Yield Core 0 for WiFi/BLE between tiles
+
+                int tileX = centerTileX + dx;
+                int tileY = centerTileY + dy;
+                int offsetX = viewportW / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
+                int offsetY = viewportH / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
+
+                // Skip tiles completely outside viewport
+                if (offsetX + MAP_TILE_SIZE <= 0 || offsetX >= viewportW) continue;
+                if (offsetY + MAP_TILE_SIZE <= 0 || offsetY >= viewportH) continue;
+
+                // 1. Check cache
+                int cacheIdx = findCachedTile(zoom, tileX, tileY);
+                if (cacheIdx >= 0) {
+                    LGFX_Sprite* cached = getCachedTileSprite(cacheIdx);
+                    if (cached && cached->getBuffer()) {
+                        blitTileToViewport(cached, offsetX, offsetY);
+                        tilesLoaded++;
+                        continue;
+                    }
+                }
+
+                // 2. Find file on SD
+                char path[128];
+                bool found = false;
+
+                if (spiMutex && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+                    if (STORAGE_Utils::isSDAvailable()) {
+                        snprintf(path, sizeof(path), "/LoRa_Tracker/Maps/%s/%d/%d/%d.png",
+                                 region, zoom, tileX, tileY);
+                        if (SD.exists(path)) { found = true; }
+                        else {
+                            snprintf(path, sizeof(path), "/LoRa_Tracker/Maps/%s/%d/%d/%d.jpg",
+                                     region, zoom, tileX, tileY);
+                            if (SD.exists(path)) { found = true; }
+                        }
+                    }
+                    xSemaphoreGive(spiMutex);
+                }
+
+                if (!found) continue;
+
+                // 3. Decode tile into a new sprite
+                const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2;
+                ensurePSRAMAvailable(spriteSize);
+
+                LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
+                newSprite->setPsram(true);
+                if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
+                    ESP_LOGE(TAG, "Raster sprite creation failed (PSRAM?)");
+                    delete newSprite;
+                    continue;
+                }
+
+                // Serialize with preload task — static PNG/JPEG decoders + targetSprite_ are not thread-safe
+                bool decoded = false;
+                if (xSemaphoreTake(spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+                    decoded = renderTile(path, 0, 0, *newSprite, (uint8_t)zoom);
+                    xSemaphoreGive(spriteMutex);
+                }
+
+                if (decoded) {
+                    blitTileToViewport(newSprite, offsetX, offsetY);
+                    addToCache(path, zoom, tileX, tileY, newSprite);
+                    tilesLoaded++;
+                } else {
+                    newSprite->deleteSprite();
+                    delete newSprite;
+                }
+            }
+        }
+
+        uint64_t endTime = esp_timer_get_time();
+        ESP_LOGI(TAG, "Raster viewport: %llu ms, %d tiles loaded, Z%d",
+                      (endTime - startTime) / 1000, tilesLoaded, zoom);
+
+        // Release render lock
+        renderActive_ = false;
+        if (renderLock) xSemaphoreGive(renderLock);
+
+        return tilesLoaded > 0;
+    }
+
     static bool fillPolygons = true;
 
     uint16_t darkenRGB565(const uint16_t color, const float amount) {
@@ -1678,15 +1823,22 @@ namespace MapEngine {
                  (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
         for (int i = 0; i < 16; i++) {
             if (layerCounts[i] > globalLayers[i].capacity()) {
-                globalLayers[i].reserve(layerCounts[i]);
-                if (globalLayers[i].capacity() < layerCounts[i]) {
-                    ESP_LOGE(TAG, "Reserve FAILED for layer %d: requested %u, got %u",
-                             i, layerCounts[i], (unsigned)globalLayers[i].capacity());
+                try {
+                    globalLayers[i].reserve(layerCounts[i]);
+                } catch (const std::bad_alloc&) {
+                    ESP_LOGW(TAG, "Reserve failed layer %d: need %u × %u B, PSRAM largest=%u",
+                             i, layerCounts[i], (unsigned)sizeof(FeatureRef),
+                             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
                 }
             }
         }
-        if (textCount > textRefs.capacity()) textRefs.reserve(textCount);
-        if (waterwayCount > waterwayRefs.capacity()) waterwayRefs.reserve(waterwayCount);
+        try {
+            if (textCount > textRefs.capacity()) textRefs.reserve(textCount);
+            if (waterwayCount > waterwayRefs.capacity()) waterwayRefs.reserve(waterwayCount);
+        } catch (const std::bad_alloc&) {
+            ESP_LOGW(TAG, "Reserve failed text/waterway, PSRAM largest=%u",
+                     (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+        }
         ESP_LOGI(TAG, "Phase 2 reserve done, PSRAM free=%u largest=%u",
                  (unsigned)ESP.getFreePsram(),
                  (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
@@ -1714,7 +1866,9 @@ namespace MapEngine {
             memcpy(&feature_count, data + 4, 2);
             uint8_t* p = data + 22;
 
-            for (uint16_t i = 0; i < feature_count; i++) {
+            bool psramExhausted = false;
+
+            for (uint16_t i = 0; i < feature_count && !psramExhausted; i++) {
                 if ((i & 63) == 0) esp_task_wdt_reset();
                 if (p + 13 > data + fileSize) break;
 
@@ -1740,11 +1894,18 @@ namespace MapEngine {
                 ref.tileOffsetX = tileOffsetX;
                 ref.tileOffsetY = tileOffsetY;
 
-                if (geomType == GEOM_TEXT) textRefs.push_back(ref);
-                else if (geomType == GEOM_TEXT_LINE) {
-                    if (zoom >= 15) waterwayRefs.push_back(ref);
-                } else {
-                    globalLayers[priority].push_back(ref);
+                try {
+                    if (geomType == GEOM_TEXT) {
+                        textRefs.push_back(ref);
+                    } else if (geomType == GEOM_TEXT_LINE) {
+                        if (zoom >= 15) waterwayRefs.push_back(ref);
+                    } else {
+                        globalLayers[priority].push_back(ref);
+                    }
+                } catch (const std::bad_alloc&) {
+                    ESP_LOGW(TAG, "PSRAM exhausted at feature %u/%u, rendering partial",
+                             i, feature_count);
+                    psramExhausted = true;
                 }
 
                 p += 13 + payloadSize;
@@ -1763,6 +1924,7 @@ namespace MapEngine {
         map.fillSprite(bgColor);
 
         map.startWrite();
+        try {
 
         struct LabelRect { int16_t x, y, w, h; };
         std::vector<LabelRect> placedLabels;
@@ -2243,6 +2405,9 @@ namespace MapEngine {
         }
         waterwayRefs.clear();
 
+        } catch (const std::bad_alloc&) {
+            ESP_LOGW(TAG, "PSRAM exhausted during render, partial output");
+        }
         map.endWrite();
 
         // Tile buffers are now owned by navCache — do NOT free here

@@ -96,8 +96,6 @@ namespace UIMapManager {
     void btn_map_recenter_clicked(lv_event_t* e);
     bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offsetX, int offsetY);
     void redraw_map_canvas();
-    void map_reload_timer_cb(lv_timer_t* timer);
-    void schedule_map_reload();
     void btn_map_zoomin_clicked(lv_event_t* e);
     void btn_map_zoomout_clicked(lv_event_t* e);
     float getMapPanStep();
