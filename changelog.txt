@@ -1,36 +1,18 @@
-- New blue theme for T‑Deck Plus: Added a “blue theme” palette (primaryColor, primaryColorLight, primaryColorDark) in custom_colors.h. 
-  The firmware now automatically uses this palette on T‑Deck Plus, while other boards retain the original red/grey color scheme.
-
-- Redesigned top bar: Updated draw_T_DECK_Top() so that T‑Deck Plus displays a larger blue header with the callsign in a clearer bitmap font (Font 4), date and UTC time right‑aligned, 
-  and a secondary bar for coordinates and satellite count. The body background is now black to improve contrast, and the APRS icon is drawn in the body area instead of the header.
-
-- Text positioning: Adjusted the vertical offset of the information text (~84 px down) to avoid overlapping the new header. The callsign uses a larger font size, and general text uses Font 2 for better readability.
-
-- Larger, themed buttons: The menu buttons for T‑Deck Plus are now 48×48 px with greater spacing. The selected button is filled with the primary blue color and outlined in a lighter blue. 
-  A new color case for these buttons (case 3) was added to drawButton() so they match the blue theme.
-
-- System buttons: “Send / Menu / Exit” buttons now use Font 2, with centered text calculated from the actual font height rather than a fixed value, improving alignment.
-
-- Visible icon in body: The drawSymbol() function draws the APRS icon in white on the body’s black background and surrounds it with a light blue border. 
-  It also falls back to a “?” character if the current symbol index is invalid. The icon is now rendered at the end of the screen draw routine to prevent it being overwritten.
-
-- Black body background: Ensures the text area below the coordinate bar is always black.
-
-- Enlarged icon frame: The icon’s frame can be extended inward without scaling the bitmap itself, allowing for a more visually prominent symbol.
-
-
-New “APRSPH Check‑in” Menu Item
-
-- menu_utils.cpp: Added a new case 14 to the Messages menu that displays “APRSPH Check‑in” while retaining the existing options (Read, Write, Delete, APRSThursday). Users can scroll through all five items.
-
-- keyboard_utils.cpp: Extended joystick navigation for the Messages menu to span cases 10–14, and added logic to handle menuDisplay == 14. 
-  When selected, this option sends a canned APRS message (“CQ Checked‑in via LoRa Tracker”) to APRSPH using MSG_Utils::addToOutputBuffer(...) and displays a confirmation message, then returns to the Messages menu.
-
-- These updates collectively modernize the T‑Deck Plus interface, improve readability, reposition and enlarge the APRS icon, and add a convenient APRSPH check‑in option—all while maintaining compatibility with the original menu structure.
-
------------------------------------------------------------
-
+- New blue theme for T‑Deck 
+- Redesigned top bar
+- Text positioning
+- Larger, themed buttons
+- System buttons according to new theme 
+- Visible APRS icon in body
+- Enlarged icon frame
+- New “APRSPH Check‑in” Menu Item  in messages under aprsthursday
 - Added RSSI indication (coordinates and sat number bar)
-- Added status bar with last rx callsign, SNR, bluetooth status
-- added compass in main view with distance and bearingof the latest rx packet
+- Added status bar with last rx callsign time, SNR, bluetooth status
+- added compass in main view with distance and bearing of the latest rx packet
+- make the compass update in real-time!
+- added "NO FIX" instead of zeroes into di coordinates bar 
+- removed duplicated info in main view
+- fixed GPS logic to use valid fixes (not only updated frame)
+
+
 

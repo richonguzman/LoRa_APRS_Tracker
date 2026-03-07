@@ -144,22 +144,34 @@ namespace MENU_Utils {
             topHeader1_1    = Utils::createDateString(time_now);
             topHeader1_2    = Utils::createTimeString(time_now);
             topHeader1_3    = "";
-            topHeader2      = String(gps.location.lat(), 4);
-            topHeader2      += " ";
-            topHeader2      += String(gps.location.lng(), 4);
+            if (gps.location.isValid()) {
+                topHeader2      = String(gps.location.lat(), 4);
+                topHeader2      += " ";
+                topHeader2      += String(gps.location.lng(), 4);
+            } else {
+                topHeader2      = "NO FIX";
+            }
 
             for (int i = topHeader2.length(); i < 19; i++) {
                 topHeader2 += " ";
             }
-            if (gps.satellites.value() <= 9) topHeader2 += " ";
             topHeader2 += "SAT:";
-            topHeader2 += String(gps.satellites.value());
-            if (gps.hdop.hdop() > 5) {
-                topHeader2 += "X";
-            } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
-                topHeader2 += "-";
-            } else if (gps.hdop.hdop() <= 2) {
-                topHeader2 += "+";
+            if (gps.satellites.isValid()) {
+                if (gps.satellites.value() <= 9) topHeader2 += " ";
+                topHeader2 += String(gps.satellites.value());
+            } else {
+                topHeader2 += "--";
+            }
+            if (gps.hdop.isValid()) {
+                if (gps.hdop.hdop() > 5) {
+                    topHeader2 += "X";
+                } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
+                    topHeader2 += "-";
+                } else if (gps.hdop.hdop() <= 2) {
+                    topHeader2 += "+";
+                }
+            } else {
+                topHeader2 += "?";
             }
         #endif
 

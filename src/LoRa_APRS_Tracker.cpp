@@ -237,19 +237,20 @@ void loop() {
         GPS_Utils::getData();
         bool gps_time_update = gps.time.isUpdated();
         bool gps_loc_update  = gps.location.isUpdated();
+        bool gps_loc_valid   = gps.location.isValid();
         GPS_Utils::setDateFromData();
 
         int currentSpeed = (int) gps.speed.kmph();
 
-        if (gps_loc_update) Utils::checkStatus();
+        if (gps_loc_update || gps_loc_valid) Utils::checkStatus();
 
-        if (!sendUpdate && gps_loc_update && smartBeaconActive) {
+        if (!sendUpdate && gps_loc_valid && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) GPS_Utils::calculateHeadingDelta(currentSpeed);
-            STATION_Utils::checkStandingUpdateTime();
         }
+        if (!sendUpdate && smartBeaconActive) STATION_Utils::checkStandingUpdateTime();
         SMARTBEACON_Utils::checkFixedBeaconTime();
-        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon();
+        if (sendUpdate && gps_loc_valid) STATION_Utils::sendBeacon();
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
