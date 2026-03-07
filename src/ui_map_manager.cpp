@@ -79,6 +79,8 @@ namespace UIMapManager {
     static bool touch_dragging = false;
     static int16_t panOffsetX = 0;  // Accumulated pixel offset (persists between pans)
     static int16_t panOffsetY = 0;
+    static int16_t panCommittedX = 0;  // Pixels already converted to lat/lon, awaiting render
+    static int16_t panCommittedY = 0;
     static lv_coord_t press_start_x = 0;  // Touch start point for current gesture
     static lv_coord_t press_start_y = 0;
     #define PAN_THRESHOLD 5           // Minimum pixels to trigger pan
@@ -166,11 +168,16 @@ namespace UIMapManager {
 
         const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
 #if LV_COLOR_16_SWAP
-        // LGFX sprites are little-endian, LVGL canvas is big-endian
-        uint16_t* dst = (uint16_t*)map_canvas_buf;
-        for (int i = 0; i < totalPixels; i++) {
-            uint16_t px = src[i];
-            dst[i] = (px >> 8) | (px << 8);
+        if (!navModeActive) {
+            // Raster: LGFX sprites are LE, LVGL canvas is BE — need byte-swap
+            uint16_t* dst = (uint16_t*)map_canvas_buf;
+            for (int i = 0; i < totalPixels; i++) {
+                uint16_t px = src[i];
+                dst[i] = (px >> 8) | (px << 8);
+            }
+        } else {
+            // NAV: colors from .nav files written via LGFX primitives match LVGL byte order
+            memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
         }
 #else
         memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
@@ -187,7 +194,14 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        // Canvas position is FIXED — never move it here
+        // Subtract committed offset — keep only residual (uncommitted drag pixels)
+        panOffsetX -= panCommittedX;
+        panOffsetY -= panCommittedY;
+        panCommittedX = 0;
+        panCommittedY = 0;
+
+        // Reposition canvas: centered + any residual offset
+        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
         lv_canvas_set_buffer(map_canvas, map_canvas_buf,
                              MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
@@ -210,10 +224,14 @@ namespace UIMapManager {
             if (src) {
                 const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
 #if LV_COLOR_16_SWAP
-                uint16_t* dst = (uint16_t*)map_canvas_buf;
-                for (int i = 0; i < totalPixels; i++) {
-                    uint16_t px = src[i];
-                    dst[i] = (px >> 8) | (px << 8);
+                if (!navModeActive) {
+                    uint16_t* dst = (uint16_t*)map_canvas_buf;
+                    for (int i = 0; i < totalPixels; i++) {
+                        uint16_t px = src[i];
+                        dst[i] = (px >> 8) | (px << 8);
+                    }
+                } else {
+                    memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
                 }
 #else
                 memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
@@ -1051,6 +1069,8 @@ namespace UIMapManager {
         }
         panOffsetX = 0;
         panOffsetY = 0;
+        panCommittedX = 0;
+        panCommittedY = 0;
         lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
         redraw_map_canvas();
     }
@@ -1280,6 +1300,8 @@ namespace UIMapManager {
     static inline void resetPanOffset() {
         panOffsetX = 0;
         panOffsetY = 0;
+        panCommittedX = 0;
+        panCommittedY = 0;
         if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
     }
 
@@ -1394,27 +1416,31 @@ namespace UIMapManager {
                 if (panOffsetY > maxOff) panOffsetY = maxOff;
                 if (panOffsetY < -maxOff) panOffsetY = -maxOff;
 
-                // IceNav threshold: if offset > 128px → recalculate lat/lon + re-render
-                if (abs(panOffsetX) > PAN_TILE_THRESHOLD || abs(panOffsetY) > PAN_TILE_THRESHOLD) {
-                    // Convert pixel offset → lat/lon delta (Mercator)
+                // IceNav threshold: if uncommitted offset > 128px → convert to lat/lon + re-render
+                int16_t uncommittedX = panOffsetX - panCommittedX;
+                int16_t uncommittedY = panOffsetY - panCommittedY;
+
+                if (abs(uncommittedX) > PAN_TILE_THRESHOLD || abs(uncommittedY) > PAN_TILE_THRESHOLD) {
+                    // Convert ONLY uncommitted pixels → lat/lon delta (Mercator)
                     double n_d = pow(2.0, map_current_zoom);
                     double deg_per_px_lon = 360.0 / n_d / MAP_TILE_SIZE;
-                    map_center_lon -= panOffsetX * deg_per_px_lon;
+                    map_center_lon -= uncommittedX * deg_per_px_lon;
 
                     double lat_rad = map_center_lat * PI / 180.0;
                     double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
-                    double ny = cy - (double)panOffsetY / (n_d * MAP_TILE_SIZE);
+                    double ny = cy - (double)uncommittedY / (n_d * MAP_TILE_SIZE);
                     if (ny < 0.0) ny = 0.0;
                     if (ny > 1.0) ny = 1.0;
                     map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
 
-                    ESP_LOGD(TAG, "Pan threshold reached (%d,%d px) → re-render at %.4f,%.4f",
-                                  panOffsetX, panOffsetY, map_center_lat, map_center_lon);
+                    ESP_LOGD(TAG, "Pan threshold reached (%d,%d px uncommitted) → re-render at %.4f,%.4f",
+                                  uncommittedX, uncommittedY, map_center_lat, map_center_lon);
 
-                    // Reset offset + canvas position, then enqueue render
-                    panOffsetX = 0;
-                    panOffsetY = 0;
-                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+                    // Mark current offset as committed. Do NOT reset to 0 —
+                    // applyRenderedViewport() will subtract committed when render completes.
+                    // Canvas stays at dragged position until then.
+                    panCommittedX = panOffsetX;
+                    panCommittedY = panOffsetY;
                     redraw_map_canvas();
                 }
                 // If offset < threshold: keep visual offset, no re-render.

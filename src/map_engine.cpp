@@ -1601,7 +1601,7 @@ namespace MapEngine {
         std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
         waterwayRefs.reserve(64);
 
-        uint16_t bgColor = 0xF7BE;  // Default OSM beige (0xF2EFE9) if no tiles loaded
+        uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);  // Dark slate gray — same as raster "no data" bg
         bool bgColorExtracted = false;
 
         // Build tile list sorted center-outward so PSRAM exhaustion
@@ -1883,6 +1883,16 @@ namespace MapEngine {
                 uint8_t minZoom = zoomPriority >> 4;
                 if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
+                // Semantic culling: skip tiny features (IceNav f828e18f)
+                // Z9-Z11: skip if bbox < 3×3px. Other zooms: skip if < 1×1px.
+                uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
+                if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
+                    uint8_t minDim = (zoom >= 9 && zoom <= 11) ? 3 : 1;
+                    if ((bx2 - bx1) < minDim && (by2 - by1) < minDim) {
+                        p += 13 + payloadSize; continue;
+                    }
+                }
+
                 uint8_t priority = zoomPriority & 0x0F;
                 if (priority >= 16) priority = 15;
 
@@ -1931,18 +1941,20 @@ namespace MapEngine {
         placedLabels.reserve(128);
 
         int featureCount = 0;
+        uint64_t lastYieldUs = esp_timer_get_time();
         for (int pri = 0; pri < 16; pri++) {
             if (globalLayers[pri].empty()) continue;
 
             for (const auto& ref : globalLayers[pri]) {
-                // WDT reset every 32 features during rendering (prevents WDT timeout)
-                if ((++featureCount & 31) == 0) esp_task_wdt_reset();
-
-                // Yield every 2048 features — feed watchdog + let other tasks run.
-                // Do NOT call lv_timer_handler() here: LVGL display flushes during
-                // sprite rendering corrupt the sprite buffer at low zooms (Z9-Z10).
-                if ((featureCount & 2047) == 0) {
-                    taskYIELD();
+                // Yield every 20ms to let WiFi/BLE breathe on Core 0 (IceNav e278a2b0)
+                if ((++featureCount & 15) == 0) {
+                    uint64_t nowUs = esp_timer_get_time();
+                    if (nowUs - lastYieldUs > 20000) {
+                        map.endWrite();
+                        vTaskDelay(1);
+                        map.startWrite();
+                        lastYieldUs = esp_timer_get_time();
+                    }
                 }
 
                 uint8_t* fp = ref.ptr;
@@ -1980,13 +1992,26 @@ namespace MapEngine {
                         int* py_hp = proj32Y.data();
                         if (!px_hp || !py_hp) break;
 
+                        // Vertex decimation: skip redundant vertices at same pixel
+                        // (IceNav 699f4c80). Only for simple polygons (no multi-ring).
+                        int16_t lastVx = -32768, lastVy = -32768;
+                        uint16_t actualPoints = 0;
                         for (uint16_t j = 0; j < ref.coordCount; j++) {
-                            px_hp[j] = (int)coords[j * 2];
-                            py_hp[j] = (int)coords[j * 2 + 1];
+                            int16_t cx = coords[j * 2];
+                            int16_t cy = coords[j * 2 + 1];
+                            if (df.ringCount == 0 && j > 0 &&
+                                abs(cx - lastVx) < 1 && abs(cy - lastVy) < 1 &&
+                                j < ref.coordCount - 1)
+                                continue;
+                            px_hp[actualPoints] = (int)cx;
+                            py_hp[actualPoints] = (int)cy;
+                            lastVx = cx;
+                            lastVy = cy;
+                            actualPoints++;
                         }
 
                         if (fillPolygons) {
-                            fillPolygonGeneral(map, px_hp, py_hp, ref.coordCount,
+                            fillPolygonGeneral(map, px_hp, py_hp, actualPoints,
                                 colorRgb565, ref.tileOffsetX, ref.tileOffsetY,
                                 df.ringCount, df.ringEnds);
                         }
@@ -1997,8 +2022,8 @@ namespace MapEngine {
                             uint16_t ringStart = 0;
                             uint16_t numRings = (df.ringCount > 0) ? df.ringCount : 1;
                             for (uint16_t r = 0; r < numRings; r++) {
-                                uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : ref.coordCount;
-                                if (ringEnd > ref.coordCount) ringEnd = ref.coordCount;
+                                uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : actualPoints;
+                                if (ringEnd > actualPoints) ringEnd = actualPoints;
                                 for (uint16_t j = ringStart; j < ringEnd; j++) {
                                     uint16_t next = (j + 1 < ringEnd) ? j + 1 : ringStart;
                                     int x0 = (px_hp[j] >> 4) + ref.tileOffsetX;
@@ -2039,20 +2064,17 @@ namespace MapEngine {
                         size_t validPoints = 0;
                         int16_t lastPx = -32768, lastPy = -32768;
 
-                        // Simplification: skip vertices within width/2 of last kept
-                        int distThresh = (int)(widthF / 2.0f);
-                        int distThreshSq = distThresh * distThresh;
-                        if (distThreshSq < 1) distThreshSq = 1;
+                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise (IceNav f828e18f)
+                        int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
 
                         for (size_t j = 0; j < numCoords; j++) {
                             int16_t px = (coords[j * 2] >> 4) + ref.tileOffsetX;
                             int16_t py = (coords[j * 2 + 1] >> 4) + ref.tileOffsetY;
 
                             if (validPoints > 0) {
-                                int dx = px - lastPx;
-                                int dy = py - lastPy;
-                                // Skip if too close, but always keep the last vertex
-                                if ((dx*dx + dy*dy) < distThreshSq && j < numCoords - 1) continue;
+                                // Skip vertex if closer than LOD threshold (always keep last)
+                                if (abs(px - lastPx) < lodThreshold && abs(py - lastPy) < lodThreshold
+                                    && j < numCoords - 1) continue;
                             }
 
                             pxArr[validPoints] = px;
@@ -2156,7 +2178,7 @@ namespace MapEngine {
                 }
             }
             globalLayers[pri].clear();
-            taskYIELD();
+            esp_task_wdt_reset();
         }
 
         // Label pass — rendered after all geometry so labels appear on top
