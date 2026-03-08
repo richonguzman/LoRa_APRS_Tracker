@@ -98,6 +98,10 @@ namespace UIMapManager {
     static uint32_t symbolCacheAccessCounter = 0;
     static bool symbolCacheInitialized = false;
 
+    // Zoom buttons (persistent refs for press-state feedback during render)
+    static lv_obj_t* btn_zoomin = nullptr;
+    static lv_obj_t* btn_zoomout = nullptr;
+
     // Own GPS trace (separate from received stations)
     static TracePoint ownTrace[TRACE_MAX_POINTS];
     static uint8_t ownTraceCount = 0;
@@ -200,6 +204,15 @@ namespace UIMapManager {
 
         navRenderPending = false;
 
+        // Update title + release zoom button state now that tiles are visible
+        if (map_title_label) {
+            char title_text[32];
+            snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
+            lv_label_set_text(map_title_label, title_text);
+        }
+        if (btn_zoomin) lv_obj_clear_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
+        if (btn_zoomout) lv_obj_clear_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
+
         cleanup_station_buttons();
         draw_station_traces();
         update_station_objects();
@@ -270,6 +283,14 @@ namespace UIMapManager {
             lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
         } else if (map_canvas) {
             lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        }
+
+        // Collect own trace points independently of TX (every 10s if moved)
+        // Fixes car/motorcycle mode: SmartBeacon TX is infrequent → too few trace points
+        static uint16_t traceCounter = 0;
+        if (++traceCounter >= 200) {  // 200 × 50ms = 10s
+            traceCounter = 0;
+            addOwnTracePoint();
         }
 
         // Periodic station refresh (throttle to every ~10s via counter)
@@ -1163,10 +1184,8 @@ namespace UIMapManager {
         // Pause async preloading while we load tiles (avoid SD contention)
         mainThreadLoading = true;
 
-        // Update title with new zoom level
-        char title_text[32];
-        snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
-        lv_label_set_text(map_title_label, title_text);
+        // Title update deferred to applyRenderedViewport — zoom stays visible
+        // until tiles are actually rendered and displayed.
 
         // Clean up old station buttons before redrawing
         cleanup_station_buttons();
@@ -1309,12 +1328,14 @@ namespace UIMapManager {
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
             ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
+            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
             resetPanOffset();
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
+            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
             if (navModeActive) MapEngine::clearTileCache();
             resetPanOffset();
             redraw_map_canvas();
@@ -1327,6 +1348,7 @@ namespace UIMapManager {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
+            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
             if (navModeActive) MapEngine::clearTileCache();
             resetPanOffset();
             redraw_map_canvas();
@@ -1336,6 +1358,7 @@ namespace UIMapManager {
             MapEngine::clearTileCache();
             switchZoomTable(raster_zooms, raster_zoom_count);
             ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
+            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
             resetPanOffset();
             redraw_map_canvas();
         }
@@ -1797,8 +1820,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_label_set_text(lbl_recenter, LV_SYMBOL_GPS);
         lv_obj_center(lbl_recenter);
 
-        // Zoom buttons
-        lv_obj_t* btn_zoomin = lv_btn_create(title_bar);
+        // Zoom buttons — stay checked (highlighted) until tiles are rendered
+        btn_zoomin = lv_btn_create(title_bar);
         lv_obj_set_size(btn_zoomin, 30, 25);
         lv_obj_set_style_bg_color(btn_zoomin, lv_color_hex(0x16213e), 0);
         lv_obj_align(btn_zoomin, LV_ALIGN_RIGHT_MID, -70, 0);
@@ -1807,7 +1830,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_label_set_text(lbl_zoomin, "+");
         lv_obj_center(lbl_zoomin);
 
-        lv_obj_t* btn_zoomout = lv_btn_create(title_bar);
+        btn_zoomout = lv_btn_create(title_bar);
         lv_obj_set_size(btn_zoomout, 30, 25);
         lv_obj_set_style_bg_color(btn_zoomout, lv_color_hex(0x16213e), 0);
         lv_obj_align(btn_zoomout, LV_ALIGN_RIGHT_MID, -35, 0);

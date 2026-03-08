@@ -19,6 +19,7 @@
 #include <esp_log.h>
 #include <RadioLib.h>
 #include <SPI.h>
+#include <freertos/semphr.h>
 #include "notification_utils.h"
 #include "configuration.h"
 #include "board_pinout.h"
@@ -34,6 +35,7 @@ extern Configuration    Config;
 extern LoraType         *currentLoRaType;
 extern uint8_t          loraIndex;
 extern int              loraIndexSize;
+extern SemaphoreHandle_t spiMutex;
 
 static const char *TAG = "LoRa";
 
@@ -200,10 +202,12 @@ namespace LoRa_Utils {
         currentLoRaType = &Config.loraTypes[loraIndex];
 
         // Reconfigure radio with new parameters
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         radio.setSpreadingFactor(config.spreadingFactor);
         radio.setCodingRate(config.codingRate4);
         float signalBandwidth = config.signalBandwidth / 1000;
         radio.setBandwidth(signalBandwidth);
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
 
         ESP_LOGI(TAG, "Data Rate changed to %d bps (SF%d, CR4/%d)",
                    dataRate, config.spreadingFactor, config.codingRate4);
@@ -241,6 +245,7 @@ namespace LoRa_Utils {
         }
 
         float freq = (float)currentLoRaType->frequency/1000000;
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         radio.setFrequency(freq);
         radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
         float signalBandwidth = currentLoRaType->signalBandwidth/1000;
@@ -252,6 +257,7 @@ namespace LoRa_Utils {
         #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
         #endif
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
 
         String loraCountryFreq;
         switch (loraIndex) {
@@ -363,9 +369,12 @@ namespace LoRa_Utils {
         }
         if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
-        
+
+        // Acquire SPI mutex — SD card shares the same SPI bus
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         if (state == RADIOLIB_ERR_NONE) {
             STORAGE_Utils::updateTxStats();
         } else {
@@ -380,12 +389,15 @@ namespace LoRa_Utils {
     }
 
     void wakeRadio() {
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         radio.startReceive();
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
     }
 
     ReceivedLoRaPacket receiveFromSleep() {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         int state = radio.readData(packet);
         if (state == RADIOLIB_ERR_NONE) {
             receivedLoraPacket.text       = packet;
@@ -395,6 +407,7 @@ namespace LoRa_Utils {
         } else {
             //
         }
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         return receivedLoraPacket;
     }
 
@@ -403,6 +416,7 @@ namespace LoRa_Utils {
         String packet = "";
         if (operationDone) {
             operationDone = false;
+            if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
             if (transmitFlag) {
                 radio.startReceive();
                 transmitFlag = false;
@@ -420,12 +434,15 @@ namespace LoRa_Utils {
                     ESP_LOGE(TAG, "Rx failed, code %d", state);  // 7 = CRC mismatch
                 }
             }
+            if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         }
         return receivedLoraPacket;
     }
 
     void sleepRadio() {
+        if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         radio.sleep();
+        if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
     }
 
 }
