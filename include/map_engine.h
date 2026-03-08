@@ -56,7 +56,9 @@ namespace MapEngine {
     // Viewport render request (Core 1 → Core 0)
     // Used for both NAV (vector) and raster (PNG/JPG) compositing
     struct NavRenderRequest {
-        float centerLat;
+        int   centerTileX;       // IceNav model: integer tile reference
+        int   centerTileY;
+        float centerLat;         // Derived from centerTileX/Y for the render engine
         float centerLon;
         uint8_t zoom;
         LGFX_Sprite* targetSprite;
@@ -64,6 +66,10 @@ namespace MapEngine {
         int regionCount;
         bool isRaster;           // true = raster compositing, false = NAV vector
     };
+
+    // Set by Core 0 before signaling MAP_EVENT_NAV_DONE — tells Core 1 which tile was rendered
+    extern volatile int lastRenderedTileX;
+    extern volatile int lastRenderedTileY;
 
     void enqueueNavRender(const NavRenderRequest& req);
 

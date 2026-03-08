@@ -75,15 +75,24 @@ namespace UIMapManager {
     static std::vector<uint32_t> notFoundCache;
     static int notFoundCacheIndex = 0;
 
-    // Touch pan state — IceNav-v3 scrollMap model (frame-to-frame delta)
-    static bool touch_dragging = false;
-    static int16_t panOffsetX = 0;  // Accumulated pixel offset (never exceeds ~threshold)
-    static int16_t panOffsetY = 0;
-    static lv_coord_t last_touch_x = 0;  // Last touch position (for frame-to-frame delta)
-    static lv_coord_t last_touch_y = 0;
-    static lv_coord_t press_start_x = 0;  // Touch start point (for drag detection only)
-    static lv_coord_t press_start_y = 0;
-    #define PAN_THRESHOLD 5           // Minimum pixels to trigger drag start
+    // IceNav tile reference — integer tile center (never a float)
+    static int centerTileX = 0;       // Tile the DISPLAYED sprite is centered on
+    static int centerTileY = 0;
+    static int renderTileX = 0;       // Target tile for the next/current render request
+    static int renderTileY = 0;
+
+    // Touch pan state — IceNav-v3 scrollMap model (maps.cpp + mainScr.cpp)
+    static bool isScrollingMap = false;   // True while finger is on screen
+    static bool dragStarted = false;      // True after START_THRESHOLD crossed
+    static int16_t offsetX = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetX)
+    static int16_t offsetY = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetY)
+    static float velocityX = 0.0f;        // Inertial momentum px/ms (IceNav: mapView.velocityX)
+    static float velocityY = 0.0f;
+    static constexpr float PAN_FRICTION = 0.95f;       // Decay factor (IceNav: friction)
+    static constexpr float PAN_FRICTION_BUSY = 0.85f;  // Heavier friction during render
+    static int last_x = 0, last_y = 0;
+    static uint32_t last_time = 0;
+    #define START_THRESHOLD 12        // Minimum pixels to start drag (IceNav: 12)
     #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render (IceNav: 128)
 
     // Tile data size for old raster tiles
@@ -102,6 +111,9 @@ namespace UIMapManager {
     static lv_obj_t* btn_zoomin = nullptr;
     static lv_obj_t* btn_zoomout = nullptr;
     static lv_obj_t* btn_recenter = nullptr;
+    static lv_obj_t* map_title_bar = nullptr;
+    static lv_obj_t* map_info_bar = nullptr;
+    static bool mapFullscreen = false;
 
     // Own GPS trace (separate from received stations)
     static TracePoint ownTrace[TRACE_MAX_POINTS];
@@ -113,6 +125,12 @@ namespace UIMapManager {
     void draw_station_traces();
     void update_station_objects();
     void redraw_map_canvas();
+    static void scrollMap(int16_t dx, int16_t dy);
+    static inline void resetPanOffset();
+    static inline void resetZoom();
+    static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon);
+    static void initCenterTileFromLatLon(float lat, float lon);
+    static void toggleMapFullscreen();
 
     // Station hit zones for click detection (replaces LVGL buttons - no alloc/dealloc)
     struct StationHitZone {
@@ -159,9 +177,13 @@ namespace UIMapManager {
     }
 
     // Filtered own position — only updates when movement exceeds HDOP-based threshold
+    // Two levels: iconGps (≥3 sats, for display) and filteredOwn (≥6 sats, for trace/recentrage)
+    static float iconGpsLat = 0.0f;
+    static float iconGpsLon = 0.0f;
+    static bool  iconGpsValid = false;       // Loose: ≥3 sats (2D fix minimum)
     static float filteredOwnLat = 0.0f;
     static float filteredOwnLon = 0.0f;
-    static bool  filteredOwnValid = false;
+    static bool  filteredOwnValid = false;   // Strict: ≥6 sats (good 3D geometry)
 
     // Copy back→front sprite (byte-swap for raster, memcpy for NAV)
     // Caller MUST hold renderLock.
@@ -186,7 +208,8 @@ namespace UIMapManager {
 #endif
     }
 
-    // Apply rendered viewport: try mutex 50ms, copy back→front, draw stations
+    // Apply rendered viewport — IceNav displayMap() pattern.
+    // Just copies sprite + updates UI. Does NOT touch offsetX/Y.
     static void applyRenderedViewport() {
         if (!backViewportSprite || !frontViewportSprite) return;
 
@@ -204,8 +227,20 @@ namespace UIMapManager {
         }
 
         navRenderPending = false;
+        redraw_in_progress = false;
+        mainThreadLoading = false;
 
-        // Update title + release zoom button state now that tiles are visible
+        // Rebase offset to match the new sprite center.
+        // No visual jump: new sprite content is shifted by the same amount as offset.
+        // centerTileX was the OLD sprite reference. lastRenderedTile is the NEW one.
+        {
+            offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
+            offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
+            centerTileX = MapEngine::lastRenderedTileX;
+            centerTileY = MapEngine::lastRenderedTileY;
+        }
+
+        // UI updates
         if (map_title_label) {
             char title_text[32];
             snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
@@ -227,10 +262,8 @@ namespace UIMapManager {
         }
 
         lv_obj_invalidate(map_canvas);
-
-        mainThreadLoading = false;
-        redraw_in_progress = false;
-        ESP_LOGI(TAG, "Viewport applied (Z%d)", map_current_zoom);
+        ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
+                      map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
     }
 
     // Lightweight station-only refresh: restore clean front from back, redraw stations.
@@ -280,9 +313,30 @@ namespace UIMapManager {
             }
         }
 
+        // Inertia — IceNav updateMap() L271-294
+        // Apply momentum when finger is not on screen
+        if (!isScrollingMap && (velocityX != 0.0f || velocityY != 0.0f)) {
+            uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+            uint32_t dt = (last_time > 0) ? (now - last_time) : 0;
+            last_time = now;
+            if (dt > 0 && dt < 100) {  // Avoid jumps on long pauses
+                int16_t dx = (int16_t)(velocityX * dt);
+                int16_t dy = (int16_t)(velocityY * dt);
+                if (dx != 0 || dy != 0)
+                    scrollMap(dx, dy);
+
+                float friction = redraw_in_progress ? PAN_FRICTION_BUSY : PAN_FRICTION;
+                velocityX *= friction;
+                velocityY *= friction;
+
+                if (fabsf(velocityX) < 0.01f) velocityX = 0.0f;
+                if (fabsf(velocityY) < 0.01f) velocityY = 0.0f;
+            }
+        }
+
         // Update canvas position every frame (IceNav: updateMap L326-328)
         if (map_canvas && !map_follow_gps) {
-            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
+            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN - offsetX, -MAP_CANVAS_MARGIN - offsetY);
         } else if (map_canvas) {
             lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
         }
@@ -299,21 +353,20 @@ namespace UIMapManager {
         static uint16_t refreshCounter = 0;
         if (++refreshCounter >= 200) {  // 200 × 50ms = 10s
             refreshCounter = 0;
-            if (!touch_dragging) {
-                float prevLat = map_center_lat;
-                float prevLon = map_center_lon;
-
-                // Follow GPS: always update center, even during render
+            if (!isScrollingMap) {
+                // Follow GPS: update centerTile from GPS position
                 if (map_follow_gps && filteredOwnValid) {
-                    map_center_lat = filteredOwnLat;
-                    map_center_lon = filteredOwnLon;
-                }
+                    int prevRenderTileX = renderTileX;
+                    int prevRenderTileY = renderTileY;
+                    initCenterTileFromLatLon(filteredOwnLat, filteredOwnLon);
 
-                bool posChanged = (map_center_lat != prevLat || map_center_lon != prevLon);
-
-                if (posChanged) {
-                    ESP_LOGD(TAG, "Periodic refresh (GPS moved, full redraw)");
-                    redraw_map_canvas();  // re-enqueues with new center (latest-wins)
+                    if (renderTileX != prevRenderTileX || renderTileY != prevRenderTileY) {
+                        ESP_LOGD(TAG, "Periodic refresh (GPS moved tile, full redraw)");
+                        redraw_map_canvas();
+                    } else if (!redraw_in_progress && !navRenderPending) {
+                        ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
+                        refreshStationOverlay();
+                    }
                 } else if (!redraw_in_progress && !navRenderPending) {
                     ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
                     refreshStationOverlay();
@@ -563,10 +616,19 @@ namespace UIMapManager {
         static uint32_t iconCentroidCount = 0;
 
         if (!gps.location.isValid()) return;
-        // Reject unreliable fixes: need ≥6 sats for decent 3D geometry
-        if (gps.satellites.value() < 6) return;
         float lat = gps.location.lat();
         float lon = gps.location.lng();
+        int sats = gps.satellites.value();
+
+        // Level 1: icon display (≥3 sats = 2D fix minimum)
+        if (sats >= 3) {
+            iconGpsLat = lat;
+            iconGpsLon = lon;
+            iconGpsValid = true;
+        }
+
+        // Level 2: filtered position for trace + recentrage (≥6 sats)
+        if (sats < 6) return;
 
         if (!filteredOwnValid) {
             filteredOwnLat = lat;
@@ -639,11 +701,11 @@ namespace UIMapManager {
 
         stationHitZoneCount = 0;
 
-        // Own position — use filtered position to eliminate GPS jitter
+        // Own position — use icon-level GPS (≥3 sats) for early display
         updateFilteredOwnPosition();
-        if (filteredOwnValid) {
+        if (iconGpsValid) {
             int myX, myY;
-            latLonToPixel(filteredOwnLat, filteredOwnLon,
+            latLonToPixel(iconGpsLat, iconGpsLon,
                           map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
             if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
@@ -991,6 +1053,25 @@ namespace UIMapManager {
         *tileY = (int)((1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n);
     }
 
+    // IceNav model: convert tile index to lat/lon of tile center (tileX+0.5, tileY+0.5)
+    static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon) {
+        double n = (double)(1 << zoom);
+        *lon = (float)((tileX + 0.5) / n * 360.0 - 180.0);
+        double n_rad = PI * (1.0 - 2.0 * (tileY + 0.5) / n);
+        *lat = (float)(atan(sinh(n_rad)) * 180.0 / PI);
+    }
+
+    // Initialize centerTileX/Y from lat/lon (recenter, GPS init, zoom change).
+    // Sets centerTileX/Y for pan tracking. Keeps map_center_lat/lon = actual position
+    // (NOT tile center) so the render engine centers on the real GPS position.
+    static void initCenterTileFromLatLon(float lat, float lon) {
+        latLonToTile(lat, lon, map_current_zoom, &centerTileX, &centerTileY);
+        renderTileX = centerTileX;
+        renderTileY = centerTileY;
+        map_center_lat = lat;
+        map_center_lon = lon;
+    }
+
     // Convert lat/lon to pixel position on screen (relative to center)
     void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* pixelX, int* pixelY) {
         double n = pow(2.0, zoom);
@@ -1077,19 +1158,18 @@ namespace UIMapManager {
     void btn_map_recenter_clicked(lv_event_t* e) {
         ESP_LOGI(TAG, "Recentering on GPS");
         map_follow_gps = true;
+        float initLat, initLon;
         if (gps.location.isValid()) {
-            map_center_lat = gps.location.lat();
-            map_center_lon = gps.location.lng();
-            ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", map_center_lat, map_center_lon);
+            initLat = gps.location.lat();
+            initLon = gps.location.lng();
+            ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", initLat, initLon);
         } else {
-            // No GPS - return to default Ariège position
-            map_center_lat = 42.9667f;
-            map_center_lon = 1.6053f;
-            ESP_LOGW(TAG, "No GPS, recentered on default position: %.4f, %.4f", map_center_lat, map_center_lon);
+            initLat = 42.9667f;
+            initLon = 1.6053f;
+            ESP_LOGW(TAG, "No GPS, recentered on default position: %.4f, %.4f", initLat, initLon);
         }
-        panOffsetX = 0;
-        panOffsetY = 0;
-        lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        initCenterTileFromLatLon(initLat, initLon);
+        resetPanOffset();
         if (btn_recenter) lv_obj_add_state(btn_recenter, LV_STATE_PRESSED);
         redraw_map_canvas();
     }
@@ -1180,8 +1260,8 @@ namespace UIMapManager {
             return;
         }
 
-        // Allow re-enqueue during async NAV render (xQueueOverwrite keeps latest)
-        if (redraw_in_progress && !navRenderPending) return;
+        // Always allow re-enqueue — IceNav model: scrollMap() calls generateMap()
+        // freely, xQueueOverwrite keeps latest request. No blocking.
         redraw_in_progress = true;
 
         // Pause async preloading while we load tiles (avoid SD contention)
@@ -1194,20 +1274,8 @@ namespace UIMapManager {
         cleanup_station_buttons();
 
         // Recalculate tile positions
-        int centerTileX, centerTileY;
-        latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-        int n = 1 << map_current_zoom;
-        float tileXf = (map_center_lon + 180.0f) / 360.0f * n;
-        float latRad = map_center_lat * PI / 180.0f;
-        float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
-
-        float fracX = tileXf - centerTileX;
-        float fracY = tileYf - centerTileY;
-        int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
-        int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
-
-        ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
+        ESP_LOGD(TAG, "Render tile: %d/%d, sprite tile: %d/%d, offset: %d,%d",
+                      renderTileX, renderTileY, centerTileX, centerTileY, offsetX, offsetY);
 
         if (STORAGE_Utils::isSDAvailable()) {
             // Check if NAV data available: try each region for pack file or legacy tile
@@ -1235,7 +1303,7 @@ namespace UIMapManager {
                         if (!isNavMode) {
                             // Fallback: legacy individual tile
                             snprintf(navCheckPath, sizeof(navCheckPath), "/LoRa_Tracker/VectMaps/%s/%d/%d/%d.nav",
-                                     navRegions[r].c_str(), map_current_zoom, centerTileX, centerTileY);
+                                     navRegions[r].c_str(), map_current_zoom, renderTileX, renderTileY);
                             isNavMode = SD.exists(navCheckPath);
                         }
                     }
@@ -1259,6 +1327,8 @@ namespace UIMapManager {
                 // Enqueue async NAV render on Core 0 (non-blocking)
                 if (backViewportSprite) {
                     MapEngine::NavRenderRequest req = {};
+                    req.centerTileX = renderTileX;
+                    req.centerTileY = renderTileY;
                     req.centerLat = map_center_lat;
                     req.centerLon = map_center_lon;
                     req.zoom = (uint8_t)map_current_zoom;
@@ -1290,6 +1360,8 @@ namespace UIMapManager {
                 // Enqueue async raster compositing on Core 0 (same pattern as NAV)
                 if (backViewportSprite) {
                     MapEngine::NavRenderRequest req = {};
+                    req.centerTileX = renderTileX;
+                    req.centerTileY = renderTileY;
                     req.centerLat = map_center_lat;
                     req.centerLon = map_center_lon;
                     req.zoom = (uint8_t)map_current_zoom;
@@ -1313,11 +1385,23 @@ namespace UIMapManager {
     }
 
 
-    // Helper: reset pan offset and canvas position before re-render
+    // Helper: reset pan offset, velocity, and canvas position before re-render
+    // Does NOT touch centerTileX/Y — caller must update those first if zoom changed.
     static inline void resetPanOffset() {
-        panOffsetX = 0;
-        panOffsetY = 0;
+        offsetX = 0;
+        offsetY = 0;
+        velocityX = 0.0f;
+        velocityY = 0.0f;
+        renderTileX = centerTileX;
+        renderTileY = centerTileY;
         if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+    }
+
+    // Helper: resync centerTile to current map_center at new zoom, then reset offset.
+    // Call after changing map_current_zoom.
+    static inline void resetZoom() {
+        initCenterTileFromLatLon(map_center_lat, map_center_lon);
+        resetPanOffset();
     }
 
     // Map zoom in handler
@@ -1332,7 +1416,7 @@ namespace UIMapManager {
             map_current_zoom = nav_zooms[0];
             ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
             if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED);
-            resetPanOffset();
+            resetZoom();
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
@@ -1340,7 +1424,7 @@ namespace UIMapManager {
             ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
             if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED);
             if (navModeActive) MapEngine::clearTileCache();
-            resetPanOffset();
+            resetZoom();
             redraw_map_canvas();
         }
     }
@@ -1353,7 +1437,7 @@ namespace UIMapManager {
             ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
             if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);
             if (navModeActive) MapEngine::clearTileCache();
-            resetPanOffset();
+            resetZoom();
             redraw_map_canvas();
         } else if (navModeActive) {
             // At min NAV zoom — switch to raster
@@ -1362,155 +1446,167 @@ namespace UIMapManager {
             switchZoomTable(raster_zooms, raster_zoom_count);
             ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
             if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);
-            resetPanOffset();
+            resetZoom();
             redraw_map_canvas();
         }
     }
 
-    // IceNav scrollMap threshold + rebase logic (maps.cpp L685-733).
-    // Checks panOffsetX/Y against threshold. When crossed, converts 1 tile worth
-    // of lat/lon and rebases offset by ±MAP_TILE_SIZE. Returns true if re-render needed.
-    static bool panCheckThresholdAndRebase() {
-        bool scrollUpdated = false;
-
-        if (panOffsetX >= PAN_TILE_THRESHOLD) {
-            // Dragged right → shift map center west by 1 tile
-            double n_d = pow(2.0, map_current_zoom);
-            map_center_lon -= 360.0 / n_d;
-            panOffsetX -= MAP_TILE_SIZE;  // Rebase (IceNav: offsetX -= tileSize)
-            scrollUpdated = true;
-        } else if (panOffsetX <= -PAN_TILE_THRESHOLD) {
-            // Dragged left → shift map center east by 1 tile
-            double n_d = pow(2.0, map_current_zoom);
-            map_center_lon += 360.0 / n_d;
-            panOffsetX += MAP_TILE_SIZE;  // Rebase (IceNav: offsetX += tileSize)
-            scrollUpdated = true;
+    // Toggle fullscreen: hide/show title bar + info bar, resize map container
+    static void toggleMapFullscreen() {
+        mapFullscreen = !mapFullscreen;
+        if (mapFullscreen) {
+            if (map_title_bar) lv_obj_add_flag(map_title_bar, LV_OBJ_FLAG_HIDDEN);
+            if (map_info_bar)  lv_obj_add_flag(map_info_bar, LV_OBJ_FLAG_HIDDEN);
+            if (map_container) {
+                lv_obj_set_pos(map_container, 0, 0);
+                lv_obj_set_size(map_container, SCREEN_WIDTH, SCREEN_HEIGHT);
+            }
+        } else {
+            if (map_title_bar) lv_obj_clear_flag(map_title_bar, LV_OBJ_FLAG_HIDDEN);
+            if (map_info_bar)  lv_obj_clear_flag(map_info_bar, LV_OBJ_FLAG_HIDDEN);
+            if (map_container) {
+                lv_obj_set_pos(map_container, 0, 35);
+                lv_obj_set_size(map_container, SCREEN_WIDTH, MAP_VISIBLE_HEIGHT);
+            }
         }
-
-        if (panOffsetY >= PAN_TILE_THRESHOLD) {
-            // Dragged down → shift map center north by 1 tile
-            double n_d = pow(2.0, map_current_zoom);
-            double lat_rad = map_center_lat * PI / 180.0;
-            double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
-            double ny = cy - 1.0 / n_d;  // -1 tile in Y
-            if (ny < 0.0) ny = 0.0;
-            if (ny > 1.0) ny = 1.0;
-            map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
-            panOffsetY -= MAP_TILE_SIZE;
-            scrollUpdated = true;
-        } else if (panOffsetY <= -PAN_TILE_THRESHOLD) {
-            // Dragged up → shift map center south by 1 tile
-            double n_d = pow(2.0, map_current_zoom);
-            double lat_rad = map_center_lat * PI / 180.0;
-            double cy = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / PI) / 2.0;
-            double ny = cy + 1.0 / n_d;  // +1 tile in Y
-            if (ny < 0.0) ny = 0.0;
-            if (ny > 1.0) ny = 1.0;
-            map_center_lat = atan(sinh(PI * (1.0 - 2.0 * ny))) * 180.0 / PI;
-            panOffsetY += MAP_TILE_SIZE;
-            scrollUpdated = true;
-        }
-
-        if (scrollUpdated) {
-            ESP_LOGD(TAG, "Pan rebase → offset(%d,%d) lat/lon %.4f,%.4f",
-                          panOffsetX, panOffsetY, map_center_lat, map_center_lon);
-            redraw_map_canvas();
-        }
-        return scrollUpdated;
     }
 
-    // Touch pan handler — IceNav-v3 scrollMap model.
-    // Frame-to-frame delta accumulates in panOffsetX/Y. When threshold is crossed
-    // (mid-drag or on release), offset is converted to lat/lon and rebased to 0.
+    // Async adaptation of IceNav Maps::scrollMap() — maps.cpp L657-738
+    // offsetX/Y grows freely (clamped by margin). No wrap — avoids 256px visual snap
+    // while async render hasn't delivered the new sprite yet.
+    // renderTileX/Y tracks the target tile for the render request.
+    // centerTileX/Y only changes in applyRenderedViewport() when the new sprite arrives.
+    static void scrollMap(int16_t dx, int16_t dy) {
+        if (dx == 0 && dy == 0) return;
+
+        // Dampen excessive offsets in same direction (IceNav L663-668)
+        const int16_t softLimit = PAN_TILE_THRESHOLD;
+        if (abs(offsetX) > softLimit && ((dx > 0 && offsetX > 0) || (dx < 0 && offsetX < 0)))
+            dx /= 2;
+        if (abs(offsetY) > softLimit && ((dy > 0 && offsetY > 0) || (dy < 0 && offsetY < 0)))
+            dy /= 2;
+
+        offsetX += dx;
+        offsetY += dy;
+        map_follow_gps = false;
+
+        // Clamp to canvas margin — hard limit of pre-rendered area
+        int16_t maxOff = MAP_CANVAS_MARGIN - 10;
+        offsetX = (int16_t)constrain(offsetX, -maxOff, maxOff);
+        offsetY = (int16_t)constrain(offsetY, -maxOff, maxOff);
+
+        // Compute which tile the view center is pointing at (without modifying offset)
+        int targetX = centerTileX;
+        int targetY = centerTileY;
+        int16_t tempX = offsetX, tempY = offsetY;
+        while (tempX >= PAN_TILE_THRESHOLD) { targetX++; tempX -= MAP_TILE_SIZE; }
+        while (tempX <= -PAN_TILE_THRESHOLD) { targetX--; tempX += MAP_TILE_SIZE; }
+        while (tempY >= PAN_TILE_THRESHOLD) { targetY++; tempY -= MAP_TILE_SIZE; }
+        while (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
+
+        if (targetX != renderTileX || targetY != renderTileY) {
+            renderTileX = targetX;
+            renderTileY = targetY;
+            tileToLatLon(renderTileX, renderTileY, map_current_zoom, &map_center_lat, &map_center_lon);
+            ESP_LOGD(TAG, "scrollMap → render tile(%d,%d) offset(%d,%d) lat/lon %.4f,%.4f",
+                          renderTileX, renderTileY, offsetX, offsetY, map_center_lat, map_center_lon);
+            redraw_map_canvas();
+        }
+    }
+
+    // Touch pan handler — IceNav scrollMapEvent() mainScr.cpp L407-484
     void map_touch_event_cb(lv_event_t* e) {
         lv_event_code_t code = lv_event_get_code(e);
         lv_indev_t* indev = lv_indev_get_act();
         if (!indev) return;
 
-        lv_point_t point;
-        lv_indev_get_point(indev, &point);
+        lv_point_t p;
+        lv_indev_get_point(indev, &p);
 
-        if (code == LV_EVENT_PRESSED) {
-            press_start_x = point.x;
-            press_start_y = point.y;
-            last_touch_x = point.x;
-            last_touch_y = point.y;
-            touch_dragging = false;
+        switch (code) {
+        case LV_EVENT_PRESSED:
+            last_x = p.x;
+            last_y = p.y;
+            last_time = (uint32_t)(esp_timer_get_time() / 1000);
+            dragStarted = false;
+            isScrollingMap = true;
+            // Stop any ongoing inertia when touching the screen
+            velocityX = 0.0f;
+            velocityY = 0.0f;
+            break;
+
+        case LV_EVENT_PRESSING: {
+            uint32_t current_time = (uint32_t)(esp_timer_get_time() / 1000);
+            int dx = p.x - last_x;
+            int dy = p.y - last_y;
+            uint32_t dt = current_time - last_time;
+
+            if (!dragStarted) {
+                if (abs(dx) > START_THRESHOLD || abs(dy) > START_THRESHOLD)
+                    dragStarted = true;
+            }
+
+            if (dragStarted && dt > 0) {
+                // Move map — IceNav: mapView.scrollMap(-dx, -dy)
+                scrollMap(-dx, -dy);
+
+                // Immediate visual feedback
+                if (map_canvas)
+                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN - offsetX, -MAP_CANVAS_MARGIN - offsetY);
+
+                // Sample velocity px/ms with exponential filter (IceNav weight 0.7)
+                float weight = 0.7f;
+                velocityX = velocityX * (1.0f - weight) + (-(float)dx / (float)dt) * weight;
+                velocityY = velocityY * (1.0f - weight) + (-(float)dy / (float)dt) * weight;
+
+                last_x = p.x;
+                last_y = p.y;
+                last_time = current_time;
+            }
+            break;
         }
-        else if (code == LV_EVENT_PRESSING) {
-            // Frame-to-frame delta (IceNav: scrollMapEvent L436-437)
-            int16_t dx = point.x - last_touch_x;
-            int16_t dy = point.y - last_touch_y;
 
-            if (!touch_dragging) {
-                int16_t totalDx = point.x - press_start_x;
-                int16_t totalDy = point.y - press_start_y;
-                if (abs(totalDx) > PAN_THRESHOLD || abs(totalDy) > PAN_THRESHOLD) {
-                    touch_dragging = true;
-                    map_follow_gps = false;
+        case LV_EVENT_RELEASED:
+        case LV_EVENT_PRESS_LOST: {
+            bool wasDragging = dragStarted;
+            isScrollingMap = false;
+            dragStarted = false;
 
-                    // Immediate preload: queue tiles in direction of movement (raster only)
-                    if (tilePreloadQueue != nullptr && !navModeActive) {
-                        int centerTileX, centerTileY;
-                        latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-                        int dir_x = (totalDx < 0) ? 1 : (totalDx > 0) ? -1 : 0;
-                        int dir_y = (totalDy < 0) ? 1 : (totalDy > 0) ? -1 : 0;
-                        TileRequest req;
-                        req.zoom = map_current_zoom;
-                        for (int i = -1; i <= 1; i++) {
-                            if (dir_x != 0) { req.tileX = centerTileX + dir_x * 2; req.tileY = centerTileY + i; xQueueSend(tilePreloadQueue, &req, 0); }
-                            if (dir_y != 0) { req.tileX = centerTileX + i; req.tileY = centerTileY + dir_y * 2; xQueueSend(tilePreloadQueue, &req, 0); }
-                        }
+            // Kill very low velocity
+            if (fabsf(velocityX) < 0.1f) velocityX = 0.0f;
+            if (fabsf(velocityY) < 0.1f) velocityY = 0.0f;
+
+            // Double-tap detection (IceNav: 200ms window, lvglSetup.cpp)
+            if (!wasDragging) {
+                static uint32_t firstTapTime = 0;
+                static uint8_t tapCount = 0;
+                uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+
+                if (now - firstTapTime > 300) {
+                    // First tap or timeout — start new sequence
+                    tapCount = 1;
+                    firstTapTime = now;
+                } else {
+                    tapCount++;
+                    if (tapCount >= 2) {
+                        toggleMapFullscreen();
+                        tapCount = 0;
+                        firstTapTime = 0;
+                        break;  // Don't process as station tap
                     }
                 }
             }
 
-            if (touch_dragging && map_canvas && (dx != 0 || dy != 0)) {
-                // Elastic resistance beyond threshold (IceNav: scrollMap L654-658)
-                if (abs(panOffsetX) > PAN_TILE_THRESHOLD &&
-                    ((dx > 0 && panOffsetX > 0) || (dx < 0 && panOffsetX < 0)))
-                    dx /= 2;
-                if (abs(panOffsetY) > PAN_TILE_THRESHOLD &&
-                    ((dy > 0 && panOffsetY > 0) || (dy < 0 && panOffsetY < 0)))
-                    dy /= 2;
-
-                // Accumulate frame delta
-                panOffsetX += dx;
-                panOffsetY += dy;
-
-                // Clamp to canvas margin
-                int16_t maxOff = MAP_CANVAS_MARGIN - 10;
-                if (panOffsetX > maxOff) panOffsetX = maxOff;
-                if (panOffsetX < -maxOff) panOffsetX = -maxOff;
-                if (panOffsetY > maxOff) panOffsetY = maxOff;
-                if (panOffsetY < -maxOff) panOffsetY = -maxOff;
-
-                // Threshold check mid-drag (IceNav: scrollMap L685-716)
-                panCheckThresholdAndRebase();
-
-                // Move canvas for immediate visual feedback
-                lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN + panOffsetX, -MAP_CANVAS_MARGIN + panOffsetY);
-            }
-
-            last_touch_x = point.x;
-            last_touch_y = point.y;
-        }
-        else if (code == LV_EVENT_RELEASED) {
-            if (touch_dragging) {
-                touch_dragging = false;
-
-                // Final threshold check on release (residual < 128 stays as visual offset)
-                panCheckThresholdAndRebase();
-            } else {
-                // Tap (no drag) - check if a station was tapped
+            if (!wasDragging) {
+                // Single tap — check if a station was tapped
                 for (int i = 0; i < stationHitZoneCount; i++) {
                     int16_t hx = stationHitZones[i].x;
                     int16_t hy = stationHitZones[i].y;
                     int16_t hw = stationHitZones[i].w;
                     int16_t hh = stationHitZones[i].h;
 
-                    if (point.x >= hx - hw/2 && point.x <= hx + hw/2 &&
-                        point.y >= hy - hh/2 && point.y <= hy + hh/2) {
+                    if (p.x >= hx - hw/2 && p.x <= hx + hw/2 &&
+                        p.y >= hy - hh/2 && p.y <= hy + hh/2) {
                         int stationIdx = stationHitZones[i].stationIdx;
                         MapStation* station = STATION_Utils::getMapStation(stationIdx);
                         if (station && station->valid && station->callsign.length() > 0) {
@@ -1521,6 +1617,10 @@ namespace UIMapManager {
                     }
                 }
             }
+            break;
+        }
+
+        default: break;
         }
     }
 
@@ -1743,6 +1843,10 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
 
     // Create map screen
     void create_map_screen() {
+        mapFullscreen = false;
+        map_title_bar = nullptr;
+        map_info_bar = nullptr;
+
         // Boost CPU to 240 MHz for smooth map rendering
         setCpuFrequencyMhz(240);
         ESP_LOGI(TAG, "CPU boosted to %d MHz", getCpuFrequencyMhz());
@@ -1774,20 +1878,20 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
 
         // Use current GPS position as center if follow mode is active
         if (map_follow_gps && gps.location.isValid()) {
-            map_center_lat = gps.location.lat();
-            map_center_lon = gps.location.lng();
+            initCenterTileFromLatLon(gps.location.lat(), gps.location.lng());
             ESP_LOGI(TAG, "Using GPS position: %.4f, %.4f", map_center_lat, map_center_lon);
         } else if (map_center_lat == 0.0f && map_center_lon == 0.0f) {
-            // Default to Ariège (Foix) if no GPS - matches OCC tiles
-            map_center_lat = 42.9667f;
-            map_center_lon = 1.6053f;
+            initCenterTileFromLatLon(42.9667f, 1.6053f);
             ESP_LOGW(TAG, "No GPS, using default position: %.4f, %.4f", map_center_lat, map_center_lon);
-        } else {
-            ESP_LOGI(TAG, "Using pan position: %.4f, %.4f", map_center_lat, map_center_lon);
+        } else if (centerTileX == 0 && centerTileY == 0) {
+            // Screen recreated but lat/lon preserved — re-sync tile from lat/lon
+            initCenterTileFromLatLon(map_center_lat, map_center_lon);
+            ESP_LOGI(TAG, "Using pan position: %.4f, %.4f (tile %d/%d)", map_center_lat, map_center_lon, centerTileX, centerTileY);
         }
 
         // Title bar (green for map)
-        lv_obj_t* title_bar = lv_obj_create(screen_map);
+        map_title_bar = lv_obj_create(screen_map);
+        lv_obj_t* title_bar = map_title_bar;
         lv_obj_set_size(title_bar, SCREEN_WIDTH, 35);
         lv_obj_set_pos(title_bar, 0, 0);
         lv_obj_set_style_bg_color(title_bar, lv_color_hex(0x009933), 0);
@@ -1916,25 +2020,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             // Fill with background color
             lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
 
-            // Calculate center tile and fractional position within tile
-            int centerTileX, centerTileY;
-            latLonToTile(map_center_lat, map_center_lon, map_current_zoom, &centerTileX, &centerTileY);
-
-            // Calculate sub-tile offset (where our center point is within the tile)
-            int n = 1 << map_current_zoom;
-            float tileXf = (map_center_lon + 180.0f) / 360.0f * n;
-            float latRad = map_center_lat * PI / 180.0f;
-            float tileYf = (1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n;
-
-            // Fractional part (0.0 to 1.0) represents position within tile
-            float fracX = tileXf - centerTileX;
-            float fracY = tileYf - centerTileY;
-
-            // Convert to pixel offset (how many pixels to shift tiles)
-            int subTileOffsetX = (int)(fracX * MAP_TILE_SIZE);
-            int subTileOffsetY = (int)(fracY * MAP_TILE_SIZE);
-
-            ESP_LOGD(TAG, "Center tile: %d/%d, sub-tile offset: %d,%d", centerTileX, centerTileY, subTileOffsetX, subTileOffsetY);
+            ESP_LOGD(TAG, "Center tile: %d/%d, offset: %d,%d", centerTileX, centerTileY, offsetX, offsetY);
 
             // Pause async preloading while we load tiles (avoid SD contention)
             mainThreadLoading = true;
@@ -2047,7 +2133,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         }
 
         // Info bar at bottom
-        lv_obj_t* info_bar = lv_obj_create(screen_map);
+        map_info_bar = lv_obj_create(screen_map);
+        lv_obj_t* info_bar = map_info_bar;
         lv_obj_set_size(info_bar, SCREEN_WIDTH, 25);
         lv_obj_set_pos(info_bar, 0, SCREEN_HEIGHT - 25);
         lv_obj_set_style_bg_color(info_bar, lv_color_hex(0x16213e), 0);

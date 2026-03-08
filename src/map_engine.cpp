@@ -50,6 +50,8 @@ namespace MapEngine {
     // Async NAV rendering
     EventGroupHandle_t mapEventGroup = nullptr;
     QueueHandle_t navRenderQueue = nullptr;
+    volatile int lastRenderedTileX = 0;
+    volatile int lastRenderedTileY = 0;
 
     // Static vectors for AEL polygon filler (PSRAM to preserve DRAM)
     static std::vector<UIMapManager::Edge, PSRAMAllocator<UIMapManager::Edge>> edgePool;
@@ -364,6 +366,8 @@ namespace MapEngine {
                                       *latest.targetSprite, regionPtrs, latest.regionCount);
                 }
 
+                lastRenderedTileX = latest.centerTileX;
+                lastRenderedTileY = latest.centerTileY;
                 xEventGroupSetBits(mapEventGroup, MAP_EVENT_NAV_DONE);
                 continue;
             }
