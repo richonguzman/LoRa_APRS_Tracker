@@ -70,6 +70,7 @@ namespace MapEngine {
     // Set by Core 0 before signaling MAP_EVENT_NAV_DONE — tells Core 1 which tile was rendered
     extern volatile int lastRenderedTileX;
     extern volatile int lastRenderedTileY;
+    extern volatile uint8_t lastRenderedZoom;
 
     void enqueueNavRender(const NavRenderRequest& req);
 

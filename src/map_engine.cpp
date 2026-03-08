@@ -52,6 +52,7 @@ namespace MapEngine {
     QueueHandle_t navRenderQueue = nullptr;
     volatile int lastRenderedTileX = 0;
     volatile int lastRenderedTileY = 0;
+    volatile uint8_t lastRenderedZoom = 0;
 
     // Static vectors for AEL polygon filler (PSRAM to preserve DRAM)
     static std::vector<UIMapManager::Edge, PSRAMAllocator<UIMapManager::Edge>> edgePool;
@@ -368,6 +369,7 @@ namespace MapEngine {
 
                 lastRenderedTileX = latest.centerTileX;
                 lastRenderedTileY = latest.centerTileY;
+                lastRenderedZoom = latest.zoom;
                 xEventGroupSetBits(mapEventGroup, MAP_EVENT_NAV_DONE);
                 continue;
             }

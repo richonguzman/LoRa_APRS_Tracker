@@ -232,8 +232,8 @@ namespace UIMapManager {
 
         // Rebase offset to match the new sprite center.
         // No visual jump: new sprite content is shifted by the same amount as offset.
-        // centerTileX was the OLD sprite reference. lastRenderedTile is the NEW one.
-        {
+        // Skip rebase if zoom changed — tile indices at different zooms are incomparable.
+        if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
             offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
             offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
             centerTileX = MapEngine::lastRenderedTileX;
