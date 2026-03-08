@@ -285,10 +285,10 @@ namespace UIMapManager {
             lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
         }
 
-        // Collect own trace points independently of TX (every 10s if moved)
-        // Fixes car/motorcycle mode: SmartBeacon TX is infrequent → too few trace points
+        // Collect own trace points based on speed: 5s if moving, 10s if walking/static
         static uint16_t traceCounter = 0;
-        if (++traceCounter >= 200) {  // 200 × 50ms = 10s
+        uint16_t traceInterval = (gps.speed.kmph() > 10.0) ? 100 : 200;  // 100×50ms=5s, 200×50ms=10s
+        if (++traceCounter >= traceInterval) {
             traceCounter = 0;
             addOwnTracePoint();
         }
