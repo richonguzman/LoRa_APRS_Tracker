@@ -127,8 +127,9 @@ namespace UIMapManager {
     // Redraw synchronization (prevent overlapping redraws)
     static volatile bool redraw_in_progress = false;
 
-    // Persistent viewport sprite for NAV rendering (avoids PSRAM fragmentation)
-    static LGFX_Sprite* persistentViewportSprite = nullptr;
+    // Double-buffer: back (Core 0 renders into) + front (Core 1 reads from)
+    static LGFX_Sprite* backViewportSprite = nullptr;   // Render target (Core 0)
+    static LGFX_Sprite* frontViewportSprite = nullptr;  // Display source (Core 1)
 
     // NAV priority flag: when true, raster cache is disabled
     static volatile bool navModeActive = false;
@@ -157,31 +158,54 @@ namespace UIMapManager {
     static float filteredOwnLon = 0.0f;
     static bool  filteredOwnValid = false;
 
-    // Apply rendered viewport from sprite to LVGL canvas (byte-swap + stations + invalidate)
-    static void applyRenderedViewport() {
-        navRenderPending = false;
-
-        if (!persistentViewportSprite || !map_canvas_buf) return;
-
-        uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
+    // Copy front sprite to LVGL canvas (byte-swap for raster, memcpy for NAV)
+    static void copyFrontToCanvas() {
+        if (!frontViewportSprite || !map_canvas_buf) return;
+        uint16_t* src = (uint16_t*)frontViewportSprite->getBuffer();
         if (!src) return;
 
         const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
 #if LV_COLOR_16_SWAP
         if (!navModeActive) {
-            // Raster: LGFX sprites are LE, LVGL canvas is BE — need byte-swap
             uint16_t* dst = (uint16_t*)map_canvas_buf;
             for (int i = 0; i < totalPixels; i++) {
                 uint16_t px = src[i];
                 dst[i] = (px >> 8) | (px << 8);
             }
         } else {
-            // NAV: colors from .nav files written via LGFX primitives match LVGL byte order
             memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
         }
 #else
         memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
 #endif
+    }
+
+    // Apply rendered viewport: try mutex 50ms, copy back→front, then front→canvas
+    static void applyRenderedViewport() {
+        if (!backViewportSprite || !frontViewportSprite || !map_canvas_buf) return;
+
+        // Try renderLock 50ms — skip frame if Core 0 is still rendering
+        if (MapEngine::renderLock) {
+            if (xSemaphoreTake(MapEngine::renderLock, pdMS_TO_TICKS(50)) != pdTRUE) {
+                return;  // Core 0 busy — retry next 50ms tick
+            }
+        }
+
+        // Copy back→front (mutex held: Core 0 won't write to back during this)
+        const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
+        uint16_t* backBuf = (uint16_t*)backViewportSprite->getBuffer();
+        uint16_t* frontBuf = (uint16_t*)frontViewportSprite->getBuffer();
+        if (backBuf && frontBuf) {
+            memcpy(frontBuf, backBuf, bufSize);
+        }
+
+        if (MapEngine::renderLock) {
+            xSemaphoreGive(MapEngine::renderLock);
+        }
+
+        // Now copy front→canvas (no mutex needed — front is ours)
+        navRenderPending = false;
+        copyFrontToCanvas();
 
         cleanup_station_buttons();
         draw_station_traces();
@@ -194,8 +218,6 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        // IceNav displayMap: just copy buffer. No position change here.
-        // Canvas position is set every 50ms in map_refresh_timer_cb (IceNav: updateMap L326-328).
         lv_canvas_set_buffer(map_canvas, map_canvas_buf,
                              MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
@@ -205,32 +227,15 @@ namespace UIMapManager {
         ESP_LOGI(TAG, "Viewport applied (Z%d)", map_current_zoom);
     }
 
-    // Lightweight station-only refresh: restore NAV background from sprite, redraw stations.
+    // Lightweight station-only refresh: restore background from front sprite, redraw stations.
     // Cost: ~10-50ms (memcpy 1.2MB + station icons) vs 500-3000ms for full NAV re-render.
     static void refreshStationOverlay() {
         if (!map_canvas || !map_canvas_buf) return;
-        if (navRenderPending) return;  // Core 0 is writing to the sprite — don't read it
 
-        if (persistentViewportSprite) {
-            // Restore clean background from cached sprite (no station artifacts)
-            // Works for both NAV and raster — both render into persistentViewportSprite
-            uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
-            if (src) {
-                const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
-#if LV_COLOR_16_SWAP
-                if (!navModeActive) {
-                    uint16_t* dst = (uint16_t*)map_canvas_buf;
-                    for (int i = 0; i < totalPixels; i++) {
-                        uint16_t px = src[i];
-                        dst[i] = (px >> 8) | (px << 8);
-                    }
-                } else {
-                    memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
-                }
-#else
-                memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
-#endif
-            }
+        if (frontViewportSprite) {
+            // Restore clean background from front sprite (no station artifacts)
+            // Front sprite is never written by Core 0 — safe to read anytime
+            copyFrontToCanvas();
         } else {
             redraw_map_canvas();
             return;
@@ -257,12 +262,15 @@ namespace UIMapManager {
     static void map_refresh_timer_cb(lv_timer_t* timer) {
         if (!screen_map || lv_scr_act() != screen_map) return;
 
-        // Check async render completion (replaces nav_render_poll_cb)
+        // Check async render completion
         if (navRenderPending && MapEngine::mapEventGroup) {
             EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
             if (bits & MAP_EVENT_NAV_DONE) {
-                xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
                 applyRenderedViewport();
+                // Clear bits only after successful apply (navRenderPending == false)
+                if (!navRenderPending) {
+                    xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
+                }
             }
         }
 
@@ -322,8 +330,8 @@ namespace UIMapManager {
         TileRequest req;
 
         while (preloadTaskRunning) {
-            // Wait while main thread is loading tiles (avoid SD contention)
-            if (mainThreadLoading) {
+            // Skip during main thread SD access or NAV mode (no raster cache needed)
+            if (mainThreadLoading || navModeActive) {
                 vTaskDelay(pdMS_TO_TICKS(50));
                 continue;
             }
@@ -1236,12 +1244,12 @@ namespace UIMapManager {
                 }
 
                 // Enqueue async NAV render on Core 0 (non-blocking)
-                if (persistentViewportSprite) {
+                if (backViewportSprite) {
                     MapEngine::NavRenderRequest req = {};
                     req.centerLat = map_center_lat;
                     req.centerLon = map_center_lon;
                     req.zoom = (uint8_t)map_current_zoom;
-                    req.targetSprite = persistentViewportSprite;
+                    req.targetSprite = backViewportSprite;
                     req.isRaster = false;
                     req.regionCount = navRegionCount;
                     for (int r = 0; r < navRegionCount && r < 8; r++) {
@@ -1267,12 +1275,12 @@ namespace UIMapManager {
                 }
 
                 // Enqueue async raster compositing on Core 0 (same pattern as NAV)
-                if (persistentViewportSprite) {
+                if (backViewportSprite) {
                     MapEngine::NavRenderRequest req = {};
                     req.centerLat = map_center_lat;
                     req.centerLon = map_center_lon;
                     req.zoom = (uint8_t)map_current_zoom;
-                    req.targetSprite = persistentViewportSprite;
+                    req.targetSprite = backViewportSprite;
                     req.isRaster = true;
                     req.regionCount = 1;
                     strncpy(req.regions[0], map_current_region.c_str(), 63);
@@ -1847,24 +1855,34 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         if (!map_canvas_buf) {
             map_canvas_buf = (lv_color_t*)heap_caps_malloc(MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
         }
-        // Allocate persistent viewport sprite EARLY (before raster cache fills PSRAM)
-        // to guarantee a contiguous 624KB block is available.
-        if (!persistentViewportSprite) {
-            persistentViewportSprite = new LGFX_Sprite(&tft);
-            persistentViewportSprite->setPsram(true);
-            if (persistentViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
-                ESP_LOGE(TAG, "Failed to create persistent viewport sprite");
-                delete persistentViewportSprite;
-                persistentViewportSprite = nullptr;
-            } else {
-                ESP_LOGI(TAG, "Viewport sprite allocated: %dx%d (%u KB PSRAM)",
-                              MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT,
-                              MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * 2 / 1024);
-                ESP_LOGI(TAG, "PSRAM free: %u KB, largest block: %u KB",
-                              ESP.getFreePsram() / 1024,
-                              heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
+        // Allocate double-buffer sprites EARLY (before raster cache fills PSRAM)
+        const size_t spriteBytes = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * 2;
+        if (!backViewportSprite) {
+            backViewportSprite = new LGFX_Sprite(&tft);
+            backViewportSprite->setPsram(true);
+            if (backViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
+                ESP_LOGE(TAG, "Failed to create back viewport sprite");
+                delete backViewportSprite;
+                backViewportSprite = nullptr;
             }
         }
+        if (!frontViewportSprite) {
+            frontViewportSprite = new LGFX_Sprite(&tft);
+            frontViewportSprite->setPsram(true);
+            if (frontViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
+                ESP_LOGE(TAG, "Failed to create front viewport sprite");
+                delete frontViewportSprite;
+                frontViewportSprite = nullptr;
+            }
+        }
+        if (backViewportSprite && frontViewportSprite) {
+            ESP_LOGI(TAG, "Double-buffer sprites: %dx%d (%u KB each, %u KB total PSRAM)",
+                          MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT,
+                          spriteBytes / 1024, spriteBytes * 2 / 1024);
+        }
+        ESP_LOGI(TAG, "PSRAM free: %u KB, largest block: %u KB",
+                      ESP.getFreePsram() / 1024,
+                      heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
         if (map_canvas_buf) {
             map_canvas = lv_canvas_create(map_container);
             lv_obj_clear_flag(map_canvas, LV_OBJ_FLAG_CLICKABLE);
@@ -1956,21 +1974,21 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                     const char* regionPtrs[NAV_MAX_REGIONS];
                     for (int r = 0; r < navRegionCount; r++) regionPtrs[r] = navRegions[r].c_str();
 
-                    if (persistentViewportSprite) {
+                    if (backViewportSprite && frontViewportSprite) {
                         ESP_LOGI(TAG, "Before renderNavViewport - PSRAM free: %u KB, largest block: %u KB",
                                       ESP.getFreePsram() / 1024,
                                       heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                         hasTiles = MapEngine::renderNavViewport(
                             map_center_lat, map_center_lon, (uint8_t)map_current_zoom,
-                            *persistentViewportSprite, regionPtrs, navRegionCount);
-                        if (hasTiles && map_canvas_buf) {
-                            uint16_t* src = (uint16_t*)persistentViewportSprite->getBuffer();
-                            if (src) {
-                                memcpy(map_canvas_buf, src, MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t));
-                            }
+                            *backViewportSprite, regionPtrs, navRegionCount);
+                        if (hasTiles) {
+                            // Copy back→front→canvas
+                            const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
+                            memcpy(frontViewportSprite->getBuffer(), backViewportSprite->getBuffer(), bufSize);
+                            copyFrontToCanvas();
                         }
                     } else {
-                        ESP_LOGW(TAG, "No viewport sprite available for NAV rendering");
+                        ESP_LOGW(TAG, "No viewport sprites available for NAV rendering");
                     }
 
                     esp_task_wdt_add(xTaskGetCurrentTaskHandle());
@@ -1978,21 +1996,16 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                 } else {
                     navModeActive = false;
                     switchZoomTable(raster_zooms, raster_zoom_count);
-                    // Raster per-tile rendering (PNG/JPG via cache)
-                    for (int dy = -1; dy <= 1; dy++) {
-                        for (int dx = -1; dx <= 1; dx++) {
-                            int tileX = centerTileX + dx;
-                            int tileY = centerTileY + dy;
-                            int offsetX = MAP_CANVAS_WIDTH / 2 - subTileOffsetX + dx * MAP_TILE_SIZE;
-                            int offsetY = MAP_CANVAS_HEIGHT / 2 - subTileOffsetY + dy * MAP_TILE_SIZE;
-
-                            if (dx == 0 && dy == 0) {
-                                ESP_LOGD(TAG, "Center tile offset: %d,%d", offsetX, offsetY);
-                            }
-
-                            if (loadTileFromSD(tileX, tileY, map_current_zoom, map_canvas, offsetX, offsetY)) {
-                                hasTiles = true;
-                            }
+                    // Raster viewport compositing into back sprite
+                    if (backViewportSprite && frontViewportSprite) {
+                        hasTiles = MapEngine::renderRasterViewport(
+                            map_center_lat, map_center_lon, (uint8_t)map_current_zoom,
+                            *backViewportSprite, map_current_region.c_str());
+                        if (hasTiles) {
+                            // Copy back→front→canvas
+                            const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
+                            memcpy(frontViewportSprite->getBuffer(), backViewportSprite->getBuffer(), bufSize);
+                            copyFrontToCanvas();
                         }
                     }
                 }

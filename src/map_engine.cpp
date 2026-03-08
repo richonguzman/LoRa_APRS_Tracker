@@ -440,6 +440,7 @@ namespace MapEngine {
         if (mapRenderTaskHandle) return;
 
         canvas_to_invalidate_ = canvas_to_invalidate;
+        if (!renderLock) renderLock = xSemaphoreCreateMutex();
         spriteMutex = xSemaphoreCreateMutex();
         mapRenderQueue = xQueueCreate(10, sizeof(RenderRequest));
         navRenderQueue = xQueueCreate(1, sizeof(NavRenderRequest));
