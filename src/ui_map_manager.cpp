@@ -98,9 +98,10 @@ namespace UIMapManager {
     static uint32_t symbolCacheAccessCounter = 0;
     static bool symbolCacheInitialized = false;
 
-    // Zoom buttons (persistent refs for press-state feedback during render)
+    // Map action buttons (persistent refs for press-state feedback during render)
     static lv_obj_t* btn_zoomin = nullptr;
     static lv_obj_t* btn_zoomout = nullptr;
+    static lv_obj_t* btn_recenter = nullptr;
 
     // Own GPS trace (separate from received stations)
     static TracePoint ownTrace[TRACE_MAX_POINTS];
@@ -210,8 +211,9 @@ namespace UIMapManager {
             snprintf(title_text, sizeof(title_text), "MAP (Z%d)", map_current_zoom);
             lv_label_set_text(map_title_label, title_text);
         }
-        if (btn_zoomin) lv_obj_clear_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
-        if (btn_zoomout) lv_obj_clear_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
+        if (btn_zoomin) lv_obj_clear_state(btn_zoomin, LV_STATE_PRESSED);
+        if (btn_zoomout) lv_obj_clear_state(btn_zoomout, LV_STATE_PRESSED);
+        if (btn_recenter) lv_obj_clear_state(btn_recenter, LV_STATE_PRESSED);
 
         cleanup_station_buttons();
         draw_station_traces();
@@ -297,11 +299,11 @@ namespace UIMapManager {
         static uint16_t refreshCounter = 0;
         if (++refreshCounter >= 200) {  // 200 × 50ms = 10s
             refreshCounter = 0;
-            if (!touch_dragging && !redraw_in_progress && !navRenderPending) {
+            if (!touch_dragging) {
                 float prevLat = map_center_lat;
                 float prevLon = map_center_lon;
 
-                // Follow GPS: update map center with filtered position before redraw
+                // Follow GPS: always update center, even during render
                 if (map_follow_gps && filteredOwnValid) {
                     map_center_lat = filteredOwnLat;
                     map_center_lon = filteredOwnLon;
@@ -311,8 +313,8 @@ namespace UIMapManager {
 
                 if (posChanged) {
                     ESP_LOGD(TAG, "Periodic refresh (GPS moved, full redraw)");
-                    redraw_map_canvas();
-                } else {
+                    redraw_map_canvas();  // re-enqueues with new center (latest-wins)
+                } else if (!redraw_in_progress && !navRenderPending) {
                     ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
                     refreshStationOverlay();
                 }
@@ -1088,6 +1090,7 @@ namespace UIMapManager {
         panOffsetX = 0;
         panOffsetY = 0;
         lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        if (btn_recenter) lv_obj_add_state(btn_recenter, LV_STATE_PRESSED);
         redraw_map_canvas();
     }
 
@@ -1328,14 +1331,14 @@ namespace UIMapManager {
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
             ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
-            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
+            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED);
             resetPanOffset();
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
-            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED | LV_STATE_DISABLED);
+            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED);
             if (navModeActive) MapEngine::clearTileCache();
             resetPanOffset();
             redraw_map_canvas();
@@ -1348,7 +1351,7 @@ namespace UIMapManager {
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
-            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
+            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);
             if (navModeActive) MapEngine::clearTileCache();
             resetPanOffset();
             redraw_map_canvas();
@@ -1358,7 +1361,7 @@ namespace UIMapManager {
             MapEngine::clearTileCache();
             switchZoomTable(raster_zooms, raster_zoom_count);
             ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
-            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED | LV_STATE_DISABLED);
+            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);
             resetPanOffset();
             redraw_map_canvas();
         }
@@ -1811,7 +1814,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_obj_align(map_title_label, LV_ALIGN_CENTER, -30, 0);
 
         // Recenter button (GPS icon) - leftmost, shows different color when GPS not followed
-        lv_obj_t* btn_recenter = lv_btn_create(title_bar);
+        btn_recenter = lv_btn_create(title_bar);
         lv_obj_set_size(btn_recenter, 30, 25);
         lv_obj_set_style_bg_color(btn_recenter, map_follow_gps ? lv_color_hex(0x16213e) : lv_color_hex(0xff6600), 0);
         lv_obj_align(btn_recenter, LV_ALIGN_RIGHT_MID, -105, 0);
@@ -1820,7 +1823,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_label_set_text(lbl_recenter, LV_SYMBOL_GPS);
         lv_obj_center(lbl_recenter);
 
-        // Zoom buttons — stay checked (highlighted) until tiles are rendered
+        // Zoom buttons — LV_STATE_PRESSED held until tiles are rendered
         btn_zoomin = lv_btn_create(title_bar);
         lv_obj_set_size(btn_zoomin, 30, 25);
         lv_obj_set_style_bg_color(btn_zoomin, lv_color_hex(0x16213e), 0);
