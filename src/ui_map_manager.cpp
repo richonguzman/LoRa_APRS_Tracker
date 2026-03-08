@@ -158,31 +158,32 @@ namespace UIMapManager {
     static float filteredOwnLon = 0.0f;
     static bool  filteredOwnValid = false;
 
-    // Copy front sprite to LVGL canvas (byte-swap for raster, memcpy for NAV)
-    static void copyFrontToCanvas() {
-        if (!frontViewportSprite || !map_canvas_buf) return;
-        uint16_t* src = (uint16_t*)frontViewportSprite->getBuffer();
-        if (!src) return;
+    // Copy back→front sprite (byte-swap for raster, memcpy for NAV)
+    // Caller MUST hold renderLock.
+    static void copyBackToFront() {
+        if (!backViewportSprite || !frontViewportSprite) return;
+        uint16_t* src = (uint16_t*)backViewportSprite->getBuffer();
+        uint16_t* dst = (uint16_t*)frontViewportSprite->getBuffer();
+        if (!src || !dst) return;
 
         const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
 #if LV_COLOR_16_SWAP
         if (!navModeActive) {
-            uint16_t* dst = (uint16_t*)map_canvas_buf;
             for (int i = 0; i < totalPixels; i++) {
                 uint16_t px = src[i];
                 dst[i] = (px >> 8) | (px << 8);
             }
         } else {
-            memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
+            memcpy(dst, src, totalPixels * sizeof(uint16_t));
         }
 #else
-        memcpy(map_canvas_buf, src, totalPixels * sizeof(lv_color_t));
+        memcpy(dst, src, totalPixels * sizeof(uint16_t));
 #endif
     }
 
-    // Apply rendered viewport: try mutex 50ms, copy back→front, then front→canvas
+    // Apply rendered viewport: try mutex 50ms, copy back→front, draw stations
     static void applyRenderedViewport() {
-        if (!backViewportSprite || !frontViewportSprite || !map_canvas_buf) return;
+        if (!backViewportSprite || !frontViewportSprite) return;
 
         // Try renderLock 50ms — skip frame if Core 0 is still rendering
         if (MapEngine::renderLock) {
@@ -191,21 +192,13 @@ namespace UIMapManager {
             }
         }
 
-        // Copy back→front (mutex held: Core 0 won't write to back during this)
-        const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
-        uint16_t* backBuf = (uint16_t*)backViewportSprite->getBuffer();
-        uint16_t* frontBuf = (uint16_t*)frontViewportSprite->getBuffer();
-        if (backBuf && frontBuf) {
-            memcpy(frontBuf, backBuf, bufSize);
-        }
+        copyBackToFront();
 
         if (MapEngine::renderLock) {
             xSemaphoreGive(MapEngine::renderLock);
         }
 
-        // Now copy front→canvas (no mutex needed — front is ours)
         navRenderPending = false;
-        copyFrontToCanvas();
 
         cleanup_station_buttons();
         draw_station_traces();
@@ -218,8 +211,6 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf,
-                             MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
 
         mainThreadLoading = false;
@@ -227,18 +218,20 @@ namespace UIMapManager {
         ESP_LOGI(TAG, "Viewport applied (Z%d)", map_current_zoom);
     }
 
-    // Lightweight station-only refresh: restore background from front sprite, redraw stations.
+    // Lightweight station-only refresh: restore clean front from back, redraw stations.
     // Cost: ~10-50ms (memcpy 1.2MB + station icons) vs 500-3000ms for full NAV re-render.
     static void refreshStationOverlay() {
-        if (!map_canvas || !map_canvas_buf) return;
+        if (!map_canvas || !backViewportSprite || !frontViewportSprite) return;
 
-        if (frontViewportSprite) {
-            // Restore clean background from front sprite (no station artifacts)
-            // Front sprite is never written by Core 0 — safe to read anytime
-            copyFrontToCanvas();
-        } else {
-            redraw_map_canvas();
-            return;
+        // Restore clean background from back sprite (front has station artifacts)
+        if (MapEngine::renderLock) {
+            if (xSemaphoreTake(MapEngine::renderLock, pdMS_TO_TICKS(50)) != pdTRUE) {
+                return;  // Core 0 busy — skip this refresh cycle
+            }
+        }
+        copyBackToFront();
+        if (MapEngine::renderLock) {
+            xSemaphoreGive(MapEngine::renderLock);
         }
 
         cleanup_station_buttons();
@@ -252,8 +245,6 @@ namespace UIMapManager {
             lv_label_set_text(map_info_label, info_text);
         }
 
-        // Canvas position is FIXED — never move it here
-        lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
         lv_obj_invalidate(map_canvas);
     }
 
@@ -1850,12 +1841,8 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_PRESSING, NULL);
         lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_RELEASED, NULL);
 
-        // Create canvas for map drawing
-        // Allocate buffer once and keep it persistent (avoids PSRAM fragmentation)
-        if (!map_canvas_buf) {
-            map_canvas_buf = (lv_color_t*)heap_caps_malloc(MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-        }
         // Allocate double-buffer sprites EARLY (before raster cache fills PSRAM)
+        // Canvas buffer = front sprite buffer (zero-copy, like IceNav)
         const size_t spriteBytes = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * 2;
         if (!backViewportSprite) {
             backViewportSprite = new LGFX_Sprite(&tft);
@@ -1874,6 +1861,10 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                 delete frontViewportSprite;
                 frontViewportSprite = nullptr;
             }
+        }
+        // Point canvas buffer directly at front sprite (no separate allocation)
+        if (frontViewportSprite) {
+            map_canvas_buf = (lv_color_t*)frontViewportSprite->getBuffer();
         }
         if (backViewportSprite && frontViewportSprite) {
             ESP_LOGI(TAG, "Double-buffer sprites: %dx%d (%u KB each, %u KB total PSRAM)",
@@ -1982,10 +1973,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                             map_center_lat, map_center_lon, (uint8_t)map_current_zoom,
                             *backViewportSprite, regionPtrs, navRegionCount);
                         if (hasTiles) {
-                            // Copy back→front→canvas
-                            const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
-                            memcpy(frontViewportSprite->getBuffer(), backViewportSprite->getBuffer(), bufSize);
-                            copyFrontToCanvas();
+                            copyBackToFront();
                         }
                     } else {
                         ESP_LOGW(TAG, "No viewport sprites available for NAV rendering");
@@ -2002,10 +1990,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                             map_center_lat, map_center_lon, (uint8_t)map_current_zoom,
                             *backViewportSprite, map_current_region.c_str());
                         if (hasTiles) {
-                            // Copy back→front→canvas
-                            const size_t bufSize = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * sizeof(uint16_t);
-                            memcpy(frontViewportSprite->getBuffer(), backViewportSprite->getBuffer(), bufSize);
-                            copyFrontToCanvas();
+                            copyBackToFront();
                         }
                     }
                 }
