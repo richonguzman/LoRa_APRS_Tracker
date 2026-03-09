@@ -216,7 +216,8 @@ namespace UIMapManager {
         // Try renderLock 50ms — skip frame if Core 0 is still rendering
         if (MapEngine::renderLock) {
             if (xSemaphoreTake(MapEngine::renderLock, pdMS_TO_TICKS(50)) != pdTRUE) {
-                return;  // Core 0 busy — retry next 50ms tick
+                ESP_LOGW(TAG, "applyRenderedViewport: renderLock busy, retry next tick");
+                return;
             }
         }
 
@@ -226,8 +227,14 @@ namespace UIMapManager {
             xSemaphoreGive(MapEngine::renderLock);
         }
 
-        navRenderPending = false;
-        redraw_in_progress = false;
+        // Clear event AFTER successful copy — Core 0 will set it again for the next render
+        if (MapEngine::mapEventGroup) {
+            xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
+        }
+
+        // Keep pending if Core 0 still has work (queued or active)
+        navRenderPending = MapEngine::isRenderActive();
+        redraw_in_progress = navRenderPending;
         mainThreadLoading = false;
 
         // Rebase offset to match the new sprite center.
@@ -262,8 +269,13 @@ namespace UIMapManager {
         }
 
         lv_obj_invalidate(map_canvas);
-        ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
-                      map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
+        if (navRenderPending) {
+            ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d) — Core 0 still active, keeping pending",
+                          map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
+        } else {
+            ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
+                          map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
+        }
     }
 
     // Lightweight station-only refresh: restore clean front from back, redraw stations.
@@ -306,10 +318,6 @@ namespace UIMapManager {
             EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
             if (bits & MAP_EVENT_NAV_DONE) {
                 applyRenderedViewport();
-                // Clear bits only after successful apply (navRenderPending == false)
-                if (!navRenderPending) {
-                    xEventGroupClearBits(MapEngine::mapEventGroup, MAP_EVENT_NAV_DONE);
-                }
             }
         }
 
