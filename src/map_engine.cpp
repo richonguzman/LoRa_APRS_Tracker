@@ -1561,26 +1561,14 @@ namespace MapEngine {
         int viewportW = map.width();
         int viewportH = map.height();
 
-        // Compute tile grid (IceNav-v3 pattern: maps.cpp:1478-1494)
+        // Compute center tile from lat/lon (Mercator projection)
         const double latRad = (double)centerLat * M_PI / 180.0;
         const double n = pow(2.0, (double)zoom);
-        const float centerTileX = (float)((centerLon + 180.0) / 360.0 * n);
-        const float centerTileY = (float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n);
+        const int centerTileIdxX = (int)floorf((float)((centerLon + 180.0) / 360.0 * n));
+        const int centerTileIdxY = (int)floorf((float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n));
 
-        const int centerTileIdxX = (int)floorf(centerTileX);
-        const int centerTileIdxY = (int)floorf(centerTileY);
-
-        // Sub-tile pixel offset (fractional part → pixel position within center tile)
-        float fracX = centerTileX - centerTileIdxX;
-        float fracY = centerTileY - centerTileIdxY;
-        int centerTileOriginX = viewportW / 2 - (int)(fracX * MAP_TILE_SIZE);
-        int centerTileOriginY = viewportH / 2 - (int)(fracY * MAP_TILE_SIZE);
-
-        // Determine tile range to cover entire viewport
-        int minDx = -(centerTileOriginX / MAP_TILE_SIZE + 1);
-        int maxDx = (viewportW - centerTileOriginX + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
-        int minDy = -(centerTileOriginY / MAP_TILE_SIZE + 1);
-        int maxDy = (viewportH - centerTileOriginY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
+        // Fixed 3×3 grid: tiles at positions {0, 256, 512} in the sprite
+        const int8_t gridOffset = MAP_TILES_GRID / 2;  // 1
 
         // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
         struct ResolvedTile {
@@ -1588,7 +1576,7 @@ namespace MapEngine {
             size_t   size;
             int16_t  tileOffsetX, tileOffsetY;
         };
-        static ResolvedTile resolved[36];  // 6×6 max viewport tiles
+        static ResolvedTile resolved[9];  // 3×3 fixed grid
         int resolvedCount = 0;
         static std::vector<uint8_t*> inUseData;  // Protects resolved tiles from eviction
         inUseData.clear();
@@ -1611,20 +1599,11 @@ namespace MapEngine {
         uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);  // Dark slate gray — same as raster "no data" bg
         bool bgColorExtracted = false;
 
-        // Build tile list sorted center-outward so PSRAM exhaustion
-        // degrades edges first instead of cutting a whole quadrant
-        struct TileSlot { int dx, dy; int distSq; };
-        static TileSlot tileOrder[36];  // 6×6 max
-        int tileCount = 0;
-        for (int dy = minDy; dy <= maxDy; dy++) {
-            for (int dx = minDx; dx <= maxDx; dx++) {
-                if (tileCount < 36) {
-                    tileOrder[tileCount++] = { dx, dy, dx*dx + dy*dy };
-                }
-            }
-        }
-        std::sort(tileOrder, tileOrder + tileCount,
-                  [](const TileSlot& a, const TileSlot& b) { return a.distSq < b.distSq; });
+        // Fixed 3×3 spiral order: center first, then edges, corners last
+        static const int8_t spiralOrder[9][2] = {
+            {0,0}, {2,0}, {0,2}, {2,2}, {0,1}, {1,0}, {2,1}, {1,2}, {1,1}
+        };
+        const int tileCount = 9;
 
         // Pre-evict navCache entries from a different zoom level (useless after zoom change).
         // Grid-based eviction removed: nearby tiles are kept for cache hits on next pan.
@@ -1683,7 +1662,7 @@ namespace MapEngine {
             int      tileX, tileY;
             uint8_t  regionIdx;
         };
-        static PendingTileRead pendingReads[72];  // 6×6 grid × 2 regions max
+        static PendingTileRead pendingReads[18];  // 3×3 grid × 2 regions max
         int pendingCount = 0;
 
         // ================================================================
@@ -1692,15 +1671,12 @@ namespace MapEngine {
         // No FeatureRef exists yet, so eviction is safe.
         // ================================================================
         for (int ti = 0; ti < tileCount; ti++) {
-            int dx = tileOrder[ti].dx;
-            int dy = tileOrder[ti].dy;
-            int tileX = centerTileIdxX + dx;
-            int tileY = centerTileIdxY + dy;
-            int16_t tileOffsetX = (int16_t)(centerTileOriginX + dx * MAP_TILE_SIZE);
-            int16_t tileOffsetY = (int16_t)(centerTileOriginY + dy * MAP_TILE_SIZE);
-
-            if (tileOffsetX + MAP_TILE_SIZE <= 0 || tileOffsetX >= viewportW) continue;
-            if (tileOffsetY + MAP_TILE_SIZE <= 0 || tileOffsetY >= viewportH) continue;
+            int gx = spiralOrder[ti][0];
+            int gy = spiralOrder[ti][1];
+            int tileX = centerTileIdxX - gridOffset + gx;
+            int tileY = centerTileIdxY - gridOffset + gy;
+            int16_t tileOffsetX = (int16_t)(gx * MAP_TILE_SIZE);  // 0, 256, 512
+            int16_t tileOffsetY = (int16_t)(gy * MAP_TILE_SIZE);
 
             for (int r = 0; r < activeRegionCount; r++) {
                 uint8_t regionIdx = activeRegions[r].origIdx;
@@ -1708,7 +1684,7 @@ namespace MapEngine {
                 if (cacheIdx >= 0) {
                     navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
                     navCacheHits++;
-                    if (resolvedCount < 36) {
+                    if (resolvedCount < 9) {
                         resolved[resolvedCount++] = {
                             navCache[cacheIdx].data, navCache[cacheIdx].size,
                             tileOffsetX, tileOffsetY
@@ -1719,7 +1695,7 @@ namespace MapEngine {
                     NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
                     UIMapManager::Npk2IndexEntry entry;
                     if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)
-                        && pendingCount < 72) {
+                        && pendingCount < 18) {
                         pendingReads[pendingCount++] = {
                             slot, entry, tileOffsetX, tileOffsetY,
                             tileX, tileY, regionIdx
@@ -1773,7 +1749,7 @@ namespace MapEngine {
             addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, fileSize, &inUseData);
             navCacheMisses++;
 
-            if (resolvedCount < 36) {
+            if (resolvedCount < 9) {
                 resolved[resolvedCount++] = { data, fileSize, pr.tileOffsetX, pr.tileOffsetY };
                 inUseData.push_back(data);
             }
@@ -1932,9 +1908,8 @@ namespace MapEngine {
         int totalFeatures = 0;
         for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
         totalFeatures += textRefs.size() + waterwayRefs.size();
-        ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]",
-                      (loadEnd - startTime) / 1000, resolvedCount, totalFeatures,
-                      minDx, maxDx, minDy, maxDy);
+        ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: 3x3 fixed",
+                      (loadEnd - startTime) / 1000, resolvedCount, totalFeatures);
 
         // --- Render all layers (IceNav-v3 pattern: maps.cpp:1546-1569) ---
         // Fill background with color from NAV background polygon
