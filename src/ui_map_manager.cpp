@@ -193,7 +193,7 @@ namespace UIMapManager {
         uint16_t* dst = (uint16_t*)frontViewportSprite->getBuffer();
         if (!src || !dst) return;
 
-        const int totalPixels = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT;
+        const int totalPixels = MAP_SPRITE_SIZE * MAP_SPRITE_SIZE;
 #if LV_COLOR_16_SWAP
         if (!navModeActive) {
             for (int i = 0; i < totalPixels; i++) {
@@ -336,9 +336,9 @@ namespace UIMapManager {
 
         // Update canvas position every frame (IceNav: updateMap L326-328)
         if (map_canvas && !map_follow_gps) {
-            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN - offsetX, -MAP_CANVAS_MARGIN - offsetY);
+            lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - offsetX, -MAP_MARGIN_Y - offsetY);
         } else if (map_canvas) {
-            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+            lv_obj_set_pos(map_canvas, -MAP_MARGIN_X, -MAP_MARGIN_Y);
         }
 
         // Collect own trace points based on speed: 5s if moving, 10s if walking/static
@@ -520,7 +520,7 @@ namespace UIMapManager {
        /* // Callsign text with semi-transparent background below symbol
         if (callsign) {
             int textY = canvasY + SYMBOL_SIZE / 2 + 2;
-            if (textY >= 0 && textY < MAP_CANVAS_HEIGHT) {
+            if (textY >= 0 && textY < MAP_SPRITE_SIZE) {
                 
                 // 1. Calculate the EXACT text size in pixels based on the font
                 lv_point_t text_size;
@@ -560,7 +560,7 @@ namespace UIMapManager {
        // Callsign text with semi-transparent background below symbol
         if (callsign) {
             int textY = canvasY + SYMBOL_SIZE / 2 + 2;
-            if (textY >= 0 && textY < MAP_CANVAS_HEIGHT) {
+            if (textY >= 0 && textY < MAP_SPRITE_SIZE) {
                 
                 // 1. Calculate the EXACT text size in pixels based on the font
                 lv_point_t text_size;
@@ -599,8 +599,8 @@ namespace UIMapManager {
 
         // Store hit zone for tap detection
         if (stationIdx >= 0 && stationHitZoneCount < MAP_STATIONS_MAX) {
-            stationHitZones[stationHitZoneCount].x = canvasX - MAP_CANVAS_MARGIN;
-            stationHitZones[stationHitZoneCount].y = canvasY - MAP_CANVAS_MARGIN + 12;
+            stationHitZones[stationHitZoneCount].x = canvasX - MAP_MARGIN_X;
+            stationHitZones[stationHitZoneCount].y = canvasY - MAP_MARGIN_Y + 12;
             stationHitZones[stationHitZoneCount].w = 80;
             stationHitZones[stationHitZoneCount].h = 50;
             stationHitZones[stationHitZoneCount].stationIdx = stationIdx;
@@ -707,7 +707,7 @@ namespace UIMapManager {
             int myX, myY;
             latLonToPixel(iconGpsLat, iconGpsLon,
                           map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
-            if (myX >= 0 && myX < MAP_CANVAS_WIDTH && myY >= 0 && myY < MAP_CANVAS_HEIGHT) {
+            if (myX >= 0 && myX < MAP_SPRITE_SIZE && myY >= 0 && myY < MAP_SPRITE_SIZE) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
                 char fullSymbol[4];
                 snprintf(fullSymbol, sizeof(fullSymbol), "%s%s",
@@ -724,7 +724,7 @@ namespace UIMapManager {
                 int stX, stY;
                 latLonToPixel(station->latitude, station->longitude,
                               map_center_lat, map_center_lon, map_current_zoom, &stX, &stY);
-                if (stX >= 0 && stX < MAP_CANVAS_WIDTH && stY >= 0 && stY < MAP_CANVAS_HEIGHT) {
+                if (stX >= 0 && stX < MAP_SPRITE_SIZE && stY >= 0 && stY < MAP_SPRITE_SIZE) {
                     drawStationOnCanvas(stX, stY, station->callsign.c_str(),
                                         station->symbol.c_str(), i);
                 }
@@ -1090,8 +1090,8 @@ namespace UIMapManager {
         double delta_y_px = (target_y_world - center_y_world) * n * MAP_TILE_SIZE;
 
         // Position relative to canvas center
-        *pixelX = (int)(MAP_CANVAS_WIDTH / 2.0 + delta_x_px);
-        *pixelY = (int)(MAP_CANVAS_HEIGHT / 2.0 + delta_y_px);
+        *pixelX = (int)(MAP_SPRITE_SIZE / 2.0 + delta_x_px);
+        *pixelY = (int)(MAP_SPRITE_SIZE / 2.0 + delta_y_px);
     }
 
 
@@ -1394,7 +1394,7 @@ namespace UIMapManager {
         velocityY = 0.0f;
         renderTileX = centerTileX;
         renderTileY = centerTileY;
-        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_MARGIN_X, -MAP_MARGIN_Y);
     }
 
     // Helper: resync centerTile to current map_center at new zoom, then reset offset.
@@ -1491,9 +1491,10 @@ namespace UIMapManager {
         map_follow_gps = false;
 
         // Clamp to canvas margin — hard limit of pre-rendered area
-        int16_t maxOff = MAP_CANVAS_MARGIN - 10;
-        offsetX = (int16_t)constrain(offsetX, -maxOff, maxOff);
-        offsetY = (int16_t)constrain(offsetY, -maxOff, maxOff);
+        int16_t maxOffX = MAP_MARGIN_X - 10;  // 214
+        int16_t maxOffY = MAP_MARGIN_Y - 10;  // 274
+        offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
+        offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
 
         // Compute which tile the view center is pointing at (without modifying offset)
         int targetX = centerTileX;
@@ -1552,7 +1553,7 @@ namespace UIMapManager {
 
                 // Immediate visual feedback
                 if (map_canvas)
-                    lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN - offsetX, -MAP_CANVAS_MARGIN - offsetY);
+                    lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - offsetX, -MAP_MARGIN_Y - offsetY);
 
                 // Sample velocity px/ms with exponential filter (IceNav weight 0.7)
                 float weight = 0.7f;
@@ -1973,11 +1974,11 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
 
         // Allocate double-buffer sprites EARLY (before raster cache fills PSRAM)
         // Canvas buffer = front sprite buffer (zero-copy, like IceNav)
-        const size_t spriteBytes = MAP_CANVAS_WIDTH * MAP_CANVAS_HEIGHT * 2;
+        const size_t spriteBytes = MAP_SPRITE_SIZE * MAP_SPRITE_SIZE * 2;
         if (!backViewportSprite) {
             backViewportSprite = new LGFX_Sprite(&tft);
             backViewportSprite->setPsram(true);
-            if (backViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
+            if (backViewportSprite->createSprite(MAP_SPRITE_SIZE, MAP_SPRITE_SIZE) == nullptr) {
                 ESP_LOGE(TAG, "Failed to create back viewport sprite");
                 delete backViewportSprite;
                 backViewportSprite = nullptr;
@@ -1986,7 +1987,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         if (!frontViewportSprite) {
             frontViewportSprite = new LGFX_Sprite(&tft);
             frontViewportSprite->setPsram(true);
-            if (frontViewportSprite->createSprite(MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT) == nullptr) {
+            if (frontViewportSprite->createSprite(MAP_SPRITE_SIZE, MAP_SPRITE_SIZE) == nullptr) {
                 ESP_LOGE(TAG, "Failed to create front viewport sprite");
                 delete frontViewportSprite;
                 frontViewportSprite = nullptr;
@@ -1998,7 +1999,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         }
         if (backViewportSprite && frontViewportSprite) {
             ESP_LOGI(TAG, "Double-buffer sprites: %dx%d (%u KB each, %u KB total PSRAM)",
-                          MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT,
+                          MAP_SPRITE_SIZE, MAP_SPRITE_SIZE,
                           spriteBytes / 1024, spriteBytes * 2 / 1024);
         }
         ESP_LOGI(TAG, "PSRAM free: %u KB, largest block: %u KB",
@@ -2008,14 +2009,14 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             map_canvas = lv_canvas_create(map_container);
             lv_obj_clear_flag(map_canvas, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_add_flag(map_canvas, LV_OBJ_FLAG_EVENT_BUBBLE);
-            lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+            lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_SPRITE_SIZE, MAP_SPRITE_SIZE, LV_IMG_CF_TRUE_COLOR);
 
             // Start the background render task now that the canvas exists.
             // This is critical to ensure the queue is ready before loadTileFromSD is called.
             MapEngine::startRenderTask(map_canvas);
 
             // Position canvas with negative margin so visible area is centered
-            lv_obj_set_pos(map_canvas, -MAP_CANVAS_MARGIN, -MAP_CANVAS_MARGIN);
+            lv_obj_set_pos(map_canvas, -MAP_MARGIN_X, -MAP_MARGIN_Y);
 
             // Fill with background color
             lv_canvas_fill_bg(map_canvas, lv_color_hex(0x2F4F4F), LV_OPA_COVER);
@@ -2114,7 +2115,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                 lv_draw_label_dsc_init(&label_dsc);
                 label_dsc.color = lv_color_hex(0xaaaaaa);
                 label_dsc.font = &lv_font_montserrat_14;
-                lv_canvas_draw_text(map_canvas, 40, MAP_CANVAS_HEIGHT / 2 - 30, 240, &label_dsc,
+                lv_canvas_draw_text(map_canvas, 40, MAP_SPRITE_SIZE / 2 - 30, 240, &label_dsc,
                     "No offline tiles available.\nDownload OSM tiles and copy to:\nSD:/LoRa_Tracker/Maps/REGION/z/x/y.png");
             }
 
@@ -2125,7 +2126,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             update_station_objects();
 
             // Force canvas redraw after direct buffer writes
-            lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_CANVAS_WIDTH, MAP_CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+            lv_canvas_set_buffer(map_canvas, map_canvas_buf, MAP_SPRITE_SIZE, MAP_SPRITE_SIZE, LV_IMG_CF_TRUE_COLOR);
             lv_obj_invalidate(map_canvas);
 
             // Resume async preloading

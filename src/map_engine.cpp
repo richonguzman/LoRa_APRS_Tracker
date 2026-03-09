@@ -1190,11 +1190,11 @@ namespace MapEngine {
                 copy_h += dest_y;
                 dest_y = 0;
             }
-            if (dest_x + copy_w > MAP_CANVAS_WIDTH) {
-                copy_w = MAP_CANVAS_WIDTH - dest_x;
+            if (dest_x + copy_w > MAP_SPRITE_SIZE) {
+                copy_w = MAP_SPRITE_SIZE - dest_x;
             }
-            if (dest_y + copy_h > MAP_CANVAS_HEIGHT) {
-                copy_h = MAP_CANVAS_HEIGHT - dest_y;
+            if (dest_y + copy_h > MAP_SPRITE_SIZE) {
+                copy_h = MAP_SPRITE_SIZE - dest_y;
             }
 
             if (copy_w > 0 && copy_h > 0) {
@@ -1203,7 +1203,7 @@ namespace MapEngine {
 
                 for (int y = 0; y < copy_h; y++) {
                     uint16_t* src_ptr = src_buf + ((src_y + y) * MAP_TILE_SIZE) + src_x;
-                    lv_color_t* dest_ptr = dest_buf + ((dest_y + y) * MAP_CANVAS_WIDTH) + dest_x;
+                    lv_color_t* dest_ptr = dest_buf + ((dest_y + y) * MAP_SPRITE_SIZE) + dest_x;
 #if LV_COLOR_16_SWAP
                     // LGFX sprites are little-endian RGB565, LVGL canvas is big-endian
                     uint16_t* dp = (uint16_t*)dest_ptr;
