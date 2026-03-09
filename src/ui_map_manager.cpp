@@ -86,6 +86,8 @@ namespace UIMapManager {
     static bool dragStarted = false;      // True after START_THRESHOLD crossed
     static int16_t offsetX = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetX)
     static int16_t offsetY = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetY)
+    static int16_t navSubTileX = 0;       // GPS sub-tile offset for NAV canvas centering
+    static int16_t navSubTileY = 0;       // (IceNav: setPivot with coord2ScreenPos)
     static float velocityX = 0.0f;        // Inertial momentum px/ms (IceNav: mapView.velocityX)
     static float velocityY = 0.0f;
     static constexpr float PAN_FRICTION = 0.95f;       // Decay factor (IceNav: friction)
@@ -230,14 +232,24 @@ namespace UIMapManager {
         redraw_in_progress = false;
         mainThreadLoading = false;
 
-        // Rebase offset to match the new sprite center.
-        // No visual jump: new sprite content is shifted by the same amount as offset.
-        // Skip rebase if zoom changed — tile indices at different zooms are incomparable.
+        // Rebase offset to match new sprite center (async gap compensation)
         if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
             offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
             offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
-            centerTileX = MapEngine::lastRenderedTileX;
-            centerTileY = MapEngine::lastRenderedTileY;
+        }
+        centerTileX = MapEngine::lastRenderedTileX;
+        centerTileY = MapEngine::lastRenderedTileY;
+
+        // Recalculate NAV sub-tile offset now that the new sprite is ready
+        if (navModeActive) {
+            uint32_t scale = 1 << map_current_zoom;
+            navSubTileX = (int16_t)(((uint32_t)((map_center_lon + 180.0f) / 360.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
+            float latRad = map_center_lat * (float)M_PI / 180.0f;
+            float merc = logf(tanf(latRad) + 1.0f / cosf(latRad));
+            navSubTileY = (int16_t)(((uint32_t)((1.0f - merc / (float)M_PI) / 2.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
+        } else {
+            navSubTileX = 0;
+            navSubTileY = 0;
         }
 
         // UI updates
@@ -334,11 +346,18 @@ namespace UIMapManager {
             }
         }
 
-        // Update canvas position every frame (IceNav: updateMap L326-328)
-        if (map_canvas && !map_follow_gps) {
-            lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - offsetX, -MAP_MARGIN_Y - offsetY);
-        } else if (map_canvas) {
-            lv_obj_set_pos(map_canvas, -MAP_MARGIN_X, -MAP_MARGIN_Y);
+        // Update canvas position every frame
+        if (map_canvas) {
+            int16_t canvasX = -MAP_MARGIN_X - offsetX;
+            int16_t canvasY = -MAP_MARGIN_Y - offsetY;
+
+            // NAV fixed grid: shift canvas by GPS sub-tile offset so GPS is centered
+            if (navModeActive) {
+                canvasX -= navSubTileX;
+                canvasY -= navSubTileY;
+            }
+
+            lv_obj_set_pos(map_canvas, canvasX, canvasY);
         }
 
         // Collect own trace points based on speed: 5s if moving, 10s if walking/static
@@ -1072,26 +1091,32 @@ namespace UIMapManager {
         map_center_lon = lon;
     }
 
-    // Convert lat/lon to pixel position on screen (relative to center)
+    // Convert lat/lon to pixel position in sprite.
+    // NAV (fixed grid): tile-relative — grid origin = (centerTileX-1, centerTileY-1)
+    // Raster (variable grid): delta from center position, offset by sprite center
     void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* pixelX, int* pixelY) {
         double n = pow(2.0, zoom);
-
-        // Calculate world coordinates (0.0 to 1.0) for target and center using Web Mercator projection
         double target_x_world = (lon + 180.0) / 360.0;
         double target_lat_rad = lat * PI / 180.0;
         double target_y_world = (1.0 - log(tan(target_lat_rad) + 1.0 / cos(target_lat_rad)) / PI) / 2.0;
 
-        double center_x_world = (centerLon + 180.0) / 360.0;
-        double center_lat_rad = centerLat * PI / 180.0;
-        double center_y_world = (1.0 - log(tan(center_lat_rad) + 1.0 / cos(center_lat_rad)) / PI) / 2.0;
-
-        // Calculate delta in world coordinates, scale by total map size in pixels at this zoom
-        double delta_x_px = (target_x_world - center_x_world) * n * MAP_TILE_SIZE;
-        double delta_y_px = (target_y_world - center_y_world) * n * MAP_TILE_SIZE;
-
-        // Position relative to canvas center
-        *pixelX = (int)(MAP_SPRITE_SIZE / 2.0 + delta_x_px);
-        *pixelY = (int)(MAP_SPRITE_SIZE / 2.0 + delta_y_px);
+        if (navModeActive) {
+            // Fixed grid: world pixel relative to grid origin
+            const int8_t gridOffset = MAP_TILES_GRID / 2;
+            double grid_origin_wx = (double)(centerTileX - gridOffset) * MAP_TILE_SIZE;
+            double grid_origin_wy = (double)(centerTileY - gridOffset) * MAP_TILE_SIZE;
+            *pixelX = (int)(target_x_world * n * MAP_TILE_SIZE - grid_origin_wx);
+            *pixelY = (int)(target_y_world * n * MAP_TILE_SIZE - grid_origin_wy);
+        } else {
+            // Variable grid: delta from map center, offset by sprite center
+            double center_x_world = (centerLon + 180.0) / 360.0;
+            double center_lat_rad = centerLat * PI / 180.0;
+            double center_y_world = (1.0 - log(tan(center_lat_rad) + 1.0 / cos(center_lat_rad)) / PI) / 2.0;
+            double delta_x_px = (target_x_world - center_x_world) * n * MAP_TILE_SIZE;
+            double delta_y_px = (target_y_world - center_y_world) * n * MAP_TILE_SIZE;
+            *pixelX = (int)(MAP_SPRITE_SIZE / 2.0 + delta_x_px);
+            *pixelY = (int)(MAP_SPRITE_SIZE / 2.0 + delta_y_px);
+        }
     }
 
 
@@ -1394,7 +1419,7 @@ namespace UIMapManager {
         velocityY = 0.0f;
         renderTileX = centerTileX;
         renderTileY = centerTileY;
-        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_MARGIN_X, -MAP_MARGIN_Y);
+        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - navSubTileX, -MAP_MARGIN_Y - navSubTileY);
     }
 
     // Helper: resync centerTile to current map_center at new zoom, then reset offset.
@@ -1496,14 +1521,14 @@ namespace UIMapManager {
         offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
         offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
 
-        // Compute which tile the view center is pointing at (without modifying offset)
+        // Compute target tile from accumulated offset (without modifying offset)
         int targetX = centerTileX;
         int targetY = centerTileY;
         int16_t tempX = offsetX, tempY = offsetY;
-        while (tempX >= PAN_TILE_THRESHOLD) { targetX++; tempX -= MAP_TILE_SIZE; }
-        while (tempX <= -PAN_TILE_THRESHOLD) { targetX--; tempX += MAP_TILE_SIZE; }
-        while (tempY >= PAN_TILE_THRESHOLD) { targetY++; tempY -= MAP_TILE_SIZE; }
-        while (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
+        if (tempX >= PAN_TILE_THRESHOLD) { targetX++; tempX -= MAP_TILE_SIZE; }
+        else if (tempX <= -PAN_TILE_THRESHOLD) { targetX--; tempX += MAP_TILE_SIZE; }
+        if (tempY >= PAN_TILE_THRESHOLD) { targetY++; tempY -= MAP_TILE_SIZE; }
+        else if (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
 
         if (targetX != renderTileX || targetY != renderTileY) {
             renderTileX = targetX;
