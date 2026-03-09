@@ -1949,11 +1949,18 @@ namespace MapEngine {
 
         int featureCount = 0;
         uint64_t lastYieldUs = esp_timer_get_time();
-        for (int pri = 0; pri < 16; pri++) {
+        // LOD_PASS1_CUTOFF: layers 0..8 drawn first (base map), then 9..15 (roads/details)
+        static constexpr int LOD_PASS1_CUTOFF = 8;
+
+        for (int pass = 0; pass < 2; pass++) {
+        int priStart = (pass == 0) ? 0 : LOD_PASS1_CUTOFF + 1;
+        int priEnd   = (pass == 0) ? LOD_PASS1_CUTOFF : 15;
+
+        for (int pri = priStart; pri <= priEnd; pri++) {
             if (globalLayers[pri].empty()) continue;
 
             for (const auto& ref : globalLayers[pri]) {
-                // Yield every 20ms to let WiFi/BLE breathe on Core 0 (IceNav e278a2b0)
+                // Yield every 20ms to let WiFi/BLE breathe on Core 0
                 if ((++featureCount & 15) == 0) {
                     uint64_t nowUs = esp_timer_get_time();
                     if (nowUs - lastYieldUs > 20000) {
@@ -2187,6 +2194,22 @@ namespace MapEngine {
             globalLayers[pri].clear();
             esp_task_wdt_reset();
         }
+
+        // After pass 1 (base layers): intermediate apply so user sees map structure
+        if (pass == 0 && mapEventGroup) {
+            map.endWrite();
+            renderActive_ = false;
+            if (renderLock) xSemaphoreGive(renderLock);
+
+            xEventGroupSetBits(mapEventGroup, MAP_EVENT_NAV_DONE);
+            vTaskDelay(1);  // Let timer pick up the intermediate result
+
+            if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+            renderActive_ = true;
+            map.startWrite();
+            ESP_LOGI(TAG, "Pass 1 done (layers 0-%d), intermediate apply", LOD_PASS1_CUTOFF);
+        }
+        } // end pass loop
 
         // Label pass — rendered after all geometry so labels appear on top
         map.clearClipRect();
