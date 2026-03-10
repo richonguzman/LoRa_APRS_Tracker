@@ -373,18 +373,19 @@ namespace UIMapManager {
         if (++refreshCounter >= 200) {  // 200 × 50ms = 10s
             refreshCounter = 0;
             if (!isScrollingMap) {
-                // Follow GPS: update centerTile from GPS position
-                if (map_follow_gps && filteredOwnValid) {
+                // Follow GPS: update centerTile from GPS position immediately (fluid tracking)
+                if (map_follow_gps && iconGpsValid) {
                     int prevRenderTileX = renderTileX;
                     int prevRenderTileY = renderTileY;
-                    initCenterTileFromLatLon(filteredOwnLat, filteredOwnLon);
+                    initCenterTileFromLatLon(iconGpsLat, iconGpsLon);
 
                     if (renderTileX != prevRenderTileX || renderTileY != prevRenderTileY) {
                         ESP_LOGD(TAG, "Periodic refresh (GPS moved tile, full redraw)");
                         redraw_map_canvas();
                     } else if (!redraw_in_progress && !navRenderPending) {
-                        ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
-                        refreshStationOverlay();
+                        // Apply precise pixel offset based on new map_center_lat/lon without re-rendering the whole tile
+                        applyRenderedViewport();
+                        ESP_LOGD(TAG, "Periodic refresh (GPS moved inside tile, pan viewport)");
                     }
                 } else if (!redraw_in_progress && !navRenderPending) {
                     ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
@@ -1228,9 +1229,9 @@ namespace UIMapManager {
                 validPts++;
             }
 
-            // Filtered own position as last point (consistent with icon)
+            // Immediate own position as last point (consistent with actual icon)
             int cx, cy;
-            latLonToPixel(filteredOwnLat, filteredOwnLon,
+            latLonToPixel(iconGpsLat, iconGpsLon,
                           map_center_lat, map_center_lon, map_current_zoom, &cx, &cy);
             pts[validPts].x = cx;
             pts[validPts].y = cy;
