@@ -131,11 +131,11 @@ bool        symbolAvailable         = true;
         sprite.setTextSize(2);
         sprite.setTextColor(TFT_WHITE, baseColor);
 
-        // Calcula la posición del texto para que esté centrado
+        // Calculate the text position to center it
         int textWidth = sprite.textWidth(buttonText);           // Ancho del texto
         int textHeight = 16;                                    // Altura aproximada (depende de `setTextSize`)
-        int textX = xPos + (wide - textWidth) / 2;              // Centrado horizontal
-        int textY = yPos + (height - textHeight) / 2;           // Centrado vertical
+        int textX = xPos + (wide - textWidth) / 2;              // Centered horizontally
+        int textY = yPos + (height - textHeight) / 2;           // Centered vertically
 
         sprite.drawString(buttonText, textX, textY);
     }

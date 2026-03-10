@@ -59,7 +59,7 @@ namespace MapEngine {
     static std::vector<int, PSRAMAllocator<int>> edgeBuckets;
 
     // Static vectors for coordinate projection (PSRAM, pre-reserved)
-    // IceNav-v3 pattern: separate int16_t buffers for lines, int buffers for polygons
+    // Use separate int16_t buffers for lines and int buffers for polygons
     static std::vector<int16_t, PSRAMAllocator<int16_t>> proj16X;
     static std::vector<int16_t, PSRAMAllocator<int16_t>> proj16Y;
     static std::vector<int, PSRAMAllocator<int>> proj32X;
@@ -173,16 +173,16 @@ namespace MapEngine {
     static constexpr uint8_t GEOM_TEXT       = 4;
     static constexpr uint8_t GEOM_TEXT_LINE  = 5;  // Curvilinear waterway label
 
-    // Feature reference for zero-copy rendering (IceNav-v3 pattern: pointer into tile buffer)
+    // Feature reference for zero-copy rendering (pointer into tile buffer)
     struct FeatureRef {
         uint8_t* ptr;           // Pointer to feature header in data buffer
         uint8_t geomType;       // 1=Point, 2=Line, 3=Polygon, 4=Text, 5=TextLine
         uint16_t payloadSize;   // Total payload size in bytes
         uint16_t coordCount;    // Number of coordinates
-        int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetX)
-        int16_t tileOffsetY;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetY)
+        int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport
+        int16_t tileOffsetY;    // Pixel offset of tile top-left in viewport
     };
-    // 16 priority layers (IceNav-v3 pattern: dispatch by getPriority() low nibble)
+    // 16 priority layers (dispatch by getPriority() low nibble)
     static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> globalLayers[16];
 
     // Tile cache system
@@ -493,7 +493,7 @@ namespace MapEngine {
         cacheAccessCounter = 0;
 
         // Pre-reserve AEL, projection, and feature index buffers in PSRAM
-        // (IceNav-v3 constructor pattern: maps.cpp:57-63)
+        // Initialize map list
         edgePool.reserve(1024);
         edgeBuckets.reserve(768);
         proj16X.reserve(1024);
@@ -1370,7 +1370,7 @@ namespace MapEngine {
         return (r << 11) | (g << 5) | b;
     }
 
-    // AEL polygon filler with fast-forward optimization (IceNav-v3 pattern).
+    // AEL polygon filler with fast-forward optimization.
     // Takes high-precision (HP) coordinates (0-4096), iterates pixel-space scanlines (0-255).
     // Supports multi-ring polygons (exterior + holes).
     void fillPolygonGeneral(LGFX_Sprite &map, const int *px_hp, const int *py_hp, const int numPoints, const uint16_t color, const int xOffset, const int yOffset, uint16_t ringCount, uint16_t* ringEnds)
@@ -1446,12 +1446,12 @@ namespace MapEngine {
 
         int activeHead = -1;
         int spriteW = map.width();
-        // Clip Y range accounting for offset (IceNav-v3 pattern: maps.cpp:953-954)
+        // Clip Y range accounting for offset
         int startY_px = std::max(minY_px, -yOffset);
         int endY_px = std::min(maxY_px, spriteH - 1 - yOffset);
 
         // 4. Fast-forward: process buckets before visible range, jump edge xVal
-        //    directly to startY_px (IceNav-v3 pattern — skip invisible scanlines)
+        // Directly to startY_px (skip invisible scanlines)
         if (startY_px > minY_px) {
             for (int y = minY_px; y < startY_px; y++) {
                 if ((size_t)(y - minY_px) >= edgeBuckets.size()) break;
@@ -1544,7 +1544,7 @@ namespace MapEngine {
     }
 
     // =========================================================================
-    // Viewport-based NAV rendering (IceNav-v3 renderNavViewport pattern).
+    // Viewport-based NAV rendering.
     // Loads ALL visible tiles, dispatches features to 16 priority layers,
     // renders in a single pass with per-feature setClipRect to tile boundaries.
     // This ensures correct z-ordering across tile boundaries.
@@ -1570,7 +1570,7 @@ namespace MapEngine {
         // Fixed 3×3 grid: tiles at positions {0, 256, 512} in the sprite
         const int8_t gridOffset = MAP_TILES_GRID / 2;  // 1
 
-        // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
+        // --- Load all tiles and dispatch features ---
         struct ResolvedTile {
             uint8_t* data;
             size_t   size;
@@ -1866,7 +1866,7 @@ namespace MapEngine {
                 uint8_t minZoom = zoomPriority >> 4;
                 if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
-                // Semantic culling: skip tiny features (IceNav f828e18f)
+                // Semantic culling: skip tiny features
                 // Z9-Z11: skip if bbox < 3×3px. Other zooms: skip if < 1×1px.
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
                 if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
@@ -1911,7 +1911,7 @@ namespace MapEngine {
         ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: 3x3 fixed",
                       (loadEnd - startTime) / 1000, resolvedCount, totalFeatures);
 
-        // --- Render all layers (IceNav-v3 pattern: maps.cpp:1546-1569) ---
+        // --- Render all layers ---
         // Fill background with color from NAV background polygon
         map.fillSprite(bgColor);
 
@@ -1928,7 +1928,7 @@ namespace MapEngine {
             if (globalLayers[pri].empty()) continue;
 
             for (const auto& ref : globalLayers[pri]) {
-                // Yield every 20ms to let WiFi/BLE breathe on Core 0 (IceNav e278a2b0)
+                // Yield every 20ms to let WiFi/BLE breathe on Core 0
                 if ((++featureCount & 15) == 0) {
                     uint64_t nowUs = esp_timer_get_time();
                     if (nowUs - lastYieldUs > 20000) {
@@ -1949,10 +1949,10 @@ namespace MapEngine {
                 int16_t maxY = ref.tileOffsetY + by2;
                 if (maxX < 0 || minX > viewportW || maxY < 0 || minY > viewportH) continue;
 
-                // Per-feature setClipRect to tile boundaries (IceNav-v3: maps.cpp:1561)
+                // Per-feature setClipRect to tile boundaries
                 map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
 
-                // Read colorRgb565 directly (LE, no byte swap — IceNav-v3 pattern)
+                // Read colorRgb565 directly (LE, no byte swap)
                 uint16_t colorRgb565;
                 memcpy(&colorRgb565, fp + 1, 2);
 
@@ -1975,7 +1975,7 @@ namespace MapEngine {
                         if (!px_hp || !py_hp) break;
 
                         // Vertex decimation: skip redundant vertices at same pixel
-                        // (IceNav 699f4c80). Only for simple polygons (no multi-ring).
+                        // Only for simple polygons (no multi-ring).
                         int16_t lastVx = -32768, lastVy = -32768;
                         uint16_t actualPoints = 0;
                         for (uint16_t j = 0; j < ref.coordCount; j++) {
@@ -2031,7 +2031,7 @@ namespace MapEngine {
                         if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) break;
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
 
-                        // Pre-project all coords with dedup (IceNav-v3: renderNavLineString L1287-1324)
+                        // Pre-project all coords with dedup
                         size_t numCoords = ref.coordCount;
                         if (proj16X.capacity() < numCoords) proj16X.reserve(numCoords * 3 / 2);
                         if (proj16Y.capacity() < numCoords) proj16Y.reserve(numCoords * 3 / 2);
@@ -2046,7 +2046,7 @@ namespace MapEngine {
                         size_t validPoints = 0;
                         int16_t lastPx = -32768, lastPy = -32768;
 
-                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise (IceNav f828e18f)
+                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise
                         int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
 
                         for (size_t j = 0; j < numCoords; j++) {
@@ -2070,7 +2070,7 @@ namespace MapEngine {
                             validPoints++;
                         }
 
-                        // Bbox check on projected line (IceNav-v3 L1326)
+                        // Bbox check on projected line
                         if (validPoints < 2 || maxPx < 0 || minPx >= viewportW ||
                             maxPy < 0 || minPy >= viewportH) break;
 
@@ -2093,7 +2093,7 @@ namespace MapEngine {
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
                         int px = (coords[0] >> 4) + ref.tileOffsetX;
                         int py = (coords[1] >> 4) + ref.tileOffsetY;
-                        // Bounds check (IceNav-v3: renderNavPoint L1418)
+                        // Bounds check
                         if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
                             map.fillCircle(px, py, 3, colorRgb565);
                         break;
@@ -2431,7 +2431,7 @@ namespace MapEngine {
         return result;
     }
 
-    // Render a NAV1 vector tile using IceNav-v3 patterns:
+    // Render a NAV1 vector tile:
     // Public render dispatcher (raster only — NAV uses renderNavViewport)
     bool renderTile(const char* path, int16_t xOffset, int16_t yOffset, LGFX_Sprite &map, uint8_t zoom) {
         String pathStr(path);

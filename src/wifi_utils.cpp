@@ -303,7 +303,7 @@ namespace WIFI_Utils {
                 startBlockingWebConfig();
                 // Never returns here - reboot after config
             }
-            // Mode Station: connexion au réseau WiFi configuré (si activé)
+            // Station Mode: connect to the configured WiFi network (if enabled)
             WiFiUserDisabled = !Config.wifiEnabled;
             if (Config.wifiEnabled) {
                 startStationMode();

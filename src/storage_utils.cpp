@@ -31,7 +31,7 @@ static const char *TAG = "Storage";
 
 static bool sdAvailable = false;
 
-// DMA-capable read buffer (ported from IceNav-v3 storage.cpp)
+// DMA-capable read buffer
 // Allocated once at boot in internal SRAM (DMA-capable), used for chunked SD reads
 // to reduce the number of small SPI transactions when loading map tiles.
 #define SD_DMA_BUF_SIZE (32 * 1024)  // 32 KB chunks
@@ -97,7 +97,7 @@ namespace STORAGE_Utils {
     }
 
     void setup() {
-        // Allocate DMA-capable read buffer once at boot (inspired by IceNav-v3)
+        // Allocate DMA-capable read buffer once at boot
         // Kept in internal SRAM (MALLOC_CAP_DMA) for SPI DMA compatibility.
         if (!sdDmaBuffer) {
             sdDmaBuffer = (uint8_t*)heap_caps_malloc(SD_DMA_BUF_SIZE,
@@ -221,7 +221,7 @@ namespace STORAGE_Utils {
         return SPIFFS.open(path, mode);
     }
 
-    // Read file data in DMA-aligned chunks (ported from IceNav-v3 storage.cpp).
+    // Read file data in DMA-aligned chunks.
     // Uses a 32 KB DMA-capable buffer in internal SRAM to reduce SPI transactions
     // when reading large files like map tiles (PNG/JPG/NAV).
     // Returns number of bytes actually read, or 0 on failure.

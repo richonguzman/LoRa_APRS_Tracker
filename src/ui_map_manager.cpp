@@ -75,27 +75,27 @@ namespace UIMapManager {
     static std::vector<uint32_t> notFoundCache;
     static int notFoundCacheIndex = 0;
 
-    // IceNav tile reference — integer tile center (never a float)
+    // Tile reference — integer tile center (never a float)
     static int centerTileX = 0;       // Tile the DISPLAYED sprite is centered on
     static int centerTileY = 0;
     static int renderTileX = 0;       // Target tile for the next/current render request
     static int renderTileY = 0;
 
-    // Touch pan state — IceNav-v3 scrollMap model (maps.cpp + mainScr.cpp)
+    // Touch pan state model
     static bool isScrollingMap = false;   // True while finger is on screen
     static bool dragStarted = false;      // True after START_THRESHOLD crossed
-    static int16_t offsetX = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetX)
-    static int16_t offsetY = 0;           // Sub-tile pixel offset (IceNav: Maps::offsetY)
+    static int16_t offsetX = 0;           // Sub-tile pixel offset
+    static int16_t offsetY = 0;           // Sub-tile pixel offset
     static int16_t navSubTileX = 0;       // GPS sub-tile offset for NAV canvas centering
-    static int16_t navSubTileY = 0;       // (IceNav: setPivot with coord2ScreenPos)
-    static float velocityX = 0.0f;        // Inertial momentum px/ms (IceNav: mapView.velocityX)
+    static int16_t navSubTileY = 0;
+    static float velocityX = 0.0f;        // Inertial momentum px/ms
     static float velocityY = 0.0f;
-    static constexpr float PAN_FRICTION = 0.95f;       // Decay factor (IceNav: friction)
+    static constexpr float PAN_FRICTION = 0.95f;       // Decay factor
     static constexpr float PAN_FRICTION_BUSY = 0.85f;  // Heavier friction during render
     static int last_x = 0, last_y = 0;
     static uint32_t last_time = 0;
-    #define START_THRESHOLD 12        // Minimum pixels to start drag (IceNav: 12)
-    #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render (IceNav: 128)
+    #define START_THRESHOLD 12        // Minimum pixels to start drag
+    #define PAN_TILE_THRESHOLD 128    // Pixel threshold to trigger re-render
 
     // Tile data size for old raster tiles
     #define TILE_DATA_SIZE (MAP_TILE_SIZE * MAP_TILE_SIZE * sizeof(uint16_t))  // 128KB per tile
@@ -210,7 +210,7 @@ namespace UIMapManager {
 #endif
     }
 
-    // Apply rendered viewport — IceNav displayMap() pattern.
+    // Apply rendered viewport.
     // Just copies sprite + updates UI. Does NOT touch offsetX/Y.
     static void applyRenderedViewport() {
         if (!backViewportSprite || !frontViewportSprite) return;
@@ -325,7 +325,7 @@ namespace UIMapManager {
             }
         }
 
-        // Inertia — IceNav updateMap() L271-294
+        // Inertia handling
         // Apply momentum when finger is not on screen
         if (!isScrollingMap && (velocityX != 0.0f || velocityY != 0.0f)) {
             uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
@@ -1072,7 +1072,7 @@ namespace UIMapManager {
         *tileY = (int)((1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n);
     }
 
-    // IceNav model: convert tile index to lat/lon of tile center (tileX+0.5, tileY+0.5)
+    // Convert tile index to lat/lon of tile center (tileX+0.5, tileY+0.5)
     static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon) {
         double n = (double)(1 << zoom);
         *lon = (float)((tileX + 0.5) / n * 360.0 - 180.0);
@@ -1147,7 +1147,7 @@ namespace UIMapManager {
         // Stop tile preload task
         stopTilePreloadTask();
         // Keep persistent viewport sprite alive (never free — avoids PSRAM fragmentation)
-        // See CLAUDE.md: "Sprites persistants — allouer une seule fois, ne jamais libérer/recréer"
+        // See CLAUDE.md: "Persistent sprites - allocate once, never free/recreate"
         // Return CPU to 80 MHz for power saving
         setCpuFrequencyMhz(80);
         ESP_LOGI(TAG, "CPU reduced to %d MHz", getCpuFrequencyMhz());
@@ -1285,7 +1285,7 @@ namespace UIMapManager {
             return;
         }
 
-        // Always allow re-enqueue — IceNav model: scrollMap() calls generateMap()
+        // Always allow re-enqueue — scrollMap() calls generateMap()
         // freely, xQueueOverwrite keeps latest request. No blocking.
         redraw_in_progress = true;
 
@@ -1496,7 +1496,7 @@ namespace UIMapManager {
         }
     }
 
-    // Async adaptation of IceNav Maps::scrollMap() — maps.cpp L657-738
+    // Async adaptation of scrollMap()
     // offsetX/Y grows freely (clamped by margin). No wrap — avoids 256px visual snap
     // while async render hasn't delivered the new sprite yet.
     // renderTileX/Y tracks the target tile for the render request.
@@ -1504,7 +1504,7 @@ namespace UIMapManager {
     static void scrollMap(int16_t dx, int16_t dy) {
         if (dx == 0 && dy == 0) return;
 
-        // Dampen excessive offsets in same direction (IceNav L663-668)
+        // Dampen excessive offsets in same direction
         const int16_t softLimit = PAN_TILE_THRESHOLD;
         if (abs(offsetX) > softLimit && ((dx > 0 && offsetX > 0) || (dx < 0 && offsetX < 0)))
             dx /= 2;
@@ -1540,7 +1540,7 @@ namespace UIMapManager {
         }
     }
 
-    // Touch pan handler — IceNav scrollMapEvent() mainScr.cpp L407-484
+    // Touch pan handler
     void map_touch_event_cb(lv_event_t* e) {
         lv_event_code_t code = lv_event_get_code(e);
         lv_indev_t* indev = lv_indev_get_act();
@@ -1573,14 +1573,14 @@ namespace UIMapManager {
             }
 
             if (dragStarted && dt > 0) {
-                // Move map — IceNav: mapView.scrollMap(-dx, -dy)
+                // Move map
                 scrollMap(-dx, -dy);
 
                 // Immediate visual feedback
                 if (map_canvas)
                     lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - offsetX, -MAP_MARGIN_Y - offsetY);
 
-                // Sample velocity px/ms with exponential filter (IceNav weight 0.7)
+                // Sample velocity px/ms with exponential filter (weight 0.7)
                 float weight = 0.7f;
                 velocityX = velocityX * (1.0f - weight) + (-(float)dx / (float)dt) * weight;
                 velocityY = velocityY * (1.0f - weight) + (-(float)dy / (float)dt) * weight;
@@ -1602,7 +1602,7 @@ namespace UIMapManager {
             if (fabsf(velocityX) < 0.1f) velocityX = 0.0f;
             if (fabsf(velocityY) < 0.1f) velocityY = 0.0f;
 
-            // Double-tap detection (IceNav: 200ms window, lvglSetup.cpp)
+            // Double-tap detection (200ms window)
             if (!wasDragging) {
                 static uint32_t firstTapTime = 0;
                 static uint8_t tapCount = 0;
@@ -1998,7 +1998,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         lv_obj_add_event_cb(map_container, map_touch_event_cb, LV_EVENT_RELEASED, NULL);
 
         // Allocate double-buffer sprites EARLY (before raster cache fills PSRAM)
-        // Canvas buffer = front sprite buffer (zero-copy, like IceNav)
+        // Canvas buffer = front sprite buffer (zero-copy)
         const size_t spriteBytes = MAP_SPRITE_SIZE * MAP_SPRITE_SIZE * 2;
         if (!backViewportSprite) {
             backViewportSprite = new LGFX_Sprite(&tft);
@@ -2095,7 +2095,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     switchZoomTable(nav_zooms, nav_zoom_count);
 
-                    // NAV viewport rendering (IceNav-v3 pattern)
+                    // NAV viewport rendering
                     // Temporarily unsubscribe loopTask from WDT — rendering can take 10-30s
                     esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
 

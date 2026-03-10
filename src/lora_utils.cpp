@@ -151,7 +151,7 @@ namespace LoRa_Utils {
     }
 
     DataRateConfig getDataRateConfig(int dataRate) {
-        // Mapping des 6 vitesses vers leurs paramètres LoRa
+        // Map the 6 speeds to their LoRa parameters
         const DataRateConfig configs[] = {
             {300,  12, 5, 125000},  // SF12, CR4/5
             {244,  12, 6, 125000},  // SF12, CR4/6
