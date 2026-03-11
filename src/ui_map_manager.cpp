@@ -1554,6 +1554,15 @@ namespace UIMapManager {
     static void scrollMap(int16_t dx, int16_t dy) {
         if (dx == 0 && dy == 0) return;
 
+        // If a reset is pending (zoom/recenter), we update offsetX/Y
+        // but prevent triggering a tile change until applyRenderedViewport
+        // has synchronized the offsets with the new center.
+        if (pendingResetPan) {
+            offsetX += dx;
+            offsetY += dy;
+            return;
+        }
+
         // Dampen excessive offsets in same direction
         const int16_t softLimit = PAN_TILE_THRESHOLD;
         if (abs(offsetX) > softLimit && ((dx > 0 && offsetX > 0) || (dx < 0 && offsetX < 0)))
