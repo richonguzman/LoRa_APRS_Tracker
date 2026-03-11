@@ -121,6 +121,7 @@ namespace UIMapManager {
     static TracePoint ownTrace[TRACE_MAX_POINTS];
     static uint8_t ownTraceCount = 0;
     static uint8_t ownTraceHead = 0;
+    static bool pendingResetPan = false;
 
     // Forward declarations
     static void updateFilteredOwnPosition();
@@ -234,10 +235,20 @@ namespace UIMapManager {
         redraw_in_progress = false;
         mainThreadLoading = false;
 
-        // Rebase offset to match new sprite center (async gap compensation)
-        if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
-            offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
-            offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
+        if (pendingResetPan) {
+            offsetX = 0;
+            offsetY = 0;
+            velocityX = 0.0f;
+            velocityY = 0.0f;
+            renderTileX = centerTileX;
+            renderTileY = centerTileY;
+            pendingResetPan = false;
+        } else {
+            // Rebase offset to match new sprite center (async gap compensation)
+            if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
+                offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
+                offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
+            }
         }
         centerTileX = MapEngine::lastRenderedTileX;
         centerTileY = MapEngine::lastRenderedTileY;
@@ -1443,26 +1454,10 @@ namespace UIMapManager {
     // Helper: reset pan offset, velocity, and canvas position before re-render
     // Does NOT touch centerTileX/Y — caller must update those first if zoom changed.
     static inline void resetPanOffset() {
-        offsetX = 0;
-        offsetY = 0;
-        velocityX = 0.0f;
-        velocityY = 0.0f;
-        renderTileX = centerTileX;
-        renderTileY = centerTileY;
-
-        // Recalculate immediate NAV sub-tile offset before async render to avoid visual jumps
-        if (navModeActive) {
-            uint32_t scale = 1 << map_current_zoom;
-            navSubTileX = (int16_t)(((uint32_t)((map_center_lon + 180.0f) / 360.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
-            float latRad = map_center_lat * (float)M_PI / 180.0f;
-            float merc = logf(tanf(latRad) + 1.0f / cosf(latRad));
-            navSubTileY = (int16_t)(((uint32_t)((1.0f - merc / (float)M_PI) / 2.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
-        } else {
-            navSubTileX = 0;
-            navSubTileY = 0;
-        }
-
-        if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - navSubTileX, -MAP_MARGIN_Y - navSubTileY);
+        // Schedule a pan reset that will only be visually applied 
+        // once the newly centered tile has finished rendering.
+        // Doing this synchronously jumps the screen on the OLD background tile.
+        pendingResetPan = true;
     }
 
     // Helper: resync centerTile to current map_center at new zoom, then reset offset.
@@ -1620,8 +1615,15 @@ namespace UIMapManager {
                 scrollMap(-dx, -dy);
 
                 // Immediate visual feedback
-                if (map_canvas)
-                    lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - offsetX, -MAP_MARGIN_Y - offsetY);
+                if (map_canvas) {
+                    int16_t canvasX = -MAP_MARGIN_X - offsetX;
+                    int16_t canvasY = -MAP_MARGIN_Y - offsetY;
+                    if (navModeActive) {
+                        canvasX -= navSubTileX;
+                        canvasY -= navSubTileY;
+                    }
+                    lv_obj_set_pos(map_canvas, canvasX, canvasY);
+                }
 
                 // Sample velocity px/ms with exponential filter (weight 0.7)
                 float weight = 0.7f;
