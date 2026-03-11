@@ -235,6 +235,11 @@ namespace UIMapManager {
         redraw_in_progress = false;
         mainThreadLoading = false;
 
+        // Save old navSubTile offsets before updating them
+        int16_t oldNavSubX = navSubTileX;
+        int16_t oldNavSubY = navSubTileY;
+        bool wasResetting = pendingResetPan;
+
         if (pendingResetPan) {
             offsetX = 0;
             offsetY = 0;
@@ -263,6 +268,13 @@ namespace UIMapManager {
         } else {
             navSubTileX = 0;
             navSubTileY = 0;
+        }
+
+        // Compensate the sub-tile grid jump if we are actively panning (not resetting).
+        // The user dragged the canvas (offsetX/Y), but the map_center changed (jumping navSubTileX/Y).
+        if (!wasResetting && navModeActive && MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
+            offsetX -= (navSubTileX - oldNavSubX);
+            offsetY -= (navSubTileY - oldNavSubY);
         }
 
         // UI updates
@@ -1606,8 +1618,12 @@ namespace UIMapManager {
             uint32_t dt = current_time - last_time;
 
             if (!dragStarted) {
-                if (abs(dx) > START_THRESHOLD || abs(dy) > START_THRESHOLD)
+                if (abs(dx) > START_THRESHOLD || abs(dy) > START_THRESHOLD) {
                     dragStarted = true;
+                    // User took manual control via touch drag. Cancel any pending
+                    // automatic recenter/zoom offset reset to prevent jumping.
+                    pendingResetPan = false;
+                }
             }
 
             if (dragStarted && dt > 0) {
