@@ -123,6 +123,8 @@ namespace UIMapManager {
     static uint8_t ownTraceHead = 0;
 
     // Forward declarations
+    static void updateFilteredOwnPosition();
+    static bool getUiPosition(float* lat, float* lon);
     void cleanup_station_buttons();
     void draw_station_traces();
     void update_station_objects();
@@ -360,35 +362,50 @@ namespace UIMapManager {
             lv_obj_set_pos(map_canvas, canvasX, canvasY);
         }
 
-        // Collect own trace points based on speed: 5s if moving, 10s if walking/static
-        static uint16_t traceCounter = 0;
-        uint16_t traceInterval = (gps.speed.kmph() > 10.0) ? 100 : 200;  // 100×50ms=5s, 200×50ms=10s
-        if (++traceCounter >= traceInterval) {
-            traceCounter = 0;
+        // 1. Update smoothed own position and trace every second (20 x 50ms = 1s)
+        static uint16_t gpsUpdateCounter = 0;
+        bool positionChanged = false;
+        
+        if (++gpsUpdateCounter >= 20) {
+            gpsUpdateCounter = 0;
+            
+            float oldLat = filteredOwnLat;
+            float oldLon = filteredOwnLon;
+            
+            updateFilteredOwnPosition();
             addOwnTracePoint();
+            
+            // Trigger UI refresh if filtered position actually moved
+            if (filteredOwnLat != oldLat || filteredOwnLon != oldLon) {
+                positionChanged = true;
+            }
         }
 
-        // Periodic station refresh (throttle to every ~10s via counter)
+        // 2. Periodic station refresh (received stations every ~10s OR own station moved)
         static uint16_t refreshCounter = 0;
-        if (++refreshCounter >= 200) {  // 200 × 50ms = 10s
-            refreshCounter = 0;
+        refreshCounter++;
+        
+        if (refreshCounter >= 200 || positionChanged) {  // 200 × 50ms = 10s
+            if (refreshCounter >= 200) refreshCounter = 0;
+            
             if (!isScrollingMap) {
-                // Follow GPS: update centerTile from GPS position immediately (fluid tracking)
-                if (map_follow_gps && iconGpsValid) {
+                // Follow GPS: update centerTile from stable filtered position (prevents jitter)
+                float uiLat, uiLon;
+                if (map_follow_gps && getUiPosition(&uiLat, &uiLon)) {
                     int prevRenderTileX = renderTileX;
                     int prevRenderTileY = renderTileY;
-                    initCenterTileFromLatLon(iconGpsLat, iconGpsLon);
+                    initCenterTileFromLatLon(uiLat, uiLon);
 
                     if (renderTileX != prevRenderTileX || renderTileY != prevRenderTileY) {
-                        ESP_LOGD(TAG, "Periodic refresh (GPS moved tile, full redraw)");
+                        ESP_LOGD(TAG, "Refresh (GPS moved tile, full redraw)");
                         redraw_map_canvas();
                     } else if (!redraw_in_progress && !navRenderPending) {
                         // Apply precise pixel offset based on new map_center_lat/lon without re-rendering the whole tile
                         applyRenderedViewport();
-                        ESP_LOGD(TAG, "Periodic refresh (GPS moved inside tile, pan viewport)");
+                        ESP_LOGD(TAG, "Refresh (GPS moved inside tile, pan viewport)");
                     }
                 } else if (!redraw_in_progress && !navRenderPending) {
-                    ESP_LOGD(TAG, "Periodic refresh (station overlay only)");
+                    ESP_LOGD(TAG, "Refresh (station overlay only)");
                     refreshStationOverlay();
                 }
             }
@@ -630,6 +647,19 @@ namespace UIMapManager {
 
     // (filteredOwn* declared above, before map_refresh_timer_cb)
 
+    static bool getUiPosition(float* lat, float* lon) {
+        if (filteredOwnValid) {
+            *lat = filteredOwnLat;
+            *lon = filteredOwnLon;
+            return true;
+        } else if (iconGpsValid) {
+            *lat = iconGpsLat;
+            *lon = iconGpsLon;
+            return true;
+        }
+        return false;
+    }
+
     static void updateFilteredOwnPosition() {
         static float iconCentroidLat = 0.0f;
         static float iconCentroidLon = 0.0f;
@@ -721,8 +751,7 @@ namespace UIMapManager {
 
         stationHitZoneCount = 0;
 
-        // Own position — use icon-level GPS (≥3 sats) for early display
-        updateFilteredOwnPosition();
+        // Own position — now updated every second by map_refresh_timer_cb
         if (iconGpsValid) {
             int myX, myY;
             latLonToPixel(iconGpsLat, iconGpsLon,
