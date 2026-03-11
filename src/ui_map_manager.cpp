@@ -251,8 +251,11 @@ namespace UIMapManager {
             renderTileY = centerTileY;
             pendingResetPan = false;
         } else {
-            // Rebase offset to match new sprite center (async gap compensation)
-            if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
+            // Rebase offset to compensate for async render lag during NORMAL panning.
+            // This should NOT run if the render was triggered by a zoom/recenter,
+            // because in that case the user's new pan input takes priority.
+            // The 'wasResetting' flag tells us if the cycle was initiated by a zoom/recenter.
+            if (!wasResetting && MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
                 offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
                 offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
             }
