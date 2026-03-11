@@ -1545,7 +1545,28 @@ namespace UIMapManager {
             }
         }
     }
-
+    
+    // Helper to shift the map center by an exact number of tiles.
+    // This preserves the fractional sub-tile offset (e.g., after a GPS recenter)
+    // rather than snapping to the exact center of a new tile.
+    static void shiftMapCenter(int deltaTileX, int deltaTileY) {
+        if (deltaTileX == 0 && deltaTileY == 0) return;
+        
+        double n = pow(2.0, map_current_zoom);
+        // Convert current center to cartesian tile coordinates
+        double cx = (map_center_lon + 180.0) / 360.0 * n;
+        double latRad = map_center_lat * PI / 180.0;
+        double cy = (1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / PI) / 2.0 * n;
+        
+        // Apply the exact tile delta
+        cx += deltaTileX;
+        cy += deltaTileY;
+        
+        // Convert back to Lat/Lon
+        map_center_lon = (float)(cx / n * 360.0 - 180.0);
+        double n_rad = PI * (1.0 - 2.0 * cy / n);
+        map_center_lat = (float)(atan(sinh(n_rad)) * 180.0 / PI);
+    }
 
     // Async adaptation of scrollMap()
     // offsetX/Y grows freely (clamped by margin). No wrap — avoids 256px visual snap
@@ -1554,27 +1575,6 @@ namespace UIMapManager {
     // centerTileX/Y only changes in applyRenderedViewport() when the new sprite arrives.
     static void scrollMap(int16_t dx, int16_t dy) {
         if (dx == 0 && dy == 0) return;
-
-        // If a reset is pending (zoom/recenter), we update offsetX/Y
-        // but prevent triggering a tile change until applyRenderedViewport
-        // has synchronized the offsets with the new center.
-        if (pendingResetPan) {
-            offsetX += dx;
-            offsetY += dy;
-
-            // FIX: Clamp even during pendingResetPan!
-            // Otherwise offsets explode during the 100-300ms async render
-            // and cause a brutal multi-tile jump as soon as pendingResetPan becomes false.
-            int16_t maxOffX = MAP_MARGIN_X - 10;  // 214
-            int16_t maxOffY = MAP_MARGIN_Y - 10;  // 274
-            offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
-            offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
-
-            // We do NOT touch renderTileX/Y here (this is the intended behaviour
-            // after a zoom or recenter) but at least the offsets stay within
-            // the physical limits of the sprite.
-            return;
-        }
 
         // Dampen excessive offsets in same direction
         const int16_t softLimit = PAN_TILE_THRESHOLD;
@@ -1585,7 +1585,11 @@ namespace UIMapManager {
 
         offsetX += dx;
         offsetY += dy;
-        map_follow_gps = false;
+        
+        // Break GPS follow only if this is a manual or inertial pan (not just a pending reset)
+        if (!pendingResetPan) {
+            map_follow_gps = false;
+        }
 
         // Clamp to canvas margin — hard limit of pre-rendered area
         int16_t maxOffX = MAP_MARGIN_X - 10;  // 214
@@ -1603,9 +1607,16 @@ namespace UIMapManager {
         else if (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
 
         if (targetX != renderTileX || targetY != renderTileY) {
+            int dX = targetX - renderTileX;
+            int dY = targetY - renderTileY;
             renderTileX = targetX;
             renderTileY = targetY;
-            tileToLatLon(renderTileX, renderTileY, map_current_zoom, &map_center_lat, &map_center_lon);
+            
+            // FIX: Mathematically shift the center to preserve the GPS sub-tile offset.
+            // Do NOT use tileToLatLon here, as it would snap to the exact tile center
+            // and ruin the fractional offset from the recenter/zoom operation.
+            shiftMapCenter(dX, dY);
+            
             ESP_LOGD(TAG, "scrollMap → render tile(%d,%d) offset(%d,%d) lat/lon %.4f,%.4f",
                           renderTileX, renderTileY, offsetX, offsetY, map_center_lat, map_center_lon);
             redraw_map_canvas();
