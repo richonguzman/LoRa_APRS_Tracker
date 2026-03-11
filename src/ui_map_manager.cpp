@@ -378,11 +378,8 @@ namespace UIMapManager {
             int16_t canvasX = -MAP_MARGIN_X - offsetX;
             int16_t canvasY = -MAP_MARGIN_Y - offsetY;
 
-            // NAV fixed grid: shift canvas by GPS sub-tile offset so GPS is centered
-            if (navModeActive) {
-                canvasX -= navSubTileX;
-                canvasY -= navSubTileY;
-            }
+            canvasX -= navSubTileX;
+            canvasY -= navSubTileY;
 
             lv_obj_set_pos(map_canvas, canvasX, canvasY);
         }
@@ -1667,10 +1664,9 @@ namespace UIMapManager {
                 if (map_canvas) {
                     int16_t canvasX = -MAP_MARGIN_X - offsetX;
                     int16_t canvasY = -MAP_MARGIN_Y - offsetY;
-                    if (navModeActive) {
-                        canvasX -= navSubTileX;
-                        canvasY -= navSubTileY;
-                    }
+                    canvasX -= navSubTileX;
+                    canvasY -= navSubTileY;
+
                     lv_obj_set_pos(map_canvas, canvasX, canvasY);
                 }
 
