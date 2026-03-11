@@ -63,6 +63,8 @@ namespace UIMapManager {
     int map_current_zoom = raster_zooms[0];
     float map_center_lat = 0.0f;
     float map_center_lon = 0.0f;
+    static float defaultLat = 0.0f;
+    static float defaultLon = 0.0f;
     String map_current_region = "";
     // Multi-region NAV support — all regions found on SD, GPS match first
     #define NAV_MAX_REGIONS 4
@@ -469,8 +471,7 @@ namespace UIMapManager {
                 if (mainThreadLoading) continue;
 
                 // Check if tile already in cache
-                int cacheIdx = MapEngine::findCachedTile(req.zoom, req.tileX, req.tileY);
-                if (cacheIdx < 0) {
+                if (MapEngine::findCachedRasterTile(req.zoom, req.tileX, req.tileY) == nullptr) {
                     // Not in cache - preload it
                     ESP_LOGD(TAG, "Preloading tile %d/%d/%d", req.zoom, req.tileX, req.tileY);
                     preloadTileToCache(req.tileX, req.tileY, req.zoom);
@@ -1052,13 +1053,17 @@ namespace UIMapManager {
         // NAV priority: don't cache raster tiles when NAV mode is active
         if (navModeActive) return false;
 
-        // 1. Check if already in cache
-        if (MapEngine::findCachedTile(zoom, tileX, tileY) >= 0) {
+        // --- Use new static cache API ---
+        MapEngine::CachedTile* cacheSlot = MapEngine::getRasterCacheSlot(zoom, tileX, tileY);
+        
+        // If slot is valid, it's a cache hit, nothing to do.
+        if (cacheSlot->isValid) {
             return true;
         }
 
-        // 2. Find file path (PNG, then JPG) — under SPI mutex
-        // NAV tiles are NOT cached per-tile; they use renderNavViewport() exclusively.
+        // --- It's a miss, we need to load the tile ---
+
+        // 1. Find file path (PNG, then JPG) — under SPI mutex
         char path[128];
         char found_path[128] = {0};
         bool found = false;
@@ -1078,39 +1083,34 @@ namespace UIMapManager {
         }
 
         if (!found) {
+            cacheSlot->isValid = false; // Ensure it remains invalid
             return false;
         }
 
-        // 3. Ensure enough PSRAM before allocating sprite
-        const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2; // RGB565
-        if (!MapEngine::ensurePSRAMAvailable(spriteSize)) {
-            ESP_LOGW(TAG, "Not enough PSRAM for preload after eviction");
-            return false;
+        // 2. We have a slot from the static pool, so no allocation is needed.
+        LGFX_Sprite* tileSprite = cacheSlot->sprite;
+        if (!tileSprite) {
+             ESP_LOGE(TAG, "Cache slot returned a null sprite!");
+             cacheSlot->isValid = false;
+             return false;
         }
 
-        // 4. Allocate a new sprite for the tile
-        LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
-        newSprite->setPsram(true);
-        if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
-            ESP_LOGE(TAG, "Sprite creation failed");
-            delete newSprite;
-            return false;
-        }
-
-        // 5. Render tile — serialize with spriteMutex (static decoders not thread-safe)
+        // 3. Render tile — serialize with spriteMutex (static decoders not thread-safe)
         bool success = false;
         if (MapEngine::spriteMutex && xSemaphoreTake(MapEngine::spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
-            success = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
+            success = MapEngine::renderTile(found_path, 0, 0, *tileSprite, (uint8_t)zoom);
             xSemaphoreGive(MapEngine::spriteMutex);
         }
 
-        // 6. If rendering is successful, add to cache
+        // 4. If rendering is successful, validate the cache slot
         if (success) {
-            MapEngine::addToCache(found_path, zoom, tileX, tileY, newSprite);
+            strncpy(cacheSlot->filePath, found_path, sizeof(cacheSlot->filePath) - 1);
+            cacheSlot->filePath[sizeof(cacheSlot->filePath) - 1] = '\0';
+            cacheSlot->isValid = true;
+            ESP_LOGD(TAG, "Preloaded tile to cache: %s", found_path);
         } else {
-            // Cleanup on failure
-            newSprite->deleteSprite();
-            delete newSprite;
+            // Cleanup on failure: just invalidate the slot
+            cacheSlot->isValid = false;
         }
 
         return success;
@@ -1242,8 +1242,8 @@ namespace UIMapManager {
             initLon = gps.location.lng();
             ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", initLat, initLon);
         } else {
-            initLat = 42.9667f;
-            initLon = 1.6053f;
+            initLat = (defaultLat != 0.0f) ? defaultLat : 42.9667f;
+            initLon = (defaultLon != 0.0f) ? defaultLon : 1.6053f;
             ESP_LOGW(TAG, "No GPS, recentered on default position: %.4f, %.4f", initLat, initLon);
         }
         initCenterTileFromLatLon(initLat, initLon);
@@ -1712,6 +1712,62 @@ namespace UIMapManager {
     }
 
     // Discover the first available map region from the SD card
+    static void discoverDefaultPosition() {
+        if (map_current_region.isEmpty()) return;
+
+        const int zoom = 6;
+        char path[128];
+        snprintf(path, sizeof(path), "/LoRa_Tracker/Maps/%s/%d", map_current_region.c_str(), zoom);
+
+        int xMin = INT_MAX, xMax = INT_MIN;
+        int yMin = INT_MAX, yMax = INT_MIN;
+
+        if (spiMutex != NULL && xSemaphoreTake(spiMutex, pdMS_TO_TICKS(300)) == pdTRUE) {
+            if (STORAGE_Utils::isSDAvailable()) {
+                File zoomDir = SD.open(path);
+                if (zoomDir && zoomDir.isDirectory()) {
+                    File xEntry = zoomDir.openNextFile();
+                    while (xEntry) {
+                        if (xEntry.isDirectory()) {
+                            String xName = String(xEntry.name());
+                            int tx = xName.substring(xName.lastIndexOf('/') + 1).toInt();
+                            if (tx < xMin) xMin = tx;
+                            if (tx > xMax) xMax = tx;
+
+                            File yEntry = xEntry.openNextFile();
+                            while (yEntry) {
+                                String yName = String(yEntry.name());
+                                // Strip path and extension to get tileY
+                                String base = yName.substring(yName.lastIndexOf('/') + 1);
+                                int dotIdx = base.lastIndexOf('.');
+                                if (dotIdx > 0) base = base.substring(0, dotIdx);
+                                int ty = base.toInt();
+                                if (ty < yMin) yMin = ty;
+                                if (ty > yMax) yMax = ty;
+                                yEntry.close();
+                                yEntry = xEntry.openNextFile();
+                            }
+                        }
+                        xEntry.close();
+                        xEntry = zoomDir.openNextFile();
+                    }
+                }
+                zoomDir.close();
+            }
+            xSemaphoreGive(spiMutex);
+        }
+
+        if (xMin <= xMax && yMin <= yMax) {
+            int cx = (xMin + xMax) / 2;
+            int cy = (yMin + yMax) / 2;
+            tileToLatLon(cx, cy, zoom, &defaultLat, &defaultLon);
+            ESP_LOGI(TAG, "Default position from Z%d tiles: %.4f, %.4f (tiles X:%d-%d Y:%d-%d)",
+                          zoom, defaultLat, defaultLon, xMin, xMax, yMin, yMax);
+        } else {
+            ESP_LOGW(TAG, "No Z%d raster tiles found, default position 0,0", zoom);
+        }
+    }
+
     static void discoverAndSetMapRegion() {
         if (!map_current_region.isEmpty()) {
             return; // Region is already set
@@ -1839,20 +1895,20 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         return false;
     }
 
-    uint32_t tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
+    // --- 1. Check cache via new API ---
+    MapEngine::CachedTile* cacheSlot = MapEngine::getRasterCacheSlot(zoom, tileX, tileY);
+    if (!cacheSlot) return false;
 
-    // --- 1. Check positive cache first ---
-    int cacheIdx = MapEngine::findCachedTile(zoom, tileX, tileY);
-    if (cacheIdx >= 0) {
-        LGFX_Sprite* cachedSprite = MapEngine::getCachedTileSprite(cacheIdx);
-        MapEngine::copySpriteToCanvasWithClip(canvas, cachedSprite, offsetX, offsetY);
+    if (cacheSlot->isValid) {
+        MapEngine::copySpriteToCanvasWithClip(canvas, cacheSlot->sprite, offsetX, offsetY);
         return true;
     }
 
-    // --- 2. Check negative cache ---
+    // --- 2. Cache miss, check negative cache ---
+    uint32_t tileHash = cacheSlot->tileHash; // Already computed by getRasterCacheSlot
     for (const auto& hash : notFoundCache) {
         if (hash == tileHash) {
-            return false; // Tile is known to be missing, don't scan SD
+            return false;
         }
     }
 
@@ -1867,8 +1923,6 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         return false;
     }
 
-    // NAV tiles are NOT loaded per-tile; they use renderNavViewport() exclusively.
-    // Only search for raster tiles (PNG, JPG).
     if (xSemaphoreTake(spiMutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         if (STORAGE_Utils::isSDAvailable()) {
             const char* region = map_current_region.c_str();
@@ -1881,49 +1935,37 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             }
         }
         xSemaphoreGive(spiMutex);
-    } else {
-        ESP_LOGE(TAG, "Could not get SPI Mutex for SD access");
     }
 
-    // --- 4. If file not found, add to negative cache and return ---
+    // --- 4. If file not found, add to negative cache ---
     if (!found) {
         if (notFoundCache.size() < NOT_FOUND_CACHE_SIZE) {
             notFoundCache.push_back(tileHash);
         } else {
-            // Overwrite oldest entry (circular buffer)
             notFoundCache[notFoundCacheIndex] = tileHash;
             notFoundCacheIndex = (notFoundCacheIndex + 1) % NOT_FOUND_CACHE_SIZE;
         }
         return false;
     }
 
-    // --- 5. Ensure PSRAM available, then decode + copy to canvas + cache ---
-    const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2; // RGB565
-    MapEngine::ensurePSRAMAvailable(spriteSize);
-
-    LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
-    newSprite->setPsram(true);
-    if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) != nullptr) {
-        // Serialize with spriteMutex (static decoders not thread-safe across cores)
-        bool decoded = false;
-        if (MapEngine::spriteMutex && xSemaphoreTake(MapEngine::spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
-            decoded = MapEngine::renderTile(found_path, 0, 0, *newSprite, (uint8_t)zoom);
-            xSemaphoreGive(MapEngine::spriteMutex);
-        }
-        if (decoded) {
-            // Copy to canvas IMMEDIATELY
-            MapEngine::copySpriteToCanvasWithClip(canvas, newSprite, offsetX, offsetY);
-            // Cache the sprite (addToCache takes ownership)
-            MapEngine::addToCache(found_path, zoom, tileX, tileY, newSprite);
-            return true;
-        }
-        // Decode failed
-        newSprite->deleteSprite();
-        delete newSprite;
-    } else {
-        ESP_LOGE(TAG, "Sprite creation failed (Out of PSRAM?)");
-        delete newSprite;
+    // --- 5. Use sprite from cache slot to decode ---
+    LGFX_Sprite* tileSprite = cacheSlot->sprite;
+    bool decoded = false;
+    if (MapEngine::spriteMutex && xSemaphoreTake(MapEngine::spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+        decoded = MapEngine::renderTile(found_path, 0, 0, *tileSprite, (uint8_t)zoom);
+        xSemaphoreGive(MapEngine::spriteMutex);
     }
+
+    if (decoded) {
+        // Copy to canvas IMMEDIATELY
+        MapEngine::copySpriteToCanvasWithClip(canvas, tileSprite, offsetX, offsetY);
+        // Validate the slot
+        strncpy(cacheSlot->filePath, found_path, sizeof(cacheSlot->filePath) - 1);
+        cacheSlot->filePath[sizeof(cacheSlot->filePath) - 1] = '\0';
+        cacheSlot->isValid = true;
+        return true;
+    }
+
     return false;
 }
 
@@ -1938,17 +1980,25 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         setCpuFrequencyMhz(240);
         ESP_LOGI(TAG, "CPU boosted to %d MHz", getCpuFrequencyMhz());
 
-        // Set initial position before region discovery (needed for GPS-based region matching)
+        // Set initial position from GPS if available (needed for GPS-based region matching)
         if (map_follow_gps && gps.location.isValid()) {
             map_center_lat = gps.location.lat();
             map_center_lon = gps.location.lng();
-        } else if (map_center_lat == 0.0f && map_center_lon == 0.0f) {
-            map_center_lat = 42.9667f;
-            map_center_lon = 1.6053f;
         }
 
         // Discover and set the map region if it's not already defined
         discoverAndSetMapRegion();
+
+        // Scan raster Z6 to determine default position from tile coverage
+        discoverDefaultPosition();
+
+        // Use tile-derived default if no GPS and no prior position
+        if (map_center_lat == 0.0f && map_center_lon == 0.0f &&
+            defaultLat != 0.0f && defaultLon != 0.0f) {
+            map_center_lat = defaultLat;
+            map_center_lon = defaultLon;
+        }
+
         discoverNavRegions();
 
         ESP_LOGI(TAG, "Regions discovered - Maps: '%s', VectMaps: %d region(s)",
@@ -1967,13 +2017,10 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         if (map_follow_gps && gps.location.isValid()) {
             initCenterTileFromLatLon(gps.location.lat(), gps.location.lng());
             ESP_LOGI(TAG, "Using GPS position: %.4f, %.4f", map_center_lat, map_center_lon);
-        } else if (map_center_lat == 0.0f && map_center_lon == 0.0f) {
-            initCenterTileFromLatLon(42.9667f, 1.6053f);
-            ESP_LOGW(TAG, "No GPS, using default position: %.4f, %.4f", map_center_lat, map_center_lon);
         } else if (centerTileX == 0 && centerTileY == 0) {
             // Screen recreated but lat/lon preserved — re-sync tile from lat/lon
             initCenterTileFromLatLon(map_center_lat, map_center_lon);
-            ESP_LOGI(TAG, "Using pan position: %.4f, %.4f (tile %d/%d)", map_center_lat, map_center_lon, centerTileX, centerTileY);
+            ESP_LOGI(TAG, "Using pan/default position: %.4f, %.4f (tile %d/%d)", map_center_lat, map_center_lon, centerTileX, centerTileY);
         }
 
         // Title bar (green for map)
@@ -2079,6 +2126,9 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                 frontViewportSprite = nullptr;
             }
         }
+
+        // Initialize the static tile cache pool now that critical sprites are allocated
+        MapEngine::initTileCache(&tft);
         // Point canvas buffer directly at front sprite (no separate allocation)
         if (frontViewportSprite) {
             map_canvas_buf = (lv_color_t*)frontViewportSprite->getBuffer();

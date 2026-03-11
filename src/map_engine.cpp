@@ -185,11 +185,11 @@ namespace MapEngine {
     // 16 priority layers (dispatch by getPriority() low nibble)
     static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> globalLayers[16];
 
-    // Tile cache system
-    #define TILE_CACHE_SIZE 40  // Number of tiles to cache (40 × 128KB = 5.2MB PSRAM)
-    static std::vector<CachedTile> tileCache;
-    static size_t maxCachedTiles = TILE_CACHE_SIZE;
-    static uint32_t cacheAccessCounter = 0;
+    // --- RASTER TILE CACHE (STATIC POOL) ---
+    static LGFX_Sprite* _tileSpritePool[RASTER_TILE_CACHE_SIZE] = {nullptr};
+    static std::vector<CachedTile> _tileCache;
+    static bool _isRasterCacheInitialized = false;
+    static uint32_t _rasterCacheAccessCounter = 0;
 
     // --- NPK2 pack file support — multi-region slot system (max 8 open packs) ---
     // 8 slots: supports 2 splits × 3 regions + margin
@@ -376,21 +376,20 @@ namespace MapEngine {
 
             // Raster tile requests (50ms timeout to re-check NAV queue promptly)
             if (xQueueReceive(mapRenderQueue, &request, pdMS_TO_TICKS(50)) == pdTRUE) {
-                if (request.targetSprite) {
+                // Background loading for individual tiles (legacy path)
+                CachedTile* slot = getRasterCacheSlot(request.zoom, request.tileX, request.tileY);
+                if (slot && !slot->isValid) {
                     bool success = false;
                     if (xSemaphoreTake(spriteMutex, portMAX_DELAY) == pdTRUE) {
-                        success = renderTile(request.path, request.xOffset, request.yOffset, *request.targetSprite, (uint8_t)request.zoom);
+                        success = renderTile(request.path, 0, 0, *slot->sprite, (uint8_t)request.zoom);
                         xSemaphoreGive(spriteMutex);
                     }
 
                     if (success) {
-                        addToCache(request.path, request.zoom, request.tileX, request.tileY, request.targetSprite);
-                    } else {
-                        ESP_LOGE(TAG, "Render failed for %s, cleaning up sprite.", request.path);
-                        request.targetSprite->deleteSprite();
-                        delete request.targetSprite;
+                        strncpy(slot->filePath, request.path, sizeof(slot->filePath) - 1);
+                        slot->filePath[sizeof(slot->filePath) - 1] = '\0';
+                        slot->isValid = true;
                     }
-
                     lv_async_call(invalidate_map_canvas_cb, canvas_to_invalidate_);
                 }
             }
@@ -476,24 +475,49 @@ namespace MapEngine {
     static void invalidateAllIdxRowCache();
 
     // Initialize tile cache and pre-reserve render buffers
-    void initTileCache() {
+    void initTileCache(LovyanGFX* gfx) {
+        // --- Raster Cache Pool Allocation (once) ---
+        if (!_isRasterCacheInitialized) {
+            ESP_LOGI(TAG, "Initializing static raster tile pool (%d sprites)...", RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                if (_tileSpritePool[i] == nullptr) {
+                    _tileSpritePool[i] = new LGFX_Sprite(gfx);
+                    if (!_tileSpritePool[i]) {
+                        ESP_LOGE(TAG, "Failed to allocate sprite %d in pool", i);
+                        return; // Abort
+                    }
+                    _tileSpritePool[i]->setPsram(true);
+                    _tileSpritePool[i]->setColorDepth(16);
+                    if (!_tileSpritePool[i]->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE)) {
+                        ESP_LOGE(TAG, "Failed to create sprite %d in pool (PSRAM)", i);
+                        delete _tileSpritePool[i];
+                        _tileSpritePool[i] = nullptr;
+                        return; // Abort
+                    }
+                }
+            }
+
+            _tileCache.resize(RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                _tileCache[i].sprite = _tileSpritePool[i];
+                _tileCache[i].isValid = false;
+            }
+            _isRasterCacheInitialized = true;
+            ESP_LOGI(TAG, "Raster tile pool initialized.");
+        }
+
         // Create render lock once (persists for the entire session)
         if (!renderLock) {
             renderLock = xSemaphoreCreateMutex();
         }
 
-        for (auto& cachedTile : tileCache) {
-            if (cachedTile.sprite) {
-                cachedTile.sprite->deleteSprite();
-                delete cachedTile.sprite;
-            }
+        // Invalidate all raster tiles
+        for (auto& cachedTile : _tileCache) {
+            cachedTile.isValid = false;
         }
-        tileCache.clear();
-        tileCache.reserve(maxCachedTiles);
-        cacheAccessCounter = 0;
+        _rasterCacheAccessCounter = 0;
 
         // Pre-reserve AEL, projection, and feature index buffers in PSRAM
-        // Initialize map list
         edgePool.reserve(1024);
         edgeBuckets.reserve(768);
         proj16X.reserve(1024);
@@ -505,7 +529,7 @@ namespace MapEngine {
         navCache.reserve(NAV_CACHE_SIZE);
 
         ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
-                      maxCachedTiles, NAV_CACHE_SIZE);
+                      RASTER_TILE_CACHE_SIZE, NAV_CACHE_SIZE);
 
         // Allocate npkRowBuf in PSRAM once — persists for the whole map session.
         // 8192 entries covers Z16/Z17 dense index rows; frees ~24-32 KB DRAM
@@ -533,7 +557,16 @@ namespace MapEngine {
             return;
         }
         clearNavCache();
-        initTileCache();
+        
+        // Invalidate all raster tiles instead of deleting them
+        if (_isRasterCacheInitialized) {
+            for (auto& cachedTile : _tileCache) {
+                cachedTile.isValid = false;
+            }
+            _rasterCacheAccessCounter = 0;
+            ESP_LOGI(TAG, "Raster tile cache invalidated.");
+        }
+
         if (renderLock) xSemaphoreGive(renderLock);
     }
 
@@ -1081,86 +1114,74 @@ namespace MapEngine {
         return false;
     }
 
-    // Find a tile in cache by its coordinates, returns index or -1
-    int findCachedTile(int zoom, int tileX, int tileY) {
+    CachedTile* getRasterCacheSlot(int zoom, int tileX, int tileY) {
+        if (!_isRasterCacheInitialized) {
+            ESP_LOGE(TAG, "getRasterCacheSlot called before cache is initialized!");
+            return nullptr;
+        }
+    
         uint32_t tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
 
-        for (int i = 0; i < tileCache.size(); ++i) {
-            if (tileCache[i].isValid && tileCache[i].tileHash == tileHash) {
-                tileCache[i].lastAccess = ++cacheAccessCounter;
-                return i;
-            }
-        }
-        return -1; // Not found
-    }
-
-    LGFX_Sprite* getCachedTileSprite(int index) {
-        if (index >= 0 && index < tileCache.size()) {
-            return tileCache[index].sprite;
-        }
-        return nullptr;
-    }
-
-    // Remove least recently used tile from cache
-    static void evictLRUTile() {
-        if (tileCache.empty()) return;
-
-        auto lruIt = tileCache.begin();
-        for (auto it = tileCache.begin(); it != tileCache.end(); ++it) {
-            if (it->lastAccess < lruIt->lastAccess) {
-                lruIt = it;
+        // 1. Check for cache hit
+        for (auto& tile : _tileCache) {
+            if (tile.isValid && tile.tileHash == tileHash) {
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                return &tile;
             }
         }
 
-        ESP_LOGD(TAG, "Evicting tile: %s", lruIt->filePath);
-        if (lruIt->sprite) {
-            lruIt->sprite->deleteSprite();
-            delete lruIt->sprite;
-            lruIt->sprite = nullptr;
+        // 2. Cache miss, find a free slot
+        for (auto& tile : _tileCache) {
+            if (!tile.isValid) {
+                tile.tileHash = tileHash;
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                tile.filePath[0] = '\0';
+                // isValid is still false, caller must set it to true after loading
+                return &tile;
+            }
         }
-        tileCache.erase(lruIt);
+
+        // 3. Cache full, evict LRU
+        auto lruIt = std::min_element(_tileCache.begin(), _tileCache.end(),
+            [](const CachedTile& a, const CachedTile& b) {
+                return a.lastAccess < b.lastAccess;
+        });
+
+        ESP_LOGD(TAG, "Evicting raster tile: %s", lruIt->filePath);
+        lruIt->isValid = false; // Mark as invalid for the caller to fill
+        lruIt->tileHash = tileHash;
+        lruIt->lastAccess = ++_rasterCacheAccessCounter;
+        lruIt->filePath[0] = '\0';
+        
+        return &(*lruIt);
     }
 
-    // Proactively evict LRU raster tiles until PSRAM largest free block >= needed
+    // Proactively evict LRU items to ensure PSRAM is available.
+    // With static raster cache, this can only act on the NAV cache now.
     bool ensurePSRAMAvailable(size_t needed) {
-        int evicted = 0;
-        while (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed && !tileCache.empty()) {
-            evictLRUTile();
-            evicted++;
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed) {
+            return true;
         }
-        if (evicted > 0) {
-            ESP_LOGI(TAG, "Evicted %d raster tile(s), largest PSRAM block: %u KB",
-                          evicted, (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
-        }
+        
+        // This function used to evict raster tiles. With a static pool, we can't free that memory.
+        // We log a warning that the raster cache is static and cannot be shrunk.
+        // The success of a subsequent allocation will depend on what else is in PSRAM (like the NAV cache).
+        ESP_LOGW(TAG, "ensurePSRAMAvailable: Raster cache is static. Cannot free %d bytes from it.", needed);
         return heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed;
     }
 
-    // Add a rendered tile sprite to the cache
-    void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite) {
-        if (maxCachedTiles == 0 || !sourceSprite) {
-            if(sourceSprite) { // Don't leak memory if cache is disabled
-                sourceSprite->deleteSprite();
-                delete sourceSprite;
+    LGFX_Sprite* findCachedRasterTile(int zoom, int tileX, int tileY) {
+        if (!_isRasterCacheInitialized) return nullptr;
+
+        uint32_t tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
+
+        for (auto& tile : _tileCache) {
+            if (tile.isValid && tile.tileHash == tileHash) {
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                return tile.sprite;
             }
-            return;
         }
-
-        if (tileCache.size() >= maxCachedTiles) {
-            evictLRUTile();
-        }
-
-        CachedTile newEntry;
-        newEntry.sprite = sourceSprite;
-
-        strncpy(newEntry.filePath, filePath, sizeof(newEntry.filePath) - 1);
-        newEntry.filePath[sizeof(newEntry.filePath) - 1] = '\0';
-        newEntry.lastAccess = ++cacheAccessCounter;
-        newEntry.isValid = true;
-        newEntry.tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
-
-        tileCache.push_back(newEntry);
-        ESP_LOGI(TAG, "Cache add tile: %s", filePath);
-        ESP_LOGD(TAG, "Cache size: %d, Free PSRAM: %u", tileCache.size(), ESP.getFreePsram());
+        return nullptr;
     }
     
     // Helper function to safely copy a sprite to the canvas with clipping
@@ -1286,18 +1307,17 @@ namespace MapEngine {
                 if (offsetX + MAP_TILE_SIZE <= 0 || offsetX >= viewportW) continue;
                 if (offsetY + MAP_TILE_SIZE <= 0 || offsetY >= viewportH) continue;
 
-                // 1. Check cache
-                int cacheIdx = findCachedTile(zoom, tileX, tileY);
-                if (cacheIdx >= 0) {
-                    LGFX_Sprite* cached = getCachedTileSprite(cacheIdx);
-                    if (cached && cached->getBuffer()) {
-                        blitTileToViewport(cached, offsetX, offsetY);
-                        tilesLoaded++;
-                        continue;
-                    }
+                MapEngine::CachedTile* cacheSlot = getRasterCacheSlot(zoom, tileX, tileY);
+                if (!cacheSlot) continue;
+
+                // If slot is valid, it's a cache hit.
+                if (cacheSlot->isValid) {
+                    blitTileToViewport(cacheSlot->sprite, offsetX, offsetY);
+                    tilesLoaded++;
+                    continue;
                 }
 
-                // 2. Find file on SD
+                // --- Cache miss, load from SD ---
                 char path[128];
                 bool found = false;
 
@@ -1317,32 +1337,23 @@ namespace MapEngine {
 
                 if (!found) continue;
 
-                // 3. Decode tile into a new sprite
-                const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2;
-                ensurePSRAMAvailable(spriteSize);
-
-                LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
-                newSprite->setPsram(true);
-                if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
-                    ESP_LOGE(TAG, "Raster sprite creation failed (PSRAM?)");
-                    delete newSprite;
-                    continue;
-                }
-
-                // Serialize with preload task — static PNG/JPEG decoders + targetSprite_ are not thread-safe
+                // Decode tile into the sprite provided by the cache slot
+                LGFX_Sprite* tileSprite = cacheSlot->sprite;
                 bool decoded = false;
                 if (xSemaphoreTake(spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
-                    decoded = renderTile(path, 0, 0, *newSprite, (uint8_t)zoom);
+                    decoded = renderTile(path, 0, 0, *tileSprite, (uint8_t)zoom);
                     xSemaphoreGive(spriteMutex);
                 }
 
                 if (decoded) {
-                    blitTileToViewport(newSprite, offsetX, offsetY);
-                    addToCache(path, zoom, tileX, tileY, newSprite);
+                    blitTileToViewport(tileSprite, offsetX, offsetY);
+                    // Validate the slot
+                    strncpy(cacheSlot->filePath, path, sizeof(cacheSlot->filePath) - 1);
+                    cacheSlot->filePath[sizeof(cacheSlot->filePath) - 1] = '\0';
+                    cacheSlot->isValid = true;
                     tilesLoaded++;
                 } else {
-                    newSprite->deleteSprite();
-                    delete newSprite;
+                    cacheSlot->isValid = false; // Ensure it's marked as invalid on failure
                 }
             }
         }
