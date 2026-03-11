@@ -1546,6 +1546,7 @@ namespace UIMapManager {
         }
     }
 
+
     // Async adaptation of scrollMap()
     // offsetX/Y grows freely (clamped by margin). No wrap — avoids 256px visual snap
     // while async render hasn't delivered the new sprite yet.
@@ -1560,6 +1561,18 @@ namespace UIMapManager {
         if (pendingResetPan) {
             offsetX += dx;
             offsetY += dy;
+
+            // FIX: Clamp even during pendingResetPan!
+            // Otherwise offsets explode during the 100-300ms async render
+            // and cause a brutal multi-tile jump as soon as pendingResetPan becomes false.
+            int16_t maxOffX = MAP_MARGIN_X - 10;  // 214
+            int16_t maxOffY = MAP_MARGIN_Y - 10;  // 274
+            offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
+            offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
+
+            // We do NOT touch renderTileX/Y here (this is the intended behaviour
+            // after a zoom or recenter) but at least the offsets stay within
+            // the physical limits of the sprite.
             return;
         }
 
