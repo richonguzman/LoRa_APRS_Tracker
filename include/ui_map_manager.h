@@ -90,8 +90,6 @@ namespace UIMapManager {
     bool loadPalette(const char* palettePath);
     // void copyTileToCanvas(uint16_t* tileData, lv_color_t* canvasBuffer,
     //                              int offsetX, int offsetY, int canvasWidth, int canvasHeight);
-    void latLonToTile(float lat, float lon, int zoom, int* tileX, int* tileY);
-    void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* pixelX, int* pixelY);
     CachedSymbol* getSymbolCacheEntry(char table, char symbol);
     void btn_map_back_clicked(lv_event_t* e);
     void btn_map_recenter_clicked(lv_event_t* e);

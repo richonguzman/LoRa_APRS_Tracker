@@ -34,6 +34,7 @@
 #include "custom_characters.h" // For symbolsAPRS, SYMBOL_WIDTH, SYMBOL_HEIGHT
 #include "lvgl_ui.h" // To call LVGL_UI::open_compose_with_callsign
 #include "gpx_writer.h"
+#include "map_coordinate_math.h" // New module for coordinate math
 #include <esp_task_wdt.h> //
 #include <esp_log.h>
 
@@ -135,7 +136,6 @@ namespace UIMapManager {
     static void scrollMap(int16_t dx, int16_t dy);
     static inline void resetPanOffset();
     static inline void resetZoom();
-    static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon);
     static void initCenterTileFromLatLon(float lat, float lon);
     static void toggleMapFullscreen();
 
@@ -810,8 +810,8 @@ namespace UIMapManager {
         // Own position — now updated every second by map_refresh_timer_cb
         if (iconGpsValid) {
             int myX, myY;
-            latLonToPixel(iconGpsLat, iconGpsLon,
-                          map_center_lat, map_center_lon, map_current_zoom, &myX, &myY);
+            MapMath::latLonToPixel(iconGpsLat, iconGpsLon,
+                          map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &myX, &myY);
             if (myX >= 0 && myX < MAP_SPRITE_SIZE && myY >= 0 && myY < MAP_SPRITE_SIZE) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
                 char fullSymbol[4];
@@ -827,8 +827,8 @@ namespace UIMapManager {
             MapStation* station = STATION_Utils::getMapStation(i);
             if (station && station->valid && station->latitude != 0.0f && station->longitude != 0.0f) {
                 int stX, stY;
-                latLonToPixel(station->latitude, station->longitude,
-                              map_center_lat, map_center_lon, map_current_zoom, &stX, &stY);
+                MapMath::latLonToPixel(station->latitude, station->longitude,
+                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &stX, &stY);
                 if (stX >= 0 && stX < MAP_SPRITE_SIZE && stY >= 0 && stY < MAP_SPRITE_SIZE) {
                     drawStationOnCanvas(stX, stY, station->callsign.c_str(),
                                         station->symbol.c_str(), i);
@@ -1149,59 +1149,15 @@ namespace UIMapManager {
     }
 
 
-    // Convert lat/lon to tile coordinates
-    void latLonToTile(float lat, float lon, int zoom, int* tileX, int* tileY) {
-        int n = 1 << zoom;
-        *tileX = (int)((lon + 180.0f) / 360.0f * n);
-        float latRad = lat * PI / 180.0f;
-        *tileY = (int)((1.0f - log(tan(latRad) + 1.0f / cos(latRad)) / PI) / 2.0f * n);
-    }
-
-    // Convert tile index to lat/lon of tile center (tileX+0.5, tileY+0.5)
-    static void tileToLatLon(int tileX, int tileY, int zoom, float* lat, float* lon) {
-        double n = (double)(1 << zoom);
-        *lon = (float)((tileX + 0.5) / n * 360.0 - 180.0);
-        double n_rad = PI * (1.0 - 2.0 * (tileY + 0.5) / n);
-        *lat = (float)(atan(sinh(n_rad)) * 180.0 / PI);
-    }
-
     // Initialize centerTileX/Y from lat/lon (recenter, GPS init, zoom change).
     // Sets centerTileX/Y for pan tracking. Keeps map_center_lat/lon = actual position
     // (NOT tile center) so the render engine centers on the real GPS position.
     static void initCenterTileFromLatLon(float lat, float lon) {
-        latLonToTile(lat, lon, map_current_zoom, &centerTileX, &centerTileY);
+        MapMath::latLonToTile(lat, lon, map_current_zoom, &centerTileX, &centerTileY);
         renderTileX = centerTileX;
         renderTileY = centerTileY;
         map_center_lat = lat;
         map_center_lon = lon;
-    }
-
-    // Convert lat/lon to pixel position in sprite.
-    // NAV (fixed grid): tile-relative — grid origin = (centerTileX-1, centerTileY-1)
-    // Raster (variable grid): delta from center position, offset by sprite center
-    void latLonToPixel(float lat, float lon, float centerLat, float centerLon, int zoom, int* pixelX, int* pixelY) {
-        double n = pow(2.0, zoom);
-        double target_x_world = (lon + 180.0) / 360.0;
-        double target_lat_rad = lat * PI / 180.0;
-        double target_y_world = (1.0 - log(tan(target_lat_rad) + 1.0 / cos(target_lat_rad)) / PI) / 2.0;
-
-        if (navModeActive) {
-            // Fixed grid: world pixel relative to grid origin
-            const int8_t gridOffset = MAP_TILES_GRID / 2;
-            double grid_origin_wx = (double)(centerTileX - gridOffset) * MAP_TILE_SIZE;
-            double grid_origin_wy = (double)(centerTileY - gridOffset) * MAP_TILE_SIZE;
-            *pixelX = (int)(target_x_world * n * MAP_TILE_SIZE - grid_origin_wx);
-            *pixelY = (int)(target_y_world * n * MAP_TILE_SIZE - grid_origin_wy);
-        } else {
-            // Variable grid: delta from map center, offset by sprite center
-            double center_x_world = (centerLon + 180.0) / 360.0;
-            double center_lat_rad = centerLat * PI / 180.0;
-            double center_y_world = (1.0 - log(tan(center_lat_rad) + 1.0 / cos(center_lat_rad)) / PI) / 2.0;
-            double delta_x_px = (target_x_world - center_x_world) * n * MAP_TILE_SIZE;
-            double delta_y_px = (target_y_world - center_y_world) * n * MAP_TILE_SIZE;
-            *pixelX = (int)(MAP_SPRITE_SIZE / 2.0 + delta_x_px);
-            *pixelY = (int)(MAP_SPRITE_SIZE / 2.0 + delta_y_px);
-        }
     }
 
 
@@ -1306,8 +1262,8 @@ namespace UIMapManager {
             for (int i = 0; i < ownTraceCount; i++) {
                 int idx = (ownTraceHead - ownTraceCount + i + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
                 int px, py;
-                latLonToPixel(ownTrace[idx].lat, ownTrace[idx].lon,
-                              map_center_lat, map_center_lon, map_current_zoom, &px, &py);
+                MapMath::latLonToPixel(ownTrace[idx].lat, ownTrace[idx].lon,
+                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &px, &py);
                 pts[validPts].x = px;
                 pts[validPts].y = py;
                 validPts++;
@@ -1315,8 +1271,8 @@ namespace UIMapManager {
 
             // Immediate own position as last point (consistent with actual icon)
             int cx, cy;
-            latLonToPixel(iconGpsLat, iconGpsLon,
-                          map_center_lat, map_center_lon, map_current_zoom, &cx, &cy);
+            MapMath::latLonToPixel(iconGpsLat, iconGpsLon,
+                          map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &cx, &cy);
             pts[validPts].x = cx;
             pts[validPts].y = cy;
             validPts++;
@@ -1342,8 +1298,8 @@ namespace UIMapManager {
                 // Skip points older than TTL
                 if ((now - station->trace[idx].time) > TRACE_TTL_MS) continue;
                 int px, py;
-                latLonToPixel(station->trace[idx].lat, station->trace[idx].lon,
-                              map_center_lat, map_center_lon, map_current_zoom, &px, &py);
+                MapMath::latLonToPixel(station->trace[idx].lat, station->trace[idx].lon,
+                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &px, &py);
                 pts[validPts].x = px;
                 pts[validPts].y = py;
                 validPts++;
@@ -1351,8 +1307,8 @@ namespace UIMapManager {
 
             // Current position as last point
             int cx, cy;
-            latLonToPixel(station->latitude, station->longitude,
-                          map_center_lat, map_center_lon, map_current_zoom, &cx, &cy);
+            MapMath::latLonToPixel(station->latitude, station->longitude,
+                          map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &cx, &cy);
             pts[validPts].x = cx;
             pts[validPts].y = cy;
             validPts++;
@@ -1584,20 +1540,11 @@ namespace UIMapManager {
     static void shiftMapCenter(int deltaTileX, int deltaTileY) {
         if (deltaTileX == 0 && deltaTileY == 0) return;
         
-        double n = pow(2.0, map_current_zoom);
-        // Convert current center to cartesian tile coordinates
-        double cx = (map_center_lon + 180.0) / 360.0 * n;
-        double latRad = map_center_lat * PI / 180.0;
-        double cy = (1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / PI) / 2.0 * n;
-        
-        // Apply the exact tile delta
-        cx += deltaTileX;
-        cy += deltaTileY;
-        
-        // Convert back to Lat/Lon
-        map_center_lon = (float)(cx / n * 360.0 - 180.0);
-        double n_rad = PI * (1.0 - 2.0 * cy / n);
-        map_center_lat = (float)(atan(sinh(n_rad)) * 180.0 / PI);
+        float newLat, newLon;
+        MapMath::shiftMapCenter(map_center_lat, map_center_lon, map_current_zoom,
+                                deltaTileX, deltaTileY, &newLat, &newLon);
+        map_center_lat = newLat;
+        map_center_lon = newLon;
     }
 
     // Async adaptation of scrollMap()
@@ -1830,7 +1777,7 @@ namespace UIMapManager {
         if (xMin <= xMax && yMin <= yMax) {
             int cx = (xMin + xMax) / 2;
             int cy = (yMin + yMax) / 2;
-            tileToLatLon(cx, cy, zoom, &defaultLat, &defaultLon);
+            MapMath::tileToLatLon(cx, cy, zoom, &defaultLat, &defaultLon);
             ESP_LOGI(TAG, "Default position from Z%d tiles: %.4f, %.4f (tiles X:%d-%d Y:%d-%d)",
                           zoom, defaultLat, defaultLon, xMin, xMax, yMin, yMax);
         } else {
@@ -1908,7 +1855,7 @@ namespace UIMapManager {
         // Compute center tile at a mid-range zoom for bounding box check
         const int checkZoom = 10;
         int centerTX, centerTY;
-        latLonToTile(map_center_lat, map_center_lon, checkZoom, &centerTX, &centerTY);
+        MapMath::latLonToTile(map_center_lat, map_center_lon, checkZoom, &centerTX, &centerTY);
 
         int gpsMatchIdx = -1;  // Index of GPS-matching region (to move to front)
 
