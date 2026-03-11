@@ -1449,6 +1449,19 @@ namespace UIMapManager {
         velocityY = 0.0f;
         renderTileX = centerTileX;
         renderTileY = centerTileY;
+
+        // Recalculate immediate NAV sub-tile offset before async render to avoid visual jumps
+        if (navModeActive) {
+            uint32_t scale = 1 << map_current_zoom;
+            navSubTileX = (int16_t)(((uint32_t)((map_center_lon + 180.0f) / 360.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
+            float latRad = map_center_lat * (float)M_PI / 180.0f;
+            float merc = logf(tanf(latRad) + 1.0f / cosf(latRad));
+            navSubTileY = (int16_t)(((uint32_t)((1.0f - merc / (float)M_PI) / 2.0f * scale * MAP_TILE_SIZE)) % MAP_TILE_SIZE) - MAP_TILE_SIZE / 2;
+        } else {
+            navSubTileX = 0;
+            navSubTileY = 0;
+        }
+
         if (map_canvas) lv_obj_set_pos(map_canvas, -MAP_MARGIN_X - navSubTileX, -MAP_MARGIN_Y - navSubTileY);
     }
 
