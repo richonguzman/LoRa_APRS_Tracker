@@ -1,30 +1,46 @@
 // map_gps_filter.cpp
 #include "map_gps_filter.h"
+#ifdef UNIT_TEST
+#include "mock_arduino.h"  // For native tests
+#define MILLIS() MockArduino::millis()
+#include <cstdio>  // For printf in mock logs
+#define ESP_LOGW(TAG, fmt, ...) printf("WARN: " fmt "\n", ##__VA_ARGS__)
+#define ESP_LOGD(TAG, fmt, ...) printf("DEBUG: " fmt "\n", ##__VA_ARGS__)
+#else
+#include <esp_log.h> // Keep standard log for firmware
+#define MILLIS() millis()
+#endif
 #include <cmath>
-#include <esp_log.h>
 
 static const char* TAG = "MapGPSFilter";
 
-MapGPSFilter::MapGPSFilter() 
-    : iconGpsLat(0.0f),
-      iconGpsLon(0.0f),
-      iconGpsValid(false),
-      filteredOwnLat(0.0f),
-      filteredOwnLon(0.0f),
-      filteredOwnValid(false),
-      iconCentroidLat(0.0f),
-      iconCentroidLon(0.0f),
-      iconCentroidCount(0),
-      lastValidTime(0),
-      ownTraceCount(0),
-      ownTraceHead(0) {
-    // Initialize trace array to zero
+MapGPSFilter::MapGPSFilter() {
+    reset();
+}
+
+void MapGPSFilter::reset() {
+    iconGpsLat = 0.0f;
+    iconGpsLon = 0.0f;
+    iconGpsValid = false;
+    filteredOwnLat = 0.0f;
+    filteredOwnLon = 0.0f;
+    filteredOwnValid = false;
+    iconCentroidLat = 0.0f;
+    iconCentroidLon = 0.0f;
+    iconCentroidCount = 0;
+    lastValidTime = 0;
+    ownTraceCount = 0;
+    ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
 }
 
 void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
-    if (!gps.location.isValid()) return;
-    
+    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats.value=%d, hdop.value=%.1f", gps.location.isValid(), gps.satellites.value(), gps.hdop.hdop());
+    // Basic sanity check: need a valid location and a realistic number of satellites.
+    if (!gps.location.isValid() || !gps.satellites.isValid() || gps.satellites.value() < 3 || gps.satellites.value() > 90) {
+        return;
+    }
+
     float lat = gps.location.lat();
     float lon = gps.location.lng();
     int sats = gps.satellites.value();
@@ -39,7 +55,7 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     // Level 2: filtered position for trace + recentering (≥6 sats)
     if (sats < 6) return;
 
-    uint32_t now = millis();
+    uint32_t now = MILLIS();
 
     // First valid filtered position
     if (!filteredOwnValid) {
@@ -143,4 +159,10 @@ void MapGPSFilter::clearTrace() {
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
+}
+
+// For unit tests only
+const TracePoint& MapGPSFilter::getOwnTracePoint(int index) const {
+    int bufferIndex = (ownTraceHead - ownTraceCount + index + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+    return ownTrace[bufferIndex];
 }

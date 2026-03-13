@@ -6,6 +6,20 @@
 #include "TinyGPS++.h"
 #include "station_utils.h" // For TRACE_MAX_POINTS and TracePoint
 
+#ifdef UNIT_TEST
+// Mock FreeRTOS for native tests
+typedef void* SemaphoreHandle_t;
+#define xSemaphoreCreateMutex() nullptr
+#define vSemaphoreDelete(x)
+#define xSemaphoreTake(x, y) true
+#define xSemaphoreGive(x)
+#define portMAX_DELAY 0
+#define pdTRUE true
+#else
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#endif
+
 /**
  * MapGPSFilter - KISS module for GPS filtering and trace management
  * 
@@ -22,7 +36,8 @@
 class MapGPSFilter {
 public:
     MapGPSFilter();
-    
+    void reset(); // Used by unit tests
+
     // Update filtered position from GPS data (includes all filtering logic)
     void updateFilteredOwnPosition(TinyGPSPlus& gps);
     
@@ -46,7 +61,8 @@ public:
     const TracePoint* getOwnTrace() const { return ownTrace; }
     int getOwnTraceCount() const { return ownTraceCount; }
     int getOwnTraceHead() const { return ownTraceHead; }
-    
+    const TracePoint& getOwnTracePoint(int index) const; // For unit tests
+
     // Clear all trace points (for reset/clear functionality)
     void clearTrace();
 
