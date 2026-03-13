@@ -35,6 +35,7 @@
 #include "lvgl_ui.h" // To call LVGL_UI::open_compose_with_callsign
 #include "gpx_writer.h"
 #include "map_coordinate_math.h" // New module for coordinate math
+#include "map_gps_filter.h"      // New module for GPS filtering and trace
 #include <esp_task_wdt.h> //
 #include <esp_log.h>
 
@@ -120,19 +121,21 @@ namespace UIMapManager {
     static lv_obj_t* map_info_bar = nullptr;
     static bool mapFullscreen = false;
 
-    // Own GPS trace (separate from received stations)
-    static TracePoint ownTrace[TRACE_MAX_POINTS];
-    static uint8_t ownTraceCount = 0;
-    static uint8_t ownTraceHead = 0;
+    // GPS filter module - manages iconGps, filteredOwn, and trace history
+    static MapGPSFilter gpsFilter;
     static bool pendingResetPan = false;
 
+    // Public wrapper to add a trace point from external modules (e.g., station_utils)
+    void addOwnTracePoint() {
+        gpsFilter.addOwnTracePoint();
+    }
+
     // Forward declarations
-    static void updateFilteredOwnPosition();
-    static bool getUiPosition(float* lat, float* lon);
     void cleanup_station_buttons();
     void draw_station_traces();
+    void draw_own_trace();
     void update_station_objects();
-    void redraw_map_canvas();
+    void map_event_cb(lv_event_t* e);
     static void scrollMap(int16_t dx, int16_t dy);
     static inline void resetPanOffset();
     static inline void resetZoom();
@@ -181,18 +184,9 @@ namespace UIMapManager {
         }
         map_zoom_index = bestIdx;
         map_current_zoom = newTable[bestIdx];
-    }
+        }
 
-    // Filtered own position — only updates when movement exceeds HDOP-based threshold
-    // Two levels: iconGps (≥3 sats, for display) and filteredOwn (≥6 sats, for trace/re-centering)
-    static float iconGpsLat = 0.0f;
-    static float iconGpsLon = 0.0f;
-    static bool  iconGpsValid = false;       // Loose: ≥3 sats (2D fix minimum)
-    static float filteredOwnLat = 0.0f;
-    static float filteredOwnLon = 0.0f;
-    static bool  filteredOwnValid = false;   // Strict: ≥6 sats (good 3D geometry)
-
-    // Copy back→front sprite (byte-swap for raster, memcpy for NAV)
+        // Copy back→front sprite (byte-swap for raster, memcpy for NAV)
     // Caller MUST hold renderLock.
     static void copyBackToFront() {
         if (!backViewportSprite || !frontViewportSprite) return;
@@ -393,15 +387,15 @@ namespace UIMapManager {
         
         if (++gpsUpdateCounter >= 20) {
             gpsUpdateCounter = 0;
-            
-            float oldLat = filteredOwnLat;
-            float oldLon = filteredOwnLon;
-            
-            updateFilteredOwnPosition();
-            addOwnTracePoint();
-            
+
+            float oldLat = gpsFilter.getFilteredOwnLat();
+            float oldLon = gpsFilter.getFilteredOwnLon();
+
+            gpsFilter.updateFilteredOwnPosition(gps);
+            gpsFilter.addOwnTracePoint();
+
             // Trigger UI refresh if filtered position actually moved
-            if (filteredOwnLat != oldLat || filteredOwnLon != oldLon) {
+            if (gpsFilter.getFilteredOwnLat() != oldLat || gpsFilter.getFilteredOwnLon() != oldLon) {
                 positionChanged = true;
             }
         }
@@ -416,7 +410,7 @@ namespace UIMapManager {
             if (!isScrollingMap) {
                 // Follow GPS: update centerTile from stable filtered position (prevents jitter)
                 float uiLat, uiLon;
-                if (map_follow_gps && getUiPosition(&uiLat, &uiLon)) {
+                if (map_follow_gps && gpsFilter.getUiPosition(&uiLat, &uiLon)) {
                     // When following GPS, always flag for a pan reset.
                     // This ensures that any user-induced pan offsets (offsetX/Y) are cleared,
                     // effectively recentering the map precisely on the filtered GPS position.
@@ -676,130 +670,13 @@ namespace UIMapManager {
         }
     }
 
-    // (filteredOwn* declared above, before map_refresh_timer_cb)
 
-    static bool getUiPosition(float* lat, float* lon) {
-        if (filteredOwnValid) {
-            *lat = filteredOwnLat;
-            *lon = filteredOwnLon;
-            return true;
-        } else if (iconGpsValid) {
-            *lat = iconGpsLat;
-            *lon = iconGpsLon;
-            return true;
-        }
-        return false;
-    }
 
-    static void updateFilteredOwnPosition() {
-        static float iconCentroidLat = 0.0f;
-        static float iconCentroidLon = 0.0f;
-        static uint32_t iconCentroidCount = 0;
-        static uint32_t lastValidTime = 0; // Timestamp for speed calculation
 
-        if (!gps.location.isValid()) return;
-        float lat = gps.location.lat();
-        float lon = gps.location.lng();
-        int sats = gps.satellites.value();
 
-        // Level 1: icon display (≥3 sats = 2D fix minimum)
-        if (sats >= 3) {
-            iconGpsLat = lat;
-            iconGpsLon = lon;
-            iconGpsValid = true;
-        }
 
-        // Level 2: filtered position for trace + recentrage (≥6 sats)
-        if (sats < 6) return;
 
-        uint32_t now = millis();
 
-        if (!filteredOwnValid) {
-            filteredOwnLat = lat;
-            filteredOwnLon = lon;
-            filteredOwnValid = true;
-            iconCentroidLat = lat;
-            iconCentroidLon = lon;
-            iconCentroidCount = 1;
-            lastValidTime = now;
-            return;
-        }
-
-        // 1. JUMP FILTER (Supersonic Spike Rejection > 150 km/h)
-        double distMeters = TinyGPSPlus::distanceBetween(filteredOwnLat, filteredOwnLon, lat, lon);
-        double dtSeconds = (now - lastValidTime) / 1000.0;
-        if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
-            double speedKmph = (distMeters / dtSeconds) * 3.6;
-            if (speedKmph > 150.0) {
-                ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
-                return; // Reject aberrant jump
-            }
-        }
-        lastValidTime = now;
-
-        // 2. JITTER FILTER (Doppler Speed Stop < 1.5 km/h)
-        if (gps.speed.isValid() && gps.speed.kmph() < 1.5) return;
-
-        // Update running centroid with every GPS reading
-        float alpha = (iconCentroidCount < 10) ? 1.0f / (iconCentroidCount + 1) : 0.1f;
-        iconCentroidLat += alpha * (lat - iconCentroidLat);
-        iconCentroidLon += alpha * (lon - iconCentroidLon);
-        iconCentroidCount++;
-
-        // Threshold: 15m min, +5m per HDOP unit
-        float hdop = gps.hdop.isValid() ? gps.hdop.hdop() : 2.0f;
-        float thresholdM = fmax(15.0f, hdop * 5.0f);
-        float thresholdLat = thresholdM / 111320.0f;
-        float thresholdLon = thresholdM / (111320.0f * cosf(lat * M_PI / 180.0f));
-
-        // Compare the *current smoothed centroid* against the *last published filteredOwn position*.
-        // Only update filteredOwn if the centroid has moved significantly beyond the threshold.
-        // This ensures filteredOwn is stable for trace/centering, and only "snaps" when truly needed.
-        if (fabs(iconCentroidLat - filteredOwnLat) > thresholdLat || fabs(iconCentroidLon - filteredOwnLon) > thresholdLon) {
-            ESP_LOGD(TAG, "Filtered GPS snapped: Centroid (%.6f,%.6f) -> Filtered (%.6f,%.6f) - DeltaLat:%.6f, DeltaLon:%.6f",
-                          iconCentroidLat, iconCentroidLon, filteredOwnLat, filteredOwnLon,
-                          fabs(iconCentroidLat - filteredOwnLat), fabs(iconCentroidLon - filteredOwnLon));
-            filteredOwnLat = iconCentroidLat; // filteredOwn "snaps" to the current smoothed centroid
-            filteredOwnLon = iconCentroidLon;
-            // IMPORTANT: Do NOT reset iconCentroidLat/Lon here. It's a continuous average.
-            // Resetting it would re-introduce the jumping.
-        }
-        // If the centroid is within threshold, filteredOwn remains unchanged, ensuring stability.
-
-    }
-
-    // Add a point to the own-trace circular buffer, using the UI-smoothed position
-    void addOwnTracePoint() {
-        if (!filteredOwnValid) return; // No valid smoothed position yet
-
-        float lat = filteredOwnLat;
-        float lon = filteredOwnLon;
-
-        // Ensure we only add a new point if we moved enough from the last trace point.
-        // This prevents the buffer from filling up with identical points during standing updates.
-        if (ownTraceCount > 0) {
-            int lastIdx = (ownTraceHead - 1 + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
-            float lastLat = ownTrace[lastIdx].lat;
-            float lastLon = ownTrace[lastIdx].lon;
-            
-            // Threshold: 0.0001 degrees is roughly 11 meters
-            if (fabs(lat - lastLat) < 0.0001f && fabs(lon - lastLon) < 0.0001f) {
-                return; // Hasn't moved enough from the last recorded trace point
-            }
-        }
-
-        // Add point to circular buffer
-        ownTrace[ownTraceHead].lat = lat;
-        ownTrace[ownTraceHead].lon = lon;
-        ownTrace[ownTraceHead].time = millis();
-        
-        ownTraceHead = (ownTraceHead + 1) % TRACE_MAX_POINTS;
-        if (ownTraceCount < TRACE_MAX_POINTS) {
-            ownTraceCount++;
-        }
-
-        ESP_LOGD(TAG, "Own trace point added: %.6f, %.6f (count=%d)", lat, lon, ownTraceCount);
-    }
 
     // Draw all stations directly on the canvas (zero LVGL objects, all PSRAM)
     void update_station_objects() {
@@ -808,9 +685,9 @@ namespace UIMapManager {
         stationHitZoneCount = 0;
 
         // Own position — now updated every second by map_refresh_timer_cb
-        if (iconGpsValid) {
+        if (gpsFilter.isIconGpsValid()) {
             int myX, myY;
-            MapMath::latLonToPixel(iconGpsLat, iconGpsLon,
+            MapMath::latLonToPixel(gpsFilter.getIconGpsLat(), gpsFilter.getIconGpsLon(),
                           map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &myX, &myY);
             if (myX >= 0 && myX < MAP_SPRITE_SIZE && myY >= 0 && myY < MAP_SPRITE_SIZE) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
@@ -832,10 +709,13 @@ namespace UIMapManager {
                 if (stX >= 0 && stX < MAP_SPRITE_SIZE && stY >= 0 && stY < MAP_SPRITE_SIZE) {
                     drawStationOnCanvas(stX, stY, station->callsign.c_str(),
                                         station->symbol.c_str(), i);
-                }
-            }
-        }
-    }
+                    }
+                    }
+                    }
+
+                    draw_station_traces();
+                    draw_own_trace();
+                    }
 
     // Initialize symbol cache
     void initSymbolCache() {
@@ -1249,37 +1129,6 @@ namespace UIMapManager {
         uint32_t now = millis();
         lv_draw_line_dsc_t line_dsc;
         lv_draw_line_dsc_init(&line_dsc);
-
-        // Draw own GPS trace first (purple/violet) — no TTL for own trace
-        if (ownTraceCount > 0 && filteredOwnValid) {
-            line_dsc.color = lv_color_hex(0x9933FF);  // Purple/violet
-            line_dsc.width = 2;
-            line_dsc.opa   = LV_OPA_COVER;
-
-            lv_point_t pts[TRACE_MAX_POINTS + 1];
-            int validPts = 0;
-
-            for (int i = 0; i < ownTraceCount; i++) {
-                int idx = (ownTraceHead - ownTraceCount + i + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
-                int px, py;
-                MapMath::latLonToPixel(ownTrace[idx].lat, ownTrace[idx].lon,
-                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &px, &py);
-                pts[validPts].x = px;
-                pts[validPts].y = py;
-                validPts++;
-            }
-
-            // Immediate own position as last point (consistent with actual icon)
-            int cx, cy;
-            MapMath::latLonToPixel(iconGpsLat, iconGpsLon,
-                          map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &cx, &cy);
-            pts[validPts].x = cx;
-            pts[validPts].y = cy;
-            validPts++;
-
-            if (validPts >= 2)
-                lv_canvas_draw_line(map_canvas, pts, validPts, &line_dsc);
-        }
 
         // Draw received stations traces (blue) — TTL filtered
         line_dsc.color = lv_color_hex(0x0055FF);
@@ -2316,9 +2165,37 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
         startTilePreloadTask();
 
         ESP_LOGD(TAG, "Map screen created");
-    }
+        }
+
+        void draw_own_trace() {
+            if (!map_canvas || !map_canvas_buf) return;
+            if (gpsFilter.getOwnTraceCount() < 2) return;
+
+            const TracePoint* trace = gpsFilter.getOwnTrace();
+            int traceHead = gpsFilter.getOwnTraceHead();
+            int traceCount = gpsFilter.getOwnTraceCount();
+
+            lv_point_t trace_points[TRACE_MAX_POINTS];
+            int startIdx = (traceHead - traceCount + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+
+            for (int i = 0; i < traceCount; ++i) {
+                int currentIdx = (startIdx + i) % TRACE_MAX_POINTS;
+                int x, y;
+                MapMath::latLonToPixel(trace[currentIdx].lat, trace[currentIdx].lon,
+                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &x, &y);
+                trace_points[i] = { (lv_coord_t)x, (lv_coord_t)y };
+            }
+
+            lv_draw_line_dsc_t line_dsc;
+            lv_draw_line_dsc_init(&line_dsc);
+            line_dsc.color = lv_color_hex(0x0000FF);
+            line_dsc.width = 2;
+            line_dsc.opa = LV_OPA_50;
+
+            lv_canvas_draw_line(map_canvas, trace_points, traceCount, &line_dsc);
+        }
 
 
-} // namespace UIMapManager
+        } // namespace UIMapManager
 
 #endif // USE_LVGL_UI
