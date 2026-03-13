@@ -23,3 +23,16 @@ docs/ARCHITECTURE.md
 docs/ASYNC_NAV_CORE0.md
 docs/UPDATE_WORKFLOW.html
 DEBUG_ASYNC_NAV.md
+
+# Pi session and temporary files
+docs/*.txt
+docs/*.log
+docs/*.html
+docs/*.kate-swp
+IcENav-V3_reference/
+docs/restored_files/
+docs/restored_prompts/
+docs/ui_map_manager.cpp_orig
+docs/ui_map_manager.cpp_orig_mod_gps
+include/map_touch_controller.h
+src/map_touch_controller.cpp
