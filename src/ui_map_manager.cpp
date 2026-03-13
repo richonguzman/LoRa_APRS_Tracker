@@ -184,7 +184,7 @@ namespace UIMapManager {
     }
 
     // Filtered own position — only updates when movement exceeds HDOP-based threshold
-    // Two levels: iconGps (≥3 sats, for display) and filteredOwn (≥6 sats, for trace/recentrage)
+    // Two levels: iconGps (≥3 sats, for display) and filteredOwn (≥6 sats, for trace/re-centering)
     static float iconGpsLat = 0.0f;
     static float iconGpsLon = 0.0f;
     static bool  iconGpsValid = false;       // Loose: ≥3 sats (2D fix minimum)
@@ -240,18 +240,20 @@ namespace UIMapManager {
         // Save old navSubTile offsets before updating them
         int16_t oldNavSubX = navSubTileX;
         int16_t oldNavSubY = navSubTileY;
-        bool wasResetting = pendingResetPan;
+        bool wasResetting = pendingResetPan; // KEEP THIS LINE: crucial for later compensation logic
 
         if (pendingResetPan) {
+            // If pendingResetPan is true, it means we want to center the map precisely on the GPS.
+            // Clear any manual pan offsets and inertia.
             offsetX = 0;
             offsetY = 0;
-            velocityX = 0.0f;
+            velocityX = 0.0f; // Stop any ongoing inertia
             velocityY = 0.0f;
-            renderTileX = centerTileX;
-            renderTileY = centerTileY;
-            pendingResetPan = false;
+            // renderTileX/Y are already set by initCenterTileFromLatLon before applyRenderedViewport is called.
+            pendingResetPan = false; // Reset the flag for the next cycle
         } else {
-            // Rebase offset to match new sprite center (async gap compensation)
+            // If not explicitly resetting pan, rebase offset to match new sprite center (async gap compensation).
+            // This is primarily for continuous panning or when GPS follow mode is inactive.
             if (MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
                 offsetX -= (MapEngine::lastRenderedTileX - centerTileX) * MAP_TILE_SIZE;
                 offsetY -= (MapEngine::lastRenderedTileY - centerTileY) * MAP_TILE_SIZE;
@@ -274,6 +276,7 @@ namespace UIMapManager {
 
         // Compensate the sub-tile grid jump if we are actively panning (not resetting).
         // The user dragged the canvas (offsetX/Y), but the map_center changed (jumping navSubTileX/Y).
+        // This block remains unchanged and correctly uses the 'wasResetting' flag captured at the start.
         if (!wasResetting && navModeActive && MapEngine::lastRenderedZoom == (uint8_t)map_current_zoom) {
             offsetX -= (navSubTileX - oldNavSubX);
             offsetY -= (navSubTileY - oldNavSubY);
@@ -414,17 +417,24 @@ namespace UIMapManager {
                 // Follow GPS: update centerTile from stable filtered position (prevents jitter)
                 float uiLat, uiLon;
                 if (map_follow_gps && getUiPosition(&uiLat, &uiLon)) {
+                    // When following GPS, always flag for a pan reset.
+                    // This ensures that any user-induced pan offsets (offsetX/Y) are cleared,
+                    // effectively recentering the map precisely on the filtered GPS position.
+                    // This flag will be acted upon in applyRenderedViewport().
+                    pendingResetPan = true;
+
                     int prevRenderTileX = renderTileX;
                     int prevRenderTileY = renderTileY;
                     initCenterTileFromLatLon(uiLat, uiLon);
 
                     if (renderTileX != prevRenderTileX || renderTileY != prevRenderTileY) {
-                        ESP_LOGD(TAG, "Refresh (GPS moved tile, full redraw)");
+                        ESP_LOGD(TAG, "Refresh (GPS moved tile, full redraw) - pendingResetPan set");
                         redraw_map_canvas();
                     } else if (!redraw_in_progress && !navRenderPending) {
-                        // Apply precise pixel offset based on new map_center_lat/lon without re-rendering the whole tile
+                        // Apply precise pixel offset based on new map_center_lat/lon without re-rendering the whole tile.
+                        // pendingResetPan will ensure offsetX/Y are zeroed in applyRenderedViewport.
                         applyRenderedViewport();
-                        ESP_LOGD(TAG, "Refresh (GPS moved inside tile, pan viewport)");
+                        ESP_LOGD(TAG, "Refresh (GPS moved inside tile, pan viewport) - pendingResetPan set");
                     }
                 } else if (!redraw_in_progress && !navRenderPending) {
                     ESP_LOGD(TAG, "Refresh (station overlay only)");
@@ -685,6 +695,7 @@ namespace UIMapManager {
         static float iconCentroidLat = 0.0f;
         static float iconCentroidLon = 0.0f;
         static uint32_t iconCentroidCount = 0;
+        static uint32_t lastValidTime = 0; // Timestamp for speed calculation
 
         if (!gps.location.isValid()) return;
         float lat = gps.location.lat();
@@ -701,6 +712,8 @@ namespace UIMapManager {
         // Level 2: filtered position for trace + recentrage (≥6 sats)
         if (sats < 6) return;
 
+        uint32_t now = millis();
+
         if (!filteredOwnValid) {
             filteredOwnLat = lat;
             filteredOwnLon = lon;
@@ -708,8 +721,24 @@ namespace UIMapManager {
             iconCentroidLat = lat;
             iconCentroidLon = lon;
             iconCentroidCount = 1;
+            lastValidTime = now;
             return;
         }
+
+        // 1. JUMP FILTER (Supersonic Spike Rejection > 150 km/h)
+        double distMeters = TinyGPSPlus::distanceBetween(filteredOwnLat, filteredOwnLon, lat, lon);
+        double dtSeconds = (now - lastValidTime) / 1000.0;
+        if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
+            double speedKmph = (distMeters / dtSeconds) * 3.6;
+            if (speedKmph > 150.0) {
+                ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
+                return; // Reject aberrant jump
+            }
+        }
+        lastValidTime = now;
+
+        // 2. JITTER FILTER (Doppler Speed Stop < 1.5 km/h)
+        if (gps.speed.isValid() && gps.speed.kmph() < 1.5) return;
 
         // Update running centroid with every GPS reading
         float alpha = (iconCentroidCount < 10) ? 1.0f / (iconCentroidCount + 1) : 0.1f;
@@ -723,14 +752,20 @@ namespace UIMapManager {
         float thresholdLat = thresholdM / 111320.0f;
         float thresholdLon = thresholdM / (111320.0f * cosf(lat * M_PI / 180.0f));
 
-        // Compare to centroid — only update if real movement
-        if (fabs(lat - iconCentroidLat) > thresholdLat || fabs(lon - iconCentroidLon) > thresholdLon) {
-            filteredOwnLat = lat;
-            filteredOwnLon = lon;
-            iconCentroidLat = lat;
-            iconCentroidLon = lon;
-            iconCentroidCount = 1;
+        // Compare the *current smoothed centroid* against the *last published filteredOwn position*.
+        // Only update filteredOwn if the centroid has moved significantly beyond the threshold.
+        // This ensures filteredOwn is stable for trace/centering, and only "snaps" when truly needed.
+        if (fabs(iconCentroidLat - filteredOwnLat) > thresholdLat || fabs(iconCentroidLon - filteredOwnLon) > thresholdLon) {
+            ESP_LOGD(TAG, "Filtered GPS snapped: Centroid (%.6f,%.6f) -> Filtered (%.6f,%.6f) - DeltaLat:%.6f, DeltaLon:%.6f",
+                          iconCentroidLat, iconCentroidLon, filteredOwnLat, filteredOwnLon,
+                          fabs(iconCentroidLat - filteredOwnLat), fabs(iconCentroidLon - filteredOwnLon));
+            filteredOwnLat = iconCentroidLat; // filteredOwn "snaps" to the current smoothed centroid
+            filteredOwnLon = iconCentroidLon;
+            // IMPORTANT: Do NOT reset iconCentroidLat/Lon here. It's a continuous average.
+            // Resetting it would re-introduce the jumping.
         }
+        // If the centroid is within threshold, filteredOwn remains unchanged, ensuring stability.
+
     }
 
     // Add a point to the own-trace circular buffer, using the UI-smoothed position
@@ -1639,6 +1674,12 @@ namespace UIMapManager {
             // Stop any ongoing inertia when touching the screen
             velocityX = 0.0f;
             velocityY = 0.0f;
+
+            // NEW: If map_follow_gps is active, disable it when user starts to pan manually.
+            if (map_follow_gps) {
+                map_follow_gps = false;
+                ESP_LOGD(TAG, "map_follow_gps DISABLED due to manual pan (PRESSED event).");
+            }
             break;
 
         case LV_EVENT_PRESSING: {
