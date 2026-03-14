@@ -62,19 +62,15 @@ String  bleConnectedDeviceName  = "";  // Connected device name (from GAP)
 bool    bleNeedToReadName       = false;  // Flag to read name after connection
 NimBLEAddress bleConnectedPeerAddr;  // Peer address for client connection
 
-// BLE Eco Mode variables
-bool        bleEcoMode          = true;     // BLE eco mode always active (automatic)
-bool        bleSleeping         = false;    // BLE is currently sleeping (stopped)
+// BLE state flags
+bool        bleSleeping         = false;    // BLE is currently stopped (for WiFi coexistence)
 bool        bleWakeRequested    = false;    // Deferred wake flag (set from LVGL, processed in main loop)
-uint32_t    bleLastActivityTime = 0;        // Last time BLE had activity (connection)
-const uint32_t BLE_ECO_TIMEOUT  = 5 * 60 * 1000;  // 5 minutes timeout
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
         bleConnectedDeviceName = "";
         bleNeedToReadName = true;
-        bleLastActivityTime = millis();  // Reset eco mode timer
         ESP_LOGI(TAG, "%s", "BLE Client Connected");
     }
 
@@ -85,7 +81,6 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         bleConnectedDeviceAddr = bleConnectedPeerAddr.toString().c_str();
         bleConnectedDeviceName = "";  // Will be read later
         bleNeedToReadName = true;  // Signal to read name in loop
-        bleLastActivityTime = millis();  // Reset eco mode timer
         ESP_LOGI(TAG, "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
@@ -177,12 +172,7 @@ namespace BLE_Utils {
     }
 
     void setup() {
-        // Initialize eco mode timer
-        bleLastActivityTime = millis();
         bleSleeping = false;
-
-        // Ensure WiFi modem sleep is enabled for WiFi/BLE coexistence
-        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 
         String BLEid = Config.bluetooth.deviceName;
         BLEDevice::init(BLEid.c_str());
@@ -284,46 +274,25 @@ namespace BLE_Utils {
         bleNeedToReadName = false;
     }
 
-    // Check BLE eco mode timeout + process deferred wake - call from main loop
+    // Process deferred BLE wake request — call from main loop
     void checkEcoMode() {
-        // Process deferred wake request (from LVGL callback, runs in main loop with full stack)
-        if (bleWakeRequested && bleSleeping) {
+        if (!bleWakeRequested || !bleSleeping) {
             bleWakeRequested = false;
-            // BT controller needs ~40KB DRAM to init — skip if not enough
-            size_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-            if (freeDram < 50000) {
-                ESP_LOGW(TAG, "Not enough DRAM to restart (%u bytes free, need 50000)", (unsigned)freeDram);
-                return;
-            }
-            ESP_LOGI(TAG, "Waking up from eco mode (deferred)");
-            bleSleeping = false;
-            bleLastActivityTime = millis();
-            // Stop WiFi before BLE init — BLE controller needs ~47KB DRAM
-            // that can't coexist with WiFi on ESP32-S3
-            WIFI_Utils::stop();
-            setup();
-            ESP_LOGI(TAG, "Eco mode: BLE restarted (WiFi stopped)");
             return;
         }
         bleWakeRequested = false;
 
-        if (!bleEcoMode || !bluetoothActive || bleSleeping || bluetoothConnected) {
+        // BT controller needs ~47KB SRAM internal to init
+        size_t freeDram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        if (freeDram < 50000) {
+            ESP_LOGW(TAG, "Not enough SRAM to restart BLE (%u bytes free, need 50000)", (unsigned)freeDram);
             return;
         }
 
-        uint32_t now = millis();
-        if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
-            bleSleeping = true;
-            if (BLEDevice::getInitialized()) {
-                BLEDevice::deinit();
-            }
-            ESP_LOGI(TAG, "Eco mode: BLE stopped (5 min timeout)");
-            // Restart WiFi now that BLE released DRAM
-            if (Config.wifiEnabled) {
-                WIFI_Utils::startStationMode();
-                ESP_LOGI(TAG, "Eco mode: WiFi restarted");
-            }
-        }
+        bleSleeping = false;
+        WIFI_Utils::stop();
+        setup();
+        ESP_LOGI(TAG, "BLE restarted (WiFi stopped)");
     }
 
     // Request BLE wake from eco mode (safe to call from LVGL callbacks)
