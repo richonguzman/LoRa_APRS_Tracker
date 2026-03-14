@@ -1324,6 +1324,7 @@ namespace MapEngine {
 
         std::vector<uint8_t*> tileBuffers;  // Pointers into navCache — do NOT free
         int navCacheHits = 0, navCacheMisses = 0;
+        size_t totalLoadedBytes = 0;  // Running total for dynamic headroom estimation
 
         // Free previous feature buffer BEFORE loading tiles — its PSRAM is needed for tile data.
         // Phase 3c will reallocate after counting features.
@@ -1347,21 +1348,29 @@ namespace MapEngine {
         std::sort(tileOrder, tileOrder + tileCount,
                   [](const TileSlot& a, const TileSlot& b) { return a.distSq < b.distSq; });
 
-        // Pre-evict navCache entries from a different zoom level (useless after zoom change).
-        // Grid-based eviction removed: nearby tiles are kept for cache hits on next pan.
-        // Phase 3 eviction (LRU) handles PSRAM pressure when loading new tiles.
+        // Pre-evict navCache entries that are useless for this render:
+        // wrong zoom OR outside the current viewport grid bounds.
+        // Frees PSRAM proactively before tile loading instead of during.
         {
+            int minTileX = centerTileIdxX + minDx;
+            int maxTileX = centerTileIdxX + maxDx;
+            int minTileY = centerTileIdxY + minDy;
+            int maxTileY = centerTileIdxY + maxDy;
             int preEvicted = 0;
             for (int i = (int)navCache.size() - 1; i >= 0; i--) {
-                if (navCache[i].zoom != zoom) {
+                const auto& e = navCache[i];
+                if (e.zoom != zoom ||
+                    e.tileX < minTileX || e.tileX > maxTileX ||
+                    e.tileY < minTileY || e.tileY > maxTileY) {
                     free(navCache[i].data);
                     navCache.erase(navCache.begin() + i);
                     preEvicted++;
                 }
             }
             if (preEvicted > 0) {
-                ESP_LOGD(TAG, "Pre-evicted %d wrong-zoom entries, free: %u KB, largest: %u KB",
-                              preEvicted, (unsigned)(ESP.getFreePsram() / 1024),
+                ESP_LOGD(TAG, "Pre-evicted %d entries (out of viewport), cache: %d, free: %u KB, largest: %u KB",
+                              preEvicted, (int)navCache.size(),
+                              (unsigned)(ESP.getFreePsram() / 1024),
                               (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
             }
         }
@@ -1428,6 +1437,7 @@ namespace MapEngine {
                     if (cacheIdx >= 0) {
                         navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
                         navCacheHits++;
+                        totalLoadedBytes += navCache[cacheIdx].size;
                         if (loadedCount < 36) {
                             loaded[loadedCount++] = {
                                 navCache[cacheIdx].data, navCache[cacheIdx].size,
@@ -1481,9 +1491,11 @@ namespace MapEngine {
                 esp_task_wdt_reset();
                 auto& pr = pendingReads[i];
 
-                // Reserve headroom for feature buffer — evict unused navCache entries
-                // before giving up. Center tiles loaded first (center-outward sort).
-                size_t needed = 768 * 1024 + pr.entry.size;
+                // Dynamic headroom: estimate feature buffer from total tile data loaded.
+                // ~1:1 ratio (30K features × 20B ≈ 600 KB from ~500 KB tile data), min 256 KB.
+                size_t headroom = totalLoadedBytes + pr.entry.size;
+                if (headroom < 256 * 1024) headroom = 256 * 1024;
+                size_t needed = headroom + pr.entry.size;
                 size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
                 if (freeBlock < needed) {
                     evictUnusedNavCache(tileBuffers, needed);
@@ -1491,7 +1503,7 @@ namespace MapEngine {
                     if (freeBlock < needed) {
                         ESP_LOGW(TAG, "PSRAM headroom low (%u KB), skipping %d remaining tiles",
                                  (unsigned)(freeBlock / 1024), pendingCount - i);
-                        break;
+                        continue;
                     }
                 }
 
@@ -1518,6 +1530,7 @@ namespace MapEngine {
 
                 addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, pr.entry.size);
                 navCacheMisses++;
+                totalLoadedBytes += pr.entry.size;
 
                 if (loadedCount < 36) {
                     loaded[loadedCount++] = {
@@ -1578,13 +1591,20 @@ namespace MapEngine {
 
         if (totalAlloc > allFeaturesCapacity) {
             free(allFeatures);
-            allFeatures = (FeatureRef*)heap_caps_malloc(totalAlloc * sizeof(FeatureRef), MALLOC_CAP_SPIRAM);
-            if (!allFeatures) allFeatures = (FeatureRef*)malloc(totalAlloc * sizeof(FeatureRef));
+            allFeatures = nullptr;
+            allFeaturesCapacity = 0;
+            size_t allocBytes = totalAlloc * sizeof(FeatureRef);
+            // Evict unused navCache entries to coalesce PSRAM before this critical allocation
+            if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < allocBytes) {
+                evictUnusedNavCache(tileBuffers, allocBytes);
+            }
+            allFeatures = (FeatureRef*)heap_caps_malloc(allocBytes, MALLOC_CAP_SPIRAM);
+            if (!allFeatures) allFeatures = (FeatureRef*)malloc(allocBytes);
             allFeaturesCapacity = allFeatures ? totalAlloc : 0;
             if (!allFeatures) {
                 ESP_LOGE(TAG, "Feature alloc(%u × %u = %u KB) failed, PSRAM free %u KB",
                          totalAlloc, (unsigned)sizeof(FeatureRef),
-                         (unsigned)(totalAlloc * sizeof(FeatureRef) / 1024),
+                         (unsigned)(allocBytes / 1024),
                          (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
             }
         }

@@ -66,7 +66,7 @@ NimBLEAddress bleConnectedPeerAddr;  // Peer address for client connection
 bool        bleSleeping         = false;    // BLE is currently stopped (for WiFi coexistence)
 bool        bleWakeRequested    = false;    // Deferred wake flag (set from LVGL, processed in main loop)
 
-class MyServerCallbacks : public NimBLEServerCallbacks {
+static class : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
         bleConnectedDeviceName = "";
@@ -76,11 +76,10 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 
     void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
         bluetoothConnected = true;
-        // Get connected device MAC address from connection descriptor
         bleConnectedPeerAddr = NimBLEAddress(desc->peer_ota_addr);
         bleConnectedDeviceAddr = bleConnectedPeerAddr.toString().c_str();
-        bleConnectedDeviceName = "";  // Will be read later
-        bleNeedToReadName = true;  // Signal to read name in loop
+        bleConnectedDeviceName = "";
+        bleNeedToReadName = true;
         ESP_LOGI(TAG, "BLE Client Connected: %s", bleConnectedDeviceAddr.c_str());
     }
 
@@ -101,9 +100,9 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
         ESP_LOGI(TAG, "BLE client Disconnected (reason: %d)", reason);
         pServer->startAdvertising();
     }
-};
+} serverCallbacks;
 
-class MyCallbacks : public NimBLECharacteristicCallbacks {
+static class : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             std::string receivedData = pCharacteristic->getValue();
@@ -161,7 +160,7 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
             shouldSendBLEtoLoRa = true;
         }
     }
-};
+} rxCallbacks;
 
 namespace BLE_Utils {
 
@@ -181,31 +180,39 @@ namespace BLE_Utils {
         BLEDevice::init(BLEid.c_str());
         BLEDevice::setPower(ESP_PWR_LVL_P3);  // Moderate power for coexistence
         pServer = BLEDevice::createServer();
-        pServer->setCallbacks(new MyServerCallbacks());
+        pServer->setCallbacks(&serverCallbacks);
 
-        BLEService *pService = nullptr;
-
-        //  KISS (AX.25) or TNC2
         bool useKISS = Config.bluetooth.useKISS;
-        pService = pServer->createService(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
-        pCharacteristicTx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-        pCharacteristicRx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+        const char* svcUUID = useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1;
 
-        if (pService != nullptr) {
-            pCharacteristicRx->setCallbacks(new MyCallbacks());
+        // Reuse existing service if NimBLE kept it from a previous init/deinit cycle
+        BLEService *pService = pServer->getServiceByUUID(svcUUID);
+        if (pService == nullptr) {
+            pService = pServer->createService(svcUUID);
+            pCharacteristicTx = pService->createCharacteristic(
+                useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1,
+                NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+            pCharacteristicRx = pService->createCharacteristic(
+                useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1,
+                NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+            pCharacteristicRx->setCallbacks(&rxCallbacks);
             pService->start();
-
-            BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-            pAdvertising->addServiceUUID(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
-
-            pServer->getAdvertising()->setScanResponse(true);
-            pServer->getAdvertising()->setMinPreferred(0x06);
-            pServer->getAdvertising()->setMaxPreferred(0x0C);
-            pAdvertising->start();
-            ESP_LOGD(TAG, "%s", "Waiting for BLE central to connect...");
+            ESP_LOGI(TAG, "BLE service created");
         } else {
-            ESP_LOGE(TAG, "Failed to create BLE service");
+            pCharacteristicTx = pService->getCharacteristic(
+                useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1);
+            pCharacteristicRx = pService->getCharacteristic(
+                useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1);
+            ESP_LOGI(TAG, "BLE service reused from previous cycle");
         }
+
+        BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+        pAdvertising->addServiceUUID(svcUUID);
+        pServer->getAdvertising()->setScanResponse(true);
+        pServer->getAdvertising()->setMinPreferred(0x06);
+        pServer->getAdvertising()->setMaxPreferred(0x0C);
+        pAdvertising->start();
+        ESP_LOGD(TAG, "Waiting for BLE central to connect...");
     }
 
     void sendToLoRa() {
