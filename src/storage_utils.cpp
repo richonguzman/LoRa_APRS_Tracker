@@ -31,13 +31,6 @@ static const char *TAG = "Storage";
 
 static bool sdAvailable = false;
 
-// DMA-capable read buffer (ported from IceNav-v3 storage.cpp)
-// Allocated once at boot in internal SRAM (DMA-capable), used for chunked SD reads
-// to reduce the number of small SPI transactions when loading map tiles.
-#define SD_DMA_BUF_SIZE (32 * 1024)  // 32 KB chunks
-static uint8_t* sdDmaBuffer = nullptr;
-static SemaphoreHandle_t sdDmaMutex = nullptr;
-
 // In-memory contacts cache
 static std::vector<Contact> contactsCache;
 static bool contactsLoaded = false;
@@ -97,26 +90,9 @@ namespace STORAGE_Utils {
     }
 
     void setup() {
-        // Allocate DMA-capable read buffer once at boot (inspired by IceNav-v3)
-        // Kept in internal SRAM (MALLOC_CAP_DMA) for SPI DMA compatibility.
-        if (!sdDmaBuffer) {
-            sdDmaBuffer = (uint8_t*)heap_caps_malloc(SD_DMA_BUF_SIZE,
-                                                     MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-            if (sdDmaBuffer) {
-                ESP_LOGI(TAG, "SD DMA buffer allocated (%d KB)", SD_DMA_BUF_SIZE / 1024);
-            } else {
-                ESP_LOGW(TAG, "SD DMA buffer alloc failed, falling back to direct reads");
-            }
-        }
-        if (!sdDmaMutex) {
-            sdDmaMutex = xSemaphoreCreateMutex();
-        }
-
         // Always init SPIFFS as fallback (format on fail for first boot)
         if (!SPIFFS.begin(true)) {
             ESP_LOGE(TAG, "SPIFFS mount failed");
-        } else {
-            ESP_LOGI(TAG, "SPIFFS mounted");
         }
 
         #ifdef BOARD_SDCARD_CS
@@ -221,33 +197,11 @@ namespace STORAGE_Utils {
         return SPIFFS.open(path, mode);
     }
 
-    // Read file data in DMA-aligned chunks (ported from IceNav-v3 storage.cpp).
-    // Uses a 32 KB DMA-capable buffer in internal SRAM to reduce SPI transactions
-    // when reading large files like map tiles (PNG/JPG/NAV).
+    // Read file data directly into destination buffer.
     // Returns number of bytes actually read, or 0 on failure.
     size_t readChunked(File& file, uint8_t* dest, size_t size) {
         if (!file || !dest || size == 0) return 0;
-
-        // Fast path: if no DMA buffer available, fall back to direct read
-        if (!sdDmaBuffer || !sdDmaMutex) {
-            return file.read(dest, size);
-        }
-
-        if (xSemaphoreTake(sdDmaMutex, pdMS_TO_TICKS(500)) != pdTRUE) {
-            return file.read(dest, size);  // Mutex timeout — fallback
-        }
-
-        size_t totalRead = 0;
-        while (totalRead < size) {
-            size_t toRead = min((size_t)SD_DMA_BUF_SIZE, size - totalRead);
-            size_t r = file.read(sdDmaBuffer, toRead);
-            if (r == 0) break;
-            memcpy(dest + totalRead, sdDmaBuffer, r);
-            totalRead += r;
-        }
-
-        xSemaphoreGive(sdDmaMutex);
-        return totalRead;
+        return file.read(dest, size);
     }
 
     bool removeFile(const String& path) {
@@ -346,13 +300,11 @@ namespace STORAGE_Utils {
         contactsCache.clear();
 
         if (!sdAvailable) {
-            ESP_LOGW(TAG, "No SD card, contacts not available");
             return contactsCache;
         }
 
         File file = SD.open(CONTACTS_FILE, FILE_READ);
         if (!file) {
-            ESP_LOGW(TAG, "No contacts file, starting fresh");
             contactsLoaded = true;
             return contactsCache;
         }
@@ -380,14 +332,13 @@ namespace STORAGE_Utils {
             }
         }
 
-        ESP_LOGI(TAG, "Loaded %d contacts", contactsCache.size());
+        ESP_LOGD(TAG, "Loaded %d contacts", contactsCache.size());
         contactsLoaded = true;
         return contactsCache;
     }
 
     bool saveContacts(const std::vector<Contact>& contacts) {
         if (!sdAvailable) {
-            ESP_LOGW(TAG, "No SD card, cannot save contacts");
             return false;
         }
 
@@ -416,7 +367,7 @@ namespace STORAGE_Utils {
         contactsCache = contacts;
         contactsLoaded = true;
 
-        ESP_LOGI(TAG, "Saved %d contacts", contacts.size());
+        ESP_LOGD(TAG, "Saved %d contacts", contacts.size());
         return true;
     }
 
@@ -429,7 +380,6 @@ namespace STORAGE_Utils {
         // Check if callsign already exists
         for (const Contact& c : contactsCache) {
             if (c.callsign.equalsIgnoreCase(contact.callsign)) {
-                ESP_LOGW(TAG, "Contact %s already exists", contact.callsign.c_str());
                 return false;
             }
         }
@@ -449,12 +399,10 @@ namespace STORAGE_Utils {
         for (auto it = contactsCache.begin(); it != contactsCache.end(); ++it) {
             if (it->callsign.equalsIgnoreCase(callsign)) {
                 contactsCache.erase(it);
-                ESP_LOGI(TAG, "Removed contact %s", callsign.c_str());
                 return saveContacts(contactsCache);
             }
         }
 
-        ESP_LOGW(TAG, "Contact %s not found", callsign.c_str());
         return false;
     }
 
@@ -468,12 +416,10 @@ namespace STORAGE_Utils {
                 c.callsign = newData.callsign;
                 c.name = newData.name;
                 c.comment = newData.comment;
-                ESP_LOGI(TAG, "Updated contact %s", callsign.c_str());
                 return saveContacts(contactsCache);
             }
         }
 
-        ESP_LOGW(TAG, "Contact %s not found for update", callsign.c_str());
         return false;
     }
 
@@ -519,14 +465,11 @@ namespace STORAGE_Utils {
         file.close();
 
         if (fileSize >= MAX_FRAMES_SIZE) {
-            ESP_LOGI(TAG, "Rotating frames log (%u bytes)...", fileSize);
-            // Remove old backup if exists
+            ESP_LOGD(TAG, "Rotating frames log (%u bytes)", fileSize);
             if (SD.exists(FRAMES_OLD_FILE)) {
                 SD.remove(FRAMES_OLD_FILE);
             }
-            // Rename current to old
             SD.rename(FRAMES_FILE, FRAMES_OLD_FILE);
-            ESP_LOGI(TAG, "Frames log rotated");
         }
     }
 
@@ -593,16 +536,10 @@ const std::vector<String>& getLastFrames(int count) {
 
     // Load last 20 frames from SD card into RAM cache (called at boot)
     void loadFramesFromSD() {
-        if (!sdAvailable) {
-            ESP_LOGW(TAG, "No SD card, frames not loaded");
-            return;
-        }
+        if (!sdAvailable) return;
 
         File file = SD.open(FRAMES_FILE, FILE_READ);
-        if (!file) {
-            ESP_LOGW(TAG, "No frames file, starting fresh");
-            return;
-        }
+        if (!file) return;
 
         // Read all lines into a temporary buffer
         std::vector<String> allLines;
@@ -627,7 +564,7 @@ const std::vector<String>& getLastFrames(int count) {
             if (framesCacheCount < FRAMES_CACHE_SIZE) framesCacheCount++;
         }
 
-        ESP_LOGI(TAG, "Loaded %d frames from SD", loadCount);
+        ESP_LOGD(TAG, "Loaded %d frames from SD", loadCount);
         framesDirty = true;
     }
 
@@ -656,7 +593,7 @@ const std::vector<String>& getLastFrames(int count) {
         historyHead = 0;
         rssiHistoryOrdered.clear();
         snrHistoryOrdered.clear();
-        ESP_LOGI(TAG, "Stats reset");
+        ESP_LOGD(TAG, "Stats reset");
     }
 
     void updateRxStats(int rssi, float snr) {
@@ -885,16 +822,10 @@ const std::vector<String>& getLastFrames(int count) {
     // ========== Stats Persistence Implementation ==========
 
     void loadStats() {
-        if (!sdAvailable) {
-            ESP_LOGW(TAG, "No SD card, stats not loaded");
-            return;
-        }
+        if (!sdAvailable) return;
 
         File file = SD.open(STATS_FILE, FILE_READ);
-        if (!file) {
-            ESP_LOGW(TAG, "No stats file, starting fresh");
-            return;
-        }
+        if (!file) return;
 
         DynamicJsonDocument doc(4096);
         DeserializationError error = deserializeJson(doc, file);
@@ -947,7 +878,7 @@ const std::vector<String>& getLastFrames(int count) {
             }
         }
 
-        ESP_LOGI(TAG, "Loaded %d station stats", stationStats.size());
+        ESP_LOGD(TAG, "Loaded %d station stats", stationStats.size());
     }
 
     bool saveStats() {
@@ -992,7 +923,7 @@ const std::vector<String>& getLastFrames(int count) {
         serializeJson(doc, file);
         file.close();
 
-        ESP_LOGI(TAG, "Saved stats (%d stations)", stationStats.size());
+        ESP_LOGD(TAG, "Saved stats (%d stations)", stationStats.size());
         return true;
     }
 

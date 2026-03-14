@@ -165,8 +165,11 @@ namespace MapEngine {
         int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetX)
         int16_t tileOffsetY;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetY)
     };
-    // 16 priority layers (IceNav-v3 pattern: dispatch by getPriority() low nibble)
-    static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> globalLayers[16];
+    // Feature dispatch buffer — single contiguous PSRAM allocation replaces 16 separate
+    // vectors to avoid fragmentation and PSRAMAllocator+libstdc++ UB on reserve failure.
+    // Partitioned by prefix sums: layer i = allFeatures[layerOffset[i]..layerOffset[i+1])
+    static FeatureRef* allFeatures = nullptr;
+    static size_t allFeaturesCapacity = 0;  // in FeatureRef count
 
     // Tile cache system
     #define TILE_CACHE_SIZE 20  // Max 20 tiles × 128KB = 2.5MB PSRAM
@@ -314,7 +317,7 @@ namespace MapEngine {
     // Background task to render map tiles on Core 0
     static void mapRenderTask(void* param) {
         RenderRequest request;
-        ESP_LOGI(TAG, "Render task started on Core 0");
+        ESP_LOGD(TAG, "Render task started on Core 0");
 
         while (true) {
             if (xQueueReceive(mapRenderQueue, &request, portMAX_DELAY) == pdTRUE) {
@@ -366,7 +369,7 @@ namespace MapEngine {
         heap_caps_free(wlScreenY); wlScreenY = nullptr;
         heap_caps_free(wlArcLen);  wlArcLen  = nullptr;
         canvas_to_invalidate_ = nullptr;
-        ESP_LOGI(TAG, "Render task stopped.");
+        ESP_LOGD(TAG, "Render task stopped.");
     }
 
     void startRenderTask(lv_obj_t* canvas_to_invalidate) {
@@ -420,10 +423,9 @@ namespace MapEngine {
         proj32X.reserve(1024);
         proj32Y.reserve(1024);
         decodedCoords.reserve(4096);
-        for (int i = 0; i < 16; i++) globalLayers[i].reserve(4096);
         navCache.reserve(NAV_CACHE_SIZE);
 
-        ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
+        ESP_LOGD(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
                       maxCachedTiles, NAV_CACHE_SIZE);
 
         // Allocate npkRowBuf in PSRAM once — persists for the whole map session.
@@ -434,7 +436,7 @@ namespace MapEngine {
                             heap_caps_malloc(8192 * sizeof(UIMapManager::Npk2IndexEntry),
                                              MALLOC_CAP_SPIRAM);
             npkRowBufCap = npkRowBuf ? 8192 : 0;
-            ESP_LOGI(TAG, "npkRowBuf: %u entries in %s",
+            ESP_LOGD(TAG, "npkRowBuf: %u entries in %s",
                           npkRowBufCap, npkRowBuf ? "PSRAM" : "FAILED (fallback to on-disk search)");
         }
     }
@@ -550,7 +552,7 @@ namespace MapEngine {
         for (auto& e : navCache) free(e.data);
         navCache.clear();
         navCacheAccessCounter = 0;
-        ESP_LOGI(TAG, "NAV cache cleared");
+        ESP_LOGD(TAG, "NAV cache cleared");
     }
 
     // --- NPK2 pack file functions (multi-region slot system) ---
@@ -671,7 +673,7 @@ namespace MapEngine {
         }
 
         markSlot();
-        ESP_LOGI(TAG, "Opened pack: %s (%u tiles, Y %u-%u, Y-table %u bytes)",
+        ESP_LOGD(TAG, "Opened pack: %s (%u tiles, Y %u-%u, Y-table %u bytes)",
                       packPath, s.header.tile_count, s.header.y_min, s.header.y_max, (unsigned)ytableSize);
         return &s;
     }
@@ -953,7 +955,7 @@ namespace MapEngine {
         vlwFontWrapper.set(vlwFontData, fileSize);
         if (vlwFont.loadFont(&vlwFontWrapper)) {
             vlwFontLoaded = true;
-            ESP_LOGI(TAG, "Loaded VLW font: %s (%d bytes in PSRAM)", fontPath, fileSize);
+            ESP_LOGD(TAG, "Loaded VLW font: %s (%d bytes in PSRAM)", fontPath, fileSize);
             return true;
         }
 
@@ -1029,7 +1031,7 @@ namespace MapEngine {
         newEntry.tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
 
         tileCache.push_back(newEntry);
-        ESP_LOGI(TAG, "Cache add tile: %s", filePath);
+        ESP_LOGD(TAG, "Cache add tile: %s", filePath);
         ESP_LOGD(TAG, "Cache size: %d, Free PSRAM: %u", tileCache.size(), ESP.getFreePsram());
     }
     
@@ -1311,34 +1313,21 @@ namespace MapEngine {
         int maxDy = (viewportH - centerTileOriginY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
 
         // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
+        // Loaded tiles (cache hits + SD reads) — collected before dispatch
+        struct LoadedTile {
+            uint8_t* data;
+            size_t   size;
+            int16_t  tileOffsetX, tileOffsetY;
+        };
+        static LoadedTile loaded[36];  // 6×6 max viewport tiles
+        int loadedCount = 0;
+
         std::vector<uint8_t*> tileBuffers;  // Pointers into navCache — do NOT free
         int navCacheHits = 0, navCacheMisses = 0;
-        for (int i = 0; i < 16; i++) globalLayers[i].clear();
-        // One-time PSRAM reserve: 4096/layer avoids repeated reallocations
-        // that fragment PSRAM and cause feature drops at Z9 (36K features).
-        // Cost: 16 × 4096 × 16B = 1 MB one-shot (clear() preserves capacity).
-        static bool layersReserved = false;
-        if (!layersReserved) {
-            for (int i = 0; i < 16; i++) globalLayers[i].reserve(4096);
-            layersReserved = true;
-        }
-        // Text labels collected separately — rendered last, on top of all geometry
-        static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> textRefs;
-        textRefs.clear();
-        static bool textReserved = false;
-        if (!textReserved) {
-            textRefs.reserve(512);
-            textReserved = true;
-        }
 
-        // Waterway curvilinear labels (GEOM_TEXT_LINE) — rendered in a dedicated pass
-        static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
-        waterwayRefs.clear();
-        static bool wwReserved = false;
-        if (!wwReserved) {
-            waterwayRefs.reserve(64);
-            wwReserved = true;
-        }
+        // Free previous feature buffer BEFORE loading tiles — its PSRAM is needed for tile data.
+        // Phase 3c will reallocate after counting features.
+        if (allFeatures) { free(allFeatures); allFeatures = nullptr; allFeaturesCapacity = 0; }
 
         uint16_t bgColor = 0xF7BE;  // Default OSM beige (0xF2EFE9) if no tiles loaded
         bool bgColorExtracted = false;
@@ -1418,97 +1407,6 @@ namespace MapEngine {
         PendingTileRead pendingReads[72];  // 6×6 grid × 2 regions max
         int pendingCount = 0;
 
-        // Helper lambda to dispatch features from a loaded tile into globalLayers/textRefs
-        auto dispatchFeatures = [&](uint8_t* data, size_t fileSize,
-                                     int16_t tileOffsetX, int16_t tileOffsetY) {
-            // Extract background color from first feature if it's a background polygon
-            if (!bgColorExtracted && fileSize >= 22 + 13) {
-                uint8_t ft0Type = data[22];
-                uint8_t ft0Prio = data[25] & 0x0F;
-                if (ft0Type == 3 && ft0Prio == 0) {
-                    memcpy(&bgColor, data + 23, 2);
-                }
-                bgColorExtracted = true;
-            }
-
-            tileBuffers.push_back(data);
-
-            uint16_t feature_count;
-            memcpy(&feature_count, data + 4, 2);
-
-            // Parse features and dispatch to priority layers (IceNav-v3 zero-copy pattern)
-            uint8_t* p = data + 22;
-
-            for (uint16_t i = 0; i < feature_count; i++) {
-                if ((i & 63) == 0) esp_task_wdt_reset();
-                if (p + 13 > data + fileSize) break;
-
-                uint8_t geomType = p[0];
-                uint8_t zoomPriority = p[3];
-                uint16_t coordCount;
-                memcpy(&coordCount, p + 9, 2);
-                uint16_t payloadSize;
-                memcpy(&payloadSize, p + 11, 2);
-
-                if (p + 13 + payloadSize > data + fileSize) break;
-
-                // Zoom filtering (IceNav-v3 NavReader pattern)
-                uint8_t minZoom = zoomPriority >> 4;
-                if (minZoom > zoom) {
-                    p += 13 + payloadSize;
-                    continue;
-                }
-
-                uint8_t priority = zoomPriority & 0x0F;
-                if (priority >= 16) priority = 15;
-
-                FeatureRef ref;
-                ref.ptr = p;
-                ref.geomType = geomType;
-                ref.payloadSize = payloadSize;
-                ref.coordCount = coordCount;
-                ref.tileOffsetX = tileOffsetX;
-                ref.tileOffsetY = tileOffsetY;
-
-                if (geomType == GEOM_TEXT) {
-                    if (textRefs.size() == textRefs.capacity()) {
-                        size_t needed = (textRefs.capacity() < 1 ? 1 : textRefs.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    textRefs.push_back(ref);
-                } else if (geomType == GEOM_TEXT_LINE) {
-                    if (zoom < 15) {
-                        p += 13 + payloadSize;
-                        continue;
-                    }
-                    // Curvilinear waterway label — collected for dedicated render pass
-                    if (waterwayRefs.size() == waterwayRefs.capacity()) {
-                        size_t needed = (waterwayRefs.capacity() < 1 ? 1 : waterwayRefs.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    waterwayRefs.push_back(ref);
-                } else {
-                    auto& layer = globalLayers[priority];
-                    if (layer.size() == layer.capacity()) {
-                        size_t needed = (layer.capacity() < 1 ? 1 : layer.capacity() * 2) * sizeof(FeatureRef);
-                        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
-                            p += 13 + payloadSize;
-                            continue;
-                        }
-                    }
-                    layer.push_back(ref);
-                }
-
-                p += 13 + payloadSize;
-            }
-        };
-
         for (int ti = 0; ti < tileCount; ti++) {
                 int dx = tileOrder[ti].dx;
                 int dy = tileOrder[ti].dy;
@@ -1530,8 +1428,13 @@ namespace MapEngine {
                     if (cacheIdx >= 0) {
                         navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
                         navCacheHits++;
-                        dispatchFeatures(navCache[cacheIdx].data, navCache[cacheIdx].size,
-                                         tileOffsetX, tileOffsetY);
+                        if (loadedCount < 36) {
+                            loaded[loadedCount++] = {
+                                navCache[cacheIdx].data, navCache[cacheIdx].size,
+                                tileOffsetX, tileOffsetY
+                            };
+                            tileBuffers.push_back(navCache[cacheIdx].data);
+                        }
                     } else {
                         NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
                         UIMapManager::Npk2IndexEntry entry;
@@ -1570,17 +1473,30 @@ namespace MapEngine {
                       });
         }
 
-        // --- Phase 3: Read tile data and dispatch features ---
-        // Take SPI mutex ONCE for the entire batch — avoids 13× mutex overhead
+        // --- Phase 3: Read tile data from SD (no dispatch yet) ---
+        // Take SPI mutex ONCE for the entire batch — avoids N× mutex overhead
         if (pendingCount > 0 && spiMutex != NULL &&
             xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(5000)) == pdTRUE) {
             for (int i = 0; i < pendingCount; i++) {
                 esp_task_wdt_reset();
                 auto& pr = pendingReads[i];
 
+                // Reserve headroom for feature buffer — evict unused navCache entries
+                // before giving up. Center tiles loaded first (center-outward sort).
+                size_t needed = 768 * 1024 + pr.entry.size;
+                size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+                if (freeBlock < needed) {
+                    evictUnusedNavCache(tileBuffers, needed);
+                    freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+                    if (freeBlock < needed) {
+                        ESP_LOGW(TAG, "PSRAM headroom low (%u KB), skipping %d remaining tiles",
+                                 (unsigned)(freeBlock / 1024), pendingCount - i);
+                        break;
+                    }
+                }
+
                 uint8_t* data = (uint8_t*)ps_malloc(pr.entry.size);
                 if (!data) {
-                    // PSRAM full — evict and retry
                     if (evictUnusedNavCache(tileBuffers, pr.entry.size)) {
                         data = (uint8_t*)ps_malloc(pr.entry.size);
                     }
@@ -1603,15 +1519,140 @@ namespace MapEngine {
                 addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, pr.entry.size);
                 navCacheMisses++;
 
-                dispatchFeatures(data, pr.entry.size, pr.tileOffsetX, pr.tileOffsetY);
+                if (loadedCount < 36) {
+                    loaded[loadedCount++] = {
+                        data, pr.entry.size, pr.tileOffsetX, pr.tileOffsetY
+                    };
+                    tileBuffers.push_back(data);
+                }
             }
             xSemaphoreGiveRecursive(spiMutex);
         }
 
-        // Log load stats (IceNav-v3 pattern: maps.cpp:1582-1587)
+        // --- Phase 3b: Count features per layer (no allocation) ---
+        uint32_t layerCounts[16] = {};
+        uint32_t textCount = 0, waterwayCount = 0;
+        for (int t = 0; t < loadedCount; t++) {
+            uint8_t* data = loaded[t].data;
+            size_t fileSize = loaded[t].size;
+            if (fileSize < 22 + 13) continue;
+
+            // Extract background color from first tile
+            if (!bgColorExtracted) {
+                uint8_t ft0Type = data[22];
+                uint8_t ft0Prio = data[25] & 0x0F;
+                if (ft0Type == 3 && ft0Prio == 0) {
+                    memcpy(&bgColor, data + 23, 2);
+                }
+                bgColorExtracted = true;
+            }
+
+            uint16_t feature_count;
+            memcpy(&feature_count, data + 4, 2);
+            uint8_t* p = data + 22;
+            for (uint16_t i = 0; i < feature_count; i++) {
+                if (p + 13 > data + fileSize) break;
+                uint8_t geomType = p[0];
+                uint8_t zoomPriority = p[3];
+                uint16_t payloadSize;
+                memcpy(&payloadSize, p + 11, 2);
+                if (p + 13 + payloadSize > data + fileSize) break;
+                uint8_t minZoom = zoomPriority >> 4;
+                if (minZoom > zoom) { p += 13 + payloadSize; continue; }
+                uint8_t priority = zoomPriority & 0x0F;
+                if (priority >= 16) priority = 15;
+
+                if (geomType == GEOM_TEXT) textCount++;
+                else if (geomType == GEOM_TEXT_LINE) { if (zoom >= 15) waterwayCount++; }
+                else layerCounts[priority]++;
+                p += 13 + payloadSize;
+            }
+        }
+
+        // --- Phase 3c: Single contiguous PSRAM allocation for all features ---
+        // Replaces 16+2 separate vector allocations that fragmented PSRAM and
+        // triggered libstdc++ UB when PSRAMAllocator::allocate() returned NULL.
+        uint32_t totalGeom = 0;
+        for (int i = 0; i < 16; i++) totalGeom += layerCounts[i];
+        uint32_t totalAlloc = totalGeom + textCount + waterwayCount;
+
+        if (totalAlloc > allFeaturesCapacity) {
+            free(allFeatures);
+            allFeatures = (FeatureRef*)heap_caps_malloc(totalAlloc * sizeof(FeatureRef), MALLOC_CAP_SPIRAM);
+            if (!allFeatures) allFeatures = (FeatureRef*)malloc(totalAlloc * sizeof(FeatureRef));
+            allFeaturesCapacity = allFeatures ? totalAlloc : 0;
+            if (!allFeatures) {
+                ESP_LOGE(TAG, "Feature alloc(%u × %u = %u KB) failed, PSRAM free %u KB",
+                         totalAlloc, (unsigned)sizeof(FeatureRef),
+                         (unsigned)(totalAlloc * sizeof(FeatureRef) / 1024),
+                         (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
+            }
+        }
+
+        // Prefix sums: layer i occupies allFeatures[layerOffset[i]..layerOffset[i+1])
+        // text occupies [textOffset..textOffset+textCount), waterway after that
+        uint32_t layerOffset[17];
+        layerOffset[0] = 0;
+        for (int i = 0; i < 16; i++) layerOffset[i + 1] = layerOffset[i] + layerCounts[i];
+        uint32_t textOffset = layerOffset[16];
+        uint32_t waterwayOffset = textOffset + textCount;
+        uint32_t layerFill[16] = {};
+        uint32_t textFill = 0, waterwayFill = 0;
+
+        // --- Phase 4: Dispatch features into flat buffer ---
+        if (allFeatures) {
+            for (int t = 0; t < loadedCount; t++) {
+                uint8_t* data = loaded[t].data;
+                size_t fileSize = loaded[t].size;
+                int16_t tileOffsetX = loaded[t].tileOffsetX;
+                int16_t tileOffsetY = loaded[t].tileOffsetY;
+                if (fileSize < 22 + 13) continue;
+
+                uint16_t feature_count;
+                memcpy(&feature_count, data + 4, 2);
+                uint8_t* p = data + 22;
+                for (uint16_t i = 0; i < feature_count; i++) {
+                    if ((i & 63) == 0) esp_task_wdt_reset();
+                    if (p + 13 > data + fileSize) break;
+                    uint8_t geomType = p[0];
+                    uint8_t zoomPriority = p[3];
+                    uint16_t coordCount;
+                    memcpy(&coordCount, p + 9, 2);
+                    uint16_t payloadSize;
+                    memcpy(&payloadSize, p + 11, 2);
+                    if (p + 13 + payloadSize > data + fileSize) break;
+                    uint8_t minZoom = zoomPriority >> 4;
+                    if (minZoom > zoom) { p += 13 + payloadSize; continue; }
+                    uint8_t priority = zoomPriority & 0x0F;
+                    if (priority >= 16) priority = 15;
+
+                    FeatureRef ref;
+                    ref.ptr = p;
+                    ref.geomType = geomType;
+                    ref.payloadSize = payloadSize;
+                    ref.coordCount = coordCount;
+                    ref.tileOffsetX = tileOffsetX;
+                    ref.tileOffsetY = tileOffsetY;
+
+                    if (geomType == GEOM_TEXT) {
+                        if (textFill < textCount)
+                            allFeatures[textOffset + textFill++] = ref;
+                    } else if (geomType == GEOM_TEXT_LINE) {
+                        if (zoom >= 15 && waterwayFill < waterwayCount)
+                            allFeatures[waterwayOffset + waterwayFill++] = ref;
+                    } else {
+                        if (layerFill[priority] < layerCounts[priority])
+                            allFeatures[layerOffset[priority] + layerFill[priority]++] = ref;
+                    }
+                    p += 13 + payloadSize;
+                }
+            }
+        }
+
+        // Log load stats
         uint64_t loadEnd = esp_timer_get_time();
         int totalFeatures = 0;
-        for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
+        for (int i = 0; i < 16; i++) totalFeatures += layerFill[i];
         ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]",
                       (loadEnd - startTime) / 1000, (int)tileBuffers.size(), totalFeatures,
                       minDx, maxDx, minDy, maxDy);
@@ -1627,10 +1668,11 @@ namespace MapEngine {
         placedLabels.reserve(128);
 
         int featureCount = 0;
-        for (int pri = 0; pri < 16; pri++) {
-            if (globalLayers[pri].empty()) continue;
+        for (int pri = 0; pri < 16 && allFeatures; pri++) {
+            if (layerFill[pri] == 0) continue;
 
-            for (const auto& ref : globalLayers[pri]) {
+            for (uint32_t fi = layerOffset[pri]; fi < layerOffset[pri] + layerFill[pri]; fi++) {
+                const auto& ref = allFeatures[fi];
                 // WDT reset every 32 features during rendering (prevents WDT timeout)
                 if ((++featureCount & 31) == 0) esp_task_wdt_reset();
 
@@ -1851,7 +1893,6 @@ namespace MapEngine {
                     }
                 }
             }
-            globalLayers[pri].clear();
             taskYIELD();
         }
 
@@ -1868,7 +1909,8 @@ namespace MapEngine {
             map.setTextSize(1);
         }
 
-        for (const auto& ref : textRefs) {
+        for (uint32_t ti = 0; allFeatures && ti < textFill; ti++) {
+            const auto& ref = allFeatures[textOffset + ti];
             if ((++featureCount & 31) == 0) esp_task_wdt_reset();
             uint8_t* fp = ref.ptr;
             uint16_t colorRgb565;
@@ -1909,8 +1951,6 @@ namespace MapEngine {
             map.setTextDatum(lgfx::top_left);
             placedLabels.push_back({(int16_t)lx, (int16_t)ly, (int16_t)tw, (int16_t)th});
         }
-        textRefs.clear();
-
         // ---- Waterway curvilinear label pass (GEOM_TEXT_LINE) ----
         // Text follows the waterway path geometry (text-along-path, OSM style).
         // Payload: uint8_t path_count | [int16_t px, int16_t py] x N | uint8_t text_len | uint8_t[text_len] text
@@ -1940,7 +1980,8 @@ namespace MapEngine {
             }
         }
 
-        for (const auto& ref : waterwayRefs) {
+        for (uint32_t wi = 0; allFeatures && wi < waterwayFill; wi++) {
+            const auto& ref = allFeatures[waterwayOffset + wi];
             if (!wlScreenX || !wlScreenY || !wlArcLen) break;  // PSRAM alloc failed
             if ((++featureCount & 31) == 0) esp_task_wdt_reset();
 
@@ -2099,8 +2140,6 @@ namespace MapEngine {
                 charDist += (float)charW;
             }
         }
-        waterwayRefs.clear();
-
         map.endWrite();
 
         // Tile buffers are now owned by navCache — do NOT free here

@@ -171,7 +171,9 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
 namespace BLE_Utils {
 
     void stop() {
-        BLEDevice::deinit();
+        if (BLEDevice::getInitialized()) {
+            BLEDevice::deinit();
+        }
     }
 
     void setup() {
@@ -312,7 +314,9 @@ namespace BLE_Utils {
         uint32_t now = millis();
         if (now - bleLastActivityTime >= BLE_ECO_TIMEOUT) {
             bleSleeping = true;
-            BLEDevice::deinit();
+            if (BLEDevice::getInitialized()) {
+                BLEDevice::deinit();
+            }
             ESP_LOGI(TAG, "Eco mode: BLE stopped (5 min timeout)");
             // Restart WiFi now that BLE released DRAM
             if (Config.wifiEnabled) {
