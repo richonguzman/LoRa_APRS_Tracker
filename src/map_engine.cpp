@@ -168,6 +168,9 @@ namespace MapEngine {
     // Feature dispatch buffer — single contiguous PSRAM allocation replaces 16 separate
     // vectors to avoid fragmentation and PSRAMAllocator+libstdc++ UB on reserve failure.
     // Partitioned by prefix sums: layer i = allFeatures[layerOffset[i]..layerOffset[i+1])
+    // Pre-allocated once at initTileCache() (IceNav MAX_FEATURE_POOL_SIZE approach).
+    // Never freed/reallocated during rendering — only in clearNavCache() (full teardown).
+    static constexpr size_t MAX_FEATURES_PREALLOC = 50000;  // 50000 × 16 B = 800 KB
     static FeatureRef* allFeatures = nullptr;
     static size_t allFeaturesCapacity = 0;  // in FeatureRef count
 
@@ -439,6 +442,18 @@ namespace MapEngine {
             ESP_LOGD(TAG, "npkRowBuf: %u entries in %s",
                           npkRowBufCap, npkRowBuf ? "PSRAM" : "FAILED (fallback to on-disk search)");
         }
+
+        // Pre-allocate feature buffer before any tile loads can fragment PSRAM.
+        // IceNav approach: fixed pool, never reallocated during rendering.
+        if (!allFeatures) {
+            allFeatures = (FeatureRef*)heap_caps_malloc(
+                MAX_FEATURES_PREALLOC * sizeof(FeatureRef), MALLOC_CAP_SPIRAM);
+            allFeaturesCapacity = allFeatures ? MAX_FEATURES_PREALLOC : 0;
+            ESP_LOGI(TAG, "allFeatures pool: %u features × %u B = %u KB in %s",
+                     (unsigned)MAX_FEATURES_PREALLOC, (unsigned)sizeof(FeatureRef),
+                     (unsigned)(MAX_FEATURES_PREALLOC * sizeof(FeatureRef) / 1024),
+                     allFeatures ? "PSRAM" : "FAILED");
+        }
     }
 
     void clearTileCache() {
@@ -552,6 +567,7 @@ namespace MapEngine {
         for (auto& e : navCache) free(e.data);
         navCache.clear();
         navCacheAccessCounter = 0;
+        if (allFeatures) { free(allFeatures); allFeatures = nullptr; allFeaturesCapacity = 0; }
         ESP_LOGD(TAG, "NAV cache cleared");
     }
 
@@ -1306,11 +1322,14 @@ namespace MapEngine {
         int centerTileOriginX = viewportW / 2 - (int)(fracX * MAP_TILE_SIZE);
         int centerTileOriginY = viewportH / 2 - (int)(fracY * MAP_TILE_SIZE);
 
-        // Determine tile range to cover entire viewport
+        // Determine tile range — capped to 3×3 grid (IceNav model) to limit PSRAM usage.
+        // The viewport may be larger (832×752) for pan margins, but only center tiles are loaded.
         int minDx = -(centerTileOriginX / MAP_TILE_SIZE + 1);
         int maxDx = (viewportW - centerTileOriginX + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
         int minDy = -(centerTileOriginY / MAP_TILE_SIZE + 1);
         int maxDy = (viewportH - centerTileOriginY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
+        if (maxDx - minDx > 2) { minDx = -1; maxDx = 1; }
+        if (maxDy - minDy > 2) { minDy = -1; maxDy = 1; }
 
         // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
         // Loaded tiles (cache hits + SD reads) — collected before dispatch
@@ -1324,11 +1343,10 @@ namespace MapEngine {
 
         std::vector<uint8_t*> tileBuffers;  // Pointers into navCache — do NOT free
         int navCacheHits = 0, navCacheMisses = 0;
-        size_t totalLoadedBytes = 0;  // Running total for dynamic headroom estimation
 
-        // Free previous feature buffer BEFORE loading tiles — its PSRAM is needed for tile data.
-        // Phase 3c will reallocate after counting features.
-        if (allFeatures) { free(allFeatures); allFeatures = nullptr; allFeaturesCapacity = 0; }
+        // Keep allFeatures allocated between renders — it occupies PSRAM before tile loading
+        // so fragmentation can't prevent its allocation later.
+        // Phase 3c reuses the buffer if capacity is sufficient, reallocates only if it must grow.
 
         uint16_t bgColor = 0xF7BE;  // Default OSM beige (0xF2EFE9) if no tiles loaded
         bool bgColorExtracted = false;
@@ -1437,7 +1455,6 @@ namespace MapEngine {
                     if (cacheIdx >= 0) {
                         navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
                         navCacheHits++;
-                        totalLoadedBytes += navCache[cacheIdx].size;
                         if (loadedCount < 36) {
                             loaded[loadedCount++] = {
                                 navCache[cacheIdx].data, navCache[cacheIdx].size,
@@ -1491,28 +1508,18 @@ namespace MapEngine {
                 esp_task_wdt_reset();
                 auto& pr = pendingReads[i];
 
-                // Dynamic headroom: estimate feature buffer from total tile data loaded.
-                // ~1:1 ratio (30K features × 20B ≈ 600 KB from ~500 KB tile data), min 256 KB.
-                size_t headroom = totalLoadedBytes + pr.entry.size;
-                if (headroom < 256 * 1024) headroom = 256 * 1024;
-                size_t needed = headroom + pr.entry.size;
-                size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-                if (freeBlock < needed) {
-                    evictUnusedNavCache(tileBuffers, needed);
-                    freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-                    if (freeBlock < needed) {
-                        ESP_LOGW(TAG, "PSRAM headroom low (%u KB), skipping %d remaining tiles",
-                                 (unsigned)(freeBlock / 1024), pendingCount - i);
-                        continue;
-                    }
-                }
-
+                // No headroom reservation — PSRAM exhaustion is handled gracefully:
+                // ps_malloc returns NULL → evict LRU → retry → continue (skip tile).
+                // allFeatures allocation has its own eviction + DRAM fallback.
                 uint8_t* data = (uint8_t*)ps_malloc(pr.entry.size);
                 if (!data) {
-                    if (evictUnusedNavCache(tileBuffers, pr.entry.size)) {
-                        data = (uint8_t*)ps_malloc(pr.entry.size);
+                    evictUnusedNavCache(tileBuffers, pr.entry.size);
+                    data = (uint8_t*)ps_malloc(pr.entry.size);
+                    if (!data) {
+                        ESP_LOGW(TAG, "Tile %d/%d: alloc %u KB failed, skipping",
+                                 pr.tileX, pr.tileY, (unsigned)(pr.entry.size / 1024));
+                        continue;
                     }
-                    if (!data) continue;
                 }
 
                 pr.slot->file.seek(pr.entry.offset);
@@ -1530,7 +1537,6 @@ namespace MapEngine {
 
                 addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, pr.entry.size);
                 navCacheMisses++;
-                totalLoadedBytes += pr.entry.size;
 
                 if (loadedCount < 36) {
                     loaded[loadedCount++] = {
@@ -1590,23 +1596,24 @@ namespace MapEngine {
         uint32_t totalAlloc = totalGeom + textCount + waterwayCount;
 
         if (totalAlloc > allFeaturesCapacity) {
+            // Pool too small (moved into denser area — should not happen with MAX_FEATURES_PREALLOC).
+            // Free + reallocate: tiles are already loaded so PSRAM is fragmented, but this is
+            // exceptional (Z9 dense areas with >50K features).
+            ESP_LOGW(TAG, "Feature pool too small: need %u have %u — reallocating (increase MAX_FEATURES_PREALLOC)",
+                     totalAlloc, (unsigned)allFeaturesCapacity);
             free(allFeatures);
             allFeatures = nullptr;
             allFeaturesCapacity = 0;
             size_t allocBytes = totalAlloc * sizeof(FeatureRef);
-            // Evict unused navCache entries to coalesce PSRAM before this critical allocation
-            if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < allocBytes) {
+            if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < allocBytes)
                 evictUnusedNavCache(tileBuffers, allocBytes);
-            }
             allFeatures = (FeatureRef*)heap_caps_malloc(allocBytes, MALLOC_CAP_SPIRAM);
             if (!allFeatures) allFeatures = (FeatureRef*)malloc(allocBytes);
             allFeaturesCapacity = allFeatures ? totalAlloc : 0;
-            if (!allFeatures) {
-                ESP_LOGE(TAG, "Feature alloc(%u × %u = %u KB) failed, PSRAM free %u KB",
-                         totalAlloc, (unsigned)sizeof(FeatureRef),
+            if (!allFeatures)
+                ESP_LOGE(TAG, "Feature realloc(%u KB) failed, PSRAM largest %u KB",
                          (unsigned)(allocBytes / 1024),
                          (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
-            }
         }
 
         // Prefix sums: layer i occupies allFeatures[layerOffset[i]..layerOffset[i+1])
