@@ -23,6 +23,7 @@
 #include "configuration.h"
 #include "wifi_utils.h"
 #include "web_utils.h"
+#include "aprs_is_utils.h"
 #include "display.h"
 #include "lvgl_ui.h"
 
@@ -308,6 +309,9 @@ namespace WIFI_Utils {
 
     void stop() {
         ESP_LOGI(TAG, "Stopping WiFi for BLE coexistence");
+        // Fermer proprement les sockets TCP avant de couper le WiFi driver
+        APRS_IS_Utils::stop();
+        WEB_Utils::stop();
         WiFi.disconnect(true);
         esp_wifi_stop();
         WiFiConnected = false;

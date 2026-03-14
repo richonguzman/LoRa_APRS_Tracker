@@ -43,6 +43,16 @@ namespace APRS_IS_Utils {
         // Nothing to initialize, connection is done when WiFi is available
     }
 
+    void stop() {
+        if (aprsIsClient.connected()) {
+            aprsIsClient.stop();
+        }
+        aprsIsConnected = false;
+        passcodeValid   = false;
+        dnsResolved     = false;
+        ESP_LOGI(TAG, "Stopped (explicit)");
+    }
+
     void connect() {
         if (!Config.aprs_is.active || !WIFI_Utils::isConnected()) {
             return;

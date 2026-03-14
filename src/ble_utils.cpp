@@ -169,6 +169,9 @@ namespace BLE_Utils {
         if (BLEDevice::getInitialized()) {
             BLEDevice::deinit();
         }
+        pServer = nullptr;
+        pCharacteristicTx = nullptr;
+        pCharacteristicRx = nullptr;
     }
 
     void setup() {

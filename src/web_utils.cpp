@@ -56,6 +56,8 @@ extern const size_t favicon_data_len = favicon_data_end - favicon_data;
 namespace WEB_Utils {
 
     AsyncWebServer server(80);
+    static bool routesRegistered = false;
+    static bool serverStarted    = false;
 
     void handleNotFound(AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(404, "text/plain", "Not found");
@@ -336,9 +338,6 @@ namespace WEB_Utils {
     }
 
     void setup() {
-        static bool routesRegistered = false;
-        static bool serverStarted = false;
-
         if (!routesRegistered) {
             server.on("/", HTTP_GET, handleHome);
             server.on("/status", HTTP_GET, handleStatus);
@@ -366,6 +365,14 @@ namespace WEB_Utils {
             ESP_LOGI(TAG, "Started on port 80");
         } else {
             ESP_LOGI(TAG, "Server already running, skipping begin()");
+        }
+    }
+
+    void stop() {
+        if (serverStarted) {
+            server.end();
+            serverStarted = false;
+            ESP_LOGI(TAG, "Stopped");
         }
     }
 

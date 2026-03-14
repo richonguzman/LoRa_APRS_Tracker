@@ -25,6 +25,7 @@
 namespace APRS_IS_Utils {
 
     void    setup();
+    void    stop();
     void    connect();
     void    upload(const String& packet);
     bool    isConnected();
