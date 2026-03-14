@@ -208,7 +208,7 @@ namespace MapEngine {
         uint8_t  regionIdx;
         uint8_t  zoom;
     };
-    #define NAV_CACHE_SIZE 60  // Must cover full viewport: 6×5 grid × 2 regions = ~60 tiles
+    #define NAV_CACHE_SIZE 12  // 3×3 grid = 9 tiles max + 3 overlap margin for multi-region
     static std::vector<NavCacheEntry> navCache;
     static uint32_t navCacheAccessCounter = 0;
 
