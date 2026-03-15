@@ -89,10 +89,11 @@ namespace KEYBOARD_Utils {
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay--;
             if (menuDisplay < 1) menuDisplay = 6;
-        } else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        } else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay--;
-            if (menuDisplay < 10) menuDisplay = 13;
-        } else if (menuDisplay >= 130 && menuDisplay <= 133) {
+            if (menuDisplay < 10) menuDisplay = 14;
+        }
+ else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay--;
             if (menuDisplay < 130) menuDisplay = 133;
         }
@@ -164,10 +165,11 @@ namespace KEYBOARD_Utils {
             menuDisplay++;
             if (menuDisplay > 6) menuDisplay = 1;
         }
-        else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay++;
-            if (menuDisplay > 13) menuDisplay = 10;
-        } else if (menuDisplay >= 130 && menuDisplay <= 133) {
+            if (menuDisplay > 14) menuDisplay = 10;
+        }
+ else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay++;
             if (menuDisplay > 133) menuDisplay = 130;
         } else if (menuDisplay == 100) {
@@ -235,8 +237,8 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay++;
             if (menuDisplay > 5085) menuDisplay = 5084;
-        } 
-
+        }
+        
         else if (menuDisplay >= 60 && menuDisplay <= 64) {
             menuDisplay++;
             if (menuDisplay > 64) menuDisplay = 60;
@@ -260,12 +262,13 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 111) {
             messageText = "";
             menuDisplay = 110;
-        } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
+        } else if (menuDisplay == 1300 ||  menuDisplay == 1310 || menuDisplay == 1400) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=14) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay == 140) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
-        } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
+        }
+ else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
         } else if (menuDisplay == 5021 || menuDisplay == 5041 || menuDisplay == 5051) {
             winlinkMailNumber = "_?";
@@ -324,7 +327,7 @@ namespace KEYBOARD_Utils {
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 14) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -355,9 +358,18 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
-            #ifdef HAS_JOYSTICK
-                menuDisplay = 13;
-            #endif
+        }
+
+        else if (menuDisplay == 140) {
+            if (keyDetected) {
+                menuDisplay *= 10;
+            } else {
+                displayShow(" APRSMYSunday", "Sending:", "CHECK #APRSMYSunday Net", "from LoRa Tracker 73!", "", "", 2000);
+                MSG_Utils::addToOutputBuffer(0, "APRSMY", "CHECK #APRSMYSunday Net from LoRa Tracker 73!");
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 14;
+                #endif
+            }
         }
 
         else if (menuDisplay == 210) {
@@ -593,26 +605,31 @@ namespace KEYBOARD_Utils {
                 messageCallsign = messageCallsign.substring(0, messageCallsign.length() - 1);
             }
             messageCallsign.toUpperCase();
-        } else if ((menuDisplay == 111 || menuDisplay == 1300 || menuDisplay == 1310) && key!= 180) {     // Writting Text of Message
+        } else if ((menuDisplay == 111 || menuDisplay == 1300 || menuDisplay == 1310 || menuDisplay == 1400) && key!= 180) {     // Writting Text of Message
             if (messageText.length() == 1) messageText.trim();
             if (key >= 32 && key <= 126) {
                 messageText += key;
             } else if (key == 13 && messageText.length() > 0) {                         // Return Pressed: SENDING MESSAGE
                 messageText.trim();
-                if (messageText.length() > 67) messageText = messageText.substring(0, 67);
-                if (menuDisplay == 111) {
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
-                    menuDisplay = 11;
-                } else if (menuDisplay == 1300 || menuDisplay == 1310) {
-                    messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
-                    String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
-                    MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
-                    #ifdef HAS_JOYSTICK
-                        menuDisplay = 13;
-                    #else
-                        menuDisplay /= 10;
-                    #endif
-                }
+                    if (menuDisplay == 111) {
+                        MSG_Utils::addToOutputBuffer(0, messageCallsign, messageText);
+                        menuDisplay = 11;
+                    } else if (menuDisplay == 1300 || menuDisplay == 1310 || menuDisplay == 1400) {
+                        if (menuDisplay == 1300 || menuDisplay == 1310) {
+                            messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
+                            String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
+                            MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
+                        } else {
+                            messageCallsign = "APRSMY";
+                            String prefix   = "CHECK #APRSMY ";
+                            MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
+                        }
+                        #ifdef HAS_JOYSTICK
+                            menuDisplay = (menuDisplay == 1300 || menuDisplay == 1310) ? 13 : 14;
+                        #else
+                            menuDisplay /= 10;
+                        #endif
+                    }
                 messageCallsign = "";
                 messageText = "";
             } else if (key == 8) {                          // Delete Last Key

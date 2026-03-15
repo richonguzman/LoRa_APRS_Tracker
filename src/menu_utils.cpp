@@ -124,7 +124,7 @@ namespace MENU_Utils {
     void showOnScreen() {
         String lastLine;
         uint32_t lastMenuTime = millis() - menuTime;
-        if (!(menuDisplay==0) && !(menuDisplay==400) && !(menuDisplay==410) && !(menuDisplay==300) && !(menuDisplay>=500 && menuDisplay<=5100) && lastMenuTime > 30*1000) {
+        if (!(menuDisplay==0) && !(menuDisplay==400) && !(menuDisplay==410) && !(menuDisplay==300) && !(menuDisplay>=500 && menuDisplay<=5100) && !(menuDisplay>=140 && menuDisplay<=1410) && lastMenuTime > 30*1000) {
             menuDisplay     = 0;
             messageCallsign = "";
             messageText     = "";
@@ -262,6 +262,48 @@ namespace MENU_Utils {
             case 13:    // 1.Messages ---> APRSThursday
                 displayShow(" MESSAGES>", "  Read (" + String(MSG_Utils::getNumAPRSMessages()) + ")", "  Write", "  Delete", "> APRSThursday", lastLine);
                 break;
+            case 14:    // 1.Messages ---> APRSMYSunday
+                displayShow(" MESSAGES>", "  Write", "  Delete", "  APRSThursday", "> APRSMYSunday", lastLine);
+                break;
+            case 140:   // 1.Messages ---> APRSMYSunday ---> Check In
+                displayShow(" APRSMYSunday", "> Check In", "", "", "", lastLine);
+                break;
+            case 1400:
+                if (messageText.length() <= 67) {
+                    #ifdef HAS_TFT
+                        #if defined(HELTEC_WIRELESS_TRACKER)
+                            if (messageText.length() < 10) {
+                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back      (0" + String(messageText.length()) + ")     Enter>", "", "");
+                            } else {
+                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back      (" + String(messageText.length()) + ")     Enter>", "", "");
+                            }
+                        #else   // T-Deck
+                            if (messageText.length() < 10) {
+                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back    (0" + String(messageText.length()) + ")   Enter>", "", "");
+                            } else {
+                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back    (" + String(messageText.length()) + ")   Enter>", "", "");
+                            }
+                        #endif
+                    #else
+                        if (messageText.length() < 10) {
+                            displayShow("WRITE MSG>", "  - APRSMYSunday -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
+                        } else {
+                            displayShow("WRITE MSG>", "  - APRSMYSunday -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
+                        }
+                    #endif
+                } else {
+                    #ifdef HAS_TFT
+                        #if defined(HELTEC_WIRELESS_TRACKER)
+                            displayShow("WRITE MSG>", "  --- MSG TOO LONG! ---", " -> " + messageText, "<Back   (" + String(messageText.length()) + ")",  "", "");
+                        #else   // T-Deck
+                            displayShow("WRITE MSG>", "  --- MSG TOO LONG! ---", " -> " + messageText, "<Back   (" + String(messageText.length()) + ")", "", "");
+                        #endif
+                    #else
+                        displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
+                    #endif
+                }
+                break;
+
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 displayShow(" APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
