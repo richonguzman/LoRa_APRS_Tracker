@@ -237,8 +237,6 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay >= 5084 && menuDisplay <= 5085) {
             menuDisplay++;
             if (menuDisplay > 5085) menuDisplay = 5084;
-        } 
-
         }
         
         else if (menuDisplay >= 60 && menuDisplay <= 64) {
@@ -360,15 +358,14 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
-            #endif
         }
 
         else if (menuDisplay == 140) {
             if (keyDetected) {
                 menuDisplay *= 10;
             } else {
-                displayShow(" APRSMYSunday", "Sending:", "CHECK #APRSMY Sunday Net", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, "APRSMY", "CHECK #APRSMY Sunday Net from LoRa Tracker 73!");
+                displayShow(" APRSMYSunday", "Sending:", "CHECK #APRSMYSunday Net", "from LoRa Tracker 73!", "", "", 2000);
+                MSG_Utils::addToOutputBuffer(0, "APRSMY", "CHECK #APRSMYSunday Net from LoRa Tracker 73!");
                 #ifdef HAS_JOYSTICK
                     menuDisplay = 14;
                 #endif
