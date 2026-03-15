@@ -2175,24 +2175,34 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             int traceHead = gpsFilter.getOwnTraceHead();
             int traceCount = gpsFilter.getOwnTraceCount();
 
-            lv_point_t trace_points[TRACE_MAX_POINTS];
+            lv_point_t trace_points[TRACE_MAX_POINTS + 1];
             int startIdx = (traceHead - traceCount + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+            int validPts = 0;
 
             for (int i = 0; i < traceCount; ++i) {
                 int currentIdx = (startIdx + i) % TRACE_MAX_POINTS;
                 int x, y;
                 MapMath::latLonToPixel(trace[currentIdx].lat, trace[currentIdx].lon,
                               map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &x, &y);
-                trace_points[i] = { (lv_coord_t)x, (lv_coord_t)y };
+                trace_points[validPts++] = { (lv_coord_t)x, (lv_coord_t)y };
+            }
+
+            // Append current GPS position as last point so trace always connects to icon
+            if (gpsFilter.isIconGpsValid()) {
+                int cx, cy;
+                MapMath::latLonToPixel(gpsFilter.getIconGpsLat(), gpsFilter.getIconGpsLon(),
+                              map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &cx, &cy);
+                trace_points[validPts++] = { (lv_coord_t)cx, (lv_coord_t)cy };
             }
 
             lv_draw_line_dsc_t line_dsc;
             lv_draw_line_dsc_init(&line_dsc);
-            line_dsc.color = lv_color_hex(0x0000FF);
+            line_dsc.color = lv_color_hex(0x9933FF);
             line_dsc.width = 2;
-            line_dsc.opa = LV_OPA_50;
+            line_dsc.opa = LV_OPA_COVER;
 
-            lv_canvas_draw_line(map_canvas, trace_points, traceCount, &line_dsc);
+            if (validPts >= 2)
+                lv_canvas_draw_line(map_canvas, trace_points, validPts, &line_dsc);
         }
 
 
