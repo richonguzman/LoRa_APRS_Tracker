@@ -22,6 +22,7 @@
 #include "configuration.h"
 #include "msg_utils.h"
 #include "storage_utils.h"
+#include "display.h"
 
 static const char *TAG = "UIMessaging";
 
@@ -1129,7 +1130,7 @@ static void populate_stats(lv_obj_t *cont) {
 
         stats_table = lv_table_create(cont);
         if (stats_table) {
-            lv_table_set_col_cnt(stats_table, 4); // Suppression de la colonne "Time"
+            lv_table_set_col_cnt(stats_table, 4); // Remove the "Time" column
             lv_obj_set_width(stats_table, lv_pct(100));
             lv_obj_set_style_bg_color(stats_table, lv_color_hex(0x0f0f23), 0);
             lv_obj_set_style_border_color(stats_table, lv_color_hex(0x333344), 0);
@@ -1186,7 +1187,7 @@ static void populate_stats(lv_obj_t *cont) {
             lv_table_set_cell_value(stats_table, 1, 2, "");
             lv_table_set_cell_value(stats_table, 1, 3, "");
         } else {
-            // Trie les stations par 'count' (nombre de paquets) décroissant
+            // Sort stations by packet count in descending order
             std::vector<size_t> indices(stations.size());
             for (size_t i = 0; i < stations.size(); i++) indices[i] = i;
             std::sort(indices.begin(), indices.end(), [&stations](size_t a, size_t b) {
@@ -1756,13 +1757,11 @@ static char getSymbolChar(char key) {
 }
 
 void handleComposeKeyboard(char key) {
-    // 1. Réinitialiser le minuteur d'inactivité et réveil écran
+    // 1. Reset inactivity timer and wake up screen
     lastActivityTime = millis();
     if (screenDimmed) {
         screenDimmed = false;
-        #ifdef BOARD_BL_PIN
-            analogWrite(BOARD_BL_PIN, screenBrightness);
-        #endif
+        displaySetBrightness(screenBrightness);
         // Continue to process key immediately
     }
 

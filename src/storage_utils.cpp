@@ -31,13 +31,6 @@ static const char *TAG = "Storage";
 
 static bool sdAvailable = false;
 
-// DMA-capable read buffer (ported from IceNav-v3 storage.cpp)
-// Allocated once at boot in internal SRAM (DMA-capable), used for chunked SD reads
-// to reduce the number of small SPI transactions when loading map tiles.
-#define SD_DMA_BUF_SIZE (32 * 1024)  // 32 KB chunks
-static uint8_t* sdDmaBuffer = nullptr;
-static SemaphoreHandle_t sdDmaMutex = nullptr;
-
 // In-memory contacts cache
 static std::vector<Contact> contactsCache;
 static bool contactsLoaded = false;
@@ -97,21 +90,6 @@ namespace STORAGE_Utils {
     }
 
     void setup() {
-        // Allocate DMA-capable read buffer once at boot (inspired by IceNav-v3)
-        // Kept in internal SRAM (MALLOC_CAP_DMA) for SPI DMA compatibility.
-        if (!sdDmaBuffer) {
-            sdDmaBuffer = (uint8_t*)heap_caps_malloc(SD_DMA_BUF_SIZE,
-                                                     MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-            if (sdDmaBuffer) {
-                ESP_LOGI(TAG, "SD DMA buffer allocated (%d KB)", SD_DMA_BUF_SIZE / 1024);
-            } else {
-                ESP_LOGW(TAG, "SD DMA buffer alloc failed, falling back to direct reads");
-            }
-        }
-        if (!sdDmaMutex) {
-            sdDmaMutex = xSemaphoreCreateMutex();
-        }
-
         // Always init SPIFFS as fallback (format on fail for first boot)
         if (!SPIFFS.begin(true)) {
             ESP_LOGE(TAG, "SPIFFS mount failed");
@@ -221,33 +199,11 @@ namespace STORAGE_Utils {
         return SPIFFS.open(path, mode);
     }
 
-    // Read file data in DMA-aligned chunks (ported from IceNav-v3 storage.cpp).
-    // Uses a 32 KB DMA-capable buffer in internal SRAM to reduce SPI transactions
-    // when reading large files like map tiles (PNG/JPG/NAV).
+    // Read file data directly into destination buffer.
     // Returns number of bytes actually read, or 0 on failure.
     size_t readChunked(File& file, uint8_t* dest, size_t size) {
         if (!file || !dest || size == 0) return 0;
-
-        // Fast path: if no DMA buffer available, fall back to direct read
-        if (!sdDmaBuffer || !sdDmaMutex) {
-            return file.read(dest, size);
-        }
-
-        if (xSemaphoreTake(sdDmaMutex, pdMS_TO_TICKS(500)) != pdTRUE) {
-            return file.read(dest, size);  // Mutex timeout — fallback
-        }
-
-        size_t totalRead = 0;
-        while (totalRead < size) {
-            size_t toRead = min((size_t)SD_DMA_BUF_SIZE, size - totalRead);
-            size_t r = file.read(sdDmaBuffer, toRead);
-            if (r == 0) break;
-            memcpy(dest + totalRead, sdDmaBuffer, r);
-            totalRead += r;
-        }
-
-        xSemaphoreGive(sdDmaMutex);
-        return totalRead;
+        return file.read(dest, size);
     }
 
     bool removeFile(const String& path) {

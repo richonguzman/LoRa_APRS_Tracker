@@ -179,10 +179,8 @@ void setup() {
     Config.init();                 // Now SPIFFS is ready, load or create config
     STORAGE_Utils::loadStats();
 
-    // Always start WiFi at boot — BLE is manual-only via Settings
-    #ifdef USE_LVGL_UI
-        LVGL_UI::updateInitStatus("WiFi...");
-    #endif
+    // WiFi/BLE: no auto-start at boot — manual activation only via Settings
+    // (first boot web-conf handled after LVGL init via needsWebConfig())
     WIFI_Utils::setup();
     MSG_Utils::loadNumMessages();
 

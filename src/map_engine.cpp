@@ -59,7 +59,7 @@ namespace MapEngine {
     static std::vector<int, PSRAMAllocator<int>> edgeBuckets;
 
     // Static vectors for coordinate projection (PSRAM, pre-reserved)
-    // IceNav-v3 pattern: separate int16_t buffers for lines, int buffers for polygons
+    // Use separate int16_t buffers for lines and int buffers for polygons
     static std::vector<int16_t, PSRAMAllocator<int16_t>> proj16X;
     static std::vector<int16_t, PSRAMAllocator<int16_t>> proj16Y;
     static std::vector<int, PSRAMAllocator<int>> proj32X;
@@ -173,23 +173,23 @@ namespace MapEngine {
     static constexpr uint8_t GEOM_TEXT       = 4;
     static constexpr uint8_t GEOM_TEXT_LINE  = 5;  // Curvilinear waterway label
 
-    // Feature reference for zero-copy rendering (IceNav-v3 pattern: pointer into tile buffer)
+    // Feature reference for zero-copy rendering (pointer into tile buffer)
     struct FeatureRef {
         uint8_t* ptr;           // Pointer to feature header in data buffer
         uint8_t geomType;       // 1=Point, 2=Line, 3=Polygon, 4=Text, 5=TextLine
         uint16_t payloadSize;   // Total payload size in bytes
         uint16_t coordCount;    // Number of coordinates
-        int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetX)
-        int16_t tileOffsetY;    // Pixel offset of tile top-left in viewport (IceNav: tilePixelOffsetY)
+        int16_t tileOffsetX;    // Pixel offset of tile top-left in viewport
+        int16_t tileOffsetY;    // Pixel offset of tile top-left in viewport
     };
-    // 16 priority layers (IceNav-v3 pattern: dispatch by getPriority() low nibble)
+    // 16 priority layers (dispatch by getPriority() low nibble)
     static std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> globalLayers[16];
 
-    // Tile cache system
-    #define TILE_CACHE_SIZE 40  // Number of tiles to cache (40 × 128KB = 5.2MB PSRAM)
-    static std::vector<CachedTile> tileCache;
-    static size_t maxCachedTiles = TILE_CACHE_SIZE;
-    static uint32_t cacheAccessCounter = 0;
+    // --- RASTER TILE CACHE (STATIC POOL) ---
+    static LGFX_Sprite* _tileSpritePool[RASTER_TILE_CACHE_SIZE] = {nullptr};
+    static std::vector<CachedTile> _tileCache;
+    static bool _isRasterCacheInitialized = false;
+    static uint32_t _rasterCacheAccessCounter = 0;
 
     // --- NPK2 pack file support — multi-region slot system (max 8 open packs) ---
     // 8 slots: supports 2 splits × 3 regions + margin
@@ -219,7 +219,7 @@ namespace MapEngine {
         uint8_t  regionIdx;
         uint8_t  zoom;
     };
-    #define NAV_CACHE_SIZE 60  // Must cover full viewport: 6×5 grid × 2 regions = ~60 tiles
+    #define NAV_CACHE_SIZE 12  // 3×3 grid + multi-region margin
     static std::vector<NavCacheEntry> navCache;
     static uint32_t navCacheAccessCounter = 0;
 
@@ -376,21 +376,20 @@ namespace MapEngine {
 
             // Raster tile requests (50ms timeout to re-check NAV queue promptly)
             if (xQueueReceive(mapRenderQueue, &request, pdMS_TO_TICKS(50)) == pdTRUE) {
-                if (request.targetSprite) {
+                // Background loading for individual tiles (legacy path)
+                CachedTile* slot = getRasterCacheSlot(request.zoom, request.tileX, request.tileY);
+                if (slot && !slot->isValid) {
                     bool success = false;
                     if (xSemaphoreTake(spriteMutex, portMAX_DELAY) == pdTRUE) {
-                        success = renderTile(request.path, request.xOffset, request.yOffset, *request.targetSprite, (uint8_t)request.zoom);
+                        success = renderTile(request.path, 0, 0, *slot->sprite, (uint8_t)request.zoom);
                         xSemaphoreGive(spriteMutex);
                     }
 
                     if (success) {
-                        addToCache(request.path, request.zoom, request.tileX, request.tileY, request.targetSprite);
-                    } else {
-                        ESP_LOGE(TAG, "Render failed for %s, cleaning up sprite.", request.path);
-                        request.targetSprite->deleteSprite();
-                        delete request.targetSprite;
+                        strncpy(slot->filePath, request.path, sizeof(slot->filePath) - 1);
+                        slot->filePath[sizeof(slot->filePath) - 1] = '\0';
+                        slot->isValid = true;
                     }
-
                     lv_async_call(invalidate_map_canvas_cb, canvas_to_invalidate_);
                 }
             }
@@ -476,24 +475,49 @@ namespace MapEngine {
     static void invalidateAllIdxRowCache();
 
     // Initialize tile cache and pre-reserve render buffers
-    void initTileCache() {
+    void initTileCache(LovyanGFX* gfx) {
+        // --- Raster Cache Pool Allocation (once) ---
+        if (!_isRasterCacheInitialized) {
+            ESP_LOGI(TAG, "Initializing static raster tile pool (%d sprites)...", RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                if (_tileSpritePool[i] == nullptr) {
+                    _tileSpritePool[i] = new LGFX_Sprite(gfx);
+                    if (!_tileSpritePool[i]) {
+                        ESP_LOGE(TAG, "Failed to allocate sprite %d in pool", i);
+                        return; // Abort
+                    }
+                    _tileSpritePool[i]->setPsram(true);
+                    _tileSpritePool[i]->setColorDepth(16);
+                    if (!_tileSpritePool[i]->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE)) {
+                        ESP_LOGE(TAG, "Failed to create sprite %d in pool (PSRAM)", i);
+                        delete _tileSpritePool[i];
+                        _tileSpritePool[i] = nullptr;
+                        return; // Abort
+                    }
+                }
+            }
+
+            _tileCache.resize(RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                _tileCache[i].sprite = _tileSpritePool[i];
+                _tileCache[i].isValid = false;
+            }
+            _isRasterCacheInitialized = true;
+            ESP_LOGI(TAG, "Raster tile pool initialized.");
+        }
+
         // Create render lock once (persists for the entire session)
         if (!renderLock) {
             renderLock = xSemaphoreCreateMutex();
         }
 
-        for (auto& cachedTile : tileCache) {
-            if (cachedTile.sprite) {
-                cachedTile.sprite->deleteSprite();
-                delete cachedTile.sprite;
-            }
+        // Invalidate all raster tiles
+        for (auto& cachedTile : _tileCache) {
+            cachedTile.isValid = false;
         }
-        tileCache.clear();
-        tileCache.reserve(maxCachedTiles);
-        cacheAccessCounter = 0;
+        _rasterCacheAccessCounter = 0;
 
         // Pre-reserve AEL, projection, and feature index buffers in PSRAM
-        // (IceNav-v3 constructor pattern: maps.cpp:57-63)
         edgePool.reserve(1024);
         edgeBuckets.reserve(768);
         proj16X.reserve(1024);
@@ -505,7 +529,7 @@ namespace MapEngine {
         navCache.reserve(NAV_CACHE_SIZE);
 
         ESP_LOGI(TAG, "Cache %d raster + %d NAV tiles, render buffers pre-reserved (PSRAM)",
-                      maxCachedTiles, NAV_CACHE_SIZE);
+                      RASTER_TILE_CACHE_SIZE, NAV_CACHE_SIZE);
 
         // Allocate npkRowBuf in PSRAM once — persists for the whole map session.
         // 8192 entries covers Z16/Z17 dense index rows; frees ~24-32 KB DRAM
@@ -533,7 +557,16 @@ namespace MapEngine {
             return;
         }
         clearNavCache();
-        initTileCache();
+        
+        // Invalidate all raster tiles instead of deleting them
+        if (_isRasterCacheInitialized) {
+            for (auto& cachedTile : _tileCache) {
+                cachedTile.isValid = false;
+            }
+            _rasterCacheAccessCounter = 0;
+            ESP_LOGI(TAG, "Raster tile cache invalidated.");
+        }
+
         if (renderLock) xSemaphoreGive(renderLock);
     }
 
@@ -1081,86 +1114,74 @@ namespace MapEngine {
         return false;
     }
 
-    // Find a tile in cache by its coordinates, returns index or -1
-    int findCachedTile(int zoom, int tileX, int tileY) {
+    CachedTile* getRasterCacheSlot(int zoom, int tileX, int tileY) {
+        if (!_isRasterCacheInitialized) {
+            ESP_LOGE(TAG, "getRasterCacheSlot called before cache is initialized!");
+            return nullptr;
+        }
+    
         uint32_t tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
 
-        for (int i = 0; i < tileCache.size(); ++i) {
-            if (tileCache[i].isValid && tileCache[i].tileHash == tileHash) {
-                tileCache[i].lastAccess = ++cacheAccessCounter;
-                return i;
-            }
-        }
-        return -1; // Not found
-    }
-
-    LGFX_Sprite* getCachedTileSprite(int index) {
-        if (index >= 0 && index < tileCache.size()) {
-            return tileCache[index].sprite;
-        }
-        return nullptr;
-    }
-
-    // Remove least recently used tile from cache
-    static void evictLRUTile() {
-        if (tileCache.empty()) return;
-
-        auto lruIt = tileCache.begin();
-        for (auto it = tileCache.begin(); it != tileCache.end(); ++it) {
-            if (it->lastAccess < lruIt->lastAccess) {
-                lruIt = it;
+        // 1. Check for cache hit
+        for (auto& tile : _tileCache) {
+            if (tile.isValid && tile.tileHash == tileHash) {
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                return &tile;
             }
         }
 
-        ESP_LOGD(TAG, "Evicting tile: %s", lruIt->filePath);
-        if (lruIt->sprite) {
-            lruIt->sprite->deleteSprite();
-            delete lruIt->sprite;
-            lruIt->sprite = nullptr;
+        // 2. Cache miss, find a free slot
+        for (auto& tile : _tileCache) {
+            if (!tile.isValid) {
+                tile.tileHash = tileHash;
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                tile.filePath[0] = '\0';
+                // isValid is still false, caller must set it to true after loading
+                return &tile;
+            }
         }
-        tileCache.erase(lruIt);
+
+        // 3. Cache full, evict LRU
+        auto lruIt = std::min_element(_tileCache.begin(), _tileCache.end(),
+            [](const CachedTile& a, const CachedTile& b) {
+                return a.lastAccess < b.lastAccess;
+        });
+
+        ESP_LOGD(TAG, "Evicting raster tile: %s", lruIt->filePath);
+        lruIt->isValid = false; // Mark as invalid for the caller to fill
+        lruIt->tileHash = tileHash;
+        lruIt->lastAccess = ++_rasterCacheAccessCounter;
+        lruIt->filePath[0] = '\0';
+        
+        return &(*lruIt);
     }
 
-    // Proactively evict LRU raster tiles until PSRAM largest free block >= needed
+    // Proactively evict LRU items to ensure PSRAM is available.
+    // With static raster cache, this can only act on the NAV cache now.
     bool ensurePSRAMAvailable(size_t needed) {
-        int evicted = 0;
-        while (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed && !tileCache.empty()) {
-            evictLRUTile();
-            evicted++;
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed) {
+            return true;
         }
-        if (evicted > 0) {
-            ESP_LOGI(TAG, "Evicted %d raster tile(s), largest PSRAM block: %u KB",
-                          evicted, (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
-        }
+        
+        // This function used to evict raster tiles. With a static pool, we can't free that memory.
+        // We log a warning that the raster cache is static and cannot be shrunk.
+        // The success of a subsequent allocation will depend on what else is in PSRAM (like the NAV cache).
+        ESP_LOGW(TAG, "ensurePSRAMAvailable: Raster cache is static. Cannot free %d bytes from it.", needed);
         return heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) >= needed;
     }
 
-    // Add a rendered tile sprite to the cache
-    void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite) {
-        if (maxCachedTiles == 0 || !sourceSprite) {
-            if(sourceSprite) { // Don't leak memory if cache is disabled
-                sourceSprite->deleteSprite();
-                delete sourceSprite;
+    LGFX_Sprite* findCachedRasterTile(int zoom, int tileX, int tileY) {
+        if (!_isRasterCacheInitialized) return nullptr;
+
+        uint32_t tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
+
+        for (auto& tile : _tileCache) {
+            if (tile.isValid && tile.tileHash == tileHash) {
+                tile.lastAccess = ++_rasterCacheAccessCounter;
+                return tile.sprite;
             }
-            return;
         }
-
-        if (tileCache.size() >= maxCachedTiles) {
-            evictLRUTile();
-        }
-
-        CachedTile newEntry;
-        newEntry.sprite = sourceSprite;
-
-        strncpy(newEntry.filePath, filePath, sizeof(newEntry.filePath) - 1);
-        newEntry.filePath[sizeof(newEntry.filePath) - 1] = '\0';
-        newEntry.lastAccess = ++cacheAccessCounter;
-        newEntry.isValid = true;
-        newEntry.tileHash = (static_cast<uint32_t>(zoom) << 28) | (static_cast<uint32_t>(tileX) << 14) | static_cast<uint32_t>(tileY);
-
-        tileCache.push_back(newEntry);
-        ESP_LOGI(TAG, "Cache add tile: %s", filePath);
-        ESP_LOGD(TAG, "Cache size: %d, Free PSRAM: %u", tileCache.size(), ESP.getFreePsram());
+        return nullptr;
     }
     
     // Helper function to safely copy a sprite to the canvas with clipping
@@ -1190,11 +1211,11 @@ namespace MapEngine {
                 copy_h += dest_y;
                 dest_y = 0;
             }
-            if (dest_x + copy_w > MAP_CANVAS_WIDTH) {
-                copy_w = MAP_CANVAS_WIDTH - dest_x;
+            if (dest_x + copy_w > MAP_SPRITE_SIZE) {
+                copy_w = MAP_SPRITE_SIZE - dest_x;
             }
-            if (dest_y + copy_h > MAP_CANVAS_HEIGHT) {
-                copy_h = MAP_CANVAS_HEIGHT - dest_y;
+            if (dest_y + copy_h > MAP_SPRITE_SIZE) {
+                copy_h = MAP_SPRITE_SIZE - dest_y;
             }
 
             if (copy_w > 0 && copy_h > 0) {
@@ -1203,7 +1224,7 @@ namespace MapEngine {
 
                 for (int y = 0; y < copy_h; y++) {
                     uint16_t* src_ptr = src_buf + ((src_y + y) * MAP_TILE_SIZE) + src_x;
-                    lv_color_t* dest_ptr = dest_buf + ((dest_y + y) * MAP_CANVAS_WIDTH) + dest_x;
+                    lv_color_t* dest_ptr = dest_buf + ((dest_y + y) * MAP_SPRITE_SIZE) + dest_x;
 #if LV_COLOR_16_SWAP
                     // LGFX sprites are little-endian RGB565, LVGL canvas is big-endian
                     uint16_t* dp = (uint16_t*)dest_ptr;
@@ -1286,18 +1307,17 @@ namespace MapEngine {
                 if (offsetX + MAP_TILE_SIZE <= 0 || offsetX >= viewportW) continue;
                 if (offsetY + MAP_TILE_SIZE <= 0 || offsetY >= viewportH) continue;
 
-                // 1. Check cache
-                int cacheIdx = findCachedTile(zoom, tileX, tileY);
-                if (cacheIdx >= 0) {
-                    LGFX_Sprite* cached = getCachedTileSprite(cacheIdx);
-                    if (cached && cached->getBuffer()) {
-                        blitTileToViewport(cached, offsetX, offsetY);
-                        tilesLoaded++;
-                        continue;
-                    }
+                MapEngine::CachedTile* cacheSlot = getRasterCacheSlot(zoom, tileX, tileY);
+                if (!cacheSlot) continue;
+
+                // If slot is valid, it's a cache hit.
+                if (cacheSlot->isValid) {
+                    blitTileToViewport(cacheSlot->sprite, offsetX, offsetY);
+                    tilesLoaded++;
+                    continue;
                 }
 
-                // 2. Find file on SD
+                // --- Cache miss, load from SD ---
                 char path[128];
                 bool found = false;
 
@@ -1317,32 +1337,23 @@ namespace MapEngine {
 
                 if (!found) continue;
 
-                // 3. Decode tile into a new sprite
-                const size_t spriteSize = MAP_TILE_SIZE * MAP_TILE_SIZE * 2;
-                ensurePSRAMAvailable(spriteSize);
-
-                LGFX_Sprite* newSprite = new LGFX_Sprite(&tft);
-                newSprite->setPsram(true);
-                if (newSprite->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE) == nullptr) {
-                    ESP_LOGE(TAG, "Raster sprite creation failed (PSRAM?)");
-                    delete newSprite;
-                    continue;
-                }
-
-                // Serialize with preload task — static PNG/JPEG decoders + targetSprite_ are not thread-safe
+                // Decode tile into the sprite provided by the cache slot
+                LGFX_Sprite* tileSprite = cacheSlot->sprite;
                 bool decoded = false;
                 if (xSemaphoreTake(spriteMutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
-                    decoded = renderTile(path, 0, 0, *newSprite, (uint8_t)zoom);
+                    decoded = renderTile(path, 0, 0, *tileSprite, (uint8_t)zoom);
                     xSemaphoreGive(spriteMutex);
                 }
 
                 if (decoded) {
-                    blitTileToViewport(newSprite, offsetX, offsetY);
-                    addToCache(path, zoom, tileX, tileY, newSprite);
+                    blitTileToViewport(tileSprite, offsetX, offsetY);
+                    // Validate the slot
+                    strncpy(cacheSlot->filePath, path, sizeof(cacheSlot->filePath) - 1);
+                    cacheSlot->filePath[sizeof(cacheSlot->filePath) - 1] = '\0';
+                    cacheSlot->isValid = true;
                     tilesLoaded++;
                 } else {
-                    newSprite->deleteSprite();
-                    delete newSprite;
+                    cacheSlot->isValid = false; // Ensure it's marked as invalid on failure
                 }
             }
         }
@@ -1370,7 +1381,7 @@ namespace MapEngine {
         return (r << 11) | (g << 5) | b;
     }
 
-    // AEL polygon filler with fast-forward optimization (IceNav-v3 pattern).
+    // AEL polygon filler with fast-forward optimization.
     // Takes high-precision (HP) coordinates (0-4096), iterates pixel-space scanlines (0-255).
     // Supports multi-ring polygons (exterior + holes).
     void fillPolygonGeneral(LGFX_Sprite &map, const int *px_hp, const int *py_hp, const int numPoints, const uint16_t color, const int xOffset, const int yOffset, uint16_t ringCount, uint16_t* ringEnds)
@@ -1446,12 +1457,12 @@ namespace MapEngine {
 
         int activeHead = -1;
         int spriteW = map.width();
-        // Clip Y range accounting for offset (IceNav-v3 pattern: maps.cpp:953-954)
+        // Clip Y range accounting for offset
         int startY_px = std::max(minY_px, -yOffset);
         int endY_px = std::min(maxY_px, spriteH - 1 - yOffset);
 
         // 4. Fast-forward: process buckets before visible range, jump edge xVal
-        //    directly to startY_px (IceNav-v3 pattern — skip invisible scanlines)
+        // Directly to startY_px (skip invisible scanlines)
         if (startY_px > minY_px) {
             for (int y = minY_px; y < startY_px; y++) {
                 if ((size_t)(y - minY_px) >= edgeBuckets.size()) break;
@@ -1544,7 +1555,7 @@ namespace MapEngine {
     }
 
     // =========================================================================
-    // Viewport-based NAV rendering (IceNav-v3 renderNavViewport pattern).
+    // Viewport-based NAV rendering.
     // Loads ALL visible tiles, dispatches features to 16 priority layers,
     // renders in a single pass with per-feature setClipRect to tile boundaries.
     // This ensures correct z-ordering across tile boundaries.
@@ -1561,34 +1572,22 @@ namespace MapEngine {
         int viewportW = map.width();
         int viewportH = map.height();
 
-        // Compute tile grid (IceNav-v3 pattern: maps.cpp:1478-1494)
+        // Compute center tile from lat/lon (Mercator projection)
         const double latRad = (double)centerLat * M_PI / 180.0;
         const double n = pow(2.0, (double)zoom);
-        const float centerTileX = (float)((centerLon + 180.0) / 360.0 * n);
-        const float centerTileY = (float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n);
+        const int centerTileIdxX = (int)floorf((float)((centerLon + 180.0) / 360.0 * n));
+        const int centerTileIdxY = (int)floorf((float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n));
 
-        const int centerTileIdxX = (int)floorf(centerTileX);
-        const int centerTileIdxY = (int)floorf(centerTileY);
+        // Fixed 3×3 grid: tiles at positions {0, 256, 512} in the sprite
+        const int8_t gridOffset = MAP_TILES_GRID / 2;  // 1
 
-        // Sub-tile pixel offset (fractional part → pixel position within center tile)
-        float fracX = centerTileX - centerTileIdxX;
-        float fracY = centerTileY - centerTileIdxY;
-        int centerTileOriginX = viewportW / 2 - (int)(fracX * MAP_TILE_SIZE);
-        int centerTileOriginY = viewportH / 2 - (int)(fracY * MAP_TILE_SIZE);
-
-        // Determine tile range to cover entire viewport
-        int minDx = -(centerTileOriginX / MAP_TILE_SIZE + 1);
-        int maxDx = (viewportW - centerTileOriginX + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
-        int minDy = -(centerTileOriginY / MAP_TILE_SIZE + 1);
-        int maxDy = (viewportH - centerTileOriginY + MAP_TILE_SIZE - 1) / MAP_TILE_SIZE;
-
-        // --- Load all tiles and dispatch features (IceNav-v3 pattern: maps.cpp:1498-1543) ---
+        // --- Load all tiles and dispatch features ---
         struct ResolvedTile {
             uint8_t* data;
             size_t   size;
             int16_t  tileOffsetX, tileOffsetY;
         };
-        static ResolvedTile resolved[36];  // 6×6 max viewport tiles
+        static ResolvedTile resolved[9];  // 3×3 fixed grid
         int resolvedCount = 0;
         static std::vector<uint8_t*> inUseData;  // Protects resolved tiles from eviction
         inUseData.clear();
@@ -1611,20 +1610,11 @@ namespace MapEngine {
         uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);  // Dark slate gray — same as raster "no data" bg
         bool bgColorExtracted = false;
 
-        // Build tile list sorted center-outward so PSRAM exhaustion
-        // degrades edges first instead of cutting a whole quadrant
-        struct TileSlot { int dx, dy; int distSq; };
-        static TileSlot tileOrder[36];  // 6×6 max
-        int tileCount = 0;
-        for (int dy = minDy; dy <= maxDy; dy++) {
-            for (int dx = minDx; dx <= maxDx; dx++) {
-                if (tileCount < 36) {
-                    tileOrder[tileCount++] = { dx, dy, dx*dx + dy*dy };
-                }
-            }
-        }
-        std::sort(tileOrder, tileOrder + tileCount,
-                  [](const TileSlot& a, const TileSlot& b) { return a.distSq < b.distSq; });
+        // Fixed 3×3 spiral order: center first, then edges, corners last
+        static const int8_t spiralOrder[9][2] = {
+            {0,0}, {2,0}, {0,2}, {2,2}, {0,1}, {1,0}, {2,1}, {1,2}, {1,1}
+        };
+        const int tileCount = 9;
 
         // Pre-evict navCache entries from a different zoom level (useless after zoom change).
         // Grid-based eviction removed: nearby tiles are kept for cache hits on next pan.
@@ -1683,7 +1673,7 @@ namespace MapEngine {
             int      tileX, tileY;
             uint8_t  regionIdx;
         };
-        static PendingTileRead pendingReads[72];  // 6×6 grid × 2 regions max
+        static PendingTileRead pendingReads[18];  // 3×3 grid × 2 regions max
         int pendingCount = 0;
 
         // ================================================================
@@ -1692,15 +1682,12 @@ namespace MapEngine {
         // No FeatureRef exists yet, so eviction is safe.
         // ================================================================
         for (int ti = 0; ti < tileCount; ti++) {
-            int dx = tileOrder[ti].dx;
-            int dy = tileOrder[ti].dy;
-            int tileX = centerTileIdxX + dx;
-            int tileY = centerTileIdxY + dy;
-            int16_t tileOffsetX = (int16_t)(centerTileOriginX + dx * MAP_TILE_SIZE);
-            int16_t tileOffsetY = (int16_t)(centerTileOriginY + dy * MAP_TILE_SIZE);
-
-            if (tileOffsetX + MAP_TILE_SIZE <= 0 || tileOffsetX >= viewportW) continue;
-            if (tileOffsetY + MAP_TILE_SIZE <= 0 || tileOffsetY >= viewportH) continue;
+            int gx = spiralOrder[ti][0];
+            int gy = spiralOrder[ti][1];
+            int tileX = centerTileIdxX - gridOffset + gx;
+            int tileY = centerTileIdxY - gridOffset + gy;
+            int16_t tileOffsetX = (int16_t)(gx * MAP_TILE_SIZE);  // 0, 256, 512
+            int16_t tileOffsetY = (int16_t)(gy * MAP_TILE_SIZE);
 
             for (int r = 0; r < activeRegionCount; r++) {
                 uint8_t regionIdx = activeRegions[r].origIdx;
@@ -1708,7 +1695,7 @@ namespace MapEngine {
                 if (cacheIdx >= 0) {
                     navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
                     navCacheHits++;
-                    if (resolvedCount < 36) {
+                    if (resolvedCount < 9) {
                         resolved[resolvedCount++] = {
                             navCache[cacheIdx].data, navCache[cacheIdx].size,
                             tileOffsetX, tileOffsetY
@@ -1719,7 +1706,7 @@ namespace MapEngine {
                     NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
                     UIMapManager::Npk2IndexEntry entry;
                     if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)
-                        && pendingCount < 72) {
+                        && pendingCount < 18) {
                         pendingReads[pendingCount++] = {
                             slot, entry, tileOffsetX, tileOffsetY,
                             tileX, tileY, regionIdx
@@ -1749,6 +1736,16 @@ namespace MapEngine {
                       });
         }
 
+        // Proactive eviction: free PSRAM before loading new tiles
+        // Z9 tiles can be 50-100 KB each; ensure headroom for pending reads
+        if (pendingCount > 0) {
+            const size_t PSRAM_HEADROOM = 200 * 1024;  // 200 KB minimum free
+            size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+            if (freeBlock < PSRAM_HEADROOM) {
+                evictUnusedNavCache(inUseData, PSRAM_HEADROOM);
+            }
+        }
+
         // Read pending tiles from SD into navCache
         for (int i = 0; i < pendingCount; i++) {
             esp_task_wdt_reset();
@@ -1773,7 +1770,7 @@ namespace MapEngine {
             addNavCache(pr.regionIdx, zoom, pr.tileX, pr.tileY, data, fileSize, &inUseData);
             navCacheMisses++;
 
-            if (resolvedCount < 36) {
+            if (resolvedCount < 9) {
                 resolved[resolvedCount++] = { data, fileSize, pr.tileOffsetX, pr.tileOffsetY };
                 inUseData.push_back(data);
             }
@@ -1890,7 +1887,7 @@ namespace MapEngine {
                 uint8_t minZoom = zoomPriority >> 4;
                 if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
-                // Semantic culling: skip tiny features (IceNav f828e18f)
+                // Semantic culling: skip tiny features
                 // Z9-Z11: skip if bbox < 3×3px. Other zooms: skip if < 1×1px.
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
                 if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
@@ -1932,11 +1929,10 @@ namespace MapEngine {
         int totalFeatures = 0;
         for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
         totalFeatures += textRefs.size() + waterwayRefs.size();
-        ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: [%d..%d]x[%d..%d]",
-                      (loadEnd - startTime) / 1000, resolvedCount, totalFeatures,
-                      minDx, maxDx, minDy, maxDy);
+        ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: 3x3 fixed",
+                      (loadEnd - startTime) / 1000, resolvedCount, totalFeatures);
 
-        // --- Render all layers (IceNav-v3 pattern: maps.cpp:1546-1569) ---
+        // --- Render all layers ---
         // Fill background with color from NAV background polygon
         map.fillSprite(bgColor);
 
@@ -1953,7 +1949,7 @@ namespace MapEngine {
             if (globalLayers[pri].empty()) continue;
 
             for (const auto& ref : globalLayers[pri]) {
-                // Yield every 20ms to let WiFi/BLE breathe on Core 0 (IceNav e278a2b0)
+                // Yield every 20ms to let WiFi/BLE breathe on Core 0
                 if ((++featureCount & 15) == 0) {
                     uint64_t nowUs = esp_timer_get_time();
                     if (nowUs - lastYieldUs > 20000) {
@@ -1974,10 +1970,10 @@ namespace MapEngine {
                 int16_t maxY = ref.tileOffsetY + by2;
                 if (maxX < 0 || minX > viewportW || maxY < 0 || minY > viewportH) continue;
 
-                // Per-feature setClipRect to tile boundaries (IceNav-v3: maps.cpp:1561)
+                // Per-feature setClipRect to tile boundaries
                 map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
 
-                // Read colorRgb565 directly (LE, no byte swap — IceNav-v3 pattern)
+                // Read colorRgb565 directly (LE, no byte swap)
                 uint16_t colorRgb565;
                 memcpy(&colorRgb565, fp + 1, 2);
 
@@ -2000,7 +1996,7 @@ namespace MapEngine {
                         if (!px_hp || !py_hp) break;
 
                         // Vertex decimation: skip redundant vertices at same pixel
-                        // (IceNav 699f4c80). Only for simple polygons (no multi-ring).
+                        // Only for simple polygons (no multi-ring).
                         int16_t lastVx = -32768, lastVy = -32768;
                         uint16_t actualPoints = 0;
                         for (uint16_t j = 0; j < ref.coordCount; j++) {
@@ -2056,7 +2052,7 @@ namespace MapEngine {
                         if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) break;
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
 
-                        // Pre-project all coords with dedup (IceNav-v3: renderNavLineString L1287-1324)
+                        // Pre-project all coords with dedup
                         size_t numCoords = ref.coordCount;
                         if (proj16X.capacity() < numCoords) proj16X.reserve(numCoords * 3 / 2);
                         if (proj16Y.capacity() < numCoords) proj16Y.reserve(numCoords * 3 / 2);
@@ -2071,7 +2067,7 @@ namespace MapEngine {
                         size_t validPoints = 0;
                         int16_t lastPx = -32768, lastPy = -32768;
 
-                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise (IceNav f828e18f)
+                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise
                         int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
 
                         for (size_t j = 0; j < numCoords; j++) {
@@ -2095,7 +2091,7 @@ namespace MapEngine {
                             validPoints++;
                         }
 
-                        // Bbox check on projected line (IceNav-v3 L1326)
+                        // Bbox check on projected line
                         if (validPoints < 2 || maxPx < 0 || minPx >= viewportW ||
                             maxPy < 0 || minPy >= viewportH) break;
 
@@ -2118,7 +2114,7 @@ namespace MapEngine {
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
                         int px = (coords[0] >> 4) + ref.tileOffsetX;
                         int py = (coords[1] >> 4) + ref.tileOffsetY;
-                        // Bounds check (IceNav-v3: renderNavPoint L1418)
+                        // Bounds check
                         if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
                             map.fillCircle(px, py, 3, colorRgb565);
                         break;
@@ -2456,7 +2452,7 @@ namespace MapEngine {
         return result;
     }
 
-    // Render a NAV1 vector tile using IceNav-v3 patterns:
+    // Render a NAV1 vector tile:
     // Public render dispatcher (raster only — NAV uses renderNavViewport)
     bool renderTile(const char* path, int16_t xOffset, int16_t yOffset, LGFX_Sprite &map, uint8_t zoom) {
         String pathStr(path);

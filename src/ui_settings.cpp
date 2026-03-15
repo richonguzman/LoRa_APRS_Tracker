@@ -30,6 +30,7 @@ static const char *TAG = "UISettings";
 #include "station_utils.h"
 #include "storage_utils.h"
 #include "wifi_utils.h"
+#include "display.h"
 
 // External variables from main code
 extern Configuration Config;
@@ -710,9 +711,7 @@ static void eco_switch_changed(lv_event_t *e) {
         }
         if (screenDimmed) {
             screenDimmed = false;
-#ifdef BOARD_BL_PIN
-            analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+            displaySetBrightness(screenBrightness);
             if (lv_scr_act() == UIMapManager::screen_map) {
                 setCpuFrequencyMhz(240);
                 ESP_LOGI(TAG, "Eco mode disabled, CPU boosted to %d MHz (map)",
@@ -744,10 +743,7 @@ static void brightness_slider_changed(lv_event_t *e) {
     int percent = (int)lv_slider_get_value(slider);
 
     screenBrightness = percentToPWM(percent);
-
-#ifdef BOARD_BL_PIN
-    analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+    displaySetBrightness(screenBrightness);
 
     if (brightness_label) {
         char buf[16];
@@ -1133,6 +1129,15 @@ static void wifi_switch_changed(lv_event_t *e) {
 
     if (is_on) {
         ESP_LOGI(TAG, "WiFi: User enabled");
+
+        // Stop BLE first — mutually exclusive on ESP32-S3
+        if (bluetoothActive) {
+            ESP_LOGI(TAG, "WiFi: Stopping BLE for coexistence");
+            bluetoothActive = false;
+            BLE_Utils::stop();
+            bluetoothConnected = false;
+        }
+
         WiFiUserDisabled = false;
         WiFiEcoMode = false;
         wifiRetryCount = 0;
@@ -1142,7 +1147,6 @@ static void wifi_switch_changed(lv_event_t *e) {
             lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xffa500), 0);
         }
 
-        // Start connection immediately
         WIFI_Utils::startStationMode();
     } else {
         ESP_LOGI(TAG, "WiFi: User disabled");
@@ -1526,12 +1530,16 @@ static void ble_setup_timer_cb(lv_timer_t *timer) {
     const uint32_t MIN_CONTIGUOUS_HEAP_FOR_BLE = 40 * 1024;
 
     if (Config.bluetooth.useBLE) {
-        // Stop WiFi to free DRAM for BLE
+        // Stop WiFi — mutually exclusive on ESP32-S3
+        if (!WiFiUserDisabled) {
+            WiFiUserDisabled = true;
+            WiFiConnected = false;
+            ESP_LOGI(TAG, "WiFi disabled for BLE coexistence");
+        }
         WIFI_Utils::stop();
-        ESP_LOGI(TAG, "WiFi stopped. Free heap: %u bytes", ESP.getFreeHeap());
 
         BLE_Utils::setup();
-        ESP_LOGI(TAG, "BLE setup done (deferred). Free heap: %u bytes", ESP.getFreeHeap());
+        ESP_LOGI(TAG, "BLE started. Free heap: %u bytes", ESP.getFreeHeap());
     }
     lv_timer_del(timer);
 }
@@ -1543,12 +1551,7 @@ static void ble_stop_timer_cb(lv_timer_t *timer) {
         ESP_LOGI(TAG, "BLE stop done (deferred). Free heap: %u bytes", ESP.getFreeHeap());
     }
 
-    // Restart WiFi after BLE release
-    if (Config.wifiEnabled) {
-        WIFI_Utils::startStationMode();
-        ESP_LOGI(TAG, "WiFi restarted after BLE stop");
-    }
-
+    // WiFi not auto-restarted — user activates manually via Settings
     lv_timer_del(timer);
 }
 

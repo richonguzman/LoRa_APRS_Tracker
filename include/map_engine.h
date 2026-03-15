@@ -15,6 +15,9 @@
 #include <vector>
 #include "nav_types.h"
 
+// Tile cache size (for raster tiles)
+#define RASTER_TILE_CACHE_SIZE 16
+
 namespace MapEngine {
 
     struct CachedTile
@@ -81,18 +84,20 @@ namespace MapEngine {
     // Function declarations
     void startRenderTask(lv_obj_t* canvas_to_invalidate);
     void stopRenderTask();
-    void initTileCache();
+    void initTileCache(LovyanGFX* gfx);
     void clearTileCache();
     void shrinkProjectionBuffers();
     bool loadMapFont();
     bool renderNavViewport(float centerLat, float centerLon, uint8_t zoom,
                            LGFX_Sprite &map, const char** regions, int regionCount);
     bool renderTile(const char* path, int16_t xOffset, int16_t yOffset, LGFX_Sprite &map, uint8_t zoom = 0);
-    int findCachedTile(int zoom, int tileX, int tileY);
-    void addToCache(const char* filePath, int zoom, int tileX, int tileY, LGFX_Sprite* sourceSprite);
+
+    // --- Static Raster Cache API ---
+    CachedTile* getRasterCacheSlot(int zoom, int tileX, int tileY);
+    LGFX_Sprite* findCachedRasterTile(int zoom, int tileX, int tileY);
+
     bool ensurePSRAMAvailable(size_t needed);
     void copySpriteToCanvasWithClip(lv_obj_t* canvas, LGFX_Sprite* sprite, int offsetX, int offsetY);
-    LGFX_Sprite* getCachedTileSprite(int index);
 
 } // namespace MapEngine
 
