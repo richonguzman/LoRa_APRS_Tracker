@@ -303,39 +303,7 @@ namespace MENU_Utils {
                     #endif
                 }
                 break;
-                    #ifdef HAS_TFT
-                        #if defined(HELTEC_WIRELESS_TRACKER)
-                            if (messageText.length() < 10) {
-                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back      (0" + String(messageText.length()) + ")     Enter>", "", "");
-                            } else {
-                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back      (" + String(messageText.length()) + ")     Enter>", "", "");
-                            }
-                        #else   // T-Deck
-                            if (messageText.length() < 10) {
-                                displayShow("WRITE MSG>", "    - APRSMYSunday -", "MSG -> " + messageText, "<Back    (0" + String(messageText.length()) + ")   Enter>", "", "");
-                            } else {
-                                displayShow("WRITE MSG>", "    - APRSMY -", "MSG -> " + messageText, "<Back    (" + String(messageText.length()) + ")   Enter>", "", "");
-                            }
-                        #endif
-                    #else
-                        if (messageText.length() < 10) {
-                            displayShow("WRITE MSG>", "  - APRSMY -", "MSG -> " + messageText, "", "", "<Back   (0" + String(messageText.length()) + ")   Enter>");
-                        } else {
-                            displayShow("WRITE MSG>", "  - APRSMY -", "MSG -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")   Enter>");
-                        }
-                    #endif
-                } else {
-                    #ifdef HAS_TFT
-                        #if defined(HELTEC_WIRELESS_TRACKER)
-                            displayShow("WRITE MSG>", "  --- MSG TOO LONG! ---", " -> " + messageText, "<Back   (" + String(messageText.length()) + ")",  "", "");
-                        #else   // T-Deck
-                            displayShow("WRITE MSG>", "  --- MSG TOO LONG! ---", " -> " + messageText, "<Back   (" + String(messageText.length()) + ")", "", "");
-                        #endif
-                    #else
-                        displayShow("WRITE MSG>", "--- MSG TOO LONG! ---", " -> " + messageText, "", "", "<Back   (" + String(messageText.length()) + ")");
-                    #endif
-                }
-                break;
+
             case 130:   // 1.Messages ---> APRSThursday ---> Delete: ALL
                 displayShow(" APRS Thu.", "> Check In", "  Join", "  Unsubscribe", "  KeepSubscribed+12h", lastLine);
                 break;
