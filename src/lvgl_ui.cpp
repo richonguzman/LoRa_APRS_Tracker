@@ -17,6 +17,7 @@ static const char *TAG = "LVGL";
 #include <lvgl.h>
 #define TOUCH_MODULES_GT911
 #include "battery_utils.h"
+#include "display.h"
 #include "ble_utils.h"
 #include "board_pinout.h"
 #include "configuration.h"
