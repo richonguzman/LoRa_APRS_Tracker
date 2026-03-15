@@ -23,3 +23,6 @@ docs/ARCHITECTURE.md
 docs/ASYNC_NAV_CORE0.md
 docs/UPDATE_WORKFLOW.html
 DEBUG_ASYNC_NAV.md
+# Ignore AI fail logs
+docs/analyse-memoire-mars-2026.html
+docs/compareSRAM-PSRAM_main-devel.txt

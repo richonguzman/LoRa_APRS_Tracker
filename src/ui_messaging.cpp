@@ -22,6 +22,7 @@
 #include "configuration.h"
 #include "msg_utils.h"
 #include "storage_utils.h"
+#include "display.h"
 
 static const char *TAG = "UIMessaging";
 
@@ -1760,9 +1761,7 @@ void handleComposeKeyboard(char key) {
     lastActivityTime = millis();
     if (screenDimmed) {
         screenDimmed = false;
-        #ifdef BOARD_BL_PIN
-            analogWrite(BOARD_BL_PIN, screenBrightness);
-        #endif
+        tft.setBrightness(screenBrightness);
         // Continue to process key immediately
     }
 

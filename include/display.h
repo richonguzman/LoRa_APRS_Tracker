@@ -30,9 +30,11 @@
 
 #include <Arduino.h>
 
-#ifdef HAS_TFT
 #include "LGFX_TDeck.h"
 extern LGFX_TDeck tft;
+
+#ifdef HAS_TFT
+// Keep original block for other externs if any, but tft is now global
 #endif
 
 void displaySetup();

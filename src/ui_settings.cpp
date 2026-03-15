@@ -30,6 +30,7 @@ static const char *TAG = "UISettings";
 #include "station_utils.h"
 #include "storage_utils.h"
 #include "wifi_utils.h"
+#include "display.h"
 
 // External variables from main code
 extern Configuration Config;
@@ -710,9 +711,7 @@ static void eco_switch_changed(lv_event_t *e) {
         }
         if (screenDimmed) {
             screenDimmed = false;
-#ifdef BOARD_BL_PIN
-            analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+            tft.setBrightness(screenBrightness);
             if (lv_scr_act() == UIMapManager::screen_map) {
                 setCpuFrequencyMhz(240);
                 ESP_LOGI(TAG, "Eco mode disabled, CPU boosted to %d MHz (map)",
@@ -745,9 +744,7 @@ static void brightness_slider_changed(lv_event_t *e) {
 
     screenBrightness = percentToPWM(percent);
 
-#ifdef BOARD_BL_PIN
-    analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+    tft.setBrightness(screenBrightness);
 
     if (brightness_label) {
         char buf[16];
