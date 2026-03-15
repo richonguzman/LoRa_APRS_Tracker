@@ -219,7 +219,7 @@ namespace MapEngine {
         uint8_t  regionIdx;
         uint8_t  zoom;
     };
-    #define NAV_CACHE_SIZE 60  // Must cover full viewport: 6×5 grid × 2 regions = ~60 tiles
+    #define NAV_CACHE_SIZE 12  // 3×3 grid + multi-region margin
     static std::vector<NavCacheEntry> navCache;
     static uint32_t navCacheAccessCounter = 0;
 
@@ -1734,6 +1734,16 @@ namespace MapEngine {
                           int bdx = b.tileX - centerTileIdxX, bdy = b.tileY - centerTileIdxY;
                           return (adx*adx + ady*ady) < (bdx*bdx + bdy*bdy);
                       });
+        }
+
+        // Proactive eviction: free PSRAM before loading new tiles
+        // Z9 tiles can be 50-100 KB each; ensure headroom for pending reads
+        if (pendingCount > 0) {
+            const size_t PSRAM_HEADROOM = 200 * 1024;  // 200 KB minimum free
+            size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+            if (freeBlock < PSRAM_HEADROOM) {
+                evictUnusedNavCache(inUseData, PSRAM_HEADROOM);
+            }
         }
 
         // Read pending tiles from SD into navCache
