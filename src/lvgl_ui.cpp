@@ -17,6 +17,7 @@ static const char *TAG = "LVGL";
 #include <lvgl.h>
 #define TOUCH_MODULES_GT911
 #include "battery_utils.h"
+#include "display.h"
 #include "ble_utils.h"
 #include "board_pinout.h"
 #include "configuration.h"
@@ -176,11 +177,13 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
     lastActivityTime = millis();
 
     // Wake up screen if dimmed
+    // Always reassert backlight on touch — guards against LEDC channel loss
+    // (GPIO 42 shared between LovyanGFX Light_PWM and Arduino analogWrite)
+    displaySetBrightness(screenBrightness);
+    
     if (screenDimmed) {
       screenDimmed = false;
-#ifdef BOARD_BL_PIN
-      analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+
       // Boost CPU to 240 MHz if on map screen
       if (lv_scr_act() == UIMapManager::screen_map) {
         setCpuFrequencyMhz(240);
@@ -269,9 +272,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     tft.fillScreen(TFT_BLACK); // Clear to black before showing anything
 
 // Now turn on backlight with saved brightness
-#ifdef BOARD_BL_PIN
-    analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+  displaySetBrightness(screenBrightness);
 
     // Initialize LVGL if not already done
     if (!lvgl_display_initialized) {
@@ -454,10 +455,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     // Only initialize display if not already done by splash screen
     if (!lvgl_display_initialized) {
 // Set backlight with saved brightness
-#ifdef BOARD_BL_PIN
-      pinMode(BOARD_BL_PIN, OUTPUT);
-      analogWrite(BOARD_BL_PIN, screenBrightness);
-#endif
+      displaySetBrightness(screenBrightness);
 
       // Re-init TFT for LVGL
       tft.init();
@@ -584,9 +582,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
           Config.display.timeout * 1000; // Config is in seconds
       if (currentTime - lastActivityTime >= ecoTimeoutMs) {
         screenDimmed = true;
-#ifdef BOARD_BL_PIN
-        analogWrite(BOARD_BL_PIN, 0); // Turn off backlight
-#endif
+        tft.setBrightness(0); // Turn off backlight
         // Reduce CPU to 80 MHz if on map screen
         if (lv_scr_act() == UIMapManager::screen_map) {
           setCpuFrequencyMhz(80);

@@ -248,6 +248,10 @@ bool        symbolAvailable         = true;
 
 #endif
 
+void displaySetBrightness(uint8_t value) {
+    tft.setBrightness(value);
+}
+
 void displaySetup() {
     delay(500);
     STATION_Utils::loadIndex(2);    // Screen Brightness value
@@ -261,8 +265,7 @@ void displaySetup() {
         } else {
             tft.setRotation(1);
         }
-        pinMode(TFT_BL, OUTPUT);
-        analogWrite(TFT_BL, screenBrightness);
+        displaySetBrightness(screenBrightness);
         tft.setTextFont(0);
         tft.fillScreen(TFT_BLACK);
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
@@ -311,25 +314,9 @@ void displaySetup() {
 
 void displayToggle(bool toggle) {
     if (toggle) {
-        #ifdef HAS_TFT
-            analogWrite(TFT_BL, screenBrightness);
-        #else
-            #ifdef ssd1306
-                display.ssd1306_command(SSD1306_DISPLAYON); 
-            #else
-                display.oled_command(SH110X_DISPLAYON);
-            #endif
-        #endif
+        displaySetBrightness(screenBrightness);
     } else {
-        #ifdef HAS_TFT
-            analogWrite(TFT_BL, 0);
-        #else
-            #ifdef ssd1306
-                display.ssd1306_command(SSD1306_DISPLAYOFF);
-            #else
-                display.oled_command(SH110X_DISPLAYOFF);
-            #endif
-        #endif
+        tft.setBrightness(0);
     }
 }
 
