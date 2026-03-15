@@ -458,7 +458,7 @@ namespace KEYBOARD_Utils {
                     #endif
                     break;
             }
-            tft.setBrightness(screenBrightness);
+            displaySetBrightness(screenBrightness);
             displayShow("  SCREEN", "", "SCREEN BRIGHTNESS " + MENU_Utils::screenBrightnessAsString(screenBrightness), 1000);
             STATION_Utils::saveIndex(2, screenBrightness);
             #ifdef HAS_JOYSTICK
@@ -627,7 +627,7 @@ namespace KEYBOARD_Utils {
         // Reset LVGL eco mode activity timer and reassert backlight on keypress
         #ifdef USE_LVGL_UI
             lastActivityTime = millis();
-            tft.setBrightness(screenBrightness);
+            displaySetBrightness(screenBrightness);
             if (screenDimmed) {
                 screenDimmed = false;
             }

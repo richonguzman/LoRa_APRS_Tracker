@@ -177,7 +177,7 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
 
     // Always reassert backlight on touch — guards against LEDC channel loss
     // (GPIO 42 shared between LovyanGFX Light_PWM and Arduino analogWrite)
-    tft.setBrightness(screenBrightness);
+    displaySetBrightness(screenBrightness);
 
     if (screenDimmed) {
       screenDimmed = false;
@@ -269,7 +269,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     tft.fillScreen(TFT_BLACK); // Clear to black before showing anything
 
 // Now turn on backlight with saved brightness
-    tft.setBrightness(screenBrightness);
+    displaySetBrightness(screenBrightness);
 
     // Initialize LVGL if not already done
     if (!lvgl_display_initialized) {
@@ -452,7 +452,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
     // Only initialize display if not already done by splash screen
     if (!lvgl_display_initialized) {
 // Set backlight with saved brightness
-      tft.setBrightness(screenBrightness);
+      displaySetBrightness(screenBrightness);
 
       // Re-init TFT for LVGL
       tft.init();
@@ -579,7 +579,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
           Config.display.timeout * 1000; // Config is in seconds
       if (currentTime - lastActivityTime >= ecoTimeoutMs) {
         screenDimmed = true;
-        tft.setBrightness(0); // Turn off backlight
+        displaySetBrightness(0); // Turn off backlight
         // Reduce CPU to 80 MHz if on map screen
         if (lv_scr_act() == UIMapManager::screen_map) {
           setCpuFrequencyMhz(80);

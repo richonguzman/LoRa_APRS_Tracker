@@ -1761,7 +1761,7 @@ void handleComposeKeyboard(char key) {
     lastActivityTime = millis();
     if (screenDimmed) {
         screenDimmed = false;
-        tft.setBrightness(screenBrightness);
+        displaySetBrightness(screenBrightness);
         // Continue to process key immediately
     }
 

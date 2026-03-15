@@ -711,7 +711,7 @@ static void eco_switch_changed(lv_event_t *e) {
         }
         if (screenDimmed) {
             screenDimmed = false;
-            tft.setBrightness(screenBrightness);
+            displaySetBrightness(screenBrightness);
             if (lv_scr_act() == UIMapManager::screen_map) {
                 setCpuFrequencyMhz(240);
                 ESP_LOGI(TAG, "Eco mode disabled, CPU boosted to %d MHz (map)",
@@ -744,7 +744,7 @@ static void brightness_slider_changed(lv_event_t *e) {
 
     screenBrightness = percentToPWM(percent);
 
-    tft.setBrightness(screenBrightness);
+    displaySetBrightness(screenBrightness);
 
     if (brightness_label) {
         char buf[16];

@@ -310,10 +310,32 @@ void displaySetup() {
 
 void displayToggle(bool toggle) {
     if (toggle) {
-        tft.setBrightness(screenBrightness);
+        #ifdef HAS_TFT
+            tft.setBrightness(screenBrightness);
+        #else
+            #ifdef ssd1306
+                display.ssd1306_command(SSD1306_DISPLAYON);
+            #else
+                display.oled_command(SH110X_DISPLAYON);
+            #endif
+        #endif
     } else {
-        tft.setBrightness(0);
+        #ifdef HAS_TFT
+            tft.setBrightness(0);
+        #else
+            #ifdef ssd1306
+                display.ssd1306_command(SSD1306_DISPLAYOFF);
+            #else
+                display.oled_command(SH110X_DISPLAYOFF);
+            #endif
+        #endif
     }
+}
+
+void displaySetBrightness(uint8_t brightness) {
+    #ifdef HAS_TFT
+        tft.setBrightness(brightness);
+    #endif
 }
 
 void displayShow(const String& header, const String& line1, const String& line2, int wait) {
