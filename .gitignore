@@ -24,6 +24,9 @@ docs/ASYNC_NAV_CORE0.md
 docs/UPDATE_WORKFLOW.html
 DEBUG_ASYNC_NAV.md
 
+# Local dev scripts
+update_version.sh
+
 # Pi session and temporary files
 docs/*.txt
 docs/*.log
