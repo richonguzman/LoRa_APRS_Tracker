@@ -393,7 +393,7 @@ namespace UIMapManager {
         static uint16_t gpsUpdateCounter = 0;
         bool positionChanged = false;
         
-        if (++gpsUpdateCounter >= 20) {
+        if (++gpsUpdateCounter >= 10) {
             gpsUpdateCounter = 0;
 
             float oldLat = gpsFilter.getFilteredOwnLat();
@@ -1113,9 +1113,7 @@ namespace UIMapManager {
         ESP_LOGI(TAG, "Recentering on GPS");
         map_follow_gps = true;
         float initLat, initLon;
-        if (gps.location.isValid()) {
-            initLat = gps.location.lat();
-            initLon = gps.location.lng();
+        if (gpsFilter.getUiPosition(&initLat, &initLon)) {
             ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", initLat, initLon);
         } else {
             initLat = (defaultLat != 0.0f) ? defaultLat : 42.9667f;

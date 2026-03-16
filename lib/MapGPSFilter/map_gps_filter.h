@@ -93,7 +93,7 @@ private:
     static constexpr float HDOP_FACTOR = 5.0f;
     static constexpr double MAX_SPEED_KMPH = 150.0;  // Supersonic rejection
     static constexpr double MIN_SPEED_KMPH = 1.5;    // Jitter filter
-    static constexpr float TRACE_MIN_DISTANCE = 0.0001f; // ~11 meters
+    static constexpr float TRACE_MIN_DISTANCE = 0.000027f; // ~3 meters
 };
 
 #endif // MAP_GPS_FILTER_H

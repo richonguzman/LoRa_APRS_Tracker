@@ -113,10 +113,10 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 }
 
 void MapGPSFilter::addOwnTracePoint() {
-    if (!filteredOwnValid) return; // No valid smoothed position yet
+    if (!iconGpsValid) return; // No valid GPS position yet
 
-    float lat = filteredOwnLat;
-    float lon = filteredOwnLon;
+    float lat = iconGpsLat;
+    float lon = iconGpsLon;
 
     // Ensure we only add a new point if we moved enough from the last trace point.
     // This prevents the buffer from filling up with identical points during standing updates.
@@ -143,11 +143,7 @@ void MapGPSFilter::addOwnTracePoint() {
 }
 
 bool MapGPSFilter::getUiPosition(float* lat, float* lon) const {
-    if (filteredOwnValid) {
-        *lat = filteredOwnLat;
-        *lon = filteredOwnLon;
-        return true;
-    } else if (iconGpsValid) {
+    if (iconGpsValid) {
         *lat = iconGpsLat;
         *lon = iconGpsLon;
         return true;
