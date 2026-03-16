@@ -366,6 +366,14 @@ void loop() {
         bool gps_loc_update  = gps.location.isUpdated();
         GPS_Utils::setDateFromData();
 
+        // Keep SD Logger timestamps accurate with GPS wall-clock time
+        if (gps_time_update && gps.time.isValid() && gps.date.isValid()) {
+            SD_Logger::setGpsTime(
+                gps.time.hour(), gps.time.minute(), gps.time.second(),
+                gps.date.day(),  gps.date.month(),  gps.date.year()
+            );
+        }
+
         int currentSpeed = (int) gps.speed.kmph();
 
         if (gps_loc_update) Utils::checkStatus();

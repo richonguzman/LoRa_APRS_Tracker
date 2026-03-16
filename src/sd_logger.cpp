@@ -7,6 +7,9 @@
 #include <esp_system.h>
 #include <rom/rtc.h>
 #include <sys/time.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 static const char *TAG = "SD_Log";
 
@@ -18,6 +21,84 @@ namespace SD_Logger {
 
     static bool initialized = false;
     static SemaphoreHandle_t sdLogMutex = nullptr;
+
+    // GPS wall-clock time state
+    static bool     gpsTimeSet       = false;
+    static uint8_t  gpsMonth         = 0;
+    static uint8_t  gpsDay           = 0;
+    static uint32_t gpsSecondsOfDay  = 0;   // seconds since midnight UTC at fix
+    static uint32_t millisAtGpsFix   = 0;   // millis() at the time of the fix
+
+    // vprintf hook state
+    static vprintf_like_t originalVprintf = nullptr;
+    static volatile bool  inSdHook        = false;
+
+    // Format timestamp: [MM-DD HH:MM:SS] with GPS, [+HHH:MM:SS.mmm] without
+    static void formatTimestamp(char* buf, size_t size) {
+        uint32_t now = millis();
+        if (gpsTimeSet) {
+            uint32_t elapsed   = (now - millisAtGpsFix) / 1000;
+            uint32_t totalSec  = gpsSecondsOfDay + elapsed;
+            uint8_t  h = (totalSec / 3600) % 24;
+            uint8_t  m = (totalSec / 60) % 60;
+            uint8_t  s = totalSec % 60;
+            snprintf(buf, size, "[%02u-%02u %02u:%02u:%02u]", gpsMonth, gpsDay, h, m, s);
+        } else {
+            uint32_t sec = now / 1000;
+            uint32_t ms  = now % 1000;
+            uint32_t hh  = sec / 3600;
+            uint8_t  mm  = (sec / 60) % 60;
+            uint8_t  ss  = sec % 60;
+            snprintf(buf, size, "[+%03lu:%02u:%02u.%03lu]", hh, mm, ss, ms);
+        }
+    }
+
+    // Strip ANSI escape codes in-place (e.g. "\033[0;32m" -> "")
+    static void stripAnsi(char* str) {
+        char *src = str, *dst = str;
+        while (*src) {
+            if (*src == '\033' && *(src + 1) == '[') {
+                src += 2;
+                while (*src && *src != 'm') src++;
+                if (*src == 'm') src++;
+            } else {
+                *dst++ = *src++;
+            }
+        }
+        *dst = '\0';
+    }
+
+    // vprintf hook: captures ESP_LOGW / ESP_LOGE to SD
+    static int sdLogVprintf(const char* format, va_list args) {
+        va_list args_copy;
+        va_copy(args_copy, args);
+        int ret = originalVprintf(format, args);  // serial output (consumes args)
+
+        if (initialized && !inSdHook && !xPortInIsrContext()) {
+            char buf[300];
+            vsnprintf(buf, sizeof(buf), format, args_copy);
+            stripAnsi(buf);
+            // Only persist W (warn) and E (error) levels — I/D/V are too noisy
+            if (buf[0] == 'W' || buf[0] == 'E') {
+                inSdHook = true;
+                if (sdLogMutex && xSemaphoreTake(sdLogMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+                    File f = SD.open(SD_LOG_FILE, FILE_APPEND);
+                    if (f) {
+                        char ts[18];
+                        formatTimestamp(ts, sizeof(ts));
+                        f.print(ts);
+                        f.print(' ');
+                        f.print(buf);
+                        f.close();
+                    }
+                    xSemaphoreGive(sdLogMutex);
+                }
+                inSdHook = false;
+            }
+        }
+        va_end(args_copy);
+        return ret;
+    }
 
     // Get reset reason as string
     static const char* getResetReasonString(esp_reset_reason_t reason) {
@@ -52,7 +133,21 @@ namespace SD_Logger {
         }
     }
 
+    void setGpsTime(uint8_t hour, uint8_t minute, uint8_t second,
+                    uint8_t day, uint8_t month, uint16_t year) {
+        gpsSecondsOfDay = (uint32_t)hour * 3600 + minute * 60 + second;
+        gpsDay          = day;
+        gpsMonth        = month;
+        millisAtGpsFix  = millis();
+        gpsTimeSet      = true;
+    }
+
     void init() {
+        // Install vprintf hook early — it guards itself with `initialized`
+        if (!originalVprintf) {
+            originalVprintf = esp_log_set_vprintf(sdLogVprintf);
+        }
+
         if (!STORAGE_Utils::isSDAvailable()) {
             ESP_LOGW(TAG, "SD not available, logging disabled");
             return;
@@ -98,9 +193,11 @@ namespace SD_Logger {
             default:       levelStr = "???? "; break;
         }
 
+        char ts[18];
+        formatTimestamp(ts, sizeof(ts));
         char logLine[256];
-        snprintf(logLine, sizeof(logLine), "[%010lu] %s %s: %s\n",
-                 millis(), levelStr, module, message);
+        snprintf(logLine, sizeof(logLine), "%s %s %s: %s\n",
+                 ts, levelStr, module, message);
 
         logFile.print(logLine);
         size_t currentSize = logFile.size();

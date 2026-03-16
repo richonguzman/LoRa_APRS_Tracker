@@ -20,6 +20,11 @@ namespace SD_Logger {
         CRITICAL
     };
 
+    // Set GPS wall-clock time (call once when GPS has a valid fix)
+    // Subsequent log entries will use HH:MM:SS UTC instead of raw uptime
+    void setGpsTime(uint8_t hour, uint8_t minute, uint8_t second,
+                    uint8_t day, uint8_t month, uint16_t year);
+
     // Log a message to SD card
     void log(LogLevel level, const char* module, const char* message);
     void logf(LogLevel level, const char* module, const char* format, ...);
