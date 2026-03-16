@@ -49,7 +49,7 @@ namespace SD_Logger {
             uint32_t hh  = sec / 3600;
             uint8_t  mm  = (sec / 60) % 60;
             uint8_t  ss  = sec % 60;
-            snprintf(buf, size, "[+%03lu:%02u:%02u.%03lu]", hh, mm, ss, ms);
+            snprintf(buf, size, "[+%03u:%02u:%02u.%03u]", hh, mm, ss, ms);
         }
     }
 
@@ -84,7 +84,7 @@ namespace SD_Logger {
                 if (sdLogMutex && xSemaphoreTake(sdLogMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
                     File f = SD.open(SD_LOG_FILE, FILE_APPEND);
                     if (f) {
-                        char ts[18];
+                        char ts[20];
                         formatTimestamp(ts, sizeof(ts));
                         f.print(ts);
                         f.print(' ');
@@ -193,7 +193,7 @@ namespace SD_Logger {
             default:       levelStr = "???? "; break;
         }
 
-        char ts[18];
+        char ts[20];
         formatTimestamp(ts, sizeof(ts));
         char logLine[256];
         snprintf(logLine, sizeof(logLine), "%s %s %s: %s\n",
