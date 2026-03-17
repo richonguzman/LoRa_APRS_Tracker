@@ -396,14 +396,14 @@ namespace UIMapManager {
         if (++gpsUpdateCounter >= 10) {
             gpsUpdateCounter = 0;
 
-            float oldLat = gpsFilter.getFilteredOwnLat();
-            float oldLon = gpsFilter.getFilteredOwnLon();
+            float oldLat = gpsFilter.getOwnLat();
+            float oldLon = gpsFilter.getOwnLon();
 
             gpsFilter.updateFilteredOwnPosition(gps);
             gpsFilter.addOwnTracePoint();
 
             // Trigger UI refresh if filtered position actually moved
-            if (gpsFilter.getFilteredOwnLat() != oldLat || gpsFilter.getFilteredOwnLon() != oldLon) {
+            if (gpsFilter.getOwnLat() != oldLat || gpsFilter.getOwnLon() != oldLon) {
                 positionChanged = true;
             }
             // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
@@ -698,10 +698,11 @@ namespace UIMapManager {
 
         stationHitZoneCount = 0;
 
-        // Own position — now updated every second by map_refresh_timer_cb
-        if (gpsFilter.isIconGpsValid()) {
+        // Own position — updated using the single source of truth
+        float uiLat, uiLon;
+        if (gpsFilter.getUiPosition(&uiLat, &uiLon)) {
             int myX, myY;
-            MapMath::latLonToPixel(gpsFilter.getIconGpsLat(), gpsFilter.getIconGpsLon(),
+            MapMath::latLonToPixel(uiLat, uiLon,
                           map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &myX, &myY);
             if (myX >= 0 && myX < MAP_SPRITE_SIZE && myY >= 0 && myY < MAP_SPRITE_SIZE) {
                 Beacon* currentBeacon = &Config.beacons[myBeaconsIndex];
@@ -2200,9 +2201,10 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             }
 
             // Append current GPS position as last point so trace always connects to icon
-            if (gpsFilter.isIconGpsValid()) {
+            float uiLat, uiLon;
+            if (gpsFilter.getUiPosition(&uiLat, &uiLon)) {
                 int cx, cy;
-                MapMath::latLonToPixel(gpsFilter.getIconGpsLat(), gpsFilter.getIconGpsLon(),
+                MapMath::latLonToPixel(uiLat, uiLon,
                               map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &cx, &cy);
                 trace_points[validPts++] = { (lv_coord_t)cx, (lv_coord_t)cy };
             }

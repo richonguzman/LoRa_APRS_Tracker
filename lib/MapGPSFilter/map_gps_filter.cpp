@@ -19,15 +19,9 @@ MapGPSFilter::MapGPSFilter() {
 }
 
 void MapGPSFilter::reset() {
-    iconGpsLat = 0.0f;
-    iconGpsLon = 0.0f;
-    iconGpsValid = false;
-    filteredOwnLat = 0.0f;
-    filteredOwnLon = 0.0f;
-    filteredOwnValid = false;
-    iconCentroidLat = 0.0f;
-    iconCentroidLon = 0.0f;
-    iconCentroidCount = 0;
+    ownPositionLat = 0.0f;
+    ownPositionLon = 0.0f;
+    ownPositionValid = false;
     lastValidTime = 0;
     ownTraceCount = 0;
     ownTraceHead = 0;
@@ -43,80 +37,48 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 
     float lat = gps.location.lat();
     float lon = gps.location.lng();
-    int sats = gps.satellites.value();
-
-    // Level 1: icon display (≥3 sats = 2D fix minimum)
-    if (sats >= 3) {
-        iconGpsLat = lat;
-        iconGpsLon = lon;
-        iconGpsValid = true;
-    }
-
-    // Level 2: filtered position for trace + recentering (≥6 sats)
-    if (sats < 6) return;
-
     uint32_t now = MILLIS();
 
-    // First valid filtered position
-    if (!filteredOwnValid) {
-        filteredOwnLat = lat;
-        filteredOwnLon = lon;
-        filteredOwnValid = true;
-        iconCentroidLat = lat;
-        iconCentroidLon = lon;
-        iconCentroidCount = 1;
+    // Initialisation si c'est la première position valide
+    if (!ownPositionValid) {
+        ownPositionLat = lat;
+        ownPositionLon = lon;
+        ownPositionValid = true;
         lastValidTime = now;
         return;
     }
 
-    // 1. JUMP FILTER (Supersonic Spike Rejection > 150 km/h)
-    double distMeters = TinyGPSPlus::distanceBetween(filteredOwnLat, filteredOwnLon, lat, lon);
+    // 1. Filtre anti-saut spatial absolu (Supersonic Spike Rejection)
+    double distMeters = TinyGPSPlus::distanceBetween(ownPositionLat, ownPositionLon, lat, lon);
     double dtSeconds = (now - lastValidTime) / 1000.0;
     if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
         double speedKmph = (distMeters / dtSeconds) * 3.6;
-        if (speedKmph > MAX_SPEED_KMPH) {
+        if (speedKmph > MAX_SPEED_KMPH) { // Vitesse impossible (>150km/h) -> saut GPS
             ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
-            return; // Reject aberrant jump
+            return; // On rejette purement et simplement ce point. Rien ne bouge.
         }
     }
     lastValidTime = now;
 
-    // 2. JITTER FILTER (Doppler Speed Stop < 1.5 km/h)
-    if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) return;
-
-    // Update running centroid with every GPS reading
-    float alpha = (iconCentroidCount < 10) ? 1.0f / (iconCentroidCount + 1) : 0.1f;
-    iconCentroidLat += alpha * (lat - iconCentroidLat);
-    iconCentroidLon += alpha * (lon - iconCentroidLon);
-    iconCentroidCount++;
-
-    // Threshold: 15m min, +5m per HDOP unit
-    float hdop = gps.hdop.isValid() ? gps.hdop.hdop() : 2.0f;
-    float thresholdM = fmax(MIN_THRESHOLD_M, hdop * HDOP_FACTOR);
-    float thresholdLat = thresholdM / 111320.0f;
-    float thresholdLon = thresholdM / (111320.0f * cosf(lat * M_PI / 180.0f));
-
-    // Compare the *current smoothed centroid* against the *last published filteredOwn position*.
-    // Only update filteredOwn if the centroid has moved significantly beyond the threshold.
-    // This ensures filteredOwn is stable for trace/centering, and only "snaps" when truly needed.
-    if (fabs(iconCentroidLat - filteredOwnLat) > thresholdLat || 
-        fabs(iconCentroidLon - filteredOwnLon) > thresholdLon) {
-        ESP_LOGD(TAG, "Filtered GPS snapped: Centroid (%.6f,%.6f) -> Filtered (%.6f,%.6f) - DeltaLat:%.6f, DeltaLon:%.6f",
-                      iconCentroidLat, iconCentroidLon, filteredOwnLat, filteredOwnLon,
-                      fabs(iconCentroidLat - filteredOwnLat), fabs(iconCentroidLon - filteredOwnLon));
-        filteredOwnLat = iconCentroidLat; // filteredOwn "snaps" to the current smoothed centroid
-        filteredOwnLon = iconCentroidLon;
-        // IMPORTANT: Do NOT reset iconCentroidLat/Lon here. It's a continuous average.
-        // Resetting it would re-introduce the jumping.
+    // 2. Filtre anti-gigue à l'arrêt (Jitter Filter)
+    if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
+         return; // A l'arrêt, on ne met rien à jour pour figer la carte et l'icone
     }
-    // If the centroid is within threshold, filteredOwn remains unchanged, ensuring stability.
+
+    // 3. Lissage fluide (Interpolation / Low-pass filter)
+    float alpha = 0.5f; // Valeur de base (moitié position courante / moitié nouvelle position)
+    if (gps.hdop.isValid()) {
+        float hdop = fmax(1.0f, gps.hdop.hdop());
+        alpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0 (direct). HDOP 5 = alpha 0.2 (très lissé).
+    }
+
+    ownPositionLat += alpha * (lat - ownPositionLat);
+    ownPositionLon += alpha * (lon - ownPositionLon);
 }
 
 void MapGPSFilter::addOwnTracePoint() {
-    if (!iconGpsValid) return; // No valid GPS position yet
-
-    float lat = iconGpsLat;
-    float lon = iconGpsLon;
+    float lat, lon;
+    if (!getUiPosition(&lat, &lon)) return; // No valid GPS position yet
 
     // Ensure we only add a new point if we moved enough from the last trace point.
     // This prevents the buffer from filling up with identical points during standing updates.
@@ -143,9 +105,9 @@ void MapGPSFilter::addOwnTracePoint() {
 }
 
 bool MapGPSFilter::getUiPosition(float* lat, float* lon) const {
-    if (iconGpsValid) {
-        *lat = iconGpsLat;
-        *lon = iconGpsLon;
+    if (ownPositionValid) {
+        *lat = ownPositionLat;
+        *lon = ownPositionLon;
         return true;
     }
     return false;
