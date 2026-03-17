@@ -11,6 +11,7 @@
 #define MILLIS() millis()
 #endif
 #include <cmath>
+#include "sd_logger.h"
 
 static const char* TAG = "MapGPSFilter";
 
@@ -26,6 +27,8 @@ void MapGPSFilter::reset() {
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
+    lastDeltaMeters = 0.0f;
+    lastAlpha = 0.0f;
 }
 
 void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
@@ -39,7 +42,7 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     float lon = gps.location.lng();
     uint32_t now = MILLIS();
 
-    // Initialisation si c'est la première position valide
+    // Initialization if this is the first valid position
     if (!ownPositionValid) {
         ownPositionLat = lat;
         ownPositionLon = lon;
@@ -53,27 +56,39 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     double dtSeconds = (now - lastValidTime) / 1000.0;
     if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
         double speedKmph = (distMeters / dtSeconds) * 3.6;
-        if (speedKmph > MAX_SPEED_KMPH) { // Vitesse impossible (>150km/h) -> saut GPS
+        if (speedKmph > MAX_SPEED_KMPH) { // Impossible speed (>150km/h) -> GPS jump
             ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
-            return; // On rejette purement et simplement ce point. Rien ne bouge.
+            return; // Reject this point entirely. Nothing moves.
         }
     }
     lastValidTime = now;
 
     // 2. Filtre anti-gigue à l'arrêt (Jitter Filter)
     if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
-         return; // A l'arrêt, on ne met rien à jour pour figer la carte et l'icone
+         return; // When stationary, do not update to freeze map and icon
     }
 
-    // 3. Lissage fluide (Interpolation / Low-pass filter)
-    float alpha = 0.5f; // Valeur de base (moitié position courante / moitié nouvelle position)
+    // 3. Smooth Interpolation (Low-pass filter)
+    float currentAlpha = 0.5f;
     if (gps.hdop.isValid()) {
         float hdop = fmax(1.0f, gps.hdop.hdop());
-        alpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0 (direct). HDOP 5 = alpha 0.2 (très lissé).
+        currentAlpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0 (direct). HDOP 5 = alpha 0.2 (heavily smoothed).
     }
 
-    ownPositionLat += alpha * (lat - ownPositionLat);
-    ownPositionLon += alpha * (lon - ownPositionLon);
+    ownPositionLat += currentAlpha * (lat - ownPositionLat);
+    ownPositionLon += currentAlpha * (lon - ownPositionLon);
+
+    // Diagnostics: distance entre GPS brut et position filtrée
+    lastDeltaMeters = (float)TinyGPSPlus::distanceBetween(lat, lon, ownPositionLat, ownPositionLon);
+    lastAlpha = currentAlpha;
+
+    // Log CSV sur SD: gps_lat,gps_lon,speed_kmh,hdop,alpha,filt_lat,filt_lon,delta_m
+    char logLine[256];
+    snprintf(logLine, sizeof(logLine), "%.6f,%.6f,%.2f,%.1f,%.2f,%.6f,%.6f,%.1f",
+             lat, lon, gps.speed.kmph(),
+             gps.hdop.isValid() ? gps.hdop.hdop() : 0.0f,
+             currentAlpha, ownPositionLat, ownPositionLon, lastDeltaMeters);
+    SD_Logger::log(SD_Logger::INFO, "GPS_DEBUG", logLine);
 }
 
 void MapGPSFilter::addOwnTracePoint() {

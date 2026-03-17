@@ -59,8 +59,13 @@ public:
     // Clear all trace points (for reset/clear functionality)
     void clearTrace();
 
+    // Diagnostic getters (updated each call to updateFilteredOwnPosition)
+    float getLastDeltaMeters() const { return lastDeltaMeters; }
+    float getLastAlpha()       const { return lastAlpha; }
 
     private:
+        float lastDeltaMeters; // Distance in meters between raw GPS and filtered position
+        float lastAlpha;       // Alpha value used for smoothing
         // Own filtered position (The single source of truth for UI, trace, and recentering)
         float ownPositionLat;
         float ownPositionLon;

@@ -36,6 +36,7 @@
 #include "gpx_writer.h"
 #include "map_coordinate_math.h" // New module for coordinate math
 #include "map_gps_filter.h"      // New module for GPS filtering and trace
+#include "sd_logger.h"           // For SD logging of GPS diagnostics
 #include <esp_task_wdt.h> //
 #include <esp_log.h>
 
@@ -299,8 +300,9 @@ namespace UIMapManager {
 
         if (map_info_label) {
             char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
-                     map_center_lat, map_center_lon, mapStationsCount);
+            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stn: %d Δ%.1fm α%.2f",
+                     map_center_lat, map_center_lon, mapStationsCount,
+                     gpsFilter.getLastDeltaMeters(), gpsFilter.getLastAlpha());
             lv_label_set_text(map_info_label, info_text);
         }
 
@@ -336,8 +338,9 @@ namespace UIMapManager {
 
         if (map_info_label) {
             char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stations: %d",
-                     map_center_lat, map_center_lon, mapStationsCount);
+            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stn: %d Δ%.1fm α%.2f",
+                     map_center_lat, map_center_lon, mapStationsCount,
+                     gpsFilter.getLastDeltaMeters(), gpsFilter.getLastAlpha());
             lv_label_set_text(map_info_label, info_text);
         }
 
@@ -1484,11 +1487,7 @@ namespace UIMapManager {
             velocityX = 0.0f;
             velocityY = 0.0f;
 
-            // NEW: If map_follow_gps is active, disable it when user starts to pan manually.
-            if (map_follow_gps) {
-                map_follow_gps = false;
-                ESP_LOGD(TAG, "map_follow_gps DISABLED due to manual pan (PRESSED event).");
-            }
+            // map_follow_gps is disabled only when a real drag is confirmed (see PRESSING).
             break;
 
         case LV_EVENT_PRESSING: {
@@ -1500,8 +1499,12 @@ namespace UIMapManager {
             if (!dragStarted) {
                 if (abs(dx) > START_THRESHOLD || abs(dy) > START_THRESHOLD) {
                     dragStarted = true;
-                    // User took manual control via touch drag. Cancel any pending
-                    // automatic recenter/zoom offset reset to prevent jumping.
+                    // User took manual control via touch drag — disable GPS follow.
+                    if (map_follow_gps) {
+                        map_follow_gps = false;
+                        ESP_LOGD(TAG, "map_follow_gps DISABLED due to confirmed drag.");
+                    }
+                    // Cancel any pending automatic recenter to prevent jumping.
                     pendingResetPan = false;
                 }
             }
