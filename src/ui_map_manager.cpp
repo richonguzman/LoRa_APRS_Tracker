@@ -406,6 +406,12 @@ namespace UIMapManager {
             if (gpsFilter.getFilteredOwnLat() != oldLat || gpsFilter.getFilteredOwnLon() != oldLon) {
                 positionChanged = true;
             }
+            // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
+            // Below 1.5: stationary jitter filter applies. Above 150: GPS spike rejected.
+            if (map_follow_gps && gps.speed.isValid()
+                    && gps.speed.kmph() > 1.5 && gps.speed.kmph() < 150.0) {
+                positionChanged = true;
+            }
         }
 
         // 2. Periodic station refresh (received stations every ~10s OR own station moved)
