@@ -37,7 +37,11 @@
              (donations : http://paypal.me/richonguzman)
 ____________________________________________________________________*/
 
+#ifdef UNIT_TEST
+#include "mock_esp_log.h"
+#else
 #include <esp_log.h>
+#endif
 static const char *TAG = "Main";
 
 #include <BluetoothSerial.h>

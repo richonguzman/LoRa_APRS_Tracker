@@ -16,7 +16,11 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifdef UNIT_TEST
+#include "mock_esp_log.h"
+#else
 #include <esp_log.h>
+#endif
 static const char *TAG = "APRS_IS";
 
 #include <WiFi.h>

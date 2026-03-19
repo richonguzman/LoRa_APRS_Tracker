@@ -16,12 +16,18 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifdef UNIT_TEST
+#include "mock_esp_log.h"
+#else
 #include <esp_log.h>
+#endif
 static const char *TAG = "Station";
 
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
+#ifndef UNIT_TEST
 #include <SPIFFS.h>
+#endif
 #include "telemetry_utils.h"
 #include "station_utils.h"
 #include "battery_utils.h"

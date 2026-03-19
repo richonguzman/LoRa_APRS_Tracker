@@ -96,12 +96,9 @@ protected:
 };
 
 TEST_F(MapGPSFilterTest, InitialState) {
-    EXPECT_FALSE(filter.isFilteredOwnValid());
-    EXPECT_FALSE(filter.isIconGpsValid());
-    EXPECT_EQ(0.0f, filter.getIconGpsLat());
-    EXPECT_EQ(0.0f, filter.getIconGpsLon());
-    EXPECT_EQ(0.0f, filter.getFilteredOwnLat());
-    EXPECT_EQ(0.0f, filter.getFilteredOwnLon());
+    EXPECT_FALSE(filter.isOwnPositionValid());
+    EXPECT_EQ(0.0f, filter.getOwnLat());
+    EXPECT_EQ(0.0f, filter.getOwnLon());
     EXPECT_EQ(0, filter.getOwnTraceCount());
     EXPECT_EQ(0, filter.getOwnTraceHead());
 
@@ -114,8 +111,7 @@ TEST_F(MapGPSFilterTest, UpdateWithInvalidLocation) {
     feedGPS(gps, 0.0, 0.0, 0, 99.9, 0.0, false);
     filter.updateFilteredOwnPosition(gps);
 
-    EXPECT_FALSE(filter.isFilteredOwnValid());
-    EXPECT_FALSE(filter.isIconGpsValid());
+    EXPECT_FALSE(filter.isOwnPositionValid());
 }
 
 TEST_F(MapGPSFilterTest, UpdateWithLowSatellites) {
@@ -123,8 +119,7 @@ TEST_F(MapGPSFilterTest, UpdateWithLowSatellites) {
     feedGPS(gps, 37.7749, -122.4194, 2, 1.0);
     filter.updateFilteredOwnPosition(gps);
 
-    EXPECT_FALSE(filter.isIconGpsValid());
-    EXPECT_FALSE(filter.isFilteredOwnValid());
+    EXPECT_FALSE(filter.isOwnPositionValid());
 }
 
 TEST_F(MapGPSFilterTest, UpdateWithIconSatellites) {
@@ -132,10 +127,9 @@ TEST_F(MapGPSFilterTest, UpdateWithIconSatellites) {
     feedGPS(gps, 37.7749, -122.4194, 4, 1.0);
     filter.updateFilteredOwnPosition(gps);
 
-    EXPECT_TRUE(filter.isIconGpsValid());
-    EXPECT_NEAR(37.7749f, filter.getIconGpsLat(), 0.0001f);
-    EXPECT_NEAR(-122.4194f, filter.getIconGpsLon(), 0.0001f);
-    EXPECT_FALSE(filter.isFilteredOwnValid());
+    EXPECT_TRUE(filter.isOwnPositionValid());
+    EXPECT_NEAR(37.7749f, filter.getOwnLat(), 0.0001f);
+    EXPECT_NEAR(-122.4194f, filter.getOwnLon(), 0.0001f);
 }
 
 TEST_F(MapGPSFilterTest, FirstFilteredUpdate) {
@@ -143,10 +137,9 @@ TEST_F(MapGPSFilterTest, FirstFilteredUpdate) {
     feedGPS(gps, 37.7750, -122.4195, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps);
 
-    EXPECT_TRUE(filter.isFilteredOwnValid());
-    EXPECT_NEAR(37.7750f, filter.getFilteredOwnLat(), 0.0001f);
-    EXPECT_NEAR(-122.4195f, filter.getFilteredOwnLon(), 0.0001f);
-    EXPECT_TRUE(filter.isIconGpsValid());
+    EXPECT_TRUE(filter.isOwnPositionValid());
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
+    EXPECT_NEAR(-122.4195f, filter.getOwnLon(), 0.0001f);
 }
 
 TEST_F(MapGPSFilterTest, SmallMovementNoUpdate) {
@@ -158,8 +151,8 @@ TEST_F(MapGPSFilterTest, SmallMovementNoUpdate) {
     feedGPS(gps_small, 37.7750 + 0.00005, -122.4195 + 0.00005, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_small);
 
-    EXPECT_NEAR(37.7750f, filter.getFilteredOwnLat(), 0.0001f);
-    EXPECT_NEAR(-122.4195f, filter.getFilteredOwnLon(), 0.0001f);
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
+    EXPECT_NEAR(-122.4195f, filter.getOwnLon(), 0.0001f);
 }
 
 TEST_F(MapGPSFilterTest, LargeMovementUpdate) {
@@ -171,8 +164,8 @@ TEST_F(MapGPSFilterTest, LargeMovementUpdate) {
     feedGPS(gps_large, 37.7750 + 0.001, -122.4195 + 0.001, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_large);
 
-    EXPECT_NEAR(37.7755f, filter.getFilteredOwnLat(), 0.0001f);
-    EXPECT_NEAR(-122.4190f, filter.getFilteredOwnLon(), 0.0001f);
+    EXPECT_NEAR(37.7755f, filter.getOwnLat(), 0.0001f);
+    EXPECT_NEAR(-122.4190f, filter.getOwnLon(), 0.0001f);
 }
 
 TEST_F(MapGPSFilterTest, AddTracePoint) {
@@ -265,8 +258,7 @@ TEST_F(MapGPSFilterTest, ResetClearsAll) {
 
     filter.reset();
 
-    EXPECT_FALSE(filter.isFilteredOwnValid());
-    EXPECT_FALSE(filter.isIconGpsValid());
+    EXPECT_FALSE(filter.isOwnPositionValid());
     EXPECT_EQ(0, filter.getOwnTraceCount());
     float lat, lon;
     EXPECT_FALSE(filter.getUiPosition(&lat, &lon));
@@ -288,10 +280,10 @@ TEST_F(MapGPSFilterTest, JumpFilterReject) {
     filter.updateFilteredOwnPosition(gps_jump);
 
     // Doit rejeter, position inchangée
-    EXPECT_NEAR(37.7750f, filter.getFilteredOwnLat(), 0.0001f);
-}
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
+    }
 
-TEST_F(MapGPSFilterTest, JumpFilterAccept) {
+    TEST_F(MapGPSFilterTest, JumpFilterAccept) {
     TinyGPSPlus gps_first;
     feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_first);
@@ -307,10 +299,10 @@ TEST_F(MapGPSFilterTest, JumpFilterAccept) {
     filter.updateFilteredOwnPosition(gps_accept);
 
     // Doit accepter et updater (centroïde)
-    EXPECT_GT(filter.getFilteredOwnLat(), 37.7750f);
-}
+    EXPECT_GT(filter.getOwnLat(), 37.7750f);
+    }
 
-TEST_F(MapGPSFilterTest, JitterFilterReject) {
+    TEST_F(MapGPSFilterTest, JitterFilterReject) {
     TinyGPSPlus gps_first;
     feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_first);
@@ -320,10 +312,10 @@ TEST_F(MapGPSFilterTest, JitterFilterReject) {
     filter.updateFilteredOwnPosition(gps_jitter);
 
     // Doit rejeter, position inchangée
-    EXPECT_NEAR(37.7750f, filter.getFilteredOwnLat(), 0.0001f);
-}
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
+    }
 
-TEST_F(MapGPSFilterTest, CentroidSmoothing) {
+    TEST_F(MapGPSFilterTest, CentroidSmoothing) {
     TinyGPSPlus gps_first;
     feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_first);
@@ -333,8 +325,8 @@ TEST_F(MapGPSFilterTest, CentroidSmoothing) {
     feedGPS(gps_second, 37.7760, -122.4205, 7, 1.0, 10.0);
     filter.updateFilteredOwnPosition(gps_second);
 
-    EXPECT_NEAR(37.7755f, filter.getFilteredOwnLat(), 0.0001f);
-    EXPECT_NEAR(-122.42f, filter.getFilteredOwnLon(), 0.0001f);
+    EXPECT_NEAR(37.7755f, filter.getOwnLat(), 0.0001f);
+    EXPECT_NEAR(-122.42f, filter.getOwnLon(), 0.0001f);
 
     // Ajouter jusqu'à >10 points: alpha=0.1
     for (int i = 0; i < 10; ++i) {
@@ -343,8 +335,8 @@ TEST_F(MapGPSFilterTest, CentroidSmoothing) {
         filter.updateFilteredOwnPosition(gps_more);
     }
     // Alpha=0.1 pour les derniers, centroïde converge lentement
-    EXPECT_GT(filter.getFilteredOwnLat(), 37.7755f);
-}
+    EXPECT_GT(filter.getOwnLat(), 37.7755f);
+    }
 
 TEST_F(MapGPSFilterTest, HdopThreshold) {
     TinyGPSPlus gps_first;
@@ -355,13 +347,13 @@ TEST_F(MapGPSFilterTest, HdopThreshold) {
     feedGPS(gps_small, 37.7750 + 0.000045, -122.4195, 7, 2.0, 10.0);
     filter.updateFilteredOwnPosition(gps_small);
 
-    EXPECT_NEAR(37.7750f, filter.getFilteredOwnLat(), 0.0001f);
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
 
     TinyGPSPlus gps_large;
     feedGPS(gps_large, 37.7750 + 0.0004, -122.4195, 7, 2.0, 10.0);
     filter.updateFilteredOwnPosition(gps_large);
 
-    EXPECT_GT(filter.getFilteredOwnLat(), 37.7750f);
+    EXPECT_GT(filter.getOwnLat(), 37.7750f);
 }
 
 TEST_F(MapGPSFilterTest, InvalidHdopDefault) {
@@ -373,7 +365,102 @@ TEST_F(MapGPSFilterTest, InvalidHdopDefault) {
     feedGPS(gps_no_hdop, 37.7760, -122.4205, 7, 1.0, 10.0, true, false);
     filter.updateFilteredOwnPosition(gps_no_hdop);
 
-    EXPECT_NEAR(37.7755f, filter.getFilteredOwnLat(), 0.0001f);
+    EXPECT_NEAR(37.7755f, filter.getOwnLat(), 0.0001f);
+}
+
+// Test: vitesse GPS invalide -> le filtre anti-gigue ne doit PAS bloquer
+TEST_F(MapGPSFilterTest, InvalidSpeedDoesNotBlock) {
+    TinyGPSPlus gps_first;
+    feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
+    filter.updateFilteredOwnPosition(gps_first);
+
+    // Deuxième point avec vitesse invalide (valid_speed = false)
+    // Simuler un petit déplacement (0.0001 deg ~11m) en 1 seconde
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 1000;
+#endif
+    TinyGPSPlus gps_invalid_speed;
+    feedGPS(gps_invalid_speed, 37.7751, -122.4196, 7, 1.0, 0.0, true, true, false); // vitesse invalide
+    filter.updateFilteredOwnPosition(gps_invalid_speed);
+
+    // Le point devrait être accepté car le filtre anti-gigue nécessite une vitesse valide
+    EXPECT_NEAR(37.77505f, filter.getOwnLat(), 0.0001f); // alpha=0.5 => moyenne
+}
+
+// Test: poor signal freeze (HDOP > 8 et vitesse < 5 km/h) -> doit rejeter
+TEST_F(MapGPSFilterTest, PoorSignalFreeze) {
+    TinyGPSPlus gps_first;
+    feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
+    filter.updateFilteredOwnPosition(gps_first);
+
+    // Point avec mauvais HDOP et faible vitesse
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 1000;
+#endif
+    TinyGPSPlus gps_poor;
+    feedGPS(gps_poor, 37.7751, -122.4196, 7, 10.0, 3.0); // HDOP=10, speed=3 km/h
+    filter.updateFilteredOwnPosition(gps_poor);
+
+    // Doit être rejeté (position inchangée)
+    EXPECT_NEAR(37.7750f, filter.getOwnLat(), 0.0001f);
+}
+
+// Test: poor signal freeze ne s'applique pas si vitesse >= 5 km/h
+TEST_F(MapGPSFilterTest, PoorSignalFreezeNotWhenMoving) {
+    TinyGPSPlus gps_first;
+    feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
+    filter.updateFilteredOwnPosition(gps_first);
+
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 1000;
+#endif
+    TinyGPSPlus gps_poor_fast;
+    feedGPS(gps_poor_fast, 37.7751, -122.4196, 7, 10.0, 6.0); // HDOP=10, speed=6 km/h
+    filter.updateFilteredOwnPosition(gps_poor_fast);
+
+    // Doit être accepté (car vitesse >= 5 km/h)
+    EXPECT_GT(filter.getOwnLat(), 37.7750f);
+}
+
+// Test: saut modéré à l'arrêt (<150 km/h mais >20 m) avec vitesse invalide
+// Ce saut devrait passer car aucun filtre ne le bloque actuellement
+TEST_F(MapGPSFilterTest, ModerateJumpAtStationaryPasses) {
+    TinyGPSPlus gps_first;
+    feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
+    filter.updateFilteredOwnPosition(gps_first);
+
+    // Saut de 30 m en 1 seconde (108 km/h) avec vitesse invalide
+    // 30 m ~ 0.00027 deg
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 1000;
+#endif
+    TinyGPSPlus gps_jump;
+    feedGPS(gps_jump, 37.7750 + 0.00027, -122.4195, 7, 1.0, 0.0, true, true, false); // vitesse invalide
+    filter.updateFilteredOwnPosition(gps_jump);
+
+    // Actuellement, ce saut est accepté (bug potentiel)
+    // On vérifie que le filtre a mis à jour (alpha=0.5)
+    EXPECT_GT(filter.getOwnLat(), 37.7750f);
+}
+
+// Test: intervalle long (>120 s) désactive le rejet suprasonique
+TEST_F(MapGPSFilterTest, LongIntervalDisablesSpeedCheck) {
+    TinyGPSPlus gps_first;
+    feedGPS(gps_first, 37.7750, -122.4195, 7, 1.0, 10.0);
+    filter.updateFilteredOwnPosition(gps_first);
+
+    // Attendre >120 secondes
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 121000; // 121 secondes
+#endif
+    // Déplacement énorme (1 degré ~111 km) en 121 secondes => vitesse ~3300 km/h
+    // Mais dt > 120s donc le calcul de vitesse n'est pas fait
+    TinyGPSPlus gps_huge;
+    feedGPS(gps_huge, 38.7750, -122.4195, 7, 1.0, 10.0); // +1 degré
+    filter.updateFilteredOwnPosition(gps_huge);
+
+    // Le saut devrait être accepté (car dt > 120s)
+    EXPECT_GT(filter.getOwnLat(), 38.0f);
 }
 
 #if defined(UNIT_TEST)

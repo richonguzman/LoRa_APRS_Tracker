@@ -21,7 +21,9 @@
 
 #include <Arduino.h>
 #include <vector>
+#ifndef UNIT_TEST
 #include <FS.h>
+#endif
 
 class WiFi_AP {
 public:

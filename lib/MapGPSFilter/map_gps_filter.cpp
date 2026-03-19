@@ -98,12 +98,14 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     lastAlpha = currentAlpha;
 
     // Log CSV sur SD: gps_lat,gps_lon,speed_kmh,hdop,alpha,filt_lat,filt_lon,delta_m
+#ifndef UNIT_TEST
     char logLine[256];
     snprintf(logLine, sizeof(logLine), "%.6f,%.6f,%.2f,%.1f,%.2f,%.6f,%.6f,%.1f",
              lat, lon, gps.speed.kmph(),
              gps.hdop.isValid() ? gps.hdop.hdop() : 0.0f,
              currentAlpha, ownPositionLat, ownPositionLon, lastDeltaMeters);
     SD_Logger::log(SD_Logger::INFO, "GPS_DEBUG", logLine);
+#endif
 }
 
 void MapGPSFilter::addOwnTracePoint() {
@@ -155,7 +157,14 @@ void MapGPSFilter::compactTrace() {
     keep[halfCount - 1] = true;  // Always keep boundary point
 
     // Epsilon ~0.0002 degrees (~22m) preserves route shape
+#ifndef UNIT_TEST
     STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.0002f);
+#else
+    // Mock simplification for unit tests: keep all points
+    for (int i = 0; i < halfCount; i++) {
+        keep[i] = true;
+    }
+#endif
 
     // Rebuild: kept points from first half + all points from second half
     int writeIdx = 0;
