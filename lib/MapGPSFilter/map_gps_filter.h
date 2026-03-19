@@ -63,6 +63,8 @@ public:
     float getLastDeltaMeters() const { return lastDeltaMeters; }
     float getLastAlpha()       const { return lastAlpha; }
 
+        static constexpr int OWN_TRACE_MAX_POINTS = 500;
+
     private:
         float lastDeltaMeters; // Distance in meters between raw GPS and filtered position
         float lastAlpha;       // Alpha value used for smoothing
@@ -71,17 +73,13 @@ public:
         float ownPositionLon;
         bool ownPositionValid;
         uint32_t lastValidTime;    // For speed calculation
-        uint8_t  consecutiveJumps; // Counts consecutive spike rejections
-
-        // Own GPS trace (circular buffer, larger than station traces)
-        static constexpr int OWN_TRACE_MAX_POINTS = 500;
+        // Own GPS trace (circular buffer)
         TracePoint ownTrace[OWN_TRACE_MAX_POINTS];
         uint16_t ownTraceCount;
         uint16_t ownTraceHead;
 
-        // Constants (matching original thresholds)
-        static constexpr double MAX_SPEED_KMPH = 150.0;  // Supersonic rejection
-        static constexpr uint8_t JUMP_ACCEPT_AFTER = 10; // Accept after 10 consecutive rejections (~5s)
+        // Constants
+        static constexpr double MAX_SPEED_KMPH = 150.0;  // Spike rejection
         static constexpr double MIN_SPEED_KMPH = 1.5;    // Jitter filter
         static constexpr float TRACE_MIN_DISTANCE = 0.000027f; // ~3 meters
 };

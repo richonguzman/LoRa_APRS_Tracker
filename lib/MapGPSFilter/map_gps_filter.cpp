@@ -24,7 +24,6 @@ void MapGPSFilter::reset() {
     ownPositionLon = 0.0f;
     ownPositionValid = false;
     lastValidTime = 0;
-    consecutiveJumps = 0;
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
@@ -57,24 +56,9 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     double dtSeconds = (now - lastValidTime) / 1000.0;
     if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
         double speedKmph = (distMeters / dtSeconds) * 3.6;
-        if (speedKmph > MAX_SPEED_KMPH) { // Impossible speed (>150km/h) -> GPS jump
-            consecutiveJumps++;
-            if (consecutiveJumps < JUMP_ACCEPT_AFTER) {
-                ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h) [%d]", distMeters, dtSeconds, speedKmph, consecutiveJumps);
-                return; // Reject this point
-            }
-            // Force-accept only if GPS reports actual motion (not a stationary bad fix)
-            float gpsSpeed = gps.speed.isValid() ? gps.speed.kmph() : 0.0f;
-            if (gpsSpeed < 5.0f) {
-                // Stationary or near-stationary: GPS hallucinating, keep rejecting
-                ESP_LOGW(TAG, "GPS re-fix suppressed (stationary, speed=%.1f km/h): %.1fm", gpsSpeed, distMeters);
-                return;
-            }
-            // Moving + stable new position: legitimate re-fix after signal loss
-            ESP_LOGW(TAG, "GPS re-fix accepted after %d retries: %.1fm", consecutiveJumps, distMeters);
-            consecutiveJumps = 0;
-        } else {
-            consecutiveJumps = 0;
+        if (speedKmph > MAX_SPEED_KMPH) {
+            ESP_LOGW(TAG, "GPS Jump rejected: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
+            return;
         }
     }
     lastValidTime = now;

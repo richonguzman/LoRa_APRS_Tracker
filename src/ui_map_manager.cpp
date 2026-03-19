@@ -1328,6 +1328,18 @@ namespace UIMapManager {
         pendingResetPan = true;
     }
 
+    // Commit the visual center (accounting for pan offset + navSubTile) to map_center_lat/lon.
+    // Must be called before zoom change so the new zoom is centered on what the user sees.
+    static inline void commitVisualCenter() {
+        int visualCenterPx = MAP_SPRITE_SIZE / 2 + offsetX + navSubTileX;
+        int visualCenterPy = MAP_SPRITE_SIZE / 2 + offsetY + navSubTileY;
+        MapMath::pixelToLatLon(visualCenterPx, visualCenterPy,
+                               map_current_zoom, navModeActive,
+                               centerTileX, centerTileY,
+                               map_center_lat, map_center_lon,
+                               &map_center_lat, &map_center_lon);
+    }
+
     // Helper: resync centerTile to current map_center at new zoom, then reset offset.
     // Call after changing map_current_zoom.
     static inline void resetZoom() {
@@ -1342,6 +1354,7 @@ namespace UIMapManager {
             (map_zoom_index >= map_zoom_count - 1 ||
              map_available_zooms[map_zoom_index + 1] > nav_zooms[0])) {
             // Next raster zoom would skip over NAV start — switch to NAV
+            commitVisualCenter();
             switchZoomTable(nav_zooms, nav_zoom_count);
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
@@ -1350,6 +1363,7 @@ namespace UIMapManager {
             resetZoom();
             redraw_map_canvas();
         } else if (map_zoom_index < map_zoom_count - 1) {
+            commitVisualCenter();
             map_zoom_index++;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom in: %d", map_current_zoom);
@@ -1363,6 +1377,7 @@ namespace UIMapManager {
     // Map zoom out handler
     void btn_map_zoomout_clicked(lv_event_t* e) {
         if (map_zoom_index > 0) {
+            commitVisualCenter();
             map_zoom_index--;
             map_current_zoom = map_available_zooms[map_zoom_index];
             ESP_LOGI(TAG, "Zoom out: %d", map_current_zoom);
@@ -1372,6 +1387,7 @@ namespace UIMapManager {
             redraw_map_canvas();
         } else if (navModeActive) {
             // At min NAV zoom — switch to raster
+            commitVisualCenter();
             navModeActive = false;
             MapEngine::clearTileCache();
             switchZoomTable(raster_zooms, raster_zoom_count);

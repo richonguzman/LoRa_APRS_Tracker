@@ -73,6 +73,15 @@ void shiftMapCenter(float centerLat, float centerLon, int zoom,
                     int deltaTileX, int deltaTileY,
                     float* newLat, float* newLon);
 
+/**
+ * Convert canvas pixel coordinates back to latitude/longitude (inverse Mercator)
+ * Works for both NAV and raster modes.
+ */
+void pixelToLatLon(int pixelX, int pixelY, int zoom, bool navModeActive,
+                   int centerTileX, int centerTileY,
+                   float centerLat, float centerLon,
+                   float* lat, float* lon);
+
 } // namespace MapMath
 
 #endif // MAP_COORDINATE_MATH_H

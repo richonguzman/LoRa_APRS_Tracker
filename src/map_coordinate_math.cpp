@@ -82,4 +82,30 @@ void shiftMapCenter(float centerLat, float centerLon, int zoom,
     *newLat = (float)(atan(sinh(n_rad)) * 180.0 / M_PI);
 }
 
+void pixelToLatLon(int pixelX, int pixelY, int zoom, bool navModeActive,
+                   int centerTileX, int centerTileY,
+                   float centerLat, float centerLon,
+                   float* lat, float* lon) {
+    double n = pow(2.0, zoom);
+
+    double x_world, y_world;
+    if (navModeActive) {
+        const int8_t gridOffset = MAP_TILES_GRID / 2;
+        double grid_origin_wx = (double)(centerTileX - gridOffset) * MAP_TILE_SIZE;
+        double grid_origin_wy = (double)(centerTileY - gridOffset) * MAP_TILE_SIZE;
+        x_world = (pixelX + grid_origin_wx) / (n * MAP_TILE_SIZE);
+        y_world = (pixelY + grid_origin_wy) / (n * MAP_TILE_SIZE);
+    } else {
+        double center_x_world = (centerLon + 180.0) / 360.0;
+        double center_lat_rad = centerLat * M_PI / 180.0;
+        double center_y_world = (1.0 - log(tan(center_lat_rad) + 1.0 / cos(center_lat_rad)) / M_PI) / 2.0;
+        x_world = center_x_world + (pixelX - MAP_SPRITE_SIZE / 2.0) / (n * MAP_TILE_SIZE);
+        y_world = center_y_world + (pixelY - MAP_SPRITE_SIZE / 2.0) / (n * MAP_TILE_SIZE);
+    }
+
+    *lon = (float)(x_world * 360.0 - 180.0);
+    double n_rad = M_PI * (1.0 - 2.0 * y_world);
+    *lat = (float)(atan(sinh(n_rad)) * 180.0 / M_PI);
+}
+
 } // namespace MapMath
