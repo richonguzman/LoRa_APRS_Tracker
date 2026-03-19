@@ -300,7 +300,7 @@ namespace UIMapManager {
 
         if (map_info_label) {
             char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stn: %d Δ%.1fm α%.2f",
+            snprintf(info_text, sizeof(info_text), "Lat:%.4f Lon:%.4f Stn:%d d:%.1fm a:%.2f",
                      map_center_lat, map_center_lon, mapStationsCount,
                      gpsFilter.getLastDeltaMeters(), gpsFilter.getLastAlpha());
             lv_label_set_text(map_info_label, info_text);
@@ -338,7 +338,7 @@ namespace UIMapManager {
 
         if (map_info_label) {
             char info_text[64];
-            snprintf(info_text, sizeof(info_text), "Lat: %.4f  Lon: %.4f  Stn: %d Δ%.1fm α%.2f",
+            snprintf(info_text, sizeof(info_text), "Lat:%.4f Lon:%.4f Stn:%d d:%.1fm a:%.2f",
                      map_center_lat, map_center_lon, mapStationsCount,
                      gpsFilter.getLastDeltaMeters(), gpsFilter.getLastAlpha());
             lv_label_set_text(map_info_label, info_text);
@@ -2171,7 +2171,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                  map_center_lat, map_center_lon, mapStationsCount);
         lv_label_set_text(map_info_label, coords_text);
         lv_obj_set_style_text_color(map_info_label, lv_color_hex(0xaaaaaa), 0);
-        lv_obj_set_style_text_font(map_info_label, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_font(map_info_label, &lv_font_montserrat_12, 0);
         lv_obj_center(map_info_label);
 
         // Create periodic refresh timer for stations (10 seconds)

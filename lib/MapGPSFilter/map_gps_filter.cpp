@@ -63,7 +63,14 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
                 ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h) [%d]", distMeters, dtSeconds, speedKmph, consecutiveJumps);
                 return; // Reject this point
             }
-            // GPS is stable at new position after repeated rejections: force-accept re-fix
+            // Force-accept only if GPS reports actual motion (not a stationary bad fix)
+            float gpsSpeed = gps.speed.isValid() ? gps.speed.kmph() : 0.0f;
+            if (gpsSpeed < 5.0f) {
+                // Stationary or near-stationary: GPS hallucinating, keep rejecting
+                ESP_LOGW(TAG, "GPS re-fix suppressed (stationary, speed=%.1f km/h): %.1fm", gpsSpeed, distMeters);
+                return;
+            }
+            // Moving + stable new position: legitimate re-fix after signal loss
             ESP_LOGW(TAG, "GPS re-fix accepted after %d retries: %.1fm", consecutiveJumps, distMeters);
             consecutiveJumps = 0;
         } else {
