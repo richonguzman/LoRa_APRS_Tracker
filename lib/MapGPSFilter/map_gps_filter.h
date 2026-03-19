@@ -73,10 +73,11 @@ public:
         uint32_t lastValidTime;    // For speed calculation
         uint8_t  consecutiveJumps; // Counts consecutive spike rejections
 
-        // Own GPS trace (circular buffer)
-        TracePoint ownTrace[TRACE_MAX_POINTS];
-        uint8_t ownTraceCount;
-        uint8_t ownTraceHead;
+        // Own GPS trace (circular buffer, larger than station traces)
+        static constexpr int OWN_TRACE_MAX_POINTS = 500;
+        TracePoint ownTrace[OWN_TRACE_MAX_POINTS];
+        uint16_t ownTraceCount;
+        uint16_t ownTraceHead;
 
         // Constants (matching original thresholds)
         static constexpr double MAX_SPEED_KMPH = 150.0;  // Supersonic rejection

@@ -2194,12 +2194,12 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             int traceHead = gpsFilter.getOwnTraceHead();
             int traceCount = gpsFilter.getOwnTraceCount();
 
-            lv_point_t trace_points[TRACE_MAX_POINTS + 1];
-            int startIdx = (traceHead - traceCount + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+            static lv_point_t trace_points[MapGPSFilter::OWN_TRACE_MAX_POINTS + 1];
+            int startIdx = (traceHead - traceCount + MapGPSFilter::OWN_TRACE_MAX_POINTS) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
             int validPts = 0;
 
             for (int i = 0; i < traceCount; ++i) {
-                int currentIdx = (startIdx + i) % TRACE_MAX_POINTS;
+                int currentIdx = (startIdx + i) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
                 int x, y;
                 MapMath::latLonToPixel(trace[currentIdx].lat, trace[currentIdx].lon,
                               map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &x, &y);

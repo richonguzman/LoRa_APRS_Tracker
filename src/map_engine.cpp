@@ -834,10 +834,9 @@ namespace MapEngine {
         for (int i = 0; i < NPK_MAX_REGIONS; i++) {
             if (npkSlots[i].active && npkSlots[i].zoom == zoom &&
                 strcmp(npkSlots[i].region, region) == 0) {
-                // For slots without yTable (failed open), match any tileY
-                // For valid slots, check if tileY falls within this slot's Y-range
-                if (!npkSlots[i].yTable ||
-                    (tileY >= npkSlots[i].header.y_min && tileY <= npkSlots[i].header.y_max)) {
+                // Only return slots with valid yTable — failed opens must be retried
+                if (npkSlots[i].yTable &&
+                    tileY >= npkSlots[i].header.y_min && tileY <= npkSlots[i].header.y_max) {
                     npkSlots[i].lastAccess = ++npkAccessCounter;
                     return &npkSlots[i];
                 }
@@ -895,7 +894,9 @@ namespace MapEngine {
             }
         }
 
-        // 5. No split covers tileY — mark slot as empty to avoid retrying
+        // 5. No file/split covers tileY — mark slot but leave yTable null
+        //    Step 1 will skip this slot (yTable check), allowing retry next render
+        ESP_LOGW(TAG, "No NAV pack for %s Z%d tileY=%u", region, zoom, tileY);
         NpkSlot& s = npkSlots[slotIdx];
         strncpy(s.region, region, sizeof(s.region) - 1);
         s.region[sizeof(s.region) - 1] = '\0';

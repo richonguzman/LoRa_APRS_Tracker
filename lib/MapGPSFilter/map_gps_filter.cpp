@@ -118,7 +118,7 @@ void MapGPSFilter::addOwnTracePoint() {
     // Ensure we only add a new point if we moved enough from the last trace point.
     // This prevents the buffer from filling up with identical points during standing updates.
     if (ownTraceCount > 0) {
-        int lastIdx = (ownTraceHead - 1 + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+        int lastIdx = (ownTraceHead - 1 + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
         float lastLat = ownTrace[lastIdx].lat;
         float lastLon = ownTrace[lastIdx].lon;
         
@@ -133,8 +133,8 @@ void MapGPSFilter::addOwnTracePoint() {
     ownTrace[ownTraceHead].lon = lon;
 
     // Update circular buffer indices
-    ownTraceHead = (ownTraceHead + 1) % TRACE_MAX_POINTS;
-    if (ownTraceCount < TRACE_MAX_POINTS) {
+    ownTraceHead = (ownTraceHead + 1) % OWN_TRACE_MAX_POINTS;
+    if (ownTraceCount < OWN_TRACE_MAX_POINTS) {
         ownTraceCount++;
     }
 }
@@ -156,6 +156,6 @@ void MapGPSFilter::clearTrace() {
 
 // For unit tests only
 const TracePoint& MapGPSFilter::getOwnTracePoint(int index) const {
-    int bufferIndex = (ownTraceHead - ownTraceCount + index + TRACE_MAX_POINTS) % TRACE_MAX_POINTS;
+    int bufferIndex = (ownTraceHead - ownTraceCount + index + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
     return ownTrace[bufferIndex];
 }
