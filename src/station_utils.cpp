@@ -129,7 +129,7 @@ namespace STATION_Utils {
     }
 
     // Douglas-Peucker algorithm: perpendicular distance from point to line segment
-    static float perpendicularDistance(float px, float py, float x1, float y1, float x2, float y2) {
+    float perpendicularDistance(float px, float py, float x1, float y1, float x2, float y2) {
         float dx = x2 - x1;
         float dy = y2 - y1;
 
@@ -155,7 +155,7 @@ namespace STATION_Utils {
     }
 
     // Douglas-Peucker simplification: reduce trace points while keeping shape
-    static void douglasPeuckerSimplify(TracePoint* trace, int start, int end, bool* keep, float epsilon) {
+    void douglasPeuckerSimplify(TracePoint* trace, int start, int end, bool* keep, float epsilon) {
         if (end <= start + 1) return;
 
         // Find point with max distance from line segment [start, end]

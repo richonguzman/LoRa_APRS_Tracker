@@ -65,7 +65,18 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 
     // 2. Filtre anti-gigue à l'arrêt (Jitter Filter)
     if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
-         return; // When stationary, do not update to freeze map and icon
+        return; // When stationary, do not update to freeze map and icon
+    }
+
+    // 2b. Poor signal freeze: HDOP > 8 and speed < 5 km/h → freeze
+    // Prevents small jumps (<150 km/h) caused by multipath/few satellites indoors.
+    // Does not trigger when moving (speed >= 5 km/h) or with good signal (HDOP <= 8).
+    if (gps.hdop.isValid() && gps.hdop.hdop() > 8.0f) {
+        float spd = gps.speed.isValid() ? gps.speed.kmph() : 0.0f;
+        if (spd < 5.0f) {
+            ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f speed=%.1f km/h", gps.hdop.hdop(), spd);
+            return;
+        }
     }
 
     // 3. Smooth Interpolation (Low-pass filter)
@@ -112,6 +123,11 @@ void MapGPSFilter::addOwnTracePoint() {
         }
     }
 
+    // Compact when buffer is full: simplify first half to free space
+    if (ownTraceCount >= OWN_TRACE_MAX_POINTS) {
+        compactTrace();
+    }
+
     // Add point to circular buffer
     ownTrace[ownTraceHead].lat = lat;
     ownTrace[ownTraceHead].lon = lon;
@@ -121,6 +137,41 @@ void MapGPSFilter::addOwnTracePoint() {
     if (ownTraceCount < OWN_TRACE_MAX_POINTS) {
         ownTraceCount++;
     }
+}
+
+void MapGPSFilter::compactTrace() {
+    // Linearize circular buffer into a temporary array
+    TracePoint linear[OWN_TRACE_MAX_POINTS];
+    int startIdx = (ownTraceHead - ownTraceCount + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
+    for (int i = 0; i < ownTraceCount; i++) {
+        linear[i] = ownTrace[(startIdx + i) % OWN_TRACE_MAX_POINTS];
+    }
+
+    // Douglas-Peucker on the first half: simplify older points
+    int halfCount = ownTraceCount / 2;
+    bool keep[OWN_TRACE_MAX_POINTS];
+    memset(keep, 0, sizeof(keep));
+    keep[0] = true;              // Always keep first point (trip start)
+    keep[halfCount - 1] = true;  // Always keep boundary point
+
+    // Epsilon ~0.0002 degrees (~22m) preserves route shape
+    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.0002f);
+
+    // Rebuild: kept points from first half + all points from second half
+    int writeIdx = 0;
+    for (int i = 0; i < halfCount; i++) {
+        if (keep[i]) {
+            ownTrace[writeIdx++] = linear[i];
+        }
+    }
+    for (int i = halfCount; i < ownTraceCount; i++) {
+        ownTrace[writeIdx++] = linear[i];
+    }
+
+    ownTraceCount = writeIdx;
+    ownTraceHead = writeIdx;
+
+    ESP_LOGD(TAG, "Trace compacted: %d -> %d points", OWN_TRACE_MAX_POINTS, writeIdx);
 }
 
 bool MapGPSFilter::getUiPosition(float* lat, float* lon) const {

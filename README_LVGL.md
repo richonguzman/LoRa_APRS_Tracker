@@ -1,7 +1,7 @@
 # LoRa APRS Tracker - LVGL UI Edition
 
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-ready-orange)
-![Version](https://img.shields.io/badge/version-2.7.4-blue)
+![Version](https://img.shields.io/badge/version-2.8.0-blue)
 ![License](https://img.shields.io/badge/license-GPL-green)
 
 **ESP32-S3 LoRa APRS tracker with modern touchscreen interface for Lilygo T-Deck Plus**
@@ -15,6 +15,16 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 | **Dashboard** | **Vector Map** | **Messaging** |
 
 ---
+
+## What's New in v2.8.x
+- **IceNav pan model** - Ported IceNav integer tile pan model: smooth inertia, no visual snap during async render, decoupled visual offset from render cycle
+- **Async rendering Core 0** - Map tiles rendered on Core 0, UI runs on Core 1 without blocking. Double-buffered sprites for tear-free display
+- **Fullscreen map** - Double-tap toggles fullscreen mode (hides title/info bars)
+- **MapGPSFilter module** - GPS filtering as standalone KISS module with unit tests (GoogleTest)
+- **Reliable GPS tracking** - HDOP-adaptive smoothing, stable at rest, responsive at speed, no km-scale jumps
+- **Own GPS trace** - 500-point buffer with Douglas-Peucker auto-compaction and zoom-adaptive LOD rendering
+- **SD logger** - GPS wall-clock timestamps, ESP_LOGW/E hook captures crash context automatically
+- **+32KB DRAM recovered** - Removed useless DMA buffer in storage (PSRAM incompatible with SPI DMA on ESP32-S3)
 
 ## What's New in v2.7.x
 - **ESP_LOG migration** - Replaced standard Serial.print with native ESP-IDF logging framework with colored terminal output

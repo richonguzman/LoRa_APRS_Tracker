@@ -69,6 +69,10 @@ namespace STATION_Utils {
     MapStation* getMapStation(int index);
     MapStation* findMapStation(const String& callsign);
 
+    // Douglas-Peucker trace simplification (shared by stations and own trace)
+    float perpendicularDistance(float px, float py, float x1, float y1, float x2, float y2);
+    void  douglasPeuckerSimplify(TracePoint* trace, int start, int end, bool* keep, float epsilon);
+
 }
 
 #endif

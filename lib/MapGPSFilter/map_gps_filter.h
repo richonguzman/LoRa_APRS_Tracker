@@ -63,9 +63,11 @@ public:
     float getLastDeltaMeters() const { return lastDeltaMeters; }
     float getLastAlpha()       const { return lastAlpha; }
 
-        static constexpr int OWN_TRACE_MAX_POINTS = 500;
+    static constexpr int OWN_TRACE_MAX_POINTS = 500;
 
-    private:
+private:
+    // Compact trace using Douglas-Peucker when buffer is full
+    void compactTrace();
         float lastDeltaMeters; // Distance in meters between raw GPS and filtered position
         float lastAlpha;       // Alpha value used for smoothing
         // Own filtered position (The single source of truth for UI, trace, and recentering)

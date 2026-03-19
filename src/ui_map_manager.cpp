@@ -2210,16 +2210,30 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
             int traceHead = gpsFilter.getOwnTraceHead();
             int traceCount = gpsFilter.getOwnTraceCount();
 
+            // LOD: minimum pixel distance between points, adapted to zoom
+            int minPixDist2 = 0; // squared, to avoid sqrt
+            if (map_current_zoom <= 10)      minPixDist2 = 144; // 12px
+            else if (map_current_zoom <= 12) minPixDist2 = 36;  // 6px
+            else if (map_current_zoom <= 14) minPixDist2 = 9;   // 3px
+
             static lv_point_t trace_points[MapGPSFilter::OWN_TRACE_MAX_POINTS + 1];
             int startIdx = (traceHead - traceCount + MapGPSFilter::OWN_TRACE_MAX_POINTS) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
             int validPts = 0;
+            int lastX = INT_MIN, lastY = INT_MIN;
 
             for (int i = 0; i < traceCount; ++i) {
                 int currentIdx = (startIdx + i) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
                 int x, y;
                 MapMath::latLonToPixel(trace[currentIdx].lat, trace[currentIdx].lon,
                               map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &x, &y);
+                // LOD: skip points too close in pixel space (always keep first and last)
+                if (minPixDist2 > 0 && validPts > 0 && i < traceCount - 1) {
+                    int dx = x - lastX, dy = y - lastY;
+                    if (dx * dx + dy * dy < minPixDist2) continue;
+                }
                 trace_points[validPts++] = { (lv_coord_t)x, (lv_coord_t)y };
+                lastX = x;
+                lastY = y;
             }
 
             // Append current GPS position as last point so trace always connects to icon
