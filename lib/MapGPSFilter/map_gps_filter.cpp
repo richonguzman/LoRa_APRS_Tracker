@@ -24,6 +24,7 @@ void MapGPSFilter::reset() {
     ownPositionLon = 0.0f;
     ownPositionValid = false;
     lastValidTime = 0;
+    consecutiveJumps = 0;
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
@@ -57,8 +58,16 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
         double speedKmph = (distMeters / dtSeconds) * 3.6;
         if (speedKmph > MAX_SPEED_KMPH) { // Impossible speed (>150km/h) -> GPS jump
-            ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
-            return; // Reject this point entirely. Nothing moves.
+            consecutiveJumps++;
+            if (consecutiveJumps < JUMP_ACCEPT_AFTER) {
+                ESP_LOGW(TAG, "GPS Jump: %.1fm in %.1fs (%.1f km/h) [%d]", distMeters, dtSeconds, speedKmph, consecutiveJumps);
+                return; // Reject this point
+            }
+            // GPS is stable at new position after repeated rejections: force-accept re-fix
+            ESP_LOGW(TAG, "GPS re-fix accepted after %d retries: %.1fm", consecutiveJumps, distMeters);
+            consecutiveJumps = 0;
+        } else {
+            consecutiveJumps = 0;
         }
     }
     lastValidTime = now;
@@ -69,10 +78,14 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     }
 
     // 3. Smooth Interpolation (Low-pass filter)
+    // At high speed (>=30 km/h), GPS track is reliable: use direct assignment (alpha=1).
+    // At low speed, HDOP-adaptive smoothing suppresses jitter.
     float currentAlpha = 0.5f;
-    if (gps.hdop.isValid()) {
+    if (gps.speed.isValid() && gps.speed.kmph() >= 30.0f) {
+        currentAlpha = 1.0f; // Direct assignment: no lag at car speed
+    } else if (gps.hdop.isValid()) {
         float hdop = fmax(1.0f, gps.hdop.hdop());
-        currentAlpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0 (direct). HDOP 5 = alpha 0.2 (heavily smoothed).
+        currentAlpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0. HDOP 5 = alpha 0.2.
     }
 
     ownPositionLat += currentAlpha * (lat - ownPositionLat);

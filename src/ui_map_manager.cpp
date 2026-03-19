@@ -1165,6 +1165,9 @@ namespace UIMapManager {
                 int px, py;
                 MapMath::latLonToPixel(station->trace[idx].lat, station->trace[idx].lon,
                               map_center_lat, map_center_lon, map_current_zoom, navModeActive, centerTileX, centerTileY, &px, &py);
+                // Skip trace points far outside canvas (avoids rendering artifacts)
+                if (px < -MAP_SPRITE_SIZE || px > 2 * MAP_SPRITE_SIZE ||
+                    py < -MAP_SPRITE_SIZE || py > 2 * MAP_SPRITE_SIZE) continue;
                 pts[validPts].x = px;
                 pts[validPts].y = py;
                 validPts++;
