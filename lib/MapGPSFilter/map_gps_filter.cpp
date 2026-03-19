@@ -169,7 +169,8 @@ void MapGPSFilter::compactTrace() {
     }
 
     ownTraceCount = writeIdx;
-    ownTraceHead = writeIdx;
+    // Ensure head stays within circular buffer bounds (0..OWN_TRACE_MAX_POINTS-1)
+    ownTraceHead = writeIdx % OWN_TRACE_MAX_POINTS;
 
     ESP_LOGD(TAG, "Trace compacted: %d -> %d points", OWN_TRACE_MAX_POINTS, writeIdx);
 }
