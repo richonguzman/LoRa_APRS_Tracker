@@ -1164,7 +1164,7 @@ namespace UIMapManager {
             MapStation* station = STATION_Utils::getMapStation(s);
             if (!station || !station->valid || station->traceCount < 1) continue;
 
-            lv_point_t pts[TRACE_MAX_POINTS + 1];
+            static lv_point_t pts[TRACE_MAX_POINTS + 1];
             int validPts = 0;
 
             for (int i = 0; i < station->traceCount; i++) {
