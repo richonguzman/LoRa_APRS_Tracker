@@ -285,11 +285,22 @@ namespace MapTiles {
         uint8_t* data = loadSymbolFromSD(table, symbol);
         if (!data) return nullptr;
 
+        const size_t rgb565Size = SYMBOL_SIZE * SYMBOL_SIZE * sizeof(uint16_t);
+        const size_t alphaSize  = SYMBOL_SIZE * SYMBOL_SIZE;
+
         symbolCache[lruIdx].data       = data;
         symbolCache[lruIdx].valid      = true;
         symbolCache[lruIdx].table      = table;
         symbolCache[lruIdx].symbol     = symbol;
         symbolCache[lruIdx].lastAccess = symbolCacheAccessCounter;
+
+        symbolCache[lruIdx].img_dsc.header.always_zero = 0;
+        symbolCache[lruIdx].img_dsc.header.w  = SYMBOL_SIZE;
+        symbolCache[lruIdx].img_dsc.header.h  = SYMBOL_SIZE;
+        symbolCache[lruIdx].img_dsc.data_size = rgb565Size + alphaSize;
+        symbolCache[lruIdx].img_dsc.header.cf = LV_IMG_CF_RGB565A8;
+        symbolCache[lruIdx].img_dsc.data      = data;
+
         return &symbolCache[lruIdx];
     }
 
