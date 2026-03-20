@@ -189,6 +189,8 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
         setCpuFrequencyMhz(240);
         ESP_LOGI(TAG, "Screen woken up, CPU boosted to %d MHz (map)",
                       getCpuFrequencyMhz());
+        // Force immediate map redraw centered on current GPS position
+        UIMapManager::redraw_map_canvas();
       } else {
         ESP_LOGI(TAG, "Screen woken up by touch");
       }

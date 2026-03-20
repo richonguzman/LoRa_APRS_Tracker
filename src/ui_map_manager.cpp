@@ -42,6 +42,10 @@
 
 static const char *TAG = "Map";
 
+// Screen dimmed state — defined in lvgl_ui.cpp, set true when eco mode is active.
+// Used to pause map rendering while screen is off.
+extern bool screenDimmed;
+
 namespace UIMapManager {
 
     // UI elements - Map screen
@@ -352,13 +356,43 @@ namespace UIMapManager {
     static void map_refresh_timer_cb(lv_timer_t* timer) {
         if (!screen_map || lv_scr_act() != screen_map) return;
 
-        // Check async render completion
+        // Check async render completion (finalize pending render — no SD access)
         if (navRenderPending && MapEngine::mapEventGroup) {
             EventBits_t bits = xEventGroupGetBits(MapEngine::mapEventGroup);
             if (bits & MAP_EVENT_NAV_DONE) {
                 applyRenderedViewport();
             }
         }
+
+        // 1. Update smoothed own position and trace every second (20 x 50ms = 1s)
+        // Runs even in eco mode — GPS trace collection must continue with screen off.
+        static uint16_t gpsUpdateCounter = 0;
+        bool positionChanged = false;
+
+        if (++gpsUpdateCounter >= 10) {
+            gpsUpdateCounter = 0;
+
+            float oldLat = gpsFilter.getOwnLat();
+            float oldLon = gpsFilter.getOwnLon();
+
+            gpsFilter.updateFilteredOwnPosition(gps);
+            gpsFilter.addOwnTracePoint();
+
+            // Trigger UI refresh if filtered position actually moved
+            if (gpsFilter.getOwnLat() != oldLat || gpsFilter.getOwnLon() != oldLon) {
+                positionChanged = true;
+            }
+            // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
+            // Below 1.5: stationary jitter filter applies. Above 150: GPS spike rejected.
+            if (map_follow_gps && gps.speed.isValid()
+                    && gps.speed.kmph() > 1.5 && gps.speed.kmph() < 150.0) {
+                positionChanged = true;
+            }
+        }
+
+        // Screen off (eco mode) — GPS collected above, skip all rendering and SD access.
+        // setCpuFrequencyMhz(80) needs a quiet SPI bus to avoid corrupting the SD card.
+        if (screenDimmed) return;
 
         // Inertia handling
         // Apply momentum when finger is not on screen
@@ -390,31 +424,6 @@ namespace UIMapManager {
             canvasY -= navSubTileY;
 
             lv_obj_set_pos(map_canvas, canvasX, canvasY);
-        }
-
-        // 1. Update smoothed own position and trace every second (20 x 50ms = 1s)
-        static uint16_t gpsUpdateCounter = 0;
-        bool positionChanged = false;
-        
-        if (++gpsUpdateCounter >= 10) {
-            gpsUpdateCounter = 0;
-
-            float oldLat = gpsFilter.getOwnLat();
-            float oldLon = gpsFilter.getOwnLon();
-
-            gpsFilter.updateFilteredOwnPosition(gps);
-            gpsFilter.addOwnTracePoint();
-
-            // Trigger UI refresh if filtered position actually moved
-            if (gpsFilter.getOwnLat() != oldLat || gpsFilter.getOwnLon() != oldLon) {
-                positionChanged = true;
-            }
-            // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
-            // Below 1.5: stationary jitter filter applies. Above 150: GPS spike rejected.
-            if (map_follow_gps && gps.speed.isValid()
-                    && gps.speed.kmph() > 1.5 && gps.speed.kmph() < 150.0) {
-                positionChanged = true;
-            }
         }
 
         // 2. Periodic station refresh (received stations every ~10s OR own station moved)
@@ -1349,6 +1358,9 @@ namespace UIMapManager {
 
     // Map zoom in handler
     void btn_map_zoomin_clicked(lv_event_t* e) {
+        // Ignore zoom while a render is in progress — prevents queue flooding
+        if (redraw_in_progress || navRenderPending) return;
+
         if (!navModeActive && navRegionCount > 0 &&
             map_current_zoom < nav_zooms[0] &&
             (map_zoom_index >= map_zoom_count - 1 ||
@@ -1376,6 +1388,9 @@ namespace UIMapManager {
 
     // Map zoom out handler
     void btn_map_zoomout_clicked(lv_event_t* e) {
+        // Ignore zoom while a render is in progress — prevents queue flooding
+        if (redraw_in_progress || navRenderPending) return;
+
         if (map_zoom_index > 0) {
             commitVisualCenter();
             map_zoom_index--;
