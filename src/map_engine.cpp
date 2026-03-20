@@ -5,6 +5,7 @@
 
 #include "map_engine.h"
 #include "ui_map_manager.h"
+#include "sd_logger.h"
 #include <esp_log.h>
 #include <JPEGDEC.h>
 #undef INTELSHORT
@@ -358,14 +359,17 @@ namespace MapEngine {
                 if (latest.isRaster) {
                     ESP_LOGI(TAG, "Async raster render: Z%d (%.4f, %.4f)",
                                   latest.zoom, latest.centerLat, latest.centerLon);
+                    SD_Logger::updateCrashContext("MAP_RASTER", latest.centerLat, latest.centerLon);
                     renderRasterViewport(latest.centerLat, latest.centerLon, latest.zoom,
                                          *latest.targetSprite, latest.regions[0]);
                 } else {
                     ESP_LOGI(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
                                   latest.zoom, latest.centerLat, latest.centerLon);
+                    SD_Logger::updateCrashContext("MAP_NAV", latest.centerLat, latest.centerLon);
                     renderNavViewport(latest.centerLat, latest.centerLon, latest.zoom,
                                       *latest.targetSprite, regionPtrs, latest.regionCount);
                 }
+                SD_Logger::updateCrashContext("MAP_IDLE", latest.centerLat, latest.centerLon);
 
                 lastRenderedTileX = latest.centerTileX;
                 lastRenderedTileY = latest.centerTileY;

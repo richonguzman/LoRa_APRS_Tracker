@@ -455,5 +455,14 @@ void loop() {
         SD_Logger::logf(SD_Logger::INFO, "LOOP", "Heartbeat - Free heap: %u KB", ESP.getFreeHeap() / 1024);
     }
 
+    // Update RTC crash context every 5s — readable at next boot after PANIC/WDT
+    static uint32_t lastCrashCtxUpdate = 0;
+    if (millis() - lastCrashCtxUpdate >= 5000) {
+        lastCrashCtxUpdate = millis();
+        float lat = gps.location.isValid() ? (float)gps.location.lat() : 0.0f;
+        float lon = gps.location.isValid() ? (float)gps.location.lng() : 0.0f;
+        SD_Logger::updateCrashContext("LOOP", lat, lon);
+    }
+
     yield();
 }

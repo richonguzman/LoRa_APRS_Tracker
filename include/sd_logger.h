@@ -46,6 +46,12 @@ namespace SD_Logger {
 
     // Clear old logs
     void clearLogs();
+
+    // Crash context — stored in RTC memory, survives panic/WDT reset
+    // Call updateCrashContext() periodically from key code paths.
+    // Call logPreviousCrashContext() at boot (before logBootInfo writes BOOT END).
+    void updateCrashContext(const char* module, float lat = 0.0f, float lon = 0.0f);
+    void logPreviousCrashContext();
 }
 
 #endif // SD_LOGGER_H_

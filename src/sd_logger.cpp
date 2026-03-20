@@ -10,8 +10,28 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
+#include <esp_attr.h>   // RTC_NOINIT_ATTR
 
 static const char *TAG = "SD_Log";
+
+// ---------------------------------------------------------------------------
+// Crash context — stored in RTC memory (survives panic/WDT reset, lost on
+// power cycle). Written every few seconds from hot paths; read at next boot.
+// ---------------------------------------------------------------------------
+#define CRASH_CTX_MAGIC 0xC0FFEE42u
+
+struct CrashContext {
+    uint32_t magic;
+    char     module[32];   // last known active module
+    uint32_t uptimeMs;
+    float    lat;
+    float    lon;
+    uint32_t freeHeap;
+    uint32_t freePsram;
+    uint32_t loopCount;    // incremented on each updateCrashContext call
+};
+
+RTC_NOINIT_ATTR static CrashContext _crashCtx;
 
 #define SD_LOG_FILE "/LoRa_Tracker/system.log"
 #define SD_LOG_MAX_SIZE 102400  // 100KB
@@ -243,6 +263,9 @@ namespace SD_Logger {
         // CPU frequency
         logf(INFO, "BOOT", "CPU freq: %u MHz", getCpuFrequencyMhz());
 
+        // Crash context from previous session (only logged if PANIC/WDT)
+        logPreviousCrashContext();
+
         log(INFO, "BOOT", "====================================================");
     }
 
@@ -290,5 +313,43 @@ namespace SD_Logger {
             xSemaphoreGive(sdLogMutex);
             log(INFO, "SD_LOG", "Logs cleared");
         }
+    }
+
+    void updateCrashContext(const char* module, float lat, float lon) {
+        _crashCtx.magic = CRASH_CTX_MAGIC;
+        strncpy(_crashCtx.module, module, sizeof(_crashCtx.module) - 1);
+        _crashCtx.module[sizeof(_crashCtx.module) - 1] = '\0';
+        _crashCtx.uptimeMs  = millis();
+        _crashCtx.lat       = lat;
+        _crashCtx.lon       = lon;
+        _crashCtx.freeHeap  = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+        _crashCtx.freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+        _crashCtx.loopCount++;
+    }
+
+    void logPreviousCrashContext() {
+        esp_reset_reason_t reason = esp_reset_reason();
+        if (reason != ESP_RST_PANIC && reason != ESP_RST_INT_WDT && reason != ESP_RST_TASK_WDT) {
+            _crashCtx.magic = 0;  // clear on normal boot
+            return;
+        }
+
+        if (_crashCtx.magic != CRASH_CTX_MAGIC) {
+            log(WARN, "CRASH", "PANIC/WDT reset — no crash context in RTC memory");
+            return;
+        }
+
+        log(CRITICAL, "CRASH", "===== PREVIOUS CRASH CONTEXT =====");
+        logf(CRITICAL, "CRASH", "Last module  : %s", _crashCtx.module);
+        logf(CRITICAL, "CRASH", "Uptime       : %u ms (%.1f s)", _crashCtx.uptimeMs, _crashCtx.uptimeMs / 1000.0f);
+        logf(CRITICAL, "CRASH", "Free DRAM    : %u KB", _crashCtx.freeHeap / 1024);
+        logf(CRITICAL, "CRASH", "Free PSRAM   : %u KB", _crashCtx.freePsram / 1024);
+        if (_crashCtx.lat != 0.0f || _crashCtx.lon != 0.0f) {
+            logf(CRITICAL, "CRASH", "GPS pos      : %.6f, %.6f", _crashCtx.lat, _crashCtx.lon);
+        }
+        logf(CRITICAL, "CRASH", "Update count : %u", _crashCtx.loopCount);
+        log(CRITICAL, "CRASH", "===================================");
+
+        _crashCtx.magic = 0;  // consume — avoid re-logging on next normal boot
     }
 }
