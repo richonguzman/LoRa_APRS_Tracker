@@ -312,10 +312,10 @@ namespace UIMapManager {
 
         lv_obj_invalidate(map_canvas);
         if (navRenderPending) {
-            ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d) — Core 0 still active, keeping pending",
+            ESP_LOGD(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d) — Core 0 still active, keeping pending",
                           map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
         } else {
-            ESP_LOGI(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
+            ESP_LOGD(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
                           map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
         }
     }
@@ -1261,7 +1261,7 @@ namespace UIMapManager {
                 if (!navModeActive) {
                     navModeActive = true;
                     MapEngine::clearTileCache();
-                    ESP_LOGI(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
+                    ESP_LOGD(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     switchZoomTable(nav_zooms, nav_zoom_count);
@@ -1286,7 +1286,7 @@ namespace UIMapManager {
                     MapEngine::enqueueNavRender(req);
                     navRenderPending = true;
 
-                    ESP_LOGI(TAG, "NAV render enqueued - PSRAM free: %u KB, largest block: %u KB",
+                    ESP_LOGD(TAG, "NAV render enqueued - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                 }
@@ -1317,7 +1317,7 @@ namespace UIMapManager {
                     MapEngine::enqueueNavRender(req);
                     navRenderPending = true;
 
-                    ESP_LOGI(TAG, "Raster render enqueued Z%d - PSRAM free: %u KB",
+                    ESP_LOGD(TAG, "Raster render enqueued Z%d - PSRAM free: %u KB",
                                   map_current_zoom, ESP.getFreePsram() / 1024);
                 }
 
@@ -2117,7 +2117,7 @@ bool loadTileFromSD(int tileX, int tileY, int zoom, lv_obj_t* canvas, int offset
                     // NAV priority: free all raster cache to maximize PSRAM for NAV tiles
                     navModeActive = true;
                     MapEngine::clearTileCache();
-                    ESP_LOGI(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
+                    ESP_LOGD(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                                   ESP.getFreePsram() / 1024,
                                   heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                     switchZoomTable(nav_zooms, nav_zoom_count);

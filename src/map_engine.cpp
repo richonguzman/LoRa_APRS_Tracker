@@ -357,13 +357,13 @@ namespace MapEngine {
                     regionPtrs[r] = latest.regions[r];
 
                 if (latest.isRaster) {
-                    ESP_LOGI(TAG, "Async raster render: Z%d (%.4f, %.4f)",
+                    ESP_LOGD(TAG, "Async raster render: Z%d (%.4f, %.4f)",
                                   latest.zoom, latest.centerLat, latest.centerLon);
                     SD_Logger::updateCrashContext("MAP_RASTER", latest.centerLat, latest.centerLon);
                     renderRasterViewport(latest.centerLat, latest.centerLon, latest.zoom,
                                          *latest.targetSprite, latest.regions[0]);
                 } else {
-                    ESP_LOGI(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
+                    ESP_LOGD(TAG, "Async NAV render: Z%d (%.4f, %.4f)",
                                   latest.zoom, latest.centerLat, latest.centerLon);
                     SD_Logger::updateCrashContext("MAP_NAV", latest.centerLat, latest.centerLon);
                     renderNavViewport(latest.centerLat, latest.centerLon, latest.zoom,
@@ -568,7 +568,7 @@ namespace MapEngine {
                 cachedTile.isValid = false;
             }
             _rasterCacheAccessCounter = 0;
-            ESP_LOGI(TAG, "Raster tile cache invalidated.");
+            ESP_LOGD(TAG, "Raster tile cache invalidated.");
         }
 
         if (renderLock) xSemaphoreGive(renderLock);
@@ -694,7 +694,7 @@ namespace MapEngine {
         for (auto& e : navCache) free(e.data);
         navCache.clear();
         navCacheAccessCounter = 0;
-        ESP_LOGI(TAG, "NAV cache cleared");
+        ESP_LOGD(TAG, "NAV cache cleared");
     }
 
     // --- NPK2 pack file functions (multi-region slot system) ---
@@ -1364,7 +1364,7 @@ namespace MapEngine {
         }
 
         uint64_t endTime = esp_timer_get_time();
-        ESP_LOGI(TAG, "Raster viewport: %llu ms, %d tiles loaded, Z%d",
+        ESP_LOGD(TAG, "Raster viewport: %llu ms, %d tiles loaded, Z%d",
                       (endTime - startTime) / 1000, tilesLoaded, zoom);
 
         // Release render lock
@@ -1822,7 +1822,7 @@ namespace MapEngine {
         }
 
         // Pre-reserve vectors — single allocation, no per-feature fragmentation
-        ESP_LOGI(TAG, "Phase 2 counts: text=%u ww=%u layers=[%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u] PSRAM free=%u largest=%u",
+        ESP_LOGD(TAG, "Phase 2 counts: text=%u ww=%u layers=[%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u] PSRAM free=%u largest=%u",
                  textCount, waterwayCount,
                  layerCounts[0], layerCounts[1], layerCounts[2], layerCounts[3],
                  layerCounts[4], layerCounts[5], layerCounts[6], layerCounts[7],
@@ -1848,7 +1848,7 @@ namespace MapEngine {
             ESP_LOGW(TAG, "Reserve failed text/waterway, PSRAM largest=%u",
                      (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
         }
-        ESP_LOGI(TAG, "Phase 2 reserve done, PSRAM free=%u largest=%u",
+        ESP_LOGD(TAG, "Phase 2 reserve done, PSRAM free=%u largest=%u",
                  (unsigned)ESP.getFreePsram(),
                  (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
 
@@ -2444,7 +2444,7 @@ namespace MapEngine {
 
         uint64_t endTime = esp_timer_get_time();
 
-        ESP_LOGI(TAG, "Viewport: %llu ms (load %llu ms), %d features, cache: %d hit / %d miss, PSRAM free: %u",
+        ESP_LOGD(TAG, "Viewport: %llu ms (load %llu ms), %d features, cache: %d hit / %d miss, PSRAM free: %u",
                       (endTime - startTime) / 1000, (loadEnd - startTime) / 1000,
                       totalFeatures, navCacheHits, navCacheMisses, ESP.getFreePsram());
 
