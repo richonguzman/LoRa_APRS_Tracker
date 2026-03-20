@@ -3,12 +3,7 @@
 
 #include <lvgl.h>
 #include <Arduino.h>
-
-// Forward decl
-namespace MapState {
-    extern const int* map_available_zooms;
-    extern int map_zoom_count;
-}
+#include "map_state.h"  // For CachedSymbol, MapState variables
 
 namespace MapTiles {
 
@@ -18,6 +13,7 @@ namespace MapTiles {
 
     void initSymbolCache();
     uint8_t* loadSymbolFromSD(char table, char symbol);
+    MapState::CachedSymbol* getSymbolCacheEntry(char table, char symbol);
 
     // =========================================================================
     // Tile loading

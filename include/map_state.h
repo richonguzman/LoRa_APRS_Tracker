@@ -97,6 +97,18 @@ namespace MapState {
     extern bool mapFullscreen;
 
     // -------------------------------------------------------------------------
+    // APRS symbol cache (créé par map_tiles, lu par map_render)
+    // -------------------------------------------------------------------------
+    struct CachedSymbol {
+        char table;              // '/' for primary, '\' for alternate
+        char symbol;             // ASCII character
+        lv_img_dsc_t img_dsc;   // LVGL image descriptor (RGB565A8 format)
+        uint8_t* data;           // Combined RGB565+Alpha buffer in PSRAM
+        uint32_t lastAccess;     // For LRU eviction
+        bool valid;
+    };
+
+    // -------------------------------------------------------------------------
     // Hit zones stations (render écrit, input lit)
     // -------------------------------------------------------------------------
     struct StationHitZone {

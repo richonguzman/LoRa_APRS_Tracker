@@ -33,9 +33,7 @@
 #include "map_coordinate_math.h"
 #include "storage_utils.h"
 #include "nav_types.h"
-#include "ui_map_manager.h"  // For spiMutex, CachedSymbol
-
-using UIMapManager::CachedSymbol;
+#include "ui_map_manager.h"  // For spiMutex, MAP_TILE_SIZE, MAP_SPRITE_SIZE
 
 using namespace MapState;
 
