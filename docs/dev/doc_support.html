@@ -5,20 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Support — map_gps_filter + sd_logger</title>
 <style>
-  body { font-family: monospace; max-width: 960px; margin: 40px auto; padding: 0 20px; background: #1e1e1e; color: #d4d4d4; line-height: 1.6; }
+  body { font-family: monospace; max-width: 960px; margin: 40px auto; padding: 0 20px; background: #1e1e1e; color: #d4d4d4; line-height: 1.7; }
   h1 { color: #569cd6; border-bottom: 1px solid #444; padding-bottom: 8px; }
-  h2 { color: #4ec9b0; margin-top: 40px; }
-  h3 { color: #dcdcaa; }
-  code { background: #2d2d2d; padding: 2px 6px; border-radius: 3px; color: #ce9178; }
-  pre { background: #2d2d2d; padding: 16px; border-radius: 4px; overflow-x: auto; color: #d4d4d4; }
-  .module { border-left: 3px solid #569cd6; padding-left: 16px; margin: 20px 0; }
-  .warning { border-left: 3px solid #f44747; padding-left: 16px; background: #2d1f1f; padding: 12px 16px; }
-  .nav { background: #2d2d2d; padding: 12px; border-radius: 4px; margin-bottom: 40px; }
-  .nav a { color: #569cd6; margin-right: 20px; text-decoration: none; }
+  h2 { color: #4ec9b0; margin-top: 48px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  h3 { color: #dcdcaa; margin-top: 28px; }
+  code { background: #2d2d2d; padding: 2px 6px; border-radius: 3px; color: #ce9178; font-size: 0.95em; }
+  pre { background: #2d2d2d; padding: 16px; border-radius: 4px; overflow-x: auto; color: #d4d4d4; font-size: 0.9em; line-height: 1.5; }
+  .module-intro { border-left: 3px solid #569cd6; padding-left: 16px; margin: 16px 0 28px 0; color: #b0b0b0; }
+  .warning { border-left: 3px solid #f44747; padding-left: 16px; background: #2d1f1f; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 16px 0; }
+  .tip { border-left: 3px solid #4ec9b0; padding-left: 16px; background: #1f2d2d; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 16px 0; }
+  .nav { background: #2d2d2d; padding: 12px 16px; border-radius: 4px; margin-bottom: 40px; }
+  .nav a { color: #569cd6; margin-right: 20px; text-decoration: none; font-weight: bold; }
   .nav a:hover { text-decoration: underline; }
-  table { border-collapse: collapse; width: 100%; }
-  th { background: #2d2d2d; color: #569cd6; text-align: left; padding: 8px; }
-  td { padding: 8px; border-bottom: 1px solid #333; }
+  .nav a.current { color: #4ec9b0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th { background: #2d2d2d; color: #569cd6; text-align: left; padding: 8px 12px; }
+  td { padding: 8px 12px; border-bottom: 1px solid #2d2d2d; vertical-align: top; }
+  td code { font-size: 0.9em; }
+  .flow { background: #252525; border: 1px solid #444; padding: 16px; border-radius: 4px; margin: 16px 0; white-space: pre; font-size: 0.85em; color: #c8c8c8; }
+  .label-file { color: #9cdcfe; }
+  .label-line { color: #b5cea8; font-size: 0.85em; }
 </style>
 </head>
 <body>
@@ -26,23 +32,173 @@
 <div class="nav">
   <a href="doc_ui_core.html">UI Core</a>
   <a href="doc_map.html">Map</a>
-  <a href="doc_support.html">Support</a>
+  <a class="current" href="doc_support.html">Support</a>
   <a href="doc_screens.html">Screens</a>
 </div>
 
-<h1>Support</h1>
-<p><em>Modules : <code>lib/MapGPSFilter/map_gps_filter.cpp</code> + <code>src/sd_logger.cpp</code></em></p>
+<h1>Modules Support</h1>
+<p>Deux modules utilitaires sans UI propre, utilisés par le reste du système.</p>
 
-<!-- ============================================================ -->
-<h2 id="map_gps_filter">map_gps_filter.cpp — Filtrage GPS et trace</h2>
-<div class="module">
-  <p>TODO</p>
+<!-- ================================================================ -->
+<h2 id="gps_filter">map_gps_filter.cpp</h2>
+<p class="label-file">lib/MapGPSFilter/map_gps_filter.cpp · map_gps_filter.h</p>
+
+<div class="module-intro">
+  Module de filtrage GPS et de gestion de la trace de position propre. Encapsule toute la logique de qualité GPS — de la donnée brute TinyGPS++ à la position affichable à l'écran. <strong>Source unique de vérité</strong> pour la position et la trace sur la carte.
 </div>
 
-<!-- ============================================================ -->
-<h2 id="sd_logger">sd_logger.cpp — Logging SD card</h2>
-<div class="module">
-  <p>TODO</p>
+<h3>Structures de données</h3>
+<table>
+  <tr><th>Champ</th><th>Type</th><th>Rôle</th></tr>
+  <tr><td><code>ownPositionLat/Lon</code></td><td><code>float</code></td><td>Position filtrée courante (lissée). C'est cette valeur qui est affichée sur la carte.</td></tr>
+  <tr><td><code>ownPositionValid</code></td><td><code>bool</code></td><td>False jusqu'au premier fix GPS valide. Aucune position n'est affichée tant que false.</td></tr>
+  <tr><td><code>ownTrace[500]</code></td><td><code>TracePoint[]</code></td><td>Buffer circulaire de 500 points lat/lon. Contient l'historique du trajet affiché sur la carte.</td></tr>
+  <tr><td><code>ownTraceHead</code></td><td><code>uint16_t</code></td><td>Index du prochain point à écrire dans le buffer circulaire (0..499).</td></tr>
+  <tr><td><code>ownTraceCount</code></td><td><code>uint16_t</code></td><td>Nombre de points valides dans le buffer (0..500).</td></tr>
+  <tr><td><code>lastValidTime</code></td><td><code>uint32_t</code></td><td>millis() du dernier fix accepté. Utilisé pour calculer la vitesse instantanée.</td></tr>
+</table>
+
+<h3>Constantes clés</h3>
+<table>
+  <tr><th>Constante</th><th>Valeur</th><th>Signification</th></tr>
+  <tr><td><code>OWN_TRACE_MAX_POINTS</code></td><td>500</td><td>Taille du buffer circulaire de trace.</td></tr>
+  <tr><td><code>MAX_SPEED_KMPH</code></td><td>150.0</td><td>Seuil de rejet des sauts GPS (au-dessus = spike ignoré).</td></tr>
+  <tr><td><code>MIN_SPEED_KMPH</code></td><td>1.5</td><td>En dessous de cette vitesse, la position filtrée est gelée (anti-gigue à l'arrêt).</td></tr>
+  <tr><td><code>TRACE_MIN_DISTANCE</code></td><td>0.000027° (~3m)</td><td>Distance minimale pour ajouter un nouveau point de trace.</td></tr>
+</table>
+
+<h3>Pipeline de filtrage — updateFilteredOwnPosition()</h3>
+<p>Appelée toutes les ~500ms depuis <code>map_refresh_timer_cb()</code>. Prend un <code>TinyGPSPlus&</code> en entrée, met à jour <code>ownPositionLat/Lon</code> en sortie. Quatre étapes en série :</p>
+
+<div class="flow">
+GPS brut (TinyGPS++)
+    │
+    ▼
+[1] Santé minimale : isValid() + sats >= 3 + sats <= 90
+    │ KO → return (position inchangée)
+    ▼
+[2] Spike rejection : vitesse calculée vs dernière position
+    │ > 150 km/h → return (saut GPS ignoré, log WARN)
+    ▼
+[3] Jitter filter : vitesse GPS < 1.5 km/h → return (appareil immobile)
+    │
+    │ + Poor signal freeze : HDOP > 8.0 ET vitesse < 5 km/h → return
+    ▼
+[4] Lissage low-pass : alpha = f(vitesse, HDOP)
+    │ vitesse >= 30 km/h → alpha = 1.0 (GPS direct, pas de lag)
+    │ sinon → alpha = 1/HDOP (HDOP 1 = alpha 1.0, HDOP 5 = alpha 0.2)
+    │
+    ownPositionLat += alpha * (newLat - ownPositionLat)
+    ownPositionLon += alpha * (newLon - ownPositionLon)
+    │
+    ▼
+Log CSV sur SD : "gps_lat,gps_lon,speed,hdop,alpha,filt_lat,filt_lon,delta_m"</div>
+
+<div class="tip">
+  <strong>Alpha :</strong> plus il est petit, plus la position filtrée est stable (peu réactive aux variations GPS) mais lente à bouger. HDOP=1 (très bon signal) → alpha=1.0, pas de lissage. HDOP=5 (signal moyen) → alpha=0.2, fort lissage.
+</div>
+
+<h3>Gestion de la trace — addOwnTracePoint()</h3>
+<p>Appelée après chaque <code>updateFilteredOwnPosition()</code>. Enregistre la position filtrée dans le buffer circulaire si :</p>
+<ol>
+  <li><code>getUiPosition()</code> retourne true (position valide)</li>
+  <li>Distance depuis le dernier point > 3m (~0.000027°)</li>
+</ol>
+<p>Quand le buffer est plein (500 points) : appel à <code>compactTrace()</code> avant d'ajouter.</p>
+
+<h3>Compaction — compactTrace()</h3>
+<p>Libère de la place dans le buffer en simplifiant les points les plus anciens :</p>
+<div class="flow">
+1. Lineariser le buffer circulaire → tableau temporaire linear[500]
+2. Appliquer Douglas-Peucker sur la première moitié (points anciens)
+   ε = 0.0002° (~22m) : élimine les points redondants en ligne droite
+3. Rebuilder : points gardés de la 1ère moitié + tous les points de la 2ème moitié
+4. ownTraceCount = writeIdx
+5. ownTraceHead  = writeIdx % 500  ← le % est critique (fix bug : writeIdx peut = 500)</div>
+
+<div class="warning">
+  <strong>Invariant circulaire :</strong> <code>ownTraceHead</code> doit toujours être dans [0..499]. Si Douglas-Peucker ne simplifie rien (tous les points gardés), <code>writeIdx</code> peut valoir exactement 500. Sans le <code>% OWN_TRACE_MAX_POINTS</code>, <code>ownTrace[500]</code> serait un accès hors-limite au prochain <code>addOwnTracePoint()</code>. Fix appliqué dans commit <code>454ffd5</code>.
+</div>
+
+<h3>Accès depuis l'extérieur</h3>
+<table>
+  <tr><th>Méthode</th><th>Usage</th></tr>
+  <tr><td><code>getUiPosition(&lat, &lon)</code></td><td>Récupère la position filtrée. Retourne false si pas encore de fix valide. <strong>Seul point d'accès recommandé pour la carte.</strong></td></tr>
+  <tr><td><code>getOwnLat() / getOwnLon()</code></td><td>Accès direct aux coordonnées filtrées (sans vérification de validité).</td></tr>
+  <tr><td><code>getOwnTrace() / getOwnTraceCount() / getOwnTraceHead()</code></td><td>Accès au buffer circulaire pour le rendu de la trace sur la carte.</td></tr>
+  <tr><td><code>clearTrace()</code></td><td>Efface la trace (reset head et count à 0).</td></tr>
+</table>
+
+<h3>Tests unitaires</h3>
+<p>Le module est compilable en dehors d'ESP32 (macro <code>UNIT_TEST</code>). Les dépendances Arduino et ESP-IDF sont mockées. Douglas-Peucker est remplacé par un stub qui garde tous les points. Tests dans <code>lib/MapGPSFilter/test/</code>.</p>
+
+<!-- ================================================================ -->
+<h2 id="sd_logger">sd_logger.cpp</h2>
+<p class="label-file">src/sd_logger.cpp · include/sd_logger.h</p>
+
+<div class="module-intro">
+  Logger persistant sur carte SD. Deux rôles distincts : (1) écriture proactive d'événements système (boot, heartbeat, screen state), (2) capture automatique des logs ESP <code>W</code>/<code>E</code> via hook vprintf. Fournit aussi le mécanisme de crash context en RAM RTC pour diagnostiquer les PANIC sans USB.
+</div>
+
+<h3>Fichier de log</h3>
+<pre>/LoRa_Tracker/system.log       ← fichier actif (max 100KB)
+/LoRa_Tracker/system.log.old   ← rotation automatique quand > 100KB</pre>
+
+<h3>Format d'une ligne</h3>
+<pre>[03-20 08:11:42] INFO  BOOT: Reset reason: POWER_ON
+[+000:01:23.456] WARN  MapEngine: No NAV pack for France-Sud Z12</pre>
+<p>Le timestamp utilise l'heure GPS réelle (<code>MM-DD HH:MM:SS</code>) dès qu'un fix GPS est reçu. Avant le premier fix : uptime relatif (<code>+HHH:MM:SS.mmm</code>).</p>
+
+<h3>Mécanisme du hook vprintf</h3>
+<p>Installé au boot via <code>esp_log_set_vprintf()</code>. Intercepte <strong>tous</strong> les logs ESP_LOG* avant qu'ils partent vers la serial. Filtre : seuls <code>W</code> (warn) et <code>E</code> (error) sont persistés sur SD. Les niveaux I/D/V sont laissés passer sans écriture SD.</p>
+
+<div class="warning">
+  <strong>Anti-réentrance :</strong> le flag <code>inSdHook</code> empêche la récursion. Si l'écriture SD elle-même génère un ESP_LOGW (ex: SD full), le hook détecte <code>inSdHook=true</code> et ne re-entre pas. Sans ça : stack overflow garanti.
+</div>
+
+<h3>Mutex SD</h3>
+<p><code>sdLogMutex</code> protège les accès SD contre la concurrence entre le hook vprintf (appelé depuis n'importe quelle tâche) et les appels explicites à <code>log()</code>/<code>logf()</code>. Timeout : 50ms pour le hook (non bloquant), 1000ms pour les appels explicites.</p>
+
+<h3>Crash Context (RAM RTC)</h3>
+<p>Mécanisme pour diagnostiquer les PANIC sans USB connecté. Fonctionne car la RAM RTC (<code>RTC_NOINIT_ATTR</code>) survit à un reset (PANIC, WDT) mais pas à une coupure d'alimentation.</p>
+
+<div class="flow">
+Pendant l'exécution (toutes les 5s depuis loop(), à chaque render) :
+    updateCrashContext("MODULE", lat, lon)
+        → écrit dans _crashCtx (RAM RTC) :
+           magic = 0xC0FFEE42
+           module = "LOOP" | "MAP_NAV" | "MAP_RASTER" | "MAP_IDLE"
+           uptimeMs, lat, lon, freeHeap, freePsram, loopCount++
+
+Au boot suivant (dans logBootInfo()) :
+    logPreviousCrashContext()
+        → si reset reason = PANIC ou WDT :
+            si magic == 0xC0FFEE42 → log CRIT dans system.log
+            sinon → log WARN "no crash context"
+        → si reset normal → efface magic (= 0)</div>
+
+<table>
+  <tr><th>Module logué</th><th>Signification</th></tr>
+  <tr><td><code>LOOP</code></td><td>Main loop (loop() dans LoRa_APRS_Tracker.cpp)</td></tr>
+  <tr><td><code>MAP_NAV</code></td><td>Render task Core 0, pendant renderNavViewport()</td></tr>
+  <tr><td><code>MAP_RASTER</code></td><td>Render task Core 0, pendant renderRasterViewport()</td></tr>
+  <tr><td><code>MAP_IDLE</code></td><td>Render task Core 0, après rendu, en attente</td></tr>
+</table>
+
+<h3>API publique</h3>
+<table>
+  <tr><th>Fonction</th><th>Quand appeler</th></tr>
+  <tr><td><code>init()</code></td><td>Une fois au boot, après que la SD est montée. Installe le hook vprintf.</td></tr>
+  <tr><td><code>logBootInfo()</code></td><td>Juste après <code>init()</code>. Écrit reset reason, mémoire, CPU freq, crash context.</td></tr>
+  <tr><td><code>setGpsTime(h,m,s,d,mo,y)</code></td><td>Dès le premier fix GPS valide. Active les timestamps réels.</td></tr>
+  <tr><td><code>log(level, module, msg)</code></td><td>Log explicite d'un événement. Thread-safe.</td></tr>
+  <tr><td><code>logf(level, module, fmt, ...)</code></td><td>Idem avec printf-style.</td></tr>
+  <tr><td><code>updateCrashContext(module, lat, lon)</code></td><td>Toutes les 5s depuis loop() et dans le render task.</td></tr>
+  <tr><td><code>rotateLogs()</code></td><td>Appelé automatiquement quand system.log dépasse 100KB.</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Rotation :</strong> quand system.log dépasse 100KB, il est renommé en system.log.old (l'ancien .old est supprimé). On conserve donc au maximum ~200KB d'historique sur la SD.
 </div>
 
 </body>
