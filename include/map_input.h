@@ -24,6 +24,9 @@ namespace MapInput {
     // Update GPX record button visual state
     void updateGpxRecButton();
 
+    // Pan map by dx/dy pixels (also called from timer_cb for inertia)
+    void scrollMap(int16_t dx, int16_t dy);
+
 } // namespace MapInput
 
 #endif // USE_LVGL_UI

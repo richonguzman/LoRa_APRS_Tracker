@@ -1225,7 +1225,7 @@ namespace MapEngine {
 
             if (copy_w > 0 && copy_h > 0) {
                 uint16_t* src_buf = (uint16_t*)sprite->getBuffer();
-                lv_color_t* dest_buf = UIMapManager::map_canvas_buf;
+                lv_color_t* dest_buf = MapState::map_canvas_buf;
 
                 for (int y = 0; y < copy_h; y++) {
                     uint16_t* src_ptr = src_buf + ((src_y + y) * MAP_TILE_SIZE) + src_x;

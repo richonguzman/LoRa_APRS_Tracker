@@ -185,7 +185,7 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
       screenDimmed = false;
 
       // Boost CPU to 240 MHz if on map screen
-      if (lv_scr_act() == UIMapManager::screen_map) {
+      if (lv_scr_act() == MapState::screen_map) {
         setCpuFrequencyMhz(240);
         ESP_LOGI(TAG, "Screen woken up, CPU boosted to %d MHz (map)",
                       getCpuFrequencyMhz());
@@ -586,7 +586,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
         screenDimmed = true;
         tft.setBrightness(0); // Turn off backlight
         // Reduce CPU to 80 MHz if on map screen
-        if (lv_scr_act() == UIMapManager::screen_map) {
+        if (lv_scr_act() == MapState::screen_map) {
           setCpuFrequencyMhz(80);
           ESP_LOGI(TAG,
               "Screen dimmed (eco mode), CPU reduced to %d MHz (map)",

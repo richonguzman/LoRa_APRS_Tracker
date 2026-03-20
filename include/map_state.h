@@ -127,6 +127,12 @@ namespace MapState {
     extern bool         pendingResetPan;
 
     // -------------------------------------------------------------------------
+    // GPX recording button refs (créés par glue, utilisés par input)
+    // -------------------------------------------------------------------------
+    extern lv_obj_t* btn_gpx_rec;
+    extern lv_obj_t* lbl_gpx_rec;
+
+    // -------------------------------------------------------------------------
     // Timer refresh (créé par glue, arrêté par input)
     // -------------------------------------------------------------------------
     extern lv_timer_t* map_refresh_timer;

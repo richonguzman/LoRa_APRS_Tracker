@@ -168,10 +168,10 @@ static void btn_map_clicked(lv_event_t *e) {
     UIPopups::showMapLoading();
 
     // Recreate map screen each time to update positions
-    if (UIMapManager::screen_map) {
+    if (MapState::screen_map) {
         ESP_LOGD(TAG, "Deleting old screen_map");
-        lv_obj_del(UIMapManager::screen_map);
-        UIMapManager::screen_map = nullptr;
+        lv_obj_del(MapState::screen_map);
+        MapState::screen_map = nullptr;
     }
     ESP_LOGD(TAG, "Creating new map screen");
     UIMapManager::create_map_screen();
@@ -180,7 +180,7 @@ static void btn_map_clicked(lv_event_t *e) {
     // Hide loading popup now that map is ready
     UIPopups::hideMapLoading();
 
-    lv_scr_load_anim(UIMapManager::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+    lv_scr_load_anim(MapState::screen_map, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
     ESP_LOGD(TAG, "btn_map_clicked DONE");
 }
 

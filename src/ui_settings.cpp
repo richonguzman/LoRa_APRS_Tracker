@@ -52,10 +52,8 @@ extern int myBeaconsIndex;
 extern int myBeaconsSize;
 extern uint32_t last_tick;
 
-// External namespace for map screen
-namespace UIMapManager {
-    extern lv_obj_t *screen_map;
-}
+// Map screen pointer (defined in map_state.cpp)
+#include "map_state.h"
 
 // =============================================================================
 // Module State - Screen Pointers
@@ -712,7 +710,7 @@ static void eco_switch_changed(lv_event_t *e) {
         if (screenDimmed) {
             screenDimmed = false;
             displaySetBrightness(screenBrightness);
-            if (lv_scr_act() == UIMapManager::screen_map) {
+            if (lv_scr_act() == MapState::screen_map) {
                 setCpuFrequencyMhz(240);
                 ESP_LOGI(TAG, "Eco mode disabled, CPU boosted to %d MHz (map)",
                          getCpuFrequencyMhz());

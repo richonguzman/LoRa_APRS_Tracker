@@ -31,9 +31,6 @@ static int   last_x    = 0;
 static int   last_y    = 0;
 static uint32_t last_time = 0;
 
-static lv_obj_t* btn_gpx_rec = nullptr;
-static lv_obj_t* lbl_gpx_rec = nullptr;
-
 // =============================================================================
 // Internal helpers
 // =============================================================================
@@ -64,47 +61,6 @@ static void shiftMapCenter(int deltaTileX, int deltaTileY) {
                             deltaTileX, deltaTileY, &newLat, &newLon);
     map_center_lat = newLat;
     map_center_lon = newLon;
-}
-
-static void scrollMap(int16_t dx, int16_t dy) {
-    if (dx == 0 && dy == 0) return;
-
-    const int16_t softLimit = PAN_TILE_THRESHOLD;
-    if (abs(offsetX) > softLimit && ((dx > 0 && offsetX > 0) || (dx < 0 && offsetX < 0)))
-        dx /= 2;
-    if (abs(offsetY) > softLimit && ((dy > 0 && offsetY > 0) || (dy < 0 && offsetY < 0)))
-        dy /= 2;
-
-    offsetX += dx;
-    offsetY += dy;
-
-    if (!pendingResetPan) {
-        map_follow_gps = false;
-    }
-
-    int16_t maxOffX = MAP_MARGIN_X - 10;
-    int16_t maxOffY = MAP_MARGIN_Y - 10;
-    offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
-    offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
-
-    int targetX = centerTileX;
-    int targetY = centerTileY;
-    int16_t tempX = offsetX, tempY = offsetY;
-    if (tempX >= PAN_TILE_THRESHOLD)       { targetX++; tempX -= MAP_TILE_SIZE; }
-    else if (tempX <= -PAN_TILE_THRESHOLD) { targetX--; tempX += MAP_TILE_SIZE; }
-    if (tempY >= PAN_TILE_THRESHOLD)       { targetY++; tempY -= MAP_TILE_SIZE; }
-    else if (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
-
-    if (targetX != renderTileX || targetY != renderTileY) {
-        int dX = targetX - renderTileX;
-        int dY = targetY - renderTileY;
-        renderTileX = targetX;
-        renderTileY = targetY;
-        shiftMapCenter(dX, dY);
-        ESP_LOGD(TAG, "scrollMap → render tile(%d,%d) offset(%d,%d) lat/lon %.4f,%.4f",
-                      renderTileX, renderTileY, offsetX, offsetY, map_center_lat, map_center_lon);
-        UIMapManager::redraw_map_canvas();
-    }
 }
 
 static void toggleMapFullscreen() {
@@ -342,6 +298,47 @@ namespace MapInput {
         }
 
         default: break;
+        }
+    }
+
+    void scrollMap(int16_t dx, int16_t dy) {
+        if (dx == 0 && dy == 0) return;
+
+        const int16_t softLimit = PAN_TILE_THRESHOLD;
+        if (abs(offsetX) > softLimit && ((dx > 0 && offsetX > 0) || (dx < 0 && offsetX < 0)))
+            dx /= 2;
+        if (abs(offsetY) > softLimit && ((dy > 0 && offsetY > 0) || (dy < 0 && offsetY < 0)))
+            dy /= 2;
+
+        offsetX += dx;
+        offsetY += dy;
+
+        if (!pendingResetPan) {
+            map_follow_gps = false;
+        }
+
+        int16_t maxOffX = MAP_MARGIN_X - 10;
+        int16_t maxOffY = MAP_MARGIN_Y - 10;
+        offsetX = (int16_t)constrain(offsetX, -maxOffX, maxOffX);
+        offsetY = (int16_t)constrain(offsetY, -maxOffY, maxOffY);
+
+        int targetX = centerTileX;
+        int targetY = centerTileY;
+        int16_t tempX = offsetX, tempY = offsetY;
+        if (tempX >= PAN_TILE_THRESHOLD)       { targetX++; tempX -= MAP_TILE_SIZE; }
+        else if (tempX <= -PAN_TILE_THRESHOLD) { targetX--; tempX += MAP_TILE_SIZE; }
+        if (tempY >= PAN_TILE_THRESHOLD)       { targetY++; tempY -= MAP_TILE_SIZE; }
+        else if (tempY <= -PAN_TILE_THRESHOLD) { targetY--; tempY += MAP_TILE_SIZE; }
+
+        if (targetX != renderTileX || targetY != renderTileY) {
+            int dX = targetX - renderTileX;
+            int dY = targetY - renderTileY;
+            renderTileX = targetX;
+            renderTileY = targetY;
+            shiftMapCenter(dX, dY);
+            ESP_LOGD(TAG, "scrollMap → render tile(%d,%d) offset(%d,%d) lat/lon %.4f,%.4f",
+                          renderTileX, renderTileY, offsetX, offsetY, map_center_lat, map_center_lon);
+            UIMapManager::redraw_map_canvas();
         }
     }
 
