@@ -127,6 +127,11 @@ namespace MapState {
     extern bool         pendingResetPan;
 
     // -------------------------------------------------------------------------
+    // Timer refresh (créé par glue, arrêté par input)
+    // -------------------------------------------------------------------------
+    extern lv_timer_t* map_refresh_timer;
+
+    // -------------------------------------------------------------------------
     // État rendu (volatile : accès cross-core)
     // -------------------------------------------------------------------------
     extern volatile bool redraw_in_progress;
