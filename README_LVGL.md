@@ -16,7 +16,7 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 
 ---
 ## What's New in v2.9.x
-- **NeoGPS migration** - Replaced TinyGPS++ (legacy 2013) with NeoGPS (Jordi's fork, IceNav-v3 aligned): coherent fix merging, HDOP from GGA, configurable sentence parsing
+- **NeoGPS migration** - Replaced TinyGPS++ (legacy 2013) with NeoGPS: coherent fix merging, HDOP from GGA, configurable sentence parsing
 - **GPS Doppler cross-check filter** - New jitter rejection: when GPS reports low speed (< 8 km/h) but position barely moved (< 25m), the update is rejected. Fixes L76K Doppler noise at rest
 - **HDOP quality indicator** - Satellite count on dashboard shows signal quality: `+` (≤ 2.0), `-` (2-5), `X` (> 5)
 - **Trace z-order fix** - GPS traces now render under station icons
