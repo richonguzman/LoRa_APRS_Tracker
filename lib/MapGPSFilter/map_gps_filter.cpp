@@ -16,14 +16,17 @@
 static const char* TAG = "MapGPSFilter";
 
 MapGPSFilter::MapGPSFilter() {
+    _mutex = xSemaphoreCreateMutex();
     reset();
 }
 
 void MapGPSFilter::reset() {
-    ownPositionLat = 0.0f;
-    ownPositionLon = 0.0f;
+    ownPositionLat = 0.0;
+    ownPositionLon = 0.0;
     ownPositionValid = false;
     lastValidTime = 0;
+    lastRawLat = 0.0;
+    lastRawLon = 0.0;
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
@@ -32,21 +35,34 @@ void MapGPSFilter::reset() {
 }
 
 void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
-    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats.value=%d, hdop.value=%.1f", gps.location.isValid(), gps.satellites.value(), gps.hdop.hdop());
+    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats.value=%d, hdop.value=%.1f",
+             gps.location.isValid(), gps.satellites.value(), gps.hdop.hdop());
+
     // Basic sanity check: need a valid location and a realistic number of satellites.
-    if (!gps.location.isValid() || !gps.satellites.isValid() || gps.satellites.value() < 3 || gps.satellites.value() > 90) {
+    if (!gps.location.isValid() || !gps.satellites.isValid() ||
+        gps.satellites.value() < 3 || gps.satellites.value() > 90) {
         return;
     }
 
-    float lat = gps.location.lat();
-    float lon = gps.location.lng();
+    double lat = gps.location.lat();
+    double lon = gps.location.lng();
     uint32_t now = MILLIS();
+
+    // Bug #4 fix: skip if same raw position as last call (no new NMEA sentence)
+    if (ownPositionValid && lat == lastRawLat && lon == lastRawLon) {
+        return;
+    }
+    lastRawLat = lat;
+    lastRawLon = lon;
 
     // Initialization if this is the first valid position
     if (!ownPositionValid) {
-        ownPositionLat = lat;
-        ownPositionLon = lon;
-        ownPositionValid = true;
+        if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+            ownPositionLat = lat;
+            ownPositionLon = lon;
+            ownPositionValid = true;
+            xSemaphoreGive(_mutex);
+        }
         lastValidTime = now;
         return;
     }
@@ -54,27 +70,36 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     // 1. Filtre anti-saut spatial absolu (Supersonic Spike Rejection)
     double distMeters = TinyGPSPlus::distanceBetween(ownPositionLat, ownPositionLon, lat, lon);
     double dtSeconds = (now - lastValidTime) / 1000.0;
-    if (dtSeconds > 0.0 && dtSeconds < 120.0) { 
-        double speedKmph = (distMeters / dtSeconds) * 3.6;
-        if (speedKmph > MAX_SPEED_KMPH) {
-            ESP_LOGW(TAG, "GPS Jump rejected: %.1fm in %.1fs (%.1f km/h)", distMeters, dtSeconds, speedKmph);
-            return;
+    if (dtSeconds > 0.0) {
+        if (dtSeconds < 120.0) {
+            double speedKmph = (distMeters / dtSeconds) * 3.6;
+            if (speedKmph > MAX_SPEED_KMPH) {
+                ESP_LOGW(TAG, "GPS Jump rejected: %.1fm in %.1fs (%.1f km/h)",
+                         distMeters, dtSeconds, speedKmph);
+                return;
+            }
+        } else {
+            // Long gap (>2 min): accept only if distance is reasonable (<5 km)
+            if (distMeters > 5000.0) {
+                ESP_LOGW(TAG, "GPS Teleport rejected after long gap: %.1fm in %.1fs",
+                         distMeters, dtSeconds);
+                return;
+            }
         }
     }
     lastValidTime = now;
 
-    // 2. Filtre anti-gigue à l'arrêt (Jitter Filter)
+    // 2. Filtre anti-gigue a l'arret (Jitter Filter)
     if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
         return; // When stationary, do not update to freeze map and icon
     }
 
-    // 2b. Poor signal freeze: HDOP > 8 and speed < 5 km/h → freeze
-    // Prevents small jumps (<150 km/h) caused by multipath/few satellites indoors.
-    // Does not trigger when moving (speed >= 5 km/h) or with good signal (HDOP <= 8).
-    if (gps.hdop.isValid() && gps.hdop.hdop() > 8.0f) {
-        float spd = gps.speed.isValid() ? gps.speed.kmph() : 0.0f;
-        if (spd < 5.0f) {
-            ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f speed=%.1f km/h", gps.hdop.hdop(), spd);
+    // 2b. Poor signal freeze: HDOP > 8 and speed < 5 km/h -> freeze
+    if (gps.hdop.isValid() && gps.hdop.hdop() > 8.0) {
+        double spd = gps.speed.isValid() ? gps.speed.kmph() : 0.0;
+        if (spd < 5.0) {
+            ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f speed=%.1f km/h",
+                     gps.hdop.hdop(), spd);
             return;
         }
     }
@@ -86,40 +111,42 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     if (gps.speed.isValid() && gps.speed.kmph() >= 30.0f) {
         currentAlpha = 1.0f; // Direct assignment: no lag at car speed
     } else if (gps.hdop.isValid()) {
-        float hdop = fmax(1.0f, gps.hdop.hdop());
-        currentAlpha = fmax(0.1f, 1.0f / hdop); // HDOP 1 = alpha 1.0. HDOP 5 = alpha 0.2.
+        float hdop = fmax(1.0f, (float)gps.hdop.hdop());
+        currentAlpha = fmax(0.1f, 1.0f / hdop);
     }
 
-    ownPositionLat += currentAlpha * (lat - ownPositionLat);
-    ownPositionLon += currentAlpha * (lon - ownPositionLon);
-
-    // Diagnostics: distance entre GPS brut et position filtrée
+    // Diagnostics BEFORE update: distance between raw GPS and current filtered position
     lastDeltaMeters = (float)TinyGPSPlus::distanceBetween(lat, lon, ownPositionLat, ownPositionLon);
     lastAlpha = currentAlpha;
 
-    // Log CSV sur SD: gps_lat,gps_lon,speed_kmh,hdop,alpha,filt_lat,filt_lon,delta_m
+    // Apply low-pass filter (double precision avoids catastrophic cancellation)
+    if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        ownPositionLat += currentAlpha * (lat - ownPositionLat);
+        ownPositionLon += currentAlpha * (lon - ownPositionLon);
+        xSemaphoreGive(_mutex);
+    }
+
+    // Log CSV on SD: gps_lat,gps_lon,speed_kmh,hdop,alpha,filt_lat,filt_lon,delta_m
 #ifndef UNIT_TEST
     char logLine[256];
-    snprintf(logLine, sizeof(logLine), "%.6f,%.6f,%.2f,%.1f,%.2f,%.6f,%.6f,%.1f",
+    snprintf(logLine, sizeof(logLine), "%.8f,%.8f,%.2f,%.1f,%.2f,%.8f,%.8f,%.1f",
              lat, lon, gps.speed.kmph(),
-             gps.hdop.isValid() ? gps.hdop.hdop() : 0.0f,
+             gps.hdop.isValid() ? gps.hdop.hdop() : 0.0,
              currentAlpha, ownPositionLat, ownPositionLon, lastDeltaMeters);
     SD_Logger::log(SD_Logger::INFO, "GPS_DEBUG", logLine);
 #endif
 }
 
 void MapGPSFilter::addOwnTracePoint() {
-    float lat, lon;
+    double lat, lon;
     if (!getUiPosition(&lat, &lon)) return; // No valid GPS position yet
 
     // Ensure we only add a new point if we moved enough from the last trace point.
-    // This prevents the buffer from filling up with identical points during standing updates.
     if (ownTraceCount > 0) {
         int lastIdx = (ownTraceHead - 1 + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
         float lastLat = ownTrace[lastIdx].lat;
         float lastLon = ownTrace[lastIdx].lon;
-        
-        // Threshold: 0.0001 degrees is roughly 11 meters
+
         if (fabs(lat - lastLat) < TRACE_MIN_DISTANCE && fabs(lon - lastLon) < TRACE_MIN_DISTANCE) {
             return; // Hasn't moved enough from the last recorded trace point
         }
@@ -130,9 +157,9 @@ void MapGPSFilter::addOwnTracePoint() {
         compactTrace();
     }
 
-    // Add point to circular buffer
-    ownTrace[ownTraceHead].lat = lat;
-    ownTrace[ownTraceHead].lon = lon;
+    // Add point to circular buffer (TracePoint uses float — acceptable for trace)
+    ownTrace[ownTraceHead].lat = (float)lat;
+    ownTrace[ownTraceHead].lon = (float)lon;
 
     // Update circular buffer indices
     ownTraceHead = (ownTraceHead + 1) % OWN_TRACE_MAX_POINTS;
@@ -184,13 +211,15 @@ void MapGPSFilter::compactTrace() {
     ESP_LOGD(TAG, "Trace compacted: %d -> %d points", OWN_TRACE_MAX_POINTS, writeIdx);
 }
 
-bool MapGPSFilter::getUiPosition(float* lat, float* lon) const {
-    if (ownPositionValid) {
+bool MapGPSFilter::getUiPosition(double* lat, double* lon) const {
+    if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(5)) != pdTRUE) return false;
+    bool valid = ownPositionValid;
+    if (valid) {
         *lat = ownPositionLat;
         *lon = ownPositionLon;
-        return true;
     }
-    return false;
+    xSemaphoreGive(_mutex);
+    return valid;
 }
 
 void MapGPSFilter::clearTrace() {

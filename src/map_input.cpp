@@ -126,7 +126,7 @@ namespace MapInput {
     void btn_map_recenter_clicked(lv_event_t* e) {
         ESP_LOGI(TAG, "Recentering on GPS");
         map_follow_gps = true;
-        float initLat, initLon;
+        double initLat, initLon;
         if (gpsFilter.getUiPosition(&initLat, &initLon)) {
             ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", initLat, initLon);
         } else {

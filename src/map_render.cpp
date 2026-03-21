@@ -288,7 +288,7 @@ namespace MapRender {
         stationHitZoneCount = 0;
 
         // Own position
-        float uiLat, uiLon;
+        double uiLat, uiLon;
         if (gpsFilter.getUiPosition(&uiLat, &uiLon)) {
             int myX, myY;
             MapMath::latLonToPixel(uiLat, uiLon,
@@ -395,7 +395,7 @@ namespace MapRender {
             lastY = y;
         }
 
-        float uiLat, uiLon;
+        double uiLat, uiLon;
         if (gpsFilter.getUiPosition(&uiLat, &uiLon)) {
             int cx, cy;
             MapMath::latLonToPixel(uiLat, uiLon,

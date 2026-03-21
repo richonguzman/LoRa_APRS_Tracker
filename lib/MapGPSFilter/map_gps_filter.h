@@ -15,6 +15,7 @@ typedef void* SemaphoreHandle_t;
 #define xSemaphoreGive(x)
 #define portMAX_DELAY 0
 #define pdTRUE true
+#define pdMS_TO_TICKS(x) (x)
 #else
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -22,9 +23,9 @@ typedef void* SemaphoreHandle_t;
 
 /**
  * MapGPSFilter - KISS module for GPS filtering and trace management
- * 
+ *
  * Encapsulates GPS position filtering with a single, stable source of truth.
- * 
+ *
  * Features:
  * - Supersonic jump rejection (>150 km/h spikes)
  * - Doppler-based jitter filter (<1.5 km/h stationary)
@@ -38,18 +39,18 @@ public:
 
     // Update filtered position from GPS data (includes all filtering logic)
     void updateFilteredOwnPosition(TinyGPSPlus& gps);
-    
+
     // Add current position to trace history (distance-based recording)
     void addOwnTracePoint();
-    
+
     // Get best available position for UI (Single Source of Truth)
-    bool getUiPosition(float* lat, float* lon) const;
+    bool getUiPosition(double* lat, double* lon) const;
 
     // Own Position getters (The single source of truth)
-    float getOwnLat() const { return ownPositionLat; }
-    float getOwnLon() const { return ownPositionLon; }
+    double getOwnLat() const { return ownPositionLat; }
+    double getOwnLon() const { return ownPositionLon; }
     bool isOwnPositionValid() const { return ownPositionValid; }
-    
+
     // Trace history access
     const TracePoint* getOwnTrace() const { return ownTrace; }
     int getOwnTraceCount() const { return ownTraceCount; }
@@ -68,22 +69,32 @@ public:
 private:
     // Compact trace using Douglas-Peucker when buffer is full
     void compactTrace();
-        float lastDeltaMeters; // Distance in meters between raw GPS and filtered position
-        float lastAlpha;       // Alpha value used for smoothing
-        // Own filtered position (The single source of truth for UI, trace, and recentering)
-        float ownPositionLat;
-        float ownPositionLon;
-        bool ownPositionValid;
-        uint32_t lastValidTime;    // For speed calculation
-        // Own GPS trace (circular buffer)
-        TracePoint ownTrace[OWN_TRACE_MAX_POINTS];
-        uint16_t ownTraceCount;
-        uint16_t ownTraceHead;
 
-        // Constants
-        static constexpr double MAX_SPEED_KMPH = 150.0;  // Spike rejection
-        static constexpr double MIN_SPEED_KMPH = 1.5;    // Jitter filter
-        static constexpr float TRACE_MIN_DISTANCE = 0.000027f; // ~3 meters
+    // Mutex for cross-core access (defense in depth)
+    mutable SemaphoreHandle_t _mutex;
+
+    float lastDeltaMeters; // Distance in meters between raw GPS and filtered position
+    float lastAlpha;       // Alpha value used for smoothing
+
+    // Own filtered position — double precision to avoid catastrophic cancellation
+    double ownPositionLat;
+    double ownPositionLon;
+    bool ownPositionValid;
+    uint32_t lastValidTime;    // For speed calculation
+
+    // Duplicate detection: last raw GPS position processed
+    double lastRawLat;
+    double lastRawLon;
+
+    // Own GPS trace (circular buffer)
+    TracePoint ownTrace[OWN_TRACE_MAX_POINTS];
+    uint16_t ownTraceCount;
+    uint16_t ownTraceHead;
+
+    // Constants
+    static constexpr double MAX_SPEED_KMPH = 150.0;  // Spike rejection
+    static constexpr double MIN_SPEED_KMPH = 1.5;    // Jitter filter
+    static constexpr float TRACE_MIN_DISTANCE = 0.000027f; // ~3 meters
 };
 
 #endif // MAP_GPS_FILTER_H

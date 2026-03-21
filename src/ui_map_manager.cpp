@@ -88,8 +88,8 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
     if (++gpsUpdateCounter >= 10) {
         gpsUpdateCounter = 0;
 
-        float oldLat = gpsFilter.getOwnLat();
-        float oldLon = gpsFilter.getOwnLon();
+        double oldLat = gpsFilter.getOwnLat();
+        double oldLon = gpsFilter.getOwnLon();
 
         gpsFilter.updateFilteredOwnPosition(gps);
         gpsFilter.addOwnTracePoint();
@@ -151,7 +151,7 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
 
         if (!isScrollingMap) {
             // Follow GPS: update centerTile from stable filtered position (prevents jitter)
-            float uiLat, uiLon;
+            double uiLat, uiLon;
             if (map_follow_gps && gpsFilter.getUiPosition(&uiLat, &uiLon)) {
                 // When following GPS, always flag for a pan reset.
                 // This ensures that any user-induced pan offsets (offsetX/Y) are cleared,

@@ -112,7 +112,7 @@ TEST_F(MapGPSFilterTest, InitialState) {
     EXPECT_EQ(0, filter.getOwnTraceCount());
     EXPECT_EQ(0, filter.getOwnTraceHead());
 
-    float lat, lon;
+    double lat, lon;
     EXPECT_FALSE(filter.getUiPosition(&lat, &lon));
 }
 
@@ -250,7 +250,7 @@ TEST_F(MapGPSFilterTest, GetUiPositionPriority) {
     feedGPS(gps_icon, 37.7749, -122.4194, 4, 1.0);
     filter.updateFilteredOwnPosition(gps_icon);
 
-    float lat, lon;
+    double lat, lon;
     EXPECT_TRUE(filter.getUiPosition(&lat, &lon));
     EXPECT_NEAR(37.7749f, lat, 0.0001f);
     EXPECT_NEAR(-122.4194f, lon, 0.0001f);
@@ -273,7 +273,7 @@ TEST_F(MapGPSFilterTest, ResetClearsAll) {
 
     EXPECT_FALSE(filter.isOwnPositionValid());
     EXPECT_EQ(0, filter.getOwnTraceCount());
-    float lat, lon;
+    double lat, lon;
     EXPECT_FALSE(filter.getUiPosition(&lat, &lon));
 }
 
