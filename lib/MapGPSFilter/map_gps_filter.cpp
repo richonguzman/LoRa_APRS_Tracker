@@ -142,8 +142,8 @@ void MapGPSFilter::addOwnTracePoint() {
 }
 
 void MapGPSFilter::compactTrace() {
-    // Linearize circular buffer into a temporary array
-    TracePoint linear[OWN_TRACE_MAX_POINTS];
+    // Linearize circular buffer into a temporary array (static to avoid 6KB stack usage)
+    static TracePoint linear[OWN_TRACE_MAX_POINTS];
     int startIdx = (ownTraceHead - ownTraceCount + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
     for (int i = 0; i < ownTraceCount; i++) {
         linear[i] = ownTrace[(startIdx + i) % OWN_TRACE_MAX_POINTS];
@@ -151,7 +151,7 @@ void MapGPSFilter::compactTrace() {
 
     // Douglas-Peucker on the first half: simplify older points
     int halfCount = ownTraceCount / 2;
-    bool keep[OWN_TRACE_MAX_POINTS];
+    static bool keep[OWN_TRACE_MAX_POINTS];
     memset(keep, 0, sizeof(keep));
     keep[0] = true;              // Always keep first point (trip start)
     keep[halfCount - 1] = true;  // Always keep boundary point
