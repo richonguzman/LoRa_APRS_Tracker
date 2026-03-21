@@ -36,7 +36,7 @@ void MapGPSFilter::reset() {
 
 void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     float hdopVal = fix.valid.hdop ? (float)fix.hdop / 1000.0f : 99.0f;
-    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats=%d, hdop=%.1f",
+    ESP_LOGV(TAG, "Update called: location.isValid=%d, sats=%d, hdop=%.1f",
              fix.valid.location, fix.satellites, hdopVal);
 
     // Basic sanity check: need a valid location and a realistic number of satellites.
