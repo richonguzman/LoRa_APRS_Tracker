@@ -40,7 +40,7 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 
     // Basic sanity check: need a valid location and a realistic number of satellites.
     if (!gps.location.isValid() || !gps.satellites.isValid() ||
-        gps.satellites.value() < 3 || gps.satellites.value() > 90) {
+        gps.satellites.value() < 5 || gps.satellites.value() > 90) {
         return;
     }
 
