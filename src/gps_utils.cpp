@@ -17,7 +17,7 @@
  */
 
 #include <esp_log.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 #include "TimeLib.h"
 #include <sys/time.h>
 #include <APRSPacketLib.h>
@@ -28,6 +28,7 @@
 #include "power_utils.h"
 #include "sleep_utils.h"
 #include "gps_utils.h"
+#include "gps_math.h"
 #include "display.h"
 #ifdef GPS_BAUDRATE
     #define GPS_BAUD    GPS_BAUDRATE
@@ -38,7 +39,8 @@
 
 extern Configuration        Config;
 extern HardwareSerial       gpsSerial;
-extern TinyGPSPlus          gps;
+extern NMEAGPS              nmeaGPS;
+extern gps_fix              gpsFix;
 extern Beacon               *currentBeacon;
 extern bool                 sendUpdate;
 extern bool		            sendStandingUpdate;
@@ -83,29 +85,39 @@ namespace GPS_Utils {
         gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
     }
 
+    static bool newFixAvailable = false;
+
     void calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude) {
-        double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
-        double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
+        double distanceKm = calcDist(gpsFix.latitude(), gpsFix.longitude(), checkpointLatitude, checkPointLongitude) / 1000.0;
+        double courseTo   = calcCourse(gpsFix.latitude(), gpsFix.longitude(), checkpointLatitude, checkPointLongitude);
         STATION_Utils::deleteListenedStationsByTime();
         STATION_Utils::orderListenedStationsByDistance(callsign, distanceKm, courseTo);
     }
 
     void getData() {
         if (disableGPS) return;
-        while (gpsSerial.available() > 0) gps.encode(gpsSerial.read());
+        newFixAvailable = false;
+        while (nmeaGPS.available(gpsSerial)) {
+            gpsFix = nmeaGPS.read();
+            newFixAvailable = true;
+        }
     }
 
+    bool hasNewFix() { return newFixAvailable; }
+
     void setDateFromData() {
-        if (gps.time.isValid()) {
-            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+        if (gpsFix.valid.time && gpsFix.valid.date) {
+            int year = 2000 + gpsFix.dateTime.year;
+            setTime(gpsFix.dateTime.hours, gpsFix.dateTime.minutes, gpsFix.dateTime.seconds,
+                    gpsFix.dateTime.date, gpsFix.dateTime.month, year);
             // Sync system clock so FAT32 timestamps use GPS time
             struct tm t = {};
-            t.tm_year = gps.date.year() - 1900;
-            t.tm_mon  = gps.date.month() - 1;
-            t.tm_mday = gps.date.day();
-            t.tm_hour = gps.time.hour();
-            t.tm_min  = gps.time.minute();
-            t.tm_sec  = gps.time.second();
+            t.tm_year = year - 1900;
+            t.tm_mon  = gpsFix.dateTime.month - 1;
+            t.tm_mday = gpsFix.dateTime.date;
+            t.tm_hour = gpsFix.dateTime.hours;
+            t.tm_min  = gpsFix.dateTime.minutes;
+            t.tm_sec  = gpsFix.dateTime.seconds;
             struct timeval tv = { .tv_sec = mktime(&t), .tv_usec = 0 };
             settimeofday(&tv, nullptr);
         }
@@ -113,25 +125,25 @@ namespace GPS_Utils {
 
     void calculateDistanceTraveled() {
         // Guard against being called twice per GPS cycle (e.g. from two call sites in the main loop).
-        // TinyGPS++ clears isUpdated() after the first read, so we use our own flag on age.
         static uint32_t lastCalcMs = 0;
         uint32_t now = millis();
         if (now - lastCalcMs < 500) return;   // same GPS epoch → skip duplicate call
         lastCalcMs = now;
 
-        currentHeading  = gps.course.deg();
-        
+        currentHeading  = gpsFix.valid.heading ? gpsFix.heading() : 0.0;
+
         // Anti-jitter filter: Calculate raw distance jump
-        double rawDistance = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastTxLat, lastTxLng);
-        
+        double rawDistance = calcDist(gpsFix.latitude(), gpsFix.longitude(), lastTxLat, lastTxLng);
+
         // If speed is very low (< 5 km/h) but distance jump is large (> 50m), it's likely GPS multipath jitter.
         // We only accept large distances at low speeds if enough time has passed (standing update).
-        if (gps.speed.kmph() < 5.0 && rawDistance > 50.0 && lastTx < Config.standingUpdateTime * 60 * 1000) {
+        float speedKmph = gpsFix.valid.speed ? gpsFix.speed_kph() : 0.0f;
+        if (speedKmph < 5.0 && rawDistance > 50.0 && lastTx < Config.standingUpdateTime * 60 * 1000) {
             // Rate-limit this log to once every 30 s to avoid serial flood
             static uint32_t lastJitterLog = 0;
             if (now - lastJitterLog >= 30000) {
                 lastJitterLog = now;
-                ESP_LOGD(TAG, "Suppressed GPS jitter: speed %.1f km/h, raw jump %.1f m", gps.speed.kmph(), rawDistance);
+                ESP_LOGD(TAG, "Suppressed GPS jitter: speed %.1f km/h, raw jump %.1f m", speedKmph, rawDistance);
             }
             lastTxDistance = 0.0; // Ignore this jump for beaconing logic
         } else {
@@ -169,7 +181,7 @@ namespace GPS_Utils {
 
     void checkStartUpFrames() {
         if (disableGPS) return;
-        if ((millis() > 10000 && gps.charsProcessed() < 10)) {
+        if ((millis() > 10000 && nmeaGPS.statistics.chars < 10)) {
             ESP_LOGE(TAG, "No GPS frames detected! Try to reset the GPS Chip with this "
                         "firmware: https://github.com/richonguzman/TTGO_T_BEAM_GPS_RESET");
             displayShow("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
@@ -192,7 +204,7 @@ namespace GPS_Utils {
     }
 
     String getCardinalDirection(float course) {
-        if (gps.speed.kmph() > 0.5) bearing = course;
+        if (gpsFix.valid.speed && gpsFix.speed_kph() > 0.5) bearing = course;
 
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
         if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";

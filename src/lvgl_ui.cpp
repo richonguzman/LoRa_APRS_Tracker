@@ -11,7 +11,8 @@ static const char *TAG = "LVGL";
 #include <Arduino.h>
 #include <FS.h>
 #include "LGFX_TDeck.h"
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
+#include "gps_utils.h"
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <lvgl.h>
@@ -80,7 +81,7 @@ const uint8_t *const *symbolsAPRS = ::symbolsAPRS;
 extern Configuration Config;
 extern uint8_t myBeaconsIndex;
 extern int myBeaconsSize;
-extern TinyGPSPlus gps;
+extern gps_fix gpsFix;
 extern bool WiFiConnected;
 extern bool WiFiEcoMode;
 extern bool WiFiUserDisabled;
@@ -613,15 +614,15 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       }
 
       // Update GPS data
-      if (gps.location.isValid()) {
-        UIDashboard::updateGPS(gps.location.lat(), gps.location.lng(), gps.altitude.meters(),
-                  gps.speed.kmph(), gps.satellites.value(), gps.hdop.hdop());
+      if (gpsFix.valid.location) {
+        UIDashboard::updateGPS(gpsFix.latitude(), gpsFix.longitude(), gpsFix.alt.whole,
+                  gpsFix.speed_kph(), gpsFix.satellites, gpsHdop());
       }
 
       // Update date/time from GPS
-      if (gps.time.isValid() && gps.date.isValid()) {
-        UIDashboard::updateTime(gps.date.day(), gps.date.month(), gps.date.year(),
-                   gps.time.hour(), gps.time.minute(), gps.time.second());
+      if (gpsFix.valid.time && gpsFix.valid.date) {
+        UIDashboard::updateTime(gpsFix.dateTime.date, gpsFix.dateTime.month, 2000 + gpsFix.dateTime.year,
+                   gpsFix.dateTime.hours, gpsFix.dateTime.minutes, gpsFix.dateTime.seconds);
       }
 
       // Update battery

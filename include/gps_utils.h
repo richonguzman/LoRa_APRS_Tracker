@@ -26,6 +26,7 @@ namespace GPS_Utils {
     void    setup();
     void    calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude);
     void    getData();
+    bool    hasNewFix();
     void    setDateFromData();
     void    calculateDistanceTraveled();
     void    calculateHeadingDelta(int speed);
@@ -33,5 +34,13 @@ namespace GPS_Utils {
     String  getCardinalDirection(float course);
 
 }
+
+// NeoGPS convenience helpers (avoid repeating conversion formulas)
+#include <GPSfix.h>
+extern gps_fix  gpsFix;
+
+inline float gpsSpeedKnots() { return gpsFix.valid.speed ? gpsFix.speed_kph() / 1.852f : 0.0f; }
+inline int32_t gpsAltFeet()  { return gpsFix.valid.altitude ? (int32_t)(gpsFix.alt.whole * 3.28084f) : 0; }
+inline float gpsHdop()       { return gpsFix.valid.hdop ? (float)gpsFix.hdop / 1000.0f : 99.0f; }
 
 #endif

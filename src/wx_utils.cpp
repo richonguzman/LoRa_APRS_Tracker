@@ -17,7 +17,7 @@
  */
 
 #include <esp_log.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 
 static const char *TAG = "WX";
 #ifdef LIGHTTRACKER_PLUS_1_0
@@ -32,7 +32,7 @@ static const char *TAG = "WX";
 #define CORRECTION_FACTOR (8.2296)      // for meters
 
 extern Configuration    Config;
-extern TinyGPSPlus      gps;
+extern gps_fix          gpsFix;
 
 extern uint8_t          wxModuleAddress;
 
@@ -195,7 +195,7 @@ namespace WX_Utils {
                     sensorTelemetry += TELEMETRY_Utils::generateEncodedTelemetryBytes(newHum, false, 0); // humidity
                 }
                 if (wxModuleType == 1 || wxModuleType == 2 || wxModuleType == 3) {
-                    sensorTelemetry += TELEMETRY_Utils::generateEncodedTelemetryBytes(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), false, 3); // pressure
+                    sensorTelemetry += TELEMETRY_Utils::generateEncodedTelemetryBytes(newPress + (gpsFix.alt.whole/CORRECTION_FACTOR), false, 3); // pressure
                 }
                 if (wxModuleType == 3) {
                     sensorTelemetry += TELEMETRY_Utils::generateEncodedTelemetryBytes(newGas, false, 0); // gas
@@ -210,7 +210,7 @@ namespace WX_Utils {
                 }
                 sensorTelemetry += "%   ";
                 if (wxModuleType == 1 || wxModuleType == 2 || wxModuleType == 3) {
-                    sensorTelemetry += formatSensorValueforScreen(newPress + (gps.altitude.meters()/CORRECTION_FACTOR), 4, "-999");
+                    sensorTelemetry += formatSensorValueforScreen(newPress + (gpsFix.alt.whole/CORRECTION_FACTOR), 4, "-999");
                 } else {
                     sensorTelemetry += "____";
                 }

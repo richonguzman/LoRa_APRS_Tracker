@@ -47,7 +47,7 @@ static const char *TAG = "Main";
 #include <BluetoothSerial.h>
 #include <APRSPacketLib.h>
 #include <esp_task_wdt.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 #include <Arduino.h>
 #include <WiFi.h>
 #include "smartbeacon_utils.h"
@@ -86,7 +86,8 @@ String      versionDate             = "2026-01-12";
 String      versionNumber           = "2.4.1";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
-TinyGPSPlus                         gps;
+NMEAGPS                             nmeaGPS;
+gps_fix                             gpsFix;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
 #endif
@@ -98,7 +99,6 @@ Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
 // Expose variables to UIMapManager namespace
 #ifdef USE_LVGL_UI
 namespace UIMapManager {
-    TinyGPSPlus& gps = ::gps;
     Configuration& Config = ::Config;
     uint8_t& myBeaconsIndex = ::myBeaconsIndex;
 }
@@ -366,19 +366,19 @@ void loop() {
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {
         GPS_Utils::getData();
-        bool gps_time_update = gps.time.isUpdated();
-        bool gps_loc_update  = gps.location.isUpdated();
+        bool gps_time_update = GPS_Utils::hasNewFix() && gpsFix.valid.time;
+        bool gps_loc_update  = GPS_Utils::hasNewFix() && gpsFix.valid.location;
         GPS_Utils::setDateFromData();
 
         // Keep SD Logger timestamps accurate with GPS wall-clock time
-        if (gps_time_update && gps.time.isValid() && gps.date.isValid()) {
+        if (gps_time_update && gpsFix.valid.date) {
             SD_Logger::setGpsTime(
-                gps.time.hour(), gps.time.minute(), gps.time.second(),
-                gps.date.day(),  gps.date.month(),  gps.date.year()
+                gpsFix.dateTime.hours, gpsFix.dateTime.minutes, gpsFix.dateTime.seconds,
+                gpsFix.dateTime.date,  gpsFix.dateTime.month,   2000 + gpsFix.dateTime.year
             );
         }
 
-        int currentSpeed = (int) gps.speed.kmph();
+        int currentSpeed = gpsFix.valid.speed ? (int)gpsFix.speed_kph() : 0;
 
         if (gps_loc_update) Utils::checkStatus();
 
@@ -391,7 +391,7 @@ void loop() {
 
         // Only send beacon if GPS has good quality fix
         // Require: at least 6 satellites AND HDOP <= 5
-        bool gpsQualityOk = (gps.satellites.value() >= 6) && (gps.hdop.hdop() <= 5.0);
+        bool gpsQualityOk = (gpsFix.satellites >= 6) && (gpsHdop() <= 5.0f);
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
@@ -402,7 +402,7 @@ void loop() {
             uint32_t now = millis();
             if (now - lastGpsQualityLogMs >= 30000) {
                 ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon (x%u)",
-                         gps.satellites.value(), gps.hdop.hdop(), gpsQualitySkipCount);
+                         gpsFix.satellites, gpsHdop(), gpsQualitySkipCount);
                 lastGpsQualityLogMs = now;
                 gpsQualitySkipCount = 0;
             }
@@ -459,8 +459,8 @@ void loop() {
     static uint32_t lastCrashCtxUpdate = 0;
     if (millis() - lastCrashCtxUpdate >= 5000) {
         lastCrashCtxUpdate = millis();
-        float lat = gps.location.isValid() ? (float)gps.location.lat() : 0.0f;
-        float lon = gps.location.isValid() ? (float)gps.location.lng() : 0.0f;
+        float lat = gpsFix.valid.location ? (float)gpsFix.latitude() : 0.0f;
+        float lon = gpsFix.valid.location ? (float)gpsFix.longitude() : 0.0f;
         SD_Logger::updateCrashContext("LOOP", lat, lon);
     }
 
