@@ -93,7 +93,7 @@ private:
 
     // Constants
     static constexpr double MAX_SPEED_KMPH = 150.0;  // Spike rejection
-    static constexpr double MIN_SPEED_KMPH = 1.5;    // Jitter filter
+    static constexpr double MIN_SPEED_KMPH = 3.0;    // Jitter filter (walking Doppler noise)
     static constexpr float TRACE_MIN_DISTANCE = 0.000027f; // ~3 meters
 };
 

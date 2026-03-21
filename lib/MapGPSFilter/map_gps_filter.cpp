@@ -89,19 +89,22 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     }
     lastValidTime = now;
 
-    // 2. Filtre anti-gigue a l'arret (Jitter Filter)
-    if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
-        return; // When stationary, do not update to freeze map and icon
+    // 2. Poor signal freeze: HDOP > 4 -> unconditional freeze
+    //    Speed is unreliable when HDOP is bad (indoor multipath)
+    if (gps.hdop.isValid() && gps.hdop.hdop() > 4.0) {
+        ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f", gps.hdop.hdop());
+        return;
     }
 
-    // 2b. Poor signal freeze: HDOP > 8 and speed < 5 km/h -> freeze
-    if (gps.hdop.isValid() && gps.hdop.hdop() > 8.0) {
-        double spd = gps.speed.isValid() ? gps.speed.kmph() : 0.0;
-        if (spd < 5.0) {
-            ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f speed=%.1f km/h",
-                     gps.hdop.hdop(), spd);
-            return;
-        }
+    // 2b. Fallback: no HDOP available and few satellites -> freeze
+    if (!gps.hdop.isValid() && gps.satellites.value() < 6) {
+        ESP_LOGD(TAG, "No HDOP and few sats (%d) - freeze", gps.satellites.value());
+        return;
+    }
+
+    // 2c. Filtre anti-gigue a l'arret (Jitter Filter)
+    if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
+        return; // When stationary, do not update to freeze map and icon
     }
 
     // 3. Smooth Interpolation (Low-pass filter)
