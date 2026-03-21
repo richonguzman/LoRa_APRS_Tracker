@@ -85,7 +85,7 @@ TEST_F(MapGPSFilterTest, UpdateWithLowSatellites) {
 }
 
 TEST_F(MapGPSFilterTest, UpdateWithMinSatellites) {
-    gps_fix fix = makeFix(37.7749, -122.4194, 5, 1.0);
+    gps_fix fix = makeFix(37.7749, -122.4194, 7, 1.0);
     filter.updateFilteredOwnPosition(fix);
     EXPECT_TRUE(filter.isOwnPositionValid());
     EXPECT_NEAR(37.7749f, filter.getOwnLat(), 0.001f);
@@ -151,7 +151,7 @@ TEST_F(MapGPSFilterTest, CircularBufferWrapAround) {
 }
 
 TEST_F(MapGPSFilterTest, GetUiPosition) {
-    gps_fix fix1 = makeFix(37.7749, -122.4194, 5, 1.0);
+    gps_fix fix1 = makeFix(37.7749, -122.4194, 7, 1.0);
     filter.updateFilteredOwnPosition(fix1);
 
     double lat, lon;

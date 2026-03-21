@@ -41,7 +41,7 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
 
     // Basic sanity check: need a valid location and a realistic number of satellites.
     if (!fix.valid.location || !fix.valid.satellites ||
-        fix.satellites < 5 || fix.satellites > 90) {
+        fix.satellites < 7 || fix.satellites > 90) {
         return;
     }
 
@@ -92,7 +92,7 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
 
     // 2. Poor signal freeze: HDOP > 4 -> unconditional freeze
     //    Speed is unreliable when HDOP is bad (indoor multipath)
-    if (fix.valid.hdop && hdopVal > 4.0f) {
+    if (fix.valid.hdop && hdopVal > 3.0f) {
         ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f", hdopVal);
         return;
     }
