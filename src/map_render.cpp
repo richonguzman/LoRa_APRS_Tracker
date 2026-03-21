@@ -287,7 +287,11 @@ namespace MapRender {
 
         stationHitZoneCount = 0;
 
-        // Own position
+        // Draw traces FIRST (under icons)
+        draw_station_traces();
+        draw_own_trace();
+
+        // Own position (on top of traces)
         double uiLat, uiLon;
         if (gpsFilter.getUiPosition(&uiLat, &uiLon)) {
             int myX, myY;
@@ -302,7 +306,7 @@ namespace MapRender {
             }
         }
 
-        // Received stations
+        // Received stations (on top of traces)
         STATION_Utils::cleanOldMapStations();
         for (int i = 0; i < MAP_STATIONS_MAX; i++) {
             MapStation* station = STATION_Utils::getMapStation(i);
@@ -316,9 +320,6 @@ namespace MapRender {
                 }
             }
         }
-
-        draw_station_traces();
-        draw_own_trace();
     }
 
     void draw_station_traces() {
