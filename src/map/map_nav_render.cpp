@@ -495,7 +495,10 @@ namespace MapEngine {
         // ================================================================
         // Phase 3 — DISPATCH: populate globalLayers/textRefs/waterwayRefs.
         // Vectors are pre-reserved, no reallocation during this loop.
+        // Hard limit: 16384 features max (same as IceNav) to prevent PSRAM exhaustion at Z9.
         // ================================================================
+        static constexpr uint32_t MAX_FEATURE_POOL_SIZE = 16384;
+        uint32_t totalDispatchedFeatures = 0;
         for (int t = 0; t < resolvedCount; t++) {
             uint8_t* data = resolved[t].data;
             size_t fileSize = resolved[t].size;
@@ -517,7 +520,7 @@ namespace MapEngine {
 
             bool psramExhausted = false;
 
-            for (uint16_t i = 0; i < feature_count && !psramExhausted; i++) {
+            for (uint16_t i = 0; i < feature_count && !psramExhausted && totalDispatchedFeatures < MAX_FEATURE_POOL_SIZE; i++) {
                 if ((i & 63) == 0) esp_task_wdt_reset();
                 if (p + 13 > data + fileSize) break;
 
@@ -561,6 +564,7 @@ namespace MapEngine {
                     } else {
                         globalLayers[priority].push_back(ref);
                     }
+                    totalDispatchedFeatures++;
                 } catch (const std::bad_alloc&) {
                     ESP_LOGW(TAG, "PSRAM exhausted at feature %u/%u, rendering partial",
                              i, feature_count);
@@ -574,6 +578,10 @@ namespace MapEngine {
         int totalFeatures = 0;
         for (int i = 0; i < 16; i++) totalFeatures += globalLayers[i].size();
         totalFeatures += textRefs.size() + waterwayRefs.size();
+        if (totalDispatchedFeatures >= MAX_FEATURE_POOL_SIZE) {
+            ESP_LOGW(TAG, "Feature pool capped at %u (limit %u), some features skipped",
+                          totalDispatchedFeatures, MAX_FEATURE_POOL_SIZE);
+        }
         ESP_LOGD(TAG, "Load: %llu ms, tiles: %d, features: %d, grid: 3x3 fixed",
                       (loadEnd - startTime) / 1000, resolvedCount, totalFeatures);
 
