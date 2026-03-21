@@ -252,8 +252,7 @@ namespace MapEngine {
         std::vector<FeatureRef, PSRAMAllocator<FeatureRef>> waterwayRefs;
         waterwayRefs.reserve(64);
 
-        uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);  // Dark slate gray — same as raster "no data" bg
-        bool bgColorExtracted = false;
+        const uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);  // Fixed neutral bg for areas without tile data
 
         // Fixed 3×3 spiral order: center first, then edges, corners last
         static const int8_t spiralOrder[9][2] = {
@@ -382,18 +381,28 @@ namespace MapEngine {
         }
 
         // Proactive eviction: free PSRAM before loading new tiles
-        // Z9 tiles can be 50-100 KB each; ensure headroom for pending reads
+        // Z9 tiles can be 50-100 KB each; ensure headroom for pending reads + render vectors
+        static constexpr size_t PSRAM_RENDER_RESERVE = 400 * 1024;  // Reserve for globalLayers, decodedCoords, edgePool, etc.
         if (pendingCount > 0) {
-            const size_t PSRAM_HEADROOM = 200 * 1024;  // 200 KB minimum free
             size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-            if (freeBlock < PSRAM_HEADROOM) {
-                evictUnusedNavCache(inUseData, PSRAM_HEADROOM);
+            if (freeBlock < PSRAM_RENDER_RESERVE) {
+                evictUnusedNavCache(inUseData, PSRAM_RENDER_RESERVE);
             }
         }
 
         // Read pending tiles from SD into navCache
         for (int i = 0; i < pendingCount; i++) {
             esp_task_wdt_reset();
+
+            // Guard: stop loading tiles if PSRAM is too low for render vectors
+            size_t freeBefore = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+            if (freeBefore < PSRAM_RENDER_RESERVE) {
+                ESP_LOGW(TAG, "Tile load stopped: %u KB free < %u KB reserve, %d/%d tiles loaded",
+                         (unsigned)(freeBefore / 1024), (unsigned)(PSRAM_RENDER_RESERVE / 1024),
+                         resolvedCount, pendingCount);
+                break;
+            }
+
             auto& pr = pendingReads[i];
             uint8_t* data = nullptr;
             size_t fileSize = 0;
@@ -504,15 +513,6 @@ namespace MapEngine {
             size_t fileSize = resolved[t].size;
             int16_t tileOffsetX = resolved[t].tileOffsetX;
             int16_t tileOffsetY = resolved[t].tileOffsetY;
-
-            if (!bgColorExtracted && fileSize >= 22 + 13) {
-                uint8_t ft0Type = data[22];
-                uint8_t ft0Prio = data[25] & 0x0F;
-                if (ft0Type == 3 && ft0Prio == 0) {
-                    memcpy(&bgColor, data + 23, 2);
-                }
-                bgColorExtracted = true;
-            }
 
             uint16_t feature_count;
             memcpy(&feature_count, data + 4, 2);
@@ -636,7 +636,11 @@ namespace MapEngine {
                         if (ref.coordCount < 3) break;
                         decodedCoords.clear();
                         DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) break;
+                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                            ESP_LOGW(TAG, "Polygon decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                            break;
+                        }
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
 
                         if (proj32X.capacity() < ref.coordCount) proj32X.reserve(ref.coordCount * 3 / 2);
@@ -702,7 +706,11 @@ namespace MapEngine {
 
                         decodedCoords.clear();
                         DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) break;
+                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                            ESP_LOGW(TAG, "Line decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                            break;
+                        }
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
 
                         // Pre-project all coords with dedup
@@ -763,7 +771,11 @@ namespace MapEngine {
                         if (ref.coordCount < 1) break;
                         decodedCoords.clear();
                         DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) break;
+                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                            ESP_LOGW(TAG, "Point decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                            break;
+                        }
                         int16_t* coords = decodedCoords.data() + df.coordsIdx;
                         int px = (coords[0] >> 4) + ref.tileOffsetX;
                         int py = (coords[1] >> 4) + ref.tileOffsetY;
