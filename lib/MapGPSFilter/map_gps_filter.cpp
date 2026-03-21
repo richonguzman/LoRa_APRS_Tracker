@@ -34,18 +34,19 @@ void MapGPSFilter::reset() {
     lastAlpha = 0.0f;
 }
 
-void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
-    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats.value=%d, hdop.value=%.1f",
-             gps.location.isValid(), gps.satellites.value(), gps.hdop.hdop());
+void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
+    float hdopVal = fix.valid.hdop ? (float)fix.hdop / 1000.0f : 99.0f;
+    ESP_LOGD(TAG, "Update called: location.isValid=%d, sats=%d, hdop=%.1f",
+             fix.valid.location, fix.satellites, hdopVal);
 
     // Basic sanity check: need a valid location and a realistic number of satellites.
-    if (!gps.location.isValid() || !gps.satellites.isValid() ||
-        gps.satellites.value() < 5 || gps.satellites.value() > 90) {
+    if (!fix.valid.location || !fix.valid.satellites ||
+        fix.satellites < 5 || fix.satellites > 90) {
         return;
     }
 
-    double lat = gps.location.lat();
-    double lon = gps.location.lng();
+    double lat = fix.latitude();
+    double lon = fix.longitude();
     uint32_t now = MILLIS();
 
     // Bug #4 fix: skip if same raw position as last call (no new NMEA sentence)
@@ -68,7 +69,7 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     }
 
     // 1. Filtre anti-saut spatial absolu (Supersonic Spike Rejection)
-    double distMeters = TinyGPSPlus::distanceBetween(ownPositionLat, ownPositionLon, lat, lon);
+    double distMeters = calcDist(ownPositionLat, ownPositionLon, lat, lon);
     double dtSeconds = (now - lastValidTime) / 1000.0;
     if (dtSeconds > 0.0) {
         if (dtSeconds < 120.0) {
@@ -91,19 +92,20 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 
     // 2. Poor signal freeze: HDOP > 4 -> unconditional freeze
     //    Speed is unreliable when HDOP is bad (indoor multipath)
-    if (gps.hdop.isValid() && gps.hdop.hdop() > 4.0) {
-        ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f", gps.hdop.hdop());
+    if (fix.valid.hdop && hdopVal > 4.0f) {
+        ESP_LOGD(TAG, "Poor signal freeze: HDOP=%.1f", hdopVal);
         return;
     }
 
     // 2b. Fallback: no HDOP available and few satellites -> freeze
-    if (!gps.hdop.isValid() && gps.satellites.value() < 6) {
-        ESP_LOGD(TAG, "No HDOP and few sats (%d) - freeze", gps.satellites.value());
+    if (!fix.valid.hdop && fix.satellites < 6) {
+        ESP_LOGD(TAG, "No HDOP and few sats (%d) - freeze", fix.satellites);
         return;
     }
 
     // 2c. Filtre anti-gigue a l'arret (Jitter Filter)
-    if (gps.speed.isValid() && gps.speed.kmph() < MIN_SPEED_KMPH) {
+    float speedKph = fix.valid.speed ? fix.speed_kph() : 0.0f;
+    if (fix.valid.speed && speedKph < MIN_SPEED_KMPH) {
         return; // When stationary, do not update to freeze map and icon
     }
 
@@ -111,15 +113,15 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
     // At high speed (>=30 km/h), GPS track is reliable: use direct assignment (alpha=1).
     // At low speed, HDOP-adaptive smoothing suppresses jitter.
     float currentAlpha = 0.5f;
-    if (gps.speed.isValid() && gps.speed.kmph() >= 30.0f) {
+    if (fix.valid.speed && speedKph >= 30.0f) {
         currentAlpha = 1.0f; // Direct assignment: no lag at car speed
-    } else if (gps.hdop.isValid()) {
-        float hdop = fmax(1.0f, (float)gps.hdop.hdop());
+    } else if (fix.valid.hdop) {
+        float hdop = fmax(1.0f, hdopVal);
         currentAlpha = fmax(0.1f, 1.0f / hdop);
     }
 
     // Diagnostics BEFORE update: distance between raw GPS and current filtered position
-    lastDeltaMeters = (float)TinyGPSPlus::distanceBetween(lat, lon, ownPositionLat, ownPositionLon);
+    lastDeltaMeters = calcDist(lat, lon, ownPositionLat, ownPositionLon);
     lastAlpha = currentAlpha;
 
     // Apply low-pass filter (double precision avoids catastrophic cancellation)
@@ -133,8 +135,7 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
 #ifndef UNIT_TEST
     char logLine[256];
     snprintf(logLine, sizeof(logLine), "%.8f,%.8f,%.2f,%.1f,%.2f,%.8f,%.8f,%.1f",
-             lat, lon, gps.speed.kmph(),
-             gps.hdop.isValid() ? gps.hdop.hdop() : 0.0,
+             lat, lon, speedKph, hdopVal,
              currentAlpha, ownPositionLat, ownPositionLon, lastDeltaMeters);
     SD_Logger::log(SD_Logger::INFO, "GPS_DEBUG", logLine);
 #endif

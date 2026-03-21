@@ -3,7 +3,12 @@
 #define MAP_GPS_FILTER_H
 
 #include <cstdint>
-#include "TinyGPS++.h"
+#ifdef UNIT_TEST
+#include "mock_gpsfix.h"
+#else
+#include <GPSfix.h>
+#endif
+#include "gps_math.h"
 #include "station_utils.h" // For TRACE_MAX_POINTS and TracePoint
 
 #ifdef UNIT_TEST
@@ -38,7 +43,7 @@ public:
     void reset(); // Used by unit tests
 
     // Update filtered position from GPS data (includes all filtering logic)
-    void updateFilteredOwnPosition(TinyGPSPlus& gps);
+    void updateFilteredOwnPosition(const gps_fix& fix);
 
     // Add current position to trace history (distance-based recording)
     void addOwnTracePoint();

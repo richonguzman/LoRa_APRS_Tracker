@@ -17,7 +17,8 @@
  */
 
 #include <APRSPacketLib.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
+#include "gps_math.h"
 #include <vector>
 #include "notification_utils.h"
 #include "wifi_utils.h"
@@ -39,7 +40,7 @@
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
 extern Configuration        Config;
-extern TinyGPSPlus          gps;
+extern gps_fix              gpsFix;
 extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
@@ -143,21 +144,22 @@ namespace MENU_Utils {
             topHeader1_1    = Utils::createDateString(time_now);
             topHeader1_2    = Utils::createTimeString(time_now);
             topHeader1_3    = "";
-            topHeader2      = String(gps.location.lat(), 4);
+            topHeader2      = String(gpsFix.latitude(), 4);
             topHeader2      += " ";
-            topHeader2      += String(gps.location.lng(), 4);
+            topHeader2      += String(gpsFix.longitude(), 4);
 
             for (int i = topHeader2.length(); i < 19; i++) {
                 topHeader2 += " ";
             }
-            if (gps.satellites.value() <= 9) topHeader2 += " ";
+            if (gpsFix.satellites <= 9) topHeader2 += " ";
             topHeader2 += "SAT:";
-            topHeader2 += String(gps.satellites.value());
-            if (gps.hdop.hdop() > 5) {
+            topHeader2 += String(gpsFix.satellites);
+            float hdopVal = gpsFix.valid.hdop ? (float)gpsFix.hdop / 1000.0f : 99.0f;
+            if (hdopVal > 5) {
                 topHeader2 += "X";
-            } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
+            } else if (hdopVal > 2 && hdopVal < 5) {
                 topHeader2 += "-";
-            } else if (gps.hdop.hdop() <= 2) {
+            } else if (hdopVal <= 2) {
                 topHeader2 += "+";
             }
         #endif
@@ -555,8 +557,8 @@ namespace MENU_Utils {
                         sprintf(bufferCourseSpeedAltitude, "A=%04dm %3dkm/h %3d", lastReceivedPacket.altitude, lastReceivedPacket.speed, lastReceivedPacket.course);
                         String courseSpeedAltitude = String(bufferCourseSpeedAltitude);
 
-                        double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
-                        double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
+                        double distanceKm = calcDist(gpsFix.latitude(), gpsFix.longitude(), lastReceivedPacket.latitude, lastReceivedPacket.longitude) / 1000.0;
+                        double courseTo   = calcCourse(gpsFix.latitude(), gpsFix.longitude(), lastReceivedPacket.latitude, lastReceivedPacket.longitude);
                         
                         String pathDec = (lastReceivedPacket.path.length() > 14) ? "P:" : "PATH:  ";
                         pathDec += lastReceivedPacket.path;
@@ -814,11 +816,11 @@ namespace MENU_Utils {
                 } else {
                     secondRowMainMenu = Utils::createDateString(time_now) + "   " + Utils::createTimeString(time_now);
                     if (time_now % 10 < 5) {
-                        thirdRowMainMenu = String(gps.location.lat(), 4);
+                        thirdRowMainMenu = String(gpsFix.latitude(), 4);
                         thirdRowMainMenu += " ";
-                        thirdRowMainMenu += String(gps.location.lng(), 4);
+                        thirdRowMainMenu += String(gpsFix.longitude(), 4);
                     } else {
-                        thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        thirdRowMainMenu = String(Utils::getMaidenheadLocator(gpsFix.latitude(), gpsFix.longitude(), 8));
                         thirdRowMainMenu += " ";
 
                         float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
@@ -830,33 +832,34 @@ namespace MENU_Utils {
                         thirdRowMainMenu += " ";
                     }
 
-                    if (gps.hdop.hdop() > 5) {
+                    float hdopVal2 = gpsFix.valid.hdop ? (float)gpsFix.hdop / 1000.0f : 99.0f;
+                    if (hdopVal2 > 5) {
                         hdopState = "X";
-                    } else if (gps.hdop.hdop() > 2 && gps.hdop.hdop() < 5) {
+                    } else if (hdopVal2 > 2 && hdopVal2 < 5) {
                         hdopState = "-";
-                    } else if (gps.hdop.hdop() <= 2) {
+                    } else if (hdopVal2 <= 2) {
                         hdopState = "+";
                     }
 
-                    if (gps.satellites.value() <= 9) thirdRowMainMenu += " ";
+                    if (gpsFix.satellites <= 9) thirdRowMainMenu += " ";
                     if (gpsIsActive) {
-                        thirdRowMainMenu += String(gps.satellites.value());
+                        thirdRowMainMenu += String(gpsFix.satellites);
                         thirdRowMainMenu += hdopState;
                     } else {
                         thirdRowMainMenu += "--";
                     }
 
-                    String fourthRowAlt = String(gps.altitude.meters(),0);
+                    String fourthRowAlt = String((float)gpsFix.alt.whole, 0);
                     fourthRowAlt.trim();
                     for (int a = fourthRowAlt.length(); a < 4; a++) {
                         fourthRowAlt = " " + fourthRowAlt;
                     }
-                    String fourthRowSpeed = String(gps.speed.kmph(),0);
+                    String fourthRowSpeed = String(gpsFix.speed_kph(), 0);
                     fourthRowSpeed.trim();
                     for (int b = fourthRowSpeed.length(); b < 3; b++) {
                         fourthRowSpeed = " " + fourthRowSpeed;
                     }
-                    String fourthRowCourse = String(gps.course.deg(),0);
+                    String fourthRowCourse = String(gpsFix.heading(), 0);
                     if (fourthRowSpeed == "  0") {
                         fourthRowCourse = "---";
                     } else {
@@ -899,7 +902,7 @@ namespace MENU_Utils {
                         fifthRowMainMenu = wifiStatus;
                     }
                 } else if (showHumanHeading) {
-                    fifthRowMainMenu = GPS_Utils::getCardinalDirection(gps.course.deg());
+                    fifthRowMainMenu = GPS_Utils::getCardinalDirection(gpsFix.heading());
                 } else {
                     fifthRowMainMenu = "LAST Rx = ";
                     fifthRowMainMenu += MSG_Utils::getLastHeardTracker();
@@ -969,7 +972,7 @@ namespace MENU_Utils {
                     // Main area shows: locator/freq, altitude/speed/course, Last RX, WiFi, battery, near station
                     String locatorFreqRow;
                     if (!disableGPS) {
-                        locatorFreqRow = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
+                        locatorFreqRow = String(Utils::getMaidenheadLocator(gpsFix.latitude(), gpsFix.longitude(), 8));
                         locatorFreqRow += " ";
                         float freq = Config.loraTypes[loraIndex].frequency / 1000000.0;
                         int rate = Config.loraTypes[loraIndex].dataRate;

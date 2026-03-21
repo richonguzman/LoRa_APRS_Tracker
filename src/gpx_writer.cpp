@@ -3,12 +3,12 @@
 #include <esp_log.h>
 #include "gpx_writer.h"
 #include <SD.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 #include <freertos/semphr.h>
 
 static const char *TAG = "GPX";
 
-extern TinyGPSPlus gps;
+extern gps_fix gpsFix;
 extern SemaphoreHandle_t spiMutex;
 
 namespace GPXWriter {
@@ -25,11 +25,11 @@ namespace GPXWriter {
 
         // Build filename from GPS date/time (UTC)
         char filename[64];
-        if (gps.date.isValid() && gps.time.isValid()) {
+        if (gpsFix.valid.date && gpsFix.valid.time) {
             snprintf(filename, sizeof(filename),
                      "/LoRa_Tracker/gpx/track_%04d-%02d-%02d_%02d%02d.gpx",
-                     gps.date.year(), gps.date.month(), gps.date.day(),
-                     gps.time.hour(), gps.time.minute());
+                     2000 + gpsFix.dateTime.year, gpsFix.dateTime.month, gpsFix.dateTime.date,
+                     gpsFix.dateTime.hours, gpsFix.dateTime.minutes);
         } else {
             snprintf(filename, sizeof(filename),
                      "/LoRa_Tracker/gpx/track_%lu.gpx", millis() / 1000);
@@ -92,11 +92,11 @@ namespace GPXWriter {
 
         // Build timestamp from GPS
         char timestamp[32] = "";
-        if (gps.date.isValid() && gps.time.isValid()) {
+        if (gpsFix.valid.date && gpsFix.valid.time) {
             snprintf(timestamp, sizeof(timestamp),
                      "%04d-%02d-%02dT%02d:%02d:%02dZ",
-                     gps.date.year(), gps.date.month(), gps.date.day(),
-                     gps.time.hour(), gps.time.minute(), gps.time.second());
+                     2000 + gpsFix.dateTime.year, gpsFix.dateTime.month, gpsFix.dateTime.date,
+                     gpsFix.dateTime.hours, gpsFix.dateTime.minutes, gpsFix.dateTime.seconds);
         }
 
         if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(500)) != pdTRUE) {

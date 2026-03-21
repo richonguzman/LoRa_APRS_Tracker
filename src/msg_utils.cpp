@@ -18,7 +18,6 @@
 
 #include <esp_log.h>
 #include <APRSPacketLib.h>
-#include <TinyGPS++.h>
 #include <algorithm>
 #include <utility>
 #include <vector>

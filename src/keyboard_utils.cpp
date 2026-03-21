@@ -20,7 +20,8 @@
 #include <APRSPacketLib.h>
 
 static const char *TAG = "Keyboard";
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
+#include "gps_utils.h"
 #include <Wire.h>
 #include "keyboard_utils.h"
 #include "winlink_utils.h"
@@ -40,7 +41,7 @@ static const char *TAG = "Keyboard";
 
 extern Configuration    Config;
 extern Beacon           *currentBeacon;
-extern TinyGPSPlus      gps;
+extern gps_fix          gpsFix;
 extern bool             sendUpdate;
 extern int              menuDisplay;
 extern uint32_t         menuTime;
@@ -828,7 +829,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && messageText.length() > 0) {
                 messageText.trim();
                 if (messageText.length() > 67) messageText = messageText.substring(0, 67);
-                String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate));
+                String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gpsFix.latitude(), gpsFix.longitude(), gpsFix.heading(), gpsSpeedKnots(), currentBeacon->symbol, Config.sendAltitude, gpsAltFeet(), sendStandingUpdate));
                 packet += messageText;
                 displayShow("<<< TX >>>", "", packet,100);
                 LoRa_Utils::sendNewPacket(packet);       

@@ -20,7 +20,7 @@
 #include <FS.h>
 #include <lvgl.h>
 #include <LovyanGFX.hpp>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 #include <SD.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -91,7 +91,7 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
         double oldLat = gpsFilter.getOwnLat();
         double oldLon = gpsFilter.getOwnLon();
 
-        gpsFilter.updateFilteredOwnPosition(gps);
+        gpsFilter.updateFilteredOwnPosition(gpsFix);
         gpsFilter.addOwnTracePoint();
 
         // Trigger UI refresh if filtered position actually moved
@@ -100,8 +100,8 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
         }
         // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
         // Below 1.5: stationary jitter filter applies. Above 150: GPS spike rejected.
-        if (map_follow_gps && gps.speed.isValid()
-                && gps.speed.kmph() > 1.5 && gps.speed.kmph() < 150.0) {
+        if (map_follow_gps && gpsFix.valid.speed
+                && gpsFix.speed_kph() > 1.5 && gpsFix.speed_kph() < 150.0) {
             positionChanged = true;
         }
     }
@@ -330,9 +330,9 @@ void create_map_screen() {
     ESP_LOGI(TAG, "CPU boosted to %d MHz", getCpuFrequencyMhz());
 
     // Set initial position from GPS if available (needed for GPS-based region matching)
-    if (map_follow_gps && gps.location.isValid()) {
-        map_center_lat = gps.location.lat();
-        map_center_lon = gps.location.lng();
+    if (map_follow_gps && gpsFix.valid.location) {
+        map_center_lat = gpsFix.latitude();
+        map_center_lon = gpsFix.longitude();
     }
 
     // Discover and set the map region if it's not already defined
@@ -363,8 +363,8 @@ void create_map_screen() {
     lv_obj_set_style_bg_color(screen_map, lv_color_hex(0x1a1a2e), 0);
 
     // Use current GPS position as center if follow mode is active
-    if (map_follow_gps && gps.location.isValid()) {
-        MapTiles::initCenterTileFromLatLon(gps.location.lat(), gps.location.lng());
+    if (map_follow_gps && gpsFix.valid.location) {
+        MapTiles::initCenterTileFromLatLon(gpsFix.latitude(), gpsFix.longitude());
         ESP_LOGI(TAG, "Using GPS position: %.4f, %.4f", map_center_lat, map_center_lon);
     } else if (centerTileX == 0 && centerTileY == 0) {
         // Screen recreated but lat/lon preserved — re-sync tile from lat/lon

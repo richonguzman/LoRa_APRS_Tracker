@@ -9,7 +9,7 @@
 
 #include <lvgl.h>
 #include <Arduino.h>
-#include <TinyGPS++.h>
+#include <NMEAGPS.h>
 #include "LGFX_TDeck.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -20,7 +20,7 @@
 class Configuration;
 
 // External data sources from lvgl_ui.cpp and other global variables
-extern TinyGPSPlus gps;
+extern gps_fix gpsFix;
 extern Configuration Config;
 extern LGFX_TDeck tft;
 extern uint8_t myBeaconsIndex;
