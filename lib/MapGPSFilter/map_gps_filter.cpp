@@ -107,6 +107,11 @@ void MapGPSFilter::updateFilteredOwnPosition(TinyGPSPlus& gps) {
         return; // When stationary, do not update to freeze map and icon
     }
 
+    // 2d. Cross-check: GPS reports low speed but position barely changed → Doppler jitter
+    if (gps.speed.isValid() && gps.speed.kmph() < 5.0f && distMeters < 15.0) {
+        return;
+    }
+
     // 3. Smooth Interpolation (Low-pass filter)
     // At high speed (>=30 km/h), GPS track is reliable: use direct assignment (alpha=1).
     // At low speed, HDOP-adaptive smoothing suppresses jitter.
