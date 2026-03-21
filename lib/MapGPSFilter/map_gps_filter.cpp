@@ -110,7 +110,7 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     }
 
     // 2d. Cross-check: GPS reports low speed but position barely changed → Doppler jitter
-    if (fix.valid.speed && speedKph < 5.0f && distMeters < 15.0) {
+    if (fix.valid.speed && speedKph < 8.0f && distMeters < 25.0) {
         return;
     }
 
