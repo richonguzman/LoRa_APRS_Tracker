@@ -679,7 +679,7 @@ namespace MapEngine {
             if ((++totalFeatures & 31) == 0) esp_task_wdt_reset();
 
             if (vlwFontLoaded) {
-                float scale = (lbl.fontSize == 0) ? 0.8f : (lbl.fontSize == 1) ? 1.0f : 1.2f;
+                float scale = (lbl.fontSize == 0) ? 0.65f : (lbl.fontSize == 1) ? 0.8f : 1.0f;
                 map.setTextSize(scale);
             }
 
@@ -1138,7 +1138,7 @@ namespace MapEngine {
 
             // Scale VLW font based on fontSize (0=small, 1=medium, 2=large)
             if (vlwFontLoaded) {
-                float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
+                float scale = (fontSize == 0) ? 0.65f : (fontSize == 1) ? 0.8f : 1.0f;
                 map.setTextSize(scale);
             }
 
