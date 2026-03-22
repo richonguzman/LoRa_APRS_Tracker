@@ -203,169 +203,185 @@ namespace MapEngine {
     // Render a single geometry feature (polygon, line, point) on the sprite.
     // Shared by both batch (Z10+) and streaming (Z9) pipelines.
     // Does NOT handle text (GEOM_TEXT / GEOM_TEXT_LINE) — caller collects those.
+    //
+    // Transposed from IceNav-v3 maps.cpp L1007-1197 (renderNavLineString,
+    // renderNavPolygon, renderNavPoint, renderNavFeature).
     // =========================================================================
-    void renderSingleFeature(LGFX_Sprite &map, const FeatureRef &ref,
-                             int viewportW, int viewportH, uint8_t zoom) {
-        uint8_t* fp = ref.ptr;
 
-        // BBox culling against viewport
-        uint8_t bx1 = fp[5], by1 = fp[6], bx2 = fp[7], by2 = fp[8];
-        int16_t minX = ref.tileOffsetX + bx1;
-        int16_t minY = ref.tileOffsetY + by1;
-        int16_t maxX = ref.tileOffsetX + bx2;
-        int16_t maxY = ref.tileOffsetY + by2;
-        if (maxX < 0 || minX > viewportW || maxY < 0 || minY > viewportH) return;
+    // --- Line rendering (IceNav renderNavLineString L1007-1062) ---
+    // Single-loop: LOD + per-segment culling + draw inline.
+    static void renderNavLine(LGFX_Sprite &map, const FeatureRef &ref,
+                              int viewportW, int viewportH, uint8_t zoom) {
+        if (ref.coordCount < 2) return;
+        const uint8_t* fp = ref.ptr;
 
-        // Per-feature setClipRect to tile boundaries
-        map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+        decodedCoords.clear();
+        DecodedFeature df;
+        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+            ESP_LOGW(TAG, "Line decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+            return;
+        }
+        int16_t* coords = decodedCoords.data() + df.coordsIdx;
+
+        // Width — IceNav L1026-1027
+        uint8_t widthRaw = fp[4] & 0x7F;
+        if (widthRaw == 0) widthRaw = 2;
+        uint16_t colorRgb565;
+        memcpy(&colorRgb565, fp + 1, 2);
+        float widthF = widthRaw / 2.0f;
+        if (zoom >= 9 && zoom <= 11) widthF *= 1.05f;
+
+        // LOD — IceNav L1036-1040
+        int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
+
+        // Single-loop render — IceNav L1042-1061
+        int16_t lastPx = -32768;
+        int16_t lastPy = -32768;
+        for (uint16_t i = 0; i < ref.coordCount; i++) {
+            int16_t px = (coords[i * 2] >> 4) + ref.tileOffsetX;
+            int16_t py = (coords[i * 2 + 1] >> 4) + ref.tileOffsetY;
+            if (i > 0) {
+                if (abs(px - lastPx) < lodThreshold && abs(py - lastPy) < lodThreshold)
+                    continue;
+                // Per-segment culling — IceNav L1051
+                if (!((px < 0 && lastPx < 0) ||
+                      (px >= viewportW && lastPx >= viewportW) ||
+                      (py < 0 && lastPy < 0) ||
+                      (py >= viewportH && lastPy >= viewportH))) {
+                    if (widthF <= 1.0f)
+                        map.drawLine(lastPx, lastPy, px, py, colorRgb565);
+                    else
+                        map.drawWideLine(lastPx, lastPy, px, py, widthF, colorRgb565);
+                }
+            }
+            lastPx = px;
+            lastPy = py;
+        }
+    }
+
+    // --- Polygon rendering (IceNav renderNavPolygon L1067-1158) ---
+    // Coords stay in high-precision (raw), fillPolygonGeneral handles >> 4 + offset.
+    static void renderNavPolygon(LGFX_Sprite &map, const FeatureRef &ref,
+                                 int viewportW, int viewportH, uint8_t zoom) {
+        if (ref.coordCount < 3) return;
+        const uint8_t* fp = ref.ptr;
+
+        decodedCoords.clear();
+        DecodedFeature df;
+        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+            ESP_LOGW(TAG, "Polygon decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+            return;
+        }
+        int16_t* coords = decodedCoords.data() + df.coordsIdx;
 
         uint16_t colorRgb565;
         memcpy(&colorRgb565, fp + 1, 2);
 
+        // Project to HP buffers with LOD — IceNav L1105-1133
+        if (proj32X.capacity() < ref.coordCount) proj32X.reserve(ref.coordCount * 3 / 2);
+        if (proj32Y.capacity() < ref.coordCount) proj32Y.reserve(ref.coordCount * 3 / 2);
+        proj32X.resize(ref.coordCount);
+        proj32Y.resize(ref.coordCount);
+        int* px_hp = proj32X.data();
+        int* py_hp = proj32Y.data();
+        if (!px_hp || !py_hp) return;
+
+        int minPx = INT_MAX, maxPx = INT_MIN;
+        int minPy = INT_MAX, maxPy = INT_MIN;
+        int16_t lastX = -32768, lastY = -32768;
+        uint16_t actualPoints = 0;
+
+        for (uint16_t i = 0; i < ref.coordCount; i++) {
+            int16_t cx = coords[i * 2];
+            int16_t cy = coords[i * 2 + 1];
+            // LOD: skip duplicate pixels for simple polygons — IceNav L1118
+            if (df.ringCount == 0 && i > 0 &&
+                abs(cx - lastX) < 1 && abs(cy - lastY) < 1 &&
+                i < ref.coordCount - 1)
+                continue;
+            px_hp[actualPoints] = (int)cx;
+            py_hp[actualPoints] = (int)cy;
+            int px_screen = (cx >> 4) + ref.tileOffsetX;
+            int py_screen = (cy >> 4) + ref.tileOffsetY;
+            if (px_screen < minPx) minPx = px_screen;
+            if (px_screen > maxPx) maxPx = px_screen;
+            if (py_screen < minPy) minPy = py_screen;
+            if (py_screen > maxPy) maxPy = py_screen;
+            lastX = cx;
+            lastY = cy;
+            actualPoints++;
+        }
+
+        // BBox culling — IceNav L1134
+        if (maxPx < 0 || minPx >= viewportW || maxPy < 0 || minPy >= viewportH)
+            return;
+
+        // Fill — IceNav L1138-1139
+        if (fillPolygons)
+            fillPolygonGeneral(map, px_hp, py_hp, actualPoints,
+                               colorRgb565, ref.tileOffsetX, ref.tileOffsetY,
+                               df.ringCount, df.ringEnds);
+
+        // Building outline — IceNav L1140-1157
+        if ((fp[4] & 0x80) != 0 && zoom >= 16) {
+            uint16_t outlineColor = darkenRGB565(colorRgb565, 0.35f);
+            uint16_t ringStart = 0;
+            uint16_t numRings = (df.ringCount > 0) ? df.ringCount : 1;
+            for (uint16_t r = 0; r < numRings; r++) {
+                uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : actualPoints;
+                if (ringEnd > actualPoints) ringEnd = actualPoints;
+                for (uint16_t j = ringStart; j < ringEnd; j++) {
+                    uint16_t next = (j + 1 < ringEnd) ? j + 1 : ringStart;
+                    int x0 = (px_hp[j] >> 4) + ref.tileOffsetX;
+                    int y0 = (py_hp[j] >> 4) + ref.tileOffsetY;
+                    int x1 = (px_hp[next] >> 4) + ref.tileOffsetX;
+                    int y1 = (py_hp[next] >> 4) + ref.tileOffsetY;
+                    map.drawLine(x0, y0, x1, y1, outlineColor);
+                }
+                ringStart = ringEnd;
+            }
+        }
+    }
+
+    // --- Point rendering (IceNav renderNavPoint L1163-1174) ---
+    static void renderNavPoint(LGFX_Sprite &map, const FeatureRef &ref,
+                               int viewportW, int viewportH) {
+        if (ref.coordCount < 1) return;
+        const uint8_t* fp = ref.ptr;
+
+        decodedCoords.clear();
+        DecodedFeature df;
+        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+            ESP_LOGW(TAG, "Point decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+            return;
+        }
+        int16_t* coords = decodedCoords.data() + df.coordsIdx;
+
+        uint16_t colorRgb565;
+        memcpy(&colorRgb565, fp + 1, 2);
+
+        int16_t px = (coords[0] >> 4) + ref.tileOffsetX;
+        int16_t py = (coords[1] >> 4) + ref.tileOffsetY;
+        if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
+            map.fillCircle(px, py, 3, colorRgb565);
+    }
+
+    // --- Feature dispatch (IceNav renderNavFeature L1179-1197) ---
+    void renderSingleFeature(LGFX_Sprite &map, const FeatureRef &ref,
+                             int viewportW, int viewportH, uint8_t zoom) {
         switch (ref.geomType) {
-            case GEOM_POLYGON: {
-                if (ref.coordCount < 3) break;
-                decodedCoords.clear();
-                DecodedFeature df;
-                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                    ESP_LOGW(TAG, "Polygon decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                    break;
-                }
-                int16_t* coords = decodedCoords.data() + df.coordsIdx;
-
-                if (proj32X.capacity() < ref.coordCount) proj32X.reserve(ref.coordCount * 3 / 2);
-                if (proj32Y.capacity() < ref.coordCount) proj32Y.reserve(ref.coordCount * 3 / 2);
-                proj32X.resize(ref.coordCount);
-                proj32Y.resize(ref.coordCount);
-
-                int* px_hp = proj32X.data();
-                int* py_hp = proj32Y.data();
-                if (!px_hp || !py_hp) break;
-
-                int16_t lastVx = -32768, lastVy = -32768;
-                uint16_t actualPoints = 0;
-                for (uint16_t j = 0; j < ref.coordCount; j++) {
-                    int16_t cx = coords[j * 2];
-                    int16_t cy = coords[j * 2 + 1];
-                    if (df.ringCount == 0 && j > 0 &&
-                        abs(cx - lastVx) < 1 && abs(cy - lastVy) < 1 &&
-                        j < ref.coordCount - 1)
-                        continue;
-                    px_hp[actualPoints] = (int)cx;
-                    py_hp[actualPoints] = (int)cy;
-                    lastVx = cx;
-                    lastVy = cy;
-                    actualPoints++;
-                }
-
-                if (fillPolygons) {
-                    fillPolygonGeneral(map, px_hp, py_hp, actualPoints,
-                        colorRgb565, ref.tileOffsetX, ref.tileOffsetY,
-                        df.ringCount, df.ringEnds);
-                }
-
-                // Building outline (bit 7 of fp[4]), z16+ only
-                if ((fp[4] & 0x80) != 0 && zoom >= 16) {
-                    uint16_t outlineColor = darkenRGB565(colorRgb565, 0.35f);
-                    uint16_t ringStart = 0;
-                    uint16_t numRings = (df.ringCount > 0) ? df.ringCount : 1;
-                    for (uint16_t r = 0; r < numRings; r++) {
-                        uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : actualPoints;
-                        if (ringEnd > actualPoints) ringEnd = actualPoints;
-                        for (uint16_t j = ringStart; j < ringEnd; j++) {
-                            uint16_t next = (j + 1 < ringEnd) ? j + 1 : ringStart;
-                            int x0 = (px_hp[j] >> 4) + ref.tileOffsetX;
-                            int y0 = (py_hp[j] >> 4) + ref.tileOffsetY;
-                            int x1 = (px_hp[next] >> 4) + ref.tileOffsetX;
-                            int y1 = (py_hp[next] >> 4) + ref.tileOffsetY;
-                            map.drawLine(x0, y0, x1, y1, outlineColor);
-                        }
-                        ringStart = ringEnd;
-                    }
-                }
+            case GEOM_POLYGON:
+                renderNavPolygon(map, ref, viewportW, viewportH, zoom);
                 break;
-            }
-            case GEOM_LINE: {
-                if (ref.coordCount < 2) break;
-                uint8_t widthRaw = fp[4] & 0x7F;
-                if (widthRaw == 0) widthRaw = 2;
-                float widthF = widthRaw / 2.0f;
-                if (zoom <= 9) widthF *= 1.5f;
-
-                decodedCoords.clear();
-                DecodedFeature df;
-                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                    ESP_LOGW(TAG, "Line decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                    break;
-                }
-                int16_t* coords = decodedCoords.data() + df.coordsIdx;
-
-                size_t numCoords = ref.coordCount;
-                if (proj16X.capacity() < numCoords) proj16X.reserve(numCoords * 3 / 2);
-                if (proj16Y.capacity() < numCoords) proj16Y.reserve(numCoords * 3 / 2);
-                proj16X.resize(numCoords);
-                proj16Y.resize(numCoords);
-
-                int16_t* pxArr = proj16X.data();
-                int16_t* pyArr = proj16Y.data();
-
-                int16_t minPx = INT16_MAX, maxPx = INT16_MIN;
-                int16_t minPy = INT16_MAX, maxPy = INT16_MIN;
-                size_t validPoints = 0;
-                int16_t lastPx = -32768, lastPy = -32768;
-
-                int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
-
-                for (size_t j = 0; j < numCoords; j++) {
-                    int16_t px = (coords[j * 2] >> 4) + ref.tileOffsetX;
-                    int16_t py = (coords[j * 2 + 1] >> 4) + ref.tileOffsetY;
-                    if (validPoints > 0) {
-                        if (abs(px - lastPx) < lodThreshold && abs(py - lastPy) < lodThreshold
-                            && j < numCoords - 1) continue;
-                    }
-                    pxArr[validPoints] = px;
-                    pyArr[validPoints] = py;
-                    if (px < minPx) minPx = px;
-                    if (px > maxPx) maxPx = px;
-                    if (py < minPy) minPy = py;
-                    if (py > maxPy) maxPy = py;
-                    lastPx = px;
-                    lastPy = py;
-                    validPoints++;
-                }
-
-                if (validPoints < 2 || maxPx < 0 || minPx >= viewportW ||
-                    maxPy < 0 || minPy >= viewportH) break;
-
-                for (size_t j = 1; j < validPoints; j++) {
-                    if (widthF <= 1.0f) {
-                        map.drawLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j], colorRgb565);
-                    } else {
-                        map.drawWideLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j],
-                                         widthF, colorRgb565);
-                        map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
-                    }
-                }
+            case GEOM_LINE:
+                renderNavLine(map, ref, viewportW, viewportH, zoom);
                 break;
-            }
-            case GEOM_POINT: {
-                if (ref.coordCount < 1) break;
-                decodedCoords.clear();
-                DecodedFeature df;
-                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                    ESP_LOGW(TAG, "Point decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                    break;
-                }
-                int16_t* coords = decodedCoords.data() + df.coordsIdx;
-                int px = (coords[0] >> 4) + ref.tileOffsetX;
-                int py = (coords[1] >> 4) + ref.tileOffsetY;
-                if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
-                    map.fillCircle(px, py, 3, colorRgb565);
+            case GEOM_POINT:
+                renderNavPoint(map, ref, viewportW, viewportH);
                 break;
-            }
         }
     }
 
@@ -565,7 +581,7 @@ namespace MapEngine {
 
                 // Semantic culling Z9: skip features < 3×3px
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
-                if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
+                if (geomType == GEOM_POLYGON) {
                     if ((bx2 - bx1) < 3 && (by2 - by1) < 3) {
                         p += 13 + payloadSize; continue;
                     }
@@ -1074,7 +1090,7 @@ namespace MapEngine {
                 // Semantic culling: skip tiny features
                 // Z9-Z11: skip if bbox < 3×3px. Other zooms: skip if < 1×1px.
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
-                if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
+                if (geomType == GEOM_POLYGON) {
                     uint8_t minDim = (zoom >= 9 && zoom <= 11) ? 3 : 1;
                     if ((bx2 - bx1) < minDim && (by2 - by1) < minDim) {
                         p += 13 + payloadSize; continue;
