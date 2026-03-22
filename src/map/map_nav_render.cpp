@@ -200,13 +200,466 @@ namespace MapEngine {
     }
 
     // =========================================================================
-    // Viewport-based NAV rendering.
+    // Render a single geometry feature (polygon, line, point) on the sprite.
+    // Shared by both batch (Z10+) and streaming (Z9) pipelines.
+    // Does NOT handle text (GEOM_TEXT / GEOM_TEXT_LINE) — caller collects those.
+    // =========================================================================
+    void renderSingleFeature(LGFX_Sprite &map, const FeatureRef &ref,
+                             int viewportW, int viewportH, uint8_t zoom) {
+        uint8_t* fp = ref.ptr;
+
+        // BBox culling against viewport
+        uint8_t bx1 = fp[5], by1 = fp[6], bx2 = fp[7], by2 = fp[8];
+        int16_t minX = ref.tileOffsetX + bx1;
+        int16_t minY = ref.tileOffsetY + by1;
+        int16_t maxX = ref.tileOffsetX + bx2;
+        int16_t maxY = ref.tileOffsetY + by2;
+        if (maxX < 0 || minX > viewportW || maxY < 0 || minY > viewportH) return;
+
+        // Per-feature setClipRect to tile boundaries
+        map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+
+        uint16_t colorRgb565;
+        memcpy(&colorRgb565, fp + 1, 2);
+
+        switch (ref.geomType) {
+            case GEOM_POLYGON: {
+                if (ref.coordCount < 3) break;
+                decodedCoords.clear();
+                DecodedFeature df;
+                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                    ESP_LOGW(TAG, "Polygon decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                    break;
+                }
+                int16_t* coords = decodedCoords.data() + df.coordsIdx;
+
+                if (proj32X.capacity() < ref.coordCount) proj32X.reserve(ref.coordCount * 3 / 2);
+                if (proj32Y.capacity() < ref.coordCount) proj32Y.reserve(ref.coordCount * 3 / 2);
+                proj32X.resize(ref.coordCount);
+                proj32Y.resize(ref.coordCount);
+
+                int* px_hp = proj32X.data();
+                int* py_hp = proj32Y.data();
+                if (!px_hp || !py_hp) break;
+
+                int16_t lastVx = -32768, lastVy = -32768;
+                uint16_t actualPoints = 0;
+                for (uint16_t j = 0; j < ref.coordCount; j++) {
+                    int16_t cx = coords[j * 2];
+                    int16_t cy = coords[j * 2 + 1];
+                    if (df.ringCount == 0 && j > 0 &&
+                        abs(cx - lastVx) < 1 && abs(cy - lastVy) < 1 &&
+                        j < ref.coordCount - 1)
+                        continue;
+                    px_hp[actualPoints] = (int)cx;
+                    py_hp[actualPoints] = (int)cy;
+                    lastVx = cx;
+                    lastVy = cy;
+                    actualPoints++;
+                }
+
+                if (fillPolygons) {
+                    fillPolygonGeneral(map, px_hp, py_hp, actualPoints,
+                        colorRgb565, ref.tileOffsetX, ref.tileOffsetY,
+                        df.ringCount, df.ringEnds);
+                }
+
+                // Building outline (bit 7 of fp[4]), z16+ only
+                if ((fp[4] & 0x80) != 0 && zoom >= 16) {
+                    uint16_t outlineColor = darkenRGB565(colorRgb565, 0.35f);
+                    uint16_t ringStart = 0;
+                    uint16_t numRings = (df.ringCount > 0) ? df.ringCount : 1;
+                    for (uint16_t r = 0; r < numRings; r++) {
+                        uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : actualPoints;
+                        if (ringEnd > actualPoints) ringEnd = actualPoints;
+                        for (uint16_t j = ringStart; j < ringEnd; j++) {
+                            uint16_t next = (j + 1 < ringEnd) ? j + 1 : ringStart;
+                            int x0 = (px_hp[j] >> 4) + ref.tileOffsetX;
+                            int y0 = (py_hp[j] >> 4) + ref.tileOffsetY;
+                            int x1 = (px_hp[next] >> 4) + ref.tileOffsetX;
+                            int y1 = (py_hp[next] >> 4) + ref.tileOffsetY;
+                            map.drawLine(x0, y0, x1, y1, outlineColor);
+                        }
+                        ringStart = ringEnd;
+                    }
+                }
+                break;
+            }
+            case GEOM_LINE: {
+                if (ref.coordCount < 2) break;
+                uint8_t widthRaw = fp[4] & 0x7F;
+                if (widthRaw == 0) widthRaw = 2;
+                float widthF = widthRaw / 2.0f;
+
+                decodedCoords.clear();
+                DecodedFeature df;
+                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                    ESP_LOGW(TAG, "Line decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                    break;
+                }
+                int16_t* coords = decodedCoords.data() + df.coordsIdx;
+
+                size_t numCoords = ref.coordCount;
+                if (proj16X.capacity() < numCoords) proj16X.reserve(numCoords * 3 / 2);
+                if (proj16Y.capacity() < numCoords) proj16Y.reserve(numCoords * 3 / 2);
+                proj16X.resize(numCoords);
+                proj16Y.resize(numCoords);
+
+                int16_t* pxArr = proj16X.data();
+                int16_t* pyArr = proj16Y.data();
+
+                int16_t minPx = INT16_MAX, maxPx = INT16_MIN;
+                int16_t minPy = INT16_MAX, maxPy = INT16_MIN;
+                size_t validPoints = 0;
+                int16_t lastPx = -32768, lastPy = -32768;
+
+                int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
+
+                for (size_t j = 0; j < numCoords; j++) {
+                    int16_t px = (coords[j * 2] >> 4) + ref.tileOffsetX;
+                    int16_t py = (coords[j * 2 + 1] >> 4) + ref.tileOffsetY;
+                    if (validPoints > 0) {
+                        if (abs(px - lastPx) < lodThreshold && abs(py - lastPy) < lodThreshold
+                            && j < numCoords - 1) continue;
+                    }
+                    pxArr[validPoints] = px;
+                    pyArr[validPoints] = py;
+                    if (px < minPx) minPx = px;
+                    if (px > maxPx) maxPx = px;
+                    if (py < minPy) minPy = py;
+                    if (py > maxPy) maxPy = py;
+                    lastPx = px;
+                    lastPy = py;
+                    validPoints++;
+                }
+
+                if (validPoints < 2 || maxPx < 0 || minPx >= viewportW ||
+                    maxPy < 0 || minPy >= viewportH) break;
+
+                for (size_t j = 1; j < validPoints; j++) {
+                    if (widthF <= 1.0f) {
+                        map.drawLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j], colorRgb565);
+                    } else {
+                        map.drawWideLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j],
+                                         widthF, colorRgb565);
+                        map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
+                    }
+                }
+                break;
+            }
+            case GEOM_POINT: {
+                if (ref.coordCount < 1) break;
+                decodedCoords.clear();
+                DecodedFeature df;
+                if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
+                    ESP_LOGW(TAG, "Point decode FAILED: coords=%u payload=%u tile(%d,%d)",
+                             ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
+                    break;
+                }
+                int16_t* coords = decodedCoords.data() + df.coordsIdx;
+                int px = (coords[0] >> 4) + ref.tileOffsetX;
+                int py = (coords[1] >> 4) + ref.tileOffsetY;
+                if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
+                    map.fillCircle(px, py, 3, colorRgb565);
+                break;
+            }
+        }
+    }
+
+    // =========================================================================
+    // Streaming NAV rendering for Z9 (and optionally Z10).
+    // Processes one tile at a time: load → render geometry → collect labels → free.
+    // Peak PSRAM: ~500 KB instead of ~3.6 MB for batch at Z9.
+    // Trade-off: loses cross-tile z-ordering (acceptable at Z9, 50 km/tile).
+    // Intra-tile z-ordering is preserved (tile generator sorts by priority).
+    // =========================================================================
+    bool renderNavViewportStreaming(float centerLat, float centerLon, uint8_t zoom,
+                                    LGFX_Sprite &map, const char** regions, int regionCount) {
+        if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+        renderActive_ = true;
+
+        esp_task_wdt_reset();
+        uint64_t startTime = esp_timer_get_time();
+
+        int viewportW = map.width();
+        int viewportH = map.height();
+
+        // Compute center tile from lat/lon (Mercator projection)
+        const double latRad = (double)centerLat * M_PI / 180.0;
+        const double n = pow(2.0, (double)zoom);
+        const int centerTileIdxX = (int)floorf((float)((centerLon + 180.0) / 360.0 * n));
+        const int centerTileIdxY = (int)floorf((float)((1.0 - log(tan(latRad) + 1.0 / cos(latRad)) / M_PI) / 2.0 * n));
+
+        const int8_t gridOffset = MAP_TILES_GRID / 2;
+
+        // Spiral order: center first, then edges, corners last
+        static const int8_t spiralOrder[9][2] = {
+            {0,0}, {2,0}, {0,2}, {2,2}, {0,1}, {1,0}, {2,1}, {1,2}, {1,1}
+        };
+
+        // Skip regions that don't contain the center tile
+        struct ActiveRegion { const char* name; uint8_t origIdx; };
+        ActiveRegion activeRegions[NPK_MAX_REGIONS];
+        int activeRegionCount = 0;
+        if (regionCount > 1) {
+            for (int r = 0; r < regionCount && r < NPK_MAX_REGIONS; r++) {
+                NpkSlot* slot = openNpkRegion(regions[r], zoom, (uint32_t)centerTileIdxY);
+                if (!slot || !slot->yTable) continue;
+                UIMapManager::Npk2IndexEntry dummy;
+                if (findNpkTileInSlot(slot, (uint32_t)centerTileIdxX, (uint32_t)centerTileIdxY, &dummy))
+                    activeRegions[activeRegionCount++] = { regions[r], (uint8_t)r };
+            }
+            if (activeRegionCount == 0)
+                for (int r = 0; r < regionCount && r < NPK_MAX_REGIONS; r++)
+                    activeRegions[activeRegionCount++] = { regions[r], (uint8_t)r };
+        } else {
+            for (int r = 0; r < regionCount && r < NPK_MAX_REGIONS; r++)
+                activeRegions[activeRegionCount++] = { regions[r], (uint8_t)r };
+        }
+
+        // Pre-evict wrong-zoom entries
+        for (int i = (int)navCache.size() - 1; i >= 0; i--) {
+            if (navCache[i].zoom != zoom) {
+                free(navCache[i].data);
+                navCache.erase(navCache.begin() + i);
+            }
+        }
+
+        // Self-contained text labels — data is COPIED because tile buffers are freed
+        // between tiles in streaming mode. ~30 bytes per label, ~128 labels max = ~4 KB.
+        struct StreamingLabel {
+            uint16_t color;
+            uint8_t  fontSize;
+            int16_t  px, py;          // screen coords (already projected)
+            uint8_t  textLen;
+            char     text[128];
+        };
+        std::vector<StreamingLabel, PSRAMAllocator<StreamingLabel>> textLabels;
+        textLabels.reserve(128);
+
+        const uint16_t bgColor = map.color565(0x2F, 0x4F, 0x4F);
+        map.fillSprite(bgColor);
+        map.startWrite();
+
+        struct LabelRect { int16_t x, y, w, h; };
+        std::vector<LabelRect> placedLabels;
+        placedLabels.reserve(128);
+
+        int totalFeatures = 0;
+        int tilesRendered = 0;
+        int navCacheHits = 0, navCacheMisses = 0;
+        uint64_t lastYieldUs = esp_timer_get_time();
+
+        try {
+
+        // --- Stream tiles one by one ---
+        for (int ti = 0; ti < 9; ti++) {
+            esp_task_wdt_reset();
+
+            int gx = spiralOrder[ti][0];
+            int gy = spiralOrder[ti][1];
+            int tileX = centerTileIdxX - gridOffset + gx;
+            int tileY = centerTileIdxY - gridOffset + gy;
+            int16_t tileOffsetX = (int16_t)(gx * MAP_TILE_SIZE);
+            int16_t tileOffsetY = (int16_t)(gy * MAP_TILE_SIZE);
+
+            // Try each region for this tile position
+            uint8_t* tileData = nullptr;
+            size_t tileSize = 0;
+            bool fromCache = false;
+
+            for (int r = 0; r < activeRegionCount && !tileData; r++) {
+                uint8_t regionIdx = activeRegions[r].origIdx;
+                int cacheIdx = findNavCache(regionIdx, zoom, tileX, tileY);
+                if (cacheIdx >= 0) {
+                    navCache[cacheIdx].lastAccess = ++navCacheAccessCounter;
+                    tileData = navCache[cacheIdx].data;
+                    tileSize = navCache[cacheIdx].size;
+                    fromCache = true;
+                    navCacheHits++;
+                } else {
+                    NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
+                    UIMapManager::Npk2IndexEntry entry;
+                    if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)) {
+                        // Evict aggressively before loading: free ALL non-essential cache
+                        // At Z9, one tile can be 500KB — we need max headroom
+                        size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+                        if (freeBlock < entry.size + 64 * 1024) {
+                            for (int ci = (int)navCache.size() - 1; ci >= 0; ci--) {
+                                free(navCache[ci].data);
+                                navCache.erase(navCache.begin() + ci);
+                            }
+                            ESP_LOGD(TAG, "Z9 streaming: evicted all cache for tile (%d,%d) size=%u",
+                                     tileX, tileY, (unsigned)entry.size);
+                        }
+                        if (readNpkTileData(slot, &entry, &tileData, &tileSize)) {
+                            if (memcmp(tileData, "NAV1", 4) != 0) {
+                                ESP_LOGE(TAG, "Z9 tile (%d,%d): invalid NAV1 header", tileX, tileY);
+                                free(tileData);
+                                tileData = nullptr;
+                                continue;
+                            }
+                            navCacheMisses++;
+                        }
+                    }
+                }
+            }
+
+            if (!tileData || tileSize < 22 + 13) continue;
+
+            // --- Parse and render features immediately ---
+            uint16_t feature_count;
+            memcpy(&feature_count, tileData + 4, 2);
+            uint8_t* p = tileData + 22;
+
+            for (uint16_t i = 0; i < feature_count; i++) {
+                if ((i & 63) == 0) esp_task_wdt_reset();
+
+                // Yield every 20ms
+                if ((++totalFeatures & 15) == 0) {
+                    uint64_t nowUs = esp_timer_get_time();
+                    if (nowUs - lastYieldUs > 20000) {
+                        map.endWrite();
+                        vTaskDelay(1);
+                        map.startWrite();
+                        lastYieldUs = esp_timer_get_time();
+                    }
+                }
+
+                if (p + 13 > tileData + tileSize) break;
+
+                uint8_t geomType = p[0];
+                uint8_t zoomPriority = p[3];
+                uint16_t coordCount;
+                memcpy(&coordCount, p + 9, 2);
+                uint16_t payloadSize;
+                memcpy(&payloadSize, p + 11, 2);
+                if (p + 13 + payloadSize > tileData + tileSize) break;
+
+                uint8_t minZoom = zoomPriority >> 4;
+                if (minZoom > zoom) { p += 13 + payloadSize; continue; }
+
+                // Semantic culling Z9: skip features < 3×3px
+                uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
+                if (geomType == GEOM_POLYGON || geomType == GEOM_LINE) {
+                    if ((bx2 - bx1) < 3 && (by2 - by1) < 3) {
+                        p += 13 + payloadSize; continue;
+                    }
+                }
+
+                FeatureRef ref;
+                ref.ptr = p;
+                ref.geomType = geomType;
+                ref.payloadSize = payloadSize;
+                ref.coordCount = coordCount;
+                ref.tileOffsetX = tileOffsetX;
+                ref.tileOffsetY = tileOffsetY;
+
+                if (geomType == GEOM_TEXT) {
+                    // Copy label data — tile buffer will be freed after this tile
+                    int16_t* coords = (int16_t*)(p + 13);
+                    uint8_t textLen = *(p + 13 + 4);
+                    if (textLen > 0 && textLen < 128) {
+                        StreamingLabel lbl;
+                        memcpy(&lbl.color, p + 1, 2);
+                        lbl.fontSize = p[4];
+                        lbl.px = (coords[0] >> 4) + tileOffsetX;
+                        lbl.py = (coords[1] >> 4) + tileOffsetY;
+                        lbl.textLen = textLen;
+                        memcpy(lbl.text, p + 13 + 5, textLen);
+                        lbl.text[textLen] = '\0';
+                        textLabels.push_back(lbl);
+                    }
+                } else if (geomType == GEOM_TEXT_LINE) {
+                    // No waterway labels at Z9 (zoom < 15)
+                } else {
+                    // Render geometry immediately — no globalLayers needed
+                    renderSingleFeature(map, ref, viewportW, viewportH, zoom);
+                }
+
+                p += 13 + payloadSize;
+            }
+
+            tilesRendered++;
+
+            // Free tile data if it was freshly loaded (not from cache)
+            // For streaming Z9, we don't cache — free immediately to reclaim PSRAM
+            if (!fromCache) {
+                free(tileData);
+            }
+        }
+
+        } catch (const std::bad_alloc&) {
+            ESP_LOGW(TAG, "Z9 streaming: PSRAM exhausted during render, partial output");
+        }
+        map.endWrite();
+
+        // --- Label pass (same as batch) ---
+        map.startWrite();
+        map.clearClipRect();
+        if (vlwFontLoaded) {
+            map.setFont(&vlwFont);
+            map.setTextSize(1.0f);
+        } else {
+            map.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
+            map.setTextSize(1);
+        }
+
+        for (const auto& lbl : textLabels) {
+            if ((++totalFeatures & 31) == 0) esp_task_wdt_reset();
+
+            if (vlwFontLoaded) {
+                float scale = (lbl.fontSize == 0) ? 0.8f : (lbl.fontSize == 1) ? 1.0f : 1.2f;
+                map.setTextSize(scale);
+            }
+
+            int tw = map.textWidth(lbl.text);
+            int th = map.fontHeight();
+            int lx = lbl.px - tw / 2;
+            int ly = lbl.py - th;
+            const int PAD = 4;
+            if (lx + tw < 0 || lx >= viewportW || ly + th < 0 || ly >= viewportH) continue;
+            bool collision = false;
+            for (const auto& r : placedLabels) {
+                if (lx - PAD < r.x + r.w && lx + tw + PAD > r.x &&
+                    ly - PAD < r.y + r.h && ly + th + PAD > r.y) {
+                    collision = true; break;
+                }
+            }
+            if (collision) continue;
+            map.setTextColor(lbl.color);
+            map.setTextDatum(lgfx::top_center);
+            map.drawString(lbl.text, lbl.px, ly);
+            map.setTextDatum(lgfx::top_left);
+            placedLabels.push_back({(int16_t)lx, (int16_t)ly, (int16_t)tw, (int16_t)th});
+        }
+        map.endWrite();
+
+        uint64_t endTime = esp_timer_get_time();
+        ESP_LOGI(TAG, "Z9 streaming: %llu ms, %d tiles, %d features, cache: %d hit / %d miss, PSRAM free: %u",
+                      (endTime - startTime) / 1000, tilesRendered, totalFeatures,
+                      navCacheHits, navCacheMisses, ESP.getFreePsram());
+
+        bool result = (tilesRendered > 0);
+        renderActive_ = false;
+        if (renderLock) xSemaphoreGive(renderLock);
+        return result;
+    }
+
+    // =========================================================================
+    // Batch NAV rendering for Z10+.
     // Loads ALL visible tiles, dispatches features to 16 priority layers,
     // renders in a single pass with per-feature setClipRect to tile boundaries.
     // This ensures correct z-ordering across tile boundaries.
     // =========================================================================
     bool renderNavViewport(float centerLat, float centerLon, uint8_t zoom,
                            LGFX_Sprite &map, const char** regions, int regionCount) {
+        // Z9: use streaming pipeline (one tile at a time) to stay within PSRAM budget
+        if (zoom <= 9)
+            return renderNavViewportStreaming(centerLat, centerLon, zoom, map, regions, regionCount);
+
         // Acquire render lock — prevents clearTileCache/closeAllNpkSlots during render
         if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
         renderActive_ = true;
@@ -613,237 +1066,7 @@ namespace MapEngine {
                     }
                 }
 
-                uint8_t* fp = ref.ptr;
-
-                // BBox culling against viewport BEFORE setClipRect (avoid unnecessary calls)
-                uint8_t bx1 = fp[5], by1 = fp[6], bx2 = fp[7], by2 = fp[8];
-                int16_t minX = ref.tileOffsetX + bx1;
-                int16_t minY = ref.tileOffsetY + by1;
-                int16_t maxX = ref.tileOffsetX + bx2;
-                int16_t maxY = ref.tileOffsetY + by2;
-                if (maxX < 0 || minX > viewportW || maxY < 0 || minY > viewportH) continue;
-
-                // Per-feature setClipRect to tile boundaries
-                map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
-
-                // Read colorRgb565 directly (LE, no byte swap)
-                uint16_t colorRgb565;
-                memcpy(&colorRgb565, fp + 1, 2);
-
-                // Render feature by geometry type (mixed per layer)
-                switch (ref.geomType) {
-                    case 3: { // Polygon — decode VarInt coords
-                        if (ref.coordCount < 3) break;
-                        decodedCoords.clear();
-                        DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                            ESP_LOGW(TAG, "Polygon decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                            break;
-                        }
-                        int16_t* coords = decodedCoords.data() + df.coordsIdx;
-
-                        if (proj32X.capacity() < ref.coordCount) proj32X.reserve(ref.coordCount * 3 / 2);
-                        if (proj32Y.capacity() < ref.coordCount) proj32Y.reserve(ref.coordCount * 3 / 2);
-                        proj32X.resize(ref.coordCount);
-                        proj32Y.resize(ref.coordCount);
-
-                        int* px_hp = proj32X.data();
-                        int* py_hp = proj32Y.data();
-                        if (!px_hp || !py_hp) break;
-
-                        // Vertex decimation: skip redundant vertices at same pixel
-                        // Only for simple polygons (no multi-ring).
-                        int16_t lastVx = -32768, lastVy = -32768;
-                        uint16_t actualPoints = 0;
-                        for (uint16_t j = 0; j < ref.coordCount; j++) {
-                            int16_t cx = coords[j * 2];
-                            int16_t cy = coords[j * 2 + 1];
-                            if (df.ringCount == 0 && j > 0 &&
-                                abs(cx - lastVx) < 1 && abs(cy - lastVy) < 1 &&
-                                j < ref.coordCount - 1)
-                                continue;
-                            px_hp[actualPoints] = (int)cx;
-                            py_hp[actualPoints] = (int)cy;
-                            lastVx = cx;
-                            lastVy = cy;
-                            actualPoints++;
-                        }
-
-                        if (fillPolygons) {
-                            fillPolygonGeneral(map, px_hp, py_hp, actualPoints,
-                                colorRgb565, ref.tileOffsetX, ref.tileOffsetY,
-                                df.ringCount, df.ringEnds);
-                        }
-
-                        // Building outline (bit 7 of fp[4]), z16+ only
-                        if ((fp[4] & 0x80) != 0 && zoom >= 16) {
-                            uint16_t outlineColor = darkenRGB565(colorRgb565, 0.35f);
-                            uint16_t ringStart = 0;
-                            uint16_t numRings = (df.ringCount > 0) ? df.ringCount : 1;
-                            for (uint16_t r = 0; r < numRings; r++) {
-                                uint16_t ringEnd = (df.ringEnds && r < df.ringCount) ? df.ringEnds[r] : actualPoints;
-                                if (ringEnd > actualPoints) ringEnd = actualPoints;
-                                for (uint16_t j = ringStart; j < ringEnd; j++) {
-                                    uint16_t next = (j + 1 < ringEnd) ? j + 1 : ringStart;
-                                    int x0 = (px_hp[j] >> 4) + ref.tileOffsetX;
-                                    int y0 = (py_hp[j] >> 4) + ref.tileOffsetY;
-                                    int x1 = (px_hp[next] >> 4) + ref.tileOffsetX;
-                                    int y1 = (py_hp[next] >> 4) + ref.tileOffsetY;
-                                    map.drawLine(x0, y0, x1, y1, outlineColor);
-                                }
-                                ringStart = ringEnd;
-                            }
-                        }
-
-                        break;
-                    }
-                    case 2: { // LineString — decode VarInt coords
-                        if (ref.coordCount < 2) break;
-                        uint8_t widthRaw = fp[4] & 0x7F;        // bits 6-0 = half-pixels
-                        if (widthRaw == 0) widthRaw = 2;         // minimum 1.0px
-                        float widthF = widthRaw / 2.0f;          // convert to pixels
-
-                        decodedCoords.clear();
-                        DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                            ESP_LOGW(TAG, "Line decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                            break;
-                        }
-                        int16_t* coords = decodedCoords.data() + df.coordsIdx;
-
-                        // Pre-project all coords with dedup
-                        size_t numCoords = ref.coordCount;
-                        if (proj16X.capacity() < numCoords) proj16X.reserve(numCoords * 3 / 2);
-                        if (proj16Y.capacity() < numCoords) proj16Y.reserve(numCoords * 3 / 2);
-                        proj16X.resize(numCoords);
-                        proj16Y.resize(numCoords);
-
-                        int16_t* pxArr = proj16X.data();
-                        int16_t* pyArr = proj16Y.data();
-
-                        int16_t minPx = INT16_MAX, maxPx = INT16_MIN;
-                        int16_t minPy = INT16_MAX, maxPy = INT16_MIN;
-                        size_t validPoints = 0;
-                        int16_t lastPx = -32768, lastPy = -32768;
-
-                        // Adaptive LOD: 2px threshold for Z15+, 1px otherwise
-                        int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
-
-                        for (size_t j = 0; j < numCoords; j++) {
-                            int16_t px = (coords[j * 2] >> 4) + ref.tileOffsetX;
-                            int16_t py = (coords[j * 2 + 1] >> 4) + ref.tileOffsetY;
-
-                            if (validPoints > 0) {
-                                // Skip vertex if closer than LOD threshold (always keep last)
-                                if (abs(px - lastPx) < lodThreshold && abs(py - lastPy) < lodThreshold
-                                    && j < numCoords - 1) continue;
-                            }
-
-                            pxArr[validPoints] = px;
-                            pyArr[validPoints] = py;
-                            if (px < minPx) minPx = px;
-                            if (px > maxPx) maxPx = px;
-                            if (py < minPy) minPy = py;
-                            if (py > maxPy) maxPy = py;
-                            lastPx = px;
-                            lastPy = py;
-                            validPoints++;
-                        }
-
-                        // Bbox check on projected line
-                        if (validPoints < 2 || maxPx < 0 || minPx >= viewportW ||
-                            maxPy < 0 || minPy >= viewportH) break;
-
-                        for (size_t j = 1; j < validPoints; j++) {
-                            if (widthF <= 1.0f) {
-                                map.drawLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j], colorRgb565);
-                            } else {
-                                map.drawWideLine(pxArr[j-1], pyArr[j-1], pxArr[j], pyArr[j],
-                                                 widthF, colorRgb565);
-                                map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
-                            }
-                        }
-                        break;
-                    }
-                    case 1: { // Point — decode VarInt coords (delta from 0 = zigzag value)
-                        if (ref.coordCount < 1) break;
-                        decodedCoords.clear();
-                        DecodedFeature df;
-                        if (!decodeFeatureCoords(fp + 13, ref.coordCount, ref.payloadSize, ref.geomType, df)) {
-                            ESP_LOGW(TAG, "Point decode FAILED: coords=%u payload=%u tile(%d,%d)",
-                                     ref.coordCount, ref.payloadSize, ref.tileOffsetX, ref.tileOffsetY);
-                            break;
-                        }
-                        int16_t* coords = decodedCoords.data() + df.coordsIdx;
-                        int px = (coords[0] >> 4) + ref.tileOffsetX;
-                        int py = (coords[1] >> 4) + ref.tileOffsetY;
-                        // Bounds check
-                        if (px >= 0 && px < viewportW && py >= 0 && py < viewportH)
-                            map.fillCircle(px, py, 3, colorRgb565);
-                        break;
-                    }
-                    case 4: { // Text label (GEOM_TEXT) — payload NOT VarInt, raw int16
-                        uint8_t fontSize = fp[4];
-                        int16_t* coords = (int16_t*)(fp + 13);
-                        int px = (coords[0] >> 4) + ref.tileOffsetX;
-                        int py = (coords[1] >> 4) + ref.tileOffsetY;
-                        uint8_t textLen = *(fp + 13 + 4);
-                        if (textLen > 0 && textLen < 128) {
-                            char textBuf[128];
-                            memcpy(textBuf, fp + 13 + 5, textLen);
-                            textBuf[textLen] = '\0';
-
-                            // Use VLW Unicode font if loaded, fallback to GFX font
-                            if (vlwFontLoaded) {
-                                map.setFont(&vlwFont);
-                                // Scale VLW font based on fontSize (0=small, 1=medium, 2=large)
-                                float scale = (fontSize == 0) ? 0.8f : (fontSize == 1) ? 1.0f : 1.2f;
-                                map.setTextSize(scale);
-                            } else {
-                                map.setFont((lgfx::GFXfont*)&OpenSans_Bold6pt7b);
-                                map.setTextSize(1);
-                            }
-
-                            // Measure label bbox for collision detection
-                            int tw = map.textWidth(textBuf);
-                            int th = map.fontHeight();
-                            int lx = px - tw / 2;  // center horizontally
-                            int ly = py - th;       // above the point
-                            const int PAD = 4;
-
-                            // Viewport bounds check (label must be at least partially visible)
-                            if (lx + tw < 0 || lx >= viewportW || ly + th < 0 || ly >= viewportH) break;
-
-                            // Check collision with already placed labels
-                            bool collision = false;
-                            for (const auto& r : placedLabels) {
-                                if (lx - PAD < r.x + r.w && lx + tw + PAD > r.x &&
-                                    ly - PAD < r.y + r.h && ly + th + PAD > r.y) {
-                                    collision = true;
-                                    break;
-                                }
-                            }
-                            if (collision) break;
-
-                            // Lift tile clipRect so labels can span tile boundaries
-                            map.clearClipRect();
-
-                            // Draw label
-                            map.setTextColor(colorRgb565);
-                            map.setTextDatum(lgfx::top_center);
-                            map.drawString(textBuf, px, ly);
-                            map.setTextDatum(lgfx::top_left); // restore default
-
-                            // Restore tile clipRect for subsequent features
-                            map.setClipRect(ref.tileOffsetX, ref.tileOffsetY, MAP_TILE_SIZE, MAP_TILE_SIZE);
-
-                            placedLabels.push_back({(int16_t)lx, (int16_t)ly, (int16_t)tw, (int16_t)th});
-                        }
-                        break;
-                    }
-                }
+                renderSingleFeature(map, ref, viewportW, viewportH, zoom);
             }
             globalLayers[pri].clear();
             esp_task_wdt_reset();
