@@ -168,6 +168,15 @@ namespace MapEngine {
     static bool _isRasterCacheInitialized = false;
     static uint32_t _rasterCacheAccessCounter = 0;
 
+    // --- NAV POOL ---
+    #define NAV_POOL_SLOT_SIZE 524288 // 512KB — Z9 tiles range 290-500KB
+    #define NAV_POOL_MAX_SLOTS 5
+
+    static uint8_t* _navPool[NAV_POOL_MAX_SLOTS] = {nullptr};
+    static bool _navPoolInUse[NAV_POOL_MAX_SLOTS] = {false};
+    static bool _navPoolActive = false;
+    static LovyanGFX* _gfx = nullptr;
+
     NpkSlot npkSlots[NPK_MAX_REGIONS];
     static uint32_t npkAccessCounter = 0;
 
@@ -428,8 +437,142 @@ namespace MapEngine {
     static void invalidateIdxRowCacheForSlot(int slotIdx);
     static void invalidateAllIdxRowCache();
 
+    bool isNavPoolActive() {
+        return _navPoolActive;
+    }
+
+    void initNavPool() {
+        if (_navPoolActive) return;
+
+        if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+
+        // 1. Free raster sprites
+        ESP_LOGI(TAG, "Freeing raster pool to allocate NAV pool");
+        for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+            if (_tileSpritePool[i]) {
+                _tileSpritePool[i]->deleteSprite();
+                delete _tileSpritePool[i];
+                _tileSpritePool[i] = nullptr;
+            }
+            if (i < (int)_tileCache.size()) {
+                _tileCache[i].sprite = nullptr;
+                _tileCache[i].isValid = false;
+            }
+        }
+        _isRasterCacheInitialized = false;
+
+        // 2. Allocate NAV slots
+        int allocated = 0;
+        for (int i = 0; i < NAV_POOL_MAX_SLOTS; ++i) {
+            if (!_navPool[i]) {
+                _navPool[i] = (uint8_t*)heap_caps_malloc(NAV_POOL_SLOT_SIZE, MALLOC_CAP_SPIRAM);
+                if (_navPool[i]) {
+                    allocated++;
+                } else {
+                    ESP_LOGW(TAG, "Failed to allocate NAV pool slot %d", i);
+                }
+            } else {
+                allocated++;
+            }
+            _navPoolInUse[i] = false;
+        }
+
+        _navPoolActive = true;
+        ESP_LOGI(TAG, "NAV pool initialized with %d slots (%dKB each)", allocated, NAV_POOL_SLOT_SIZE / 1024);
+
+        if (renderLock) xSemaphoreGive(renderLock);
+    }
+
+    void destroyNavPool() {
+        if (!_navPoolActive) return;
+
+        if (renderLock) xSemaphoreTake(renderLock, portMAX_DELAY);
+
+        ESP_LOGI(TAG, "Freeing NAV pool to restore raster pool");
+        // 1. Clear NAV cache completely to ensure all slots are marked free
+        navCache.clear();
+
+        // 2. Free NAV slots
+        for (int i = 0; i < NAV_POOL_MAX_SLOTS; ++i) {
+            if (_navPool[i]) {
+                heap_caps_free(_navPool[i]);
+                _navPool[i] = nullptr;
+            }
+            _navPoolInUse[i] = false;
+        }
+        _navPoolActive = false;
+
+        // 3. Restore raster pool
+        if (_gfx) {
+            // Need to do this manually since initTileCache takes the lock again if we called it
+            ESP_LOGI(TAG, "Initializing static raster tile pool (%d sprites)...", RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                if (_tileSpritePool[i] == nullptr) {
+                    _tileSpritePool[i] = new LGFX_Sprite(_gfx);
+                    if (!_tileSpritePool[i]) {
+                        ESP_LOGE(TAG, "Failed to allocate sprite %d in pool", i);
+                        continue;
+                    }
+                    _tileSpritePool[i]->setPsram(true);
+                    _tileSpritePool[i]->setColorDepth(16);
+                    if (!_tileSpritePool[i]->createSprite(MAP_TILE_SIZE, MAP_TILE_SIZE)) {
+                        ESP_LOGE(TAG, "Failed to create sprite %d in pool (PSRAM)", i);
+                        delete _tileSpritePool[i];
+                        _tileSpritePool[i] = nullptr;
+                    }
+                }
+            }
+
+            _tileCache.resize(RASTER_TILE_CACHE_SIZE);
+            for (int i = 0; i < RASTER_TILE_CACHE_SIZE; ++i) {
+                _tileCache[i].sprite = _tileSpritePool[i];
+                _tileCache[i].isValid = false;
+            }
+            _isRasterCacheInitialized = true;
+            ESP_LOGI(TAG, "Raster tile pool initialized.");
+        } else {
+            ESP_LOGE(TAG, "Cannot restore raster pool: gfx pointer is null");
+        }
+
+        if (renderLock) xSemaphoreGive(renderLock);
+    }
+
+    uint8_t* acquireNavSlot(size_t needed) {
+        if (!_navPoolActive) return nullptr;
+        if (needed > NAV_POOL_SLOT_SIZE) {
+            ESP_LOGE(TAG, "Requested NAV tile size %d exceeds slot size %d", (int)needed, NAV_POOL_SLOT_SIZE);
+            return nullptr;
+        }
+
+        uint8_t* slot = nullptr;
+        for (int i = 0; i < NAV_POOL_MAX_SLOTS; ++i) {
+            if (_navPool[i] && !_navPoolInUse[i]) {
+                _navPoolInUse[i] = true;
+                slot = _navPool[i];
+                break;
+            }
+        }
+        return slot;
+    }
+
+    void releaseNavSlot(uint8_t* ptr) {
+        if (!ptr) return;
+
+        // Check if pointer belongs to the pool
+        for (int i = 0; i < NAV_POOL_MAX_SLOTS; ++i) {
+            if (_navPool[i] == ptr) {
+                _navPoolInUse[i] = false;
+                return;
+            }
+        }
+        // Not a pool pointer — was allocated via ps_malloc fallback
+        free(ptr);
+    }
+
     // Initialize tile cache and pre-reserve render buffers
     void initTileCache(LovyanGFX* gfx) {
+        if (!_gfx) _gfx = gfx;
+
         // --- Raster Cache Pool Allocation (once) ---
         if (!_isRasterCacheInitialized) {
             ESP_LOGI(TAG, "Initializing static raster tile pool (%d sprites)...", RASTER_TILE_CACHE_SIZE);
@@ -587,7 +730,8 @@ namespace MapEngine {
             }
         }
         if (lruIdx >= 0) {
-            free(navCache[lruIdx].data);
+            if (isNavPoolActive()) releaseNavSlot(navCache[lruIdx].data);
+            else free(navCache[lruIdx].data);
             navCache[lruIdx] = entry;
         } else {
             // All entries in use — grow beyond NAV_CACHE_SIZE to avoid data loss
@@ -595,11 +739,21 @@ namespace MapEngine {
         }
     }
 
+    // Returns the number of available NAV pool slots (or 0 if not active)
+    int getAvailableNavSlots() {
+        if (!_navPoolActive) return 0;
+        int count = 0;
+        for (int i = 0; i < NAV_POOL_MAX_SLOTS; ++i) {
+            if (_navPool[i] && !_navPoolInUse[i]) count++;
+        }
+        return count;
+    }
+
     // Evict LRU navCache entries NOT referenced by inUse until largest free PSRAM
-    // block is >= needed bytes. Returns true if enough PSRAM was freed.
+    // block is >= needed bytes (or a NAV slot is available). Returns true if enough PSRAM/slots were freed.
     bool evictUnusedNavCache(const std::vector<uint8_t*>& inUse, size_t needed) {
         int evicted = 0;
-        while (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed) {
+        while ((isNavPoolActive() ? (getAvailableNavSlots() == 0) : (heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) < needed))) {
             int lruIdx = -1;
             uint32_t lruMin = UINT32_MAX;
             for (int i = 0; i < (int)navCache.size(); i++) {
@@ -615,7 +769,8 @@ namespace MapEngine {
                 }
             }
             if (lruIdx < 0) break;  // Nothing left to evict
-            free(navCache[lruIdx].data);
+            if (isNavPoolActive()) releaseNavSlot(navCache[lruIdx].data);
+            else free(navCache[lruIdx].data);
             navCache.erase(navCache.begin() + lruIdx);
             evicted++;
         }
@@ -629,7 +784,10 @@ namespace MapEngine {
     static void clearNavCache() {
         invalidateAllIdxRowCache();
         closeAllNpkSlots();
-        for (auto& e : navCache) free(e.data);
+        for (auto& e : navCache) {
+            if (isNavPoolActive()) releaseNavSlot(e.data);
+            else free(e.data);
+        }
         navCache.clear();
         navCacheAccessCounter = 0;
         ESP_LOGD(TAG, "NAV cache cleared");
@@ -981,7 +1139,19 @@ namespace MapEngine {
                                  uint8_t** outData, size_t* outSize) {
         if (!slot || !slot->file || !entry) return false;
 
-        *outData = (uint8_t*)ps_malloc(entry->size);
+        if (isNavPoolActive()) {
+            *outData = acquireNavSlot(entry->size);
+            if (!*outData) {
+                // Pool exhausted or tile too large — fallback to ps_malloc
+                *outData = (uint8_t*)ps_malloc(entry->size);
+                if (*outData) {
+                    ESP_LOGW(TAG, "NAV pool fallback: ps_malloc %d bytes (slots full or tile > %dKB)",
+                             (int)entry->size, NAV_POOL_SLOT_SIZE / 1024);
+                }
+            }
+        } else {
+            *outData = (uint8_t*)ps_malloc(entry->size);
+        }
         if (!*outData) return false;
 
         bool ok = false;
@@ -993,11 +1163,10 @@ namespace MapEngine {
         }
 
         if (!ok) {
-            free(*outData);
+            releaseNavSlot(*outData);  // Handles both pool slots and ps_malloc fallback
             *outData = nullptr;
             return false;
         }
-
         *outSize = entry->size;
         return true;
     }

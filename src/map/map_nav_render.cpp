@@ -447,7 +447,8 @@ namespace MapEngine {
                        navCache[i].tileY < centerTileIdxY - gridOffset ||
                        navCache[i].tileY > centerTileIdxY + gridOffset;
             if (bad) {
-                free(navCache[i].data);
+                if (isNavPoolActive()) releaseNavSlot(navCache[i].data);
+                else free(navCache[i].data);
                 navCache.erase(navCache.begin() + i);
             }
         }
@@ -515,7 +516,7 @@ namespace MapEngine {
                     if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)) {
                         // Free PSRAM if needed: LRU evict from navCache, then from tileSlots
                         size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-                        while (freeBlock < entry.size + 64 * 1024 && !navCache.empty()) {
+                        while ((isNavPoolActive() ? (getAvailableNavSlots() == 0) : (freeBlock < entry.size + 64 * 1024)) && !navCache.empty()) {
                             int lruIdx = 0;
                             uint32_t oldest = UINT32_MAX;
                             for (int ci = 0; ci < (int)navCache.size(); ci++) {
@@ -523,13 +524,15 @@ namespace MapEngine {
                                     oldest = navCache[ci].lastAccess; lruIdx = ci;
                                 }
                             }
-                            free(navCache[lruIdx].data);
+                            if (isNavPoolActive()) releaseNavSlot(navCache[lruIdx].data);
+                            else free(navCache[lruIdx].data);
                             navCache.erase(navCache.begin() + lruIdx);
                             freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
                         }
-                        for (int si = 0; si < tileSlotCount && freeBlock < entry.size + 64 * 1024; si++) {
+                        for (int si = 0; si < tileSlotCount && (isNavPoolActive() ? (getAvailableNavSlots() == 0) : (freeBlock < entry.size + 64 * 1024)); si++) {
                             if (tileSlots[si].data && !tileSlots[si].fromCache) {
-                                free(tileSlots[si].data);
+                                if (isNavPoolActive()) releaseNavSlot(tileSlots[si].data);
+                                else free(tileSlots[si].data);
                                 tileSlots[si].data = nullptr;
                                 freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
                             }
@@ -537,7 +540,8 @@ namespace MapEngine {
                         if (readNpkTileData(slot, &entry, &tileData, &tileSize)) {
                             if (memcmp(tileData, "NAV1", 4) != 0) {
                                 ESP_LOGE(TAG, "Z9 tile (%d,%d): invalid NAV1 header", tileX, tileY);
-                                free(tileData);
+                                if (isNavPoolActive()) releaseNavSlot(tileData);
+                                else free(tileData);
                                 tileData = nullptr;
                                 continue;
                             }
@@ -632,7 +636,8 @@ namespace MapEngine {
             if (tileSlotCount < 9) {
                 tileSlots[tileSlotCount++] = { tileData, tileSize, tileX, tileY, fromCache };
             } else if (!fromCache) {
-                free(tileData);
+                if (isNavPoolActive()) releaseNavSlot(tileData);
+                else free(tileData);
             }
         }
 
@@ -725,7 +730,8 @@ namespace MapEngine {
                         int lru = 0; uint32_t oldest = UINT32_MAX;
                         for (int ci = 0; ci < (int)navCache.size(); ci++)
                             if (navCache[ci].lastAccess < oldest) { oldest = navCache[ci].lastAccess; lru = ci; }
-                        free(navCache[lru].data);
+                        if (isNavPoolActive()) releaseNavSlot(navCache[lru].data);
+                        else free(navCache[lru].data);
                         navCache.erase(navCache.begin() + lru);
                     }
                     addNavCache(activeRegions[0].origIdx, zoom,
@@ -737,7 +743,8 @@ namespace MapEngine {
             }
             for (int i = 0; i < tileSlotCount; i++)
                 if (tileSlots[i].data && !tileSlots[i].fromCache) {
-                    free(tileSlots[i].data);
+                    if (isNavPoolActive()) releaseNavSlot(tileSlots[i].data);
+                    else free(tileSlots[i].data);
                     tileSlots[i].data = nullptr;
                 }
         }
@@ -825,7 +832,8 @@ namespace MapEngine {
             int preEvicted = 0;
             for (int i = (int)navCache.size() - 1; i >= 0; i--) {
                 if (navCache[i].zoom != zoom) {
-                    free(navCache[i].data);
+                    if (isNavPoolActive()) releaseNavSlot(navCache[i].data);
+                    else free(navCache[i].data);
                     navCache.erase(navCache.begin() + i);
                     preEvicted++;
                 }
@@ -923,7 +931,9 @@ namespace MapEngine {
         for (int i = 0; i < pendingCount; i++)
             totalPendingSize += pendingReads[i].entry.size;
 
-        if (totalPendingSize <= heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)) {
+        bool hasCapacity = isNavPoolActive() ? (getAvailableNavSlots() >= pendingCount) : (totalPendingSize <= heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+
+        if (hasCapacity) {
             std::sort(pendingReads, pendingReads + pendingCount,
                       [](const PendingTileRead& a, const PendingTileRead& b) {
                           if (a.slot != b.slot) return a.slot < b.slot;
@@ -945,8 +955,14 @@ namespace MapEngine {
             size_t largestTile = 0;
             for (int i = 0; i < pendingCount; i++)
                 if (pendingReads[i].entry.size > largestTile) largestTile = pendingReads[i].entry.size;
-            if (freeBlock < largestTile + PSRAM_RENDER_MARGIN) {
-                evictUnusedNavCache(inUseData, largestTile + PSRAM_RENDER_MARGIN);
+            if (isNavPoolActive()) {
+                if (getAvailableNavSlots() < pendingCount) {
+                    evictUnusedNavCache(inUseData, largestTile);
+                }
+            } else {
+                if (freeBlock < largestTile + PSRAM_RENDER_MARGIN) {
+                    evictUnusedNavCache(inUseData, largestTile + PSRAM_RENDER_MARGIN);
+                }
             }
         }
 
@@ -974,7 +990,8 @@ namespace MapEngine {
 
             if (memcmp(data, "NAV1", 4) != 0) {
                 ESP_LOGE(TAG, "Tile %d/%d: invalid header", pr.tileX, pr.tileY);
-                free(data);
+                if (isNavPoolActive()) releaseNavSlot(data);
+                else free(data);
                 continue;
             }
 

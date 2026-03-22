@@ -99,7 +99,15 @@ namespace MapEngine {
     bool ensurePSRAMAvailable(size_t needed);
     void copySpriteToCanvasWithClip(lv_obj_t* canvas, LGFX_Sprite* sprite, int offsetX, int offsetY);
 
-} // namespace MapEngine
+    // --- NAV POOL API ---
+    void initNavPool();
+    void destroyNavPool();
+    uint8_t* acquireNavSlot(size_t needed);
+    void releaseNavSlot(uint8_t* ptr);
+    bool isNavPoolActive();
+    int getAvailableNavSlots();
+
+    } // namespace MapEngine
 
 #endif // USE_LVGL_UI
 #endif // MAP_ENGINE_H

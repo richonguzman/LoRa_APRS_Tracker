@@ -106,7 +106,16 @@ namespace MapInput {
 
     void btn_map_back_clicked(lv_event_t* e) {
         ESP_LOGI(TAG, "MAP BACK button pressed");
+
         MapEngine::stopRenderTask();
+
+        if (navModeActive) {
+            navModeActive = false;
+            MapEngine::clearTileCache();
+            MapEngine::destroyNavPool();
+            MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
+        }
+
         MapRender::cleanup_station_buttons();
         map_follow_gps = true;
         if (map_refresh_timer) {
@@ -153,6 +162,7 @@ namespace MapInput {
              map_available_zooms[map_zoom_index + 1] > nav_zooms[0])) {
             commitVisualCenter();
             MapTiles::switchZoomTable(nav_zooms, nav_zoom_count);
+            MapEngine::initNavPool();
             map_zoom_index = 0;
             map_current_zoom = nav_zooms[0];
             ESP_LOGI(TAG, "Zoom in: %d (raster->NAV)", map_current_zoom);
@@ -191,6 +201,7 @@ namespace MapInput {
             commitVisualCenter();
             navModeActive = false;
             MapEngine::clearTileCache();
+            MapEngine::destroyNavPool();
             MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
             ESP_LOGI(TAG, "Zoom out: %d (NAV->raster)", map_current_zoom);
             if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);

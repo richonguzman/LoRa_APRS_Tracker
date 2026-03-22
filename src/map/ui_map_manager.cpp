@@ -94,8 +94,10 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
         gpsFilter.updateFilteredOwnPosition(gpsFix);
         gpsFilter.addOwnTracePoint();
 
-        // Trigger UI refresh if filtered position actually moved
-        if (gpsFilter.getOwnLat() != oldLat || gpsFilter.getOwnLon() != oldLon) {
+        // Trigger UI refresh if filtered position moved by at least ~1m (avoid float noise spam)
+        double dLat = gpsFilter.getOwnLat() - oldLat;
+        double dLon = gpsFilter.getOwnLon() - oldLon;
+        if (dLat * dLat + dLon * dLon > 1e-10) {  // ~1m threshold
             positionChanged = true;
         }
         // When following GPS and moving (1.5–150 km/h), force 500ms recenter cadence.
@@ -250,8 +252,9 @@ void redraw_map_canvas() {
             // NAV priority: free all raster cache to maximize PSRAM for NAV tiles
             if (!navModeActive) {
                 navModeActive = true;
+                MapEngine::initNavPool();
                 MapEngine::clearTileCache();
-                ESP_LOGD(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
+                ESP_LOGD(TAG, "After initNavPool & clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                               ESP.getFreePsram() / 1024,
                               heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                 MapTiles::switchZoomTable(nav_zooms, nav_zoom_count);
@@ -287,6 +290,8 @@ void redraw_map_canvas() {
         } else {
             if (navModeActive) {
                 navModeActive = false;
+                MapEngine::clearTileCache();
+                MapEngine::destroyNavPool();
                 MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
             }
 
@@ -550,8 +555,9 @@ void create_map_screen() {
             if (isNavMode) {
                 // NAV priority: free all raster cache to maximize PSRAM for NAV tiles
                 navModeActive = true;
+                MapEngine::initNavPool();
                 MapEngine::clearTileCache();
-                ESP_LOGD(TAG, "After clearTileCache - PSRAM free: %u KB, largest block: %u KB",
+                ESP_LOGD(TAG, "After initNavPool & clearTileCache - PSRAM free: %u KB, largest block: %u KB",
                               ESP.getFreePsram() / 1024,
                               heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024);
                 MapTiles::switchZoomTable(nav_zooms, nav_zoom_count);
@@ -581,6 +587,10 @@ void create_map_screen() {
                 esp_task_wdt_add(xTaskGetCurrentTaskHandle());
                 esp_task_wdt_reset();
             } else {
+                if (navModeActive) {
+                    MapEngine::clearTileCache();
+                    MapEngine::destroyNavPool();
+                }
                 navModeActive = false;
                 MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
                 // Raster viewport compositing into back sprite
