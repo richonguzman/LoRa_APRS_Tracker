@@ -950,29 +950,25 @@ namespace MapEngine {
             }
         }
 
-        // Read pending tiles from SD into navCache
+        // Read pending tiles from SD into navCache (IceNav pattern: alloc, evict+retry, skip)
         for (int i = 0; i < pendingCount; i++) {
             esp_task_wdt_reset();
-
-            // Guard: stop loading if not enough space for this tile + render margin
-            size_t freeBefore = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-            size_t needed = pendingReads[i].entry.size + PSRAM_RENDER_MARGIN;
-            if (freeBefore < needed) {
-                ESP_LOGW(TAG, "Tile load stopped: %u KB free < %u KB needed, %d/%d tiles loaded",
-                         (unsigned)(freeBefore / 1024), (unsigned)(needed / 1024),
-                         resolvedCount, pendingCount);
-                break;
-            }
 
             auto& pr = pendingReads[i];
             uint8_t* data = nullptr;
             size_t fileSize = 0;
 
             if (!readNpkTileData(pr.slot, &pr.entry, &data, &fileSize)) {
+                // Alloc failed — evict unpinned cache entries and retry
                 if (evictUnusedNavCache(inUseData, pr.entry.size)) {
                     readNpkTileData(pr.slot, &pr.entry, &data, &fileSize);
                 }
-                if (!data) continue;
+                if (!data) {
+                    ESP_LOGW(TAG, "Tile (%d,%d) skipped: %u KB needed, largest block %u KB",
+                             pr.tileX, pr.tileY, (unsigned)(pr.entry.size / 1024),
+                             (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
+                    continue;
+                }
             }
             if (!data) continue;
 
