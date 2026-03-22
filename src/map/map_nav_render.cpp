@@ -419,13 +419,24 @@ namespace MapEngine {
                 activeRegions[activeRegionCount++] = { regions[r], (uint8_t)r };
         }
 
-        // Pre-evict wrong-zoom entries
+        // Pre-evict wrong-zoom and out-of-grid entries
+        static constexpr int Z9_CACHE_MAX = 5;
         for (int i = (int)navCache.size() - 1; i >= 0; i--) {
-            if (navCache[i].zoom != zoom) {
+            bool bad = navCache[i].zoom != zoom ||
+                       navCache[i].tileX < centerTileIdxX - gridOffset ||
+                       navCache[i].tileX > centerTileIdxX + gridOffset ||
+                       navCache[i].tileY < centerTileIdxY - gridOffset ||
+                       navCache[i].tileY > centerTileIdxY + gridOffset;
+            if (bad) {
                 free(navCache[i].data);
                 navCache.erase(navCache.begin() + i);
             }
         }
+
+        // Track tile data for post-render cache decisions
+        struct TileSlot { uint8_t* data; size_t size; int tileX, tileY; bool fromCache; };
+        TileSlot tileSlots[9] = {};
+        int tileSlotCount = 0;
 
         // Self-contained text labels — data is COPIED because tile buffers are freed
         // between tiles in streaming mode. ~30 bytes per label, ~128 labels max = ~4 KB.
@@ -483,16 +494,26 @@ namespace MapEngine {
                     NpkSlot* slot = openNpkRegion(activeRegions[r].name, zoom, (uint32_t)tileY);
                     UIMapManager::Npk2IndexEntry entry;
                     if (slot && findNpkTileInSlot(slot, (uint32_t)tileX, (uint32_t)tileY, &entry)) {
-                        // Evict aggressively before loading: free ALL non-essential cache
-                        // At Z9, one tile can be 500KB — we need max headroom
+                        // Free PSRAM if needed: LRU evict from navCache, then from tileSlots
                         size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-                        if (freeBlock < entry.size + 64 * 1024) {
-                            for (int ci = (int)navCache.size() - 1; ci >= 0; ci--) {
-                                free(navCache[ci].data);
-                                navCache.erase(navCache.begin() + ci);
+                        while (freeBlock < entry.size + 64 * 1024 && !navCache.empty()) {
+                            int lruIdx = 0;
+                            uint32_t oldest = UINT32_MAX;
+                            for (int ci = 0; ci < (int)navCache.size(); ci++) {
+                                if (navCache[ci].lastAccess < oldest) {
+                                    oldest = navCache[ci].lastAccess; lruIdx = ci;
+                                }
                             }
-                            ESP_LOGD(TAG, "Z9 streaming: evicted all cache for tile (%d,%d) size=%u",
-                                     tileX, tileY, (unsigned)entry.size);
+                            free(navCache[lruIdx].data);
+                            navCache.erase(navCache.begin() + lruIdx);
+                            freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+                        }
+                        for (int si = 0; si < tileSlotCount && freeBlock < entry.size + 64 * 1024; si++) {
+                            if (tileSlots[si].data && !tileSlots[si].fromCache) {
+                                free(tileSlots[si].data);
+                                tileSlots[si].data = nullptr;
+                                freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+                            }
                         }
                         if (readNpkTileData(slot, &entry, &tileData, &tileSize)) {
                             if (memcmp(tileData, "NAV1", 4) != 0) {
@@ -584,9 +605,10 @@ namespace MapEngine {
 
             tilesRendered++;
 
-            // Free tile data if it was freshly loaded (not from cache)
-            // For streaming Z9, we don't cache — free immediately to reclaim PSRAM
-            if (!fromCache) {
+            // Store tile pointer for post-render cache decision
+            if (tileSlotCount < 9) {
+                tileSlots[tileSlotCount++] = { tileData, tileSize, tileX, tileY, fromCache };
+            } else if (!fromCache) {
                 free(tileData);
             }
         }
@@ -637,10 +659,44 @@ namespace MapEngine {
         }
         map.endWrite();
 
+        // --- Post-render cache: keep the Z9_CACHE_MAX tiles closest to center ---
+        {
+            int cached = 0;
+            for (int i = 0; i < tileSlotCount; i++)
+                if (tileSlots[i].fromCache) cached++;
+
+            for (int dist = 0; dist <= 4 && cached < Z9_CACHE_MAX; dist++) {
+                for (int i = 0; i < tileSlotCount && cached < Z9_CACHE_MAX; i++) {
+                    if (tileSlots[i].fromCache || !tileSlots[i].data) continue;
+                    int d = abs(tileSlots[i].tileX - centerTileIdxX) +
+                            abs(tileSlots[i].tileY - centerTileIdxY);
+                    if (d != dist) continue;
+
+                    while ((int)navCache.size() >= Z9_CACHE_MAX) {
+                        int lru = 0; uint32_t oldest = UINT32_MAX;
+                        for (int ci = 0; ci < (int)navCache.size(); ci++)
+                            if (navCache[ci].lastAccess < oldest) { oldest = navCache[ci].lastAccess; lru = ci; }
+                        free(navCache[lru].data);
+                        navCache.erase(navCache.begin() + lru);
+                    }
+                    addNavCache(activeRegions[0].origIdx, zoom,
+                                tileSlots[i].tileX, tileSlots[i].tileY,
+                                tileSlots[i].data, tileSlots[i].size);
+                    tileSlots[i].data = nullptr;
+                    cached++;
+                }
+            }
+            for (int i = 0; i < tileSlotCount; i++)
+                if (tileSlots[i].data && !tileSlots[i].fromCache) {
+                    free(tileSlots[i].data);
+                    tileSlots[i].data = nullptr;
+                }
+        }
+
         uint64_t endTime = esp_timer_get_time();
-        ESP_LOGI(TAG, "Z9 streaming: %llu ms, %d tiles, %d features, cache: %d hit / %d miss, PSRAM free: %u",
+        ESP_LOGI(TAG, "Z9 streaming: %llu ms, %d tiles, %d features, cache: %d hit / %d miss, kept: %d, PSRAM free: %u",
                       (endTime - startTime) / 1000, tilesRendered, totalFeatures,
-                      navCacheHits, navCacheMisses, ESP.getFreePsram());
+                      navCacheHits, navCacheMisses, (int)navCache.size(), ESP.getFreePsram());
 
         bool result = (tilesRendered > 0);
         renderActive_ = false;
