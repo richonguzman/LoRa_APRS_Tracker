@@ -63,8 +63,6 @@ namespace MapEngine {
     std::vector<int, PSRAMAllocator<int>> edgeBuckets;
 
     // Vectors for coordinate projection (PSRAM, pre-reserved)
-    std::vector<int16_t, PSRAMAllocator<int16_t>> proj16X;
-    std::vector<int16_t, PSRAMAllocator<int16_t>> proj16Y;
     std::vector<int, PSRAMAllocator<int>> proj32X;
     std::vector<int, PSRAMAllocator<int>> proj32Y;
 
@@ -476,8 +474,6 @@ namespace MapEngine {
         // Pre-reserve AEL, projection, and feature index buffers in PSRAM
         edgePool.reserve(1024);
         edgeBuckets.reserve(768);
-        proj16X.reserve(1024);
-        proj16Y.reserve(1024);
         proj32X.reserve(1024);
         proj32Y.reserve(1024);
         decodedCoords.reserve(4096);
@@ -529,16 +525,6 @@ namespace MapEngine {
     // Shrink projection buffers to baseline capacity to prevent memory bloat
     void shrinkProjectionBuffers() {
         const size_t BASELINE_CAPACITY = 1024;
-        if (proj16X.capacity() > BASELINE_CAPACITY * 2) {
-            proj16X.clear();
-            proj16X.shrink_to_fit();
-            proj16X.reserve(BASELINE_CAPACITY);
-        }
-        if (proj16Y.capacity() > BASELINE_CAPACITY * 2) {
-            proj16Y.clear();
-            proj16Y.shrink_to_fit();
-            proj16Y.reserve(BASELINE_CAPACITY);
-        }
         if (proj32X.capacity() > BASELINE_CAPACITY * 2) {
             proj32X.clear();
             proj32X.shrink_to_fit();

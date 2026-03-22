@@ -73,8 +73,6 @@ namespace MapEngine {
     // --- Shared static variables (defined in map_engine.cpp, used by map_nav_render.cpp) ---
     extern std::vector<UIMapManager::Edge, PSRAMAllocator<UIMapManager::Edge>> edgePool;
     extern std::vector<int, PSRAMAllocator<int>> edgeBuckets;
-    extern std::vector<int16_t, PSRAMAllocator<int16_t>> proj16X;
-    extern std::vector<int16_t, PSRAMAllocator<int16_t>> proj16Y;
     extern std::vector<int, PSRAMAllocator<int>> proj32X;
     extern std::vector<int, PSRAMAllocator<int>> proj32Y;
     extern std::vector<int16_t, PSRAMAllocator<int16_t>> decodedCoords;
