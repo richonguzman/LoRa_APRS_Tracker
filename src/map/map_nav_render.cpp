@@ -230,7 +230,6 @@ namespace MapEngine {
         uint16_t colorRgb565;
         memcpy(&colorRgb565, fp + 1, 2);
         float widthF = widthRaw / 2.0f;
-        if (zoom >= 9 && zoom <= 11) widthF *= 1.05f;
 
         // LOD — IceNav L1036-1040
         int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
@@ -579,10 +578,14 @@ namespace MapEngine {
                 uint8_t minZoom = zoomPriority >> 4;
                 if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
-                // Semantic culling Z9: skip features < 3×3px
+                // Semantic culling Z9: polygons < 3×3px, lines < 2×2px
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
                 if (geomType == GEOM_POLYGON) {
                     if ((bx2 - bx1) < 3 && (by2 - by1) < 3) {
+                        p += 13 + payloadSize; continue;
+                    }
+                } else if (geomType == GEOM_LINE) {
+                    if ((bx2 - bx1) < 2 && (by2 - by1) < 2) {
                         p += 13 + payloadSize; continue;
                     }
                 }
@@ -790,10 +793,10 @@ namespace MapEngine {
         inUseData.clear();
         int navCacheHits = 0, navCacheMisses = 0;
         for (int i = 0; i < 16; i++) globalLayers[i].clear();
-        // One-time PSRAM reserve: reduces reallocations on first render
+        // One-time PSRAM reserve (IceNav L57): 1024 per layer, no per-render counting
         static bool layersReserved = false;
         if (!layersReserved) {
-            for (int i = 0; i < 16; i++) globalLayers[i].reserve(256);
+            for (int i = 0; i < 16; i++) globalLayers[i].reserve(1024);
             layersReserved = true;
         }
         // Text labels collected separately — rendered last, on top of all geometry
@@ -985,80 +988,11 @@ namespace MapEngine {
         uint64_t loadEnd = esp_timer_get_time();
 
         // ================================================================
-        // Phase 2 — COUNT: scan all resolved tiles to get exact feature
-        // counts per vector. Enables single reserve() per vector.
+        // Phase 2 — DISPATCH: single pass, like IceNav renderNavTile.
+        // Layers pre-reserved at 1024 (one-time), realloc if exceeded.
+        // Cap at 20000 features to keep render time < 8s on dense tiles.
         // ================================================================
-        uint32_t layerCounts[16] = {};
-        uint32_t textCount = 0, waterwayCount = 0;
-
-        for (int t = 0; t < resolvedCount; t++) {
-            uint8_t* data = resolved[t].data;
-            size_t fileSize = resolved[t].size;
-            if (fileSize < 22 + 13) continue;
-
-            uint16_t feature_count;
-            memcpy(&feature_count, data + 4, 2);
-            uint8_t* p = data + 22;
-
-            for (uint16_t i = 0; i < feature_count; i++) {
-                if (p + 13 > data + fileSize) break;
-                uint8_t geomType = p[0];
-                uint8_t zoomPriority = p[3];
-                uint16_t payloadSize;
-                memcpy(&payloadSize, p + 11, 2);
-                if (p + 13 + payloadSize > data + fileSize) break;
-
-                uint8_t minZoom = zoomPriority >> 4;
-                if (minZoom > zoom) { p += 13 + payloadSize; continue; }
-
-                uint8_t priority = zoomPriority & 0x0F;
-                if (priority >= 16) priority = 15;
-
-                if (geomType == GEOM_TEXT) textCount++;
-                else if (geomType == GEOM_TEXT_LINE) { if (zoom >= 15) waterwayCount++; }
-                else layerCounts[priority]++;
-
-                p += 13 + payloadSize;
-            }
-        }
-
-        // Pre-reserve vectors — single allocation, no per-feature fragmentation
-        ESP_LOGD(TAG, "Phase 2 counts: text=%u ww=%u layers=[%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u] PSRAM free=%u largest=%u",
-                 textCount, waterwayCount,
-                 layerCounts[0], layerCounts[1], layerCounts[2], layerCounts[3],
-                 layerCounts[4], layerCounts[5], layerCounts[6], layerCounts[7],
-                 layerCounts[8], layerCounts[9], layerCounts[10], layerCounts[11],
-                 layerCounts[12], layerCounts[13], layerCounts[14], layerCounts[15],
-                 (unsigned)ESP.getFreePsram(),
-                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
-        for (int i = 0; i < 16; i++) {
-            if (layerCounts[i] > globalLayers[i].capacity()) {
-                try {
-                    globalLayers[i].reserve(layerCounts[i]);
-                } catch (const std::bad_alloc&) {
-                    ESP_LOGW(TAG, "Reserve failed layer %d: need %u × %u B, PSRAM largest=%u",
-                             i, layerCounts[i], (unsigned)sizeof(FeatureRef),
-                             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
-                }
-            }
-        }
-        try {
-            if (textCount > textRefs.capacity()) textRefs.reserve(textCount);
-            if (waterwayCount > waterwayRefs.capacity()) waterwayRefs.reserve(waterwayCount);
-        } catch (const std::bad_alloc&) {
-            ESP_LOGW(TAG, "Reserve failed text/waterway, PSRAM largest=%u",
-                     (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
-        }
-        ESP_LOGD(TAG, "Phase 2 reserve done, PSRAM free=%u largest=%u",
-                 (unsigned)ESP.getFreePsram(),
-                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
-
-        // ================================================================
-        // Phase 3 — DISPATCH: populate globalLayers/textRefs/waterwayRefs.
-        // Vectors are pre-reserved, no reallocation during this loop.
-        // Hard limit: 16384 features max (same as IceNav) to prevent PSRAM exhaustion at Z9.
-        // ================================================================
-        static constexpr uint32_t MAX_FEATURE_POOL_SIZE = 16384;
+        static constexpr uint32_t MAX_FEATURE_POOL_SIZE = 20000;
         uint32_t totalDispatchedFeatures = 0;
         for (int t = 0; t < resolvedCount; t++) {
             uint8_t* data = resolved[t].data;
@@ -1087,12 +1021,15 @@ namespace MapEngine {
                 uint8_t minZoom = zoomPriority >> 4;
                 if (minZoom > zoom) { p += 13 + payloadSize; continue; }
 
-                // Semantic culling: skip tiny features
-                // Z9-Z11: skip if bbox < 3×3px. Other zooms: skip if < 1×1px.
+                // Semantic culling: polygons < 3×3px (Z9-Z11) or < 1×1px, lines < 2×2px always
                 uint8_t bx1 = p[5], by1 = p[6], bx2 = p[7], by2 = p[8];
                 if (geomType == GEOM_POLYGON) {
                     uint8_t minDim = (zoom >= 9 && zoom <= 11) ? 3 : 1;
                     if ((bx2 - bx1) < minDim && (by2 - by1) < minDim) {
+                        p += 13 + payloadSize; continue;
+                    }
+                } else if (geomType == GEOM_LINE) {
+                    if ((bx2 - bx1) < 2 && (by2 - by1) < 2) {
                         p += 13 + payloadSize; continue;
                     }
                 }
