@@ -251,7 +251,10 @@ namespace MapEngine {
                     if (widthF <= 1.0f)
                         map.drawLine(lastPx, lastPy, px, py, colorRgb565);
                     else
-                        map.drawWideLine(lastPx, lastPy, px, py, widthF, colorRgb565);
+                        // drawWideLine param is radius; LovyanGFX adds +0.5 internally
+                        // Compensate: subtract 0.5 to cancel the internal +0.5
+                        map.drawWideLine(lastPx, lastPy, px, py,
+                                         widthF - 0.5f, colorRgb565);
                 }
             }
             lastPx = px;
@@ -936,12 +939,14 @@ namespace MapEngine {
         }
 
         // Proactive eviction: free PSRAM before loading new tiles
-        // Z9 tiles can be 50-100 KB each; ensure headroom for pending reads + render vectors
-        static constexpr size_t PSRAM_RENDER_RESERVE = 400 * 1024;  // Reserve for globalLayers, decodedCoords, edgePool, etc.
+        static constexpr size_t PSRAM_RENDER_MARGIN = 128 * 1024;  // Margin for render vectors growth
         if (pendingCount > 0) {
             size_t freeBlock = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-            if (freeBlock < PSRAM_RENDER_RESERVE) {
-                evictUnusedNavCache(inUseData, PSRAM_RENDER_RESERVE);
+            size_t largestTile = 0;
+            for (int i = 0; i < pendingCount; i++)
+                if (pendingReads[i].entry.size > largestTile) largestTile = pendingReads[i].entry.size;
+            if (freeBlock < largestTile + PSRAM_RENDER_MARGIN) {
+                evictUnusedNavCache(inUseData, largestTile + PSRAM_RENDER_MARGIN);
             }
         }
 
@@ -949,11 +954,12 @@ namespace MapEngine {
         for (int i = 0; i < pendingCount; i++) {
             esp_task_wdt_reset();
 
-            // Guard: stop loading tiles if PSRAM is too low for render vectors
+            // Guard: stop loading if not enough space for this tile + render margin
             size_t freeBefore = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-            if (freeBefore < PSRAM_RENDER_RESERVE) {
-                ESP_LOGW(TAG, "Tile load stopped: %u KB free < %u KB reserve, %d/%d tiles loaded",
-                         (unsigned)(freeBefore / 1024), (unsigned)(PSRAM_RENDER_RESERVE / 1024),
+            size_t needed = pendingReads[i].entry.size + PSRAM_RENDER_MARGIN;
+            if (freeBefore < needed) {
+                ESP_LOGW(TAG, "Tile load stopped: %u KB free < %u KB needed, %d/%d tiles loaded",
+                         (unsigned)(freeBefore / 1024), (unsigned)(needed / 1024),
                          resolvedCount, pendingCount);
                 break;
             }

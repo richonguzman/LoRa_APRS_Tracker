@@ -92,6 +92,7 @@ namespace MapState {
     volatile bool navModeActive      = false;
     volatile bool navRenderPending   = false;
     volatile bool mainThreadLoading  = false;
+    volatile int8_t pendingZoom      = 0;      // +1 = zoom in queued, -1 = zoom out queued
 
     // -------------------------------------------------------------------------
     // Double-buffer sprites

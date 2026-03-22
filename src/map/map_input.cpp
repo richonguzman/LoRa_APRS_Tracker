@@ -141,7 +141,11 @@ namespace MapInput {
     }
 
     void btn_map_zoomin_clicked(lv_event_t* e) {
-        if (redraw_in_progress || navRenderPending) return;
+        if (redraw_in_progress || navRenderPending) {
+            pendingZoom = 1;
+            if (btn_zoomin) lv_obj_add_state(btn_zoomin, LV_STATE_PRESSED);
+            return;
+        }
 
         if (!navModeActive && navRegionCount > 0 &&
             map_current_zoom < nav_zooms[0] &&
@@ -168,7 +172,11 @@ namespace MapInput {
     }
 
     void btn_map_zoomout_clicked(lv_event_t* e) {
-        if (redraw_in_progress || navRenderPending) return;
+        if (redraw_in_progress || navRenderPending) {
+            pendingZoom = -1;
+            if (btn_zoomout) lv_obj_add_state(btn_zoomout, LV_STATE_PRESSED);
+            return;
+        }
 
         if (map_zoom_index > 0) {
             commitVisualCenter();

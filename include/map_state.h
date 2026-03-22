@@ -144,6 +144,7 @@ namespace MapState {
     extern volatile bool navModeActive;
     extern volatile bool navRenderPending;
     extern volatile bool mainThreadLoading;
+    extern volatile int8_t pendingZoom;      // +1 = zoom in queued, -1 = zoom out queued
 
     // -------------------------------------------------------------------------
     // Double-buffer sprites (PSRAM)

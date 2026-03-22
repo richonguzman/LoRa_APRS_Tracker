@@ -16,6 +16,7 @@
 
 #include "map_state.h"
 #include "map_render.h"
+#include "map_input.h"
 #include "map_tiles.h"
 #include "map_engine.h"
 #include "map_coordinate_math.h"
@@ -227,6 +228,17 @@ namespace MapRender {
         if (btn_zoomin)   lv_obj_clear_state(btn_zoomin,   LV_STATE_PRESSED);
         if (btn_zoomout)  lv_obj_clear_state(btn_zoomout,  LV_STATE_PRESSED);
         if (btn_recenter) lv_obj_clear_state(btn_recenter, LV_STATE_PRESSED);
+
+        // Consume queued zoom request (button pressed during render)
+        if (pendingZoom != 0) {
+            int8_t pz = pendingZoom;
+            pendingZoom = 0;
+            if (pz > 0)
+                MapInput::btn_map_zoomin_clicked(nullptr);
+            else
+                MapInput::btn_map_zoomout_clicked(nullptr);
+            return;  // skip rest — zoom callback triggers new render
+        }
 
         cleanup_station_buttons();
         draw_station_traces();
