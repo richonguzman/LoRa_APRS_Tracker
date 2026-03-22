@@ -618,7 +618,33 @@ namespace MapEngine {
         }
         map.endWrite();
 
-        // --- Label pass (same as batch) ---
+        // --- Label pass: dedup + sort by priority ---
+        // Labels appear in multiple tiles — deduplicate by text+position (±2px)
+        // then sort by fontSize descending so important labels win collision.
+        std::sort(textLabels.begin(), textLabels.end(),
+                  [](const StreamingLabel& a, const StreamingLabel& b) {
+                      if (a.fontSize != b.fontSize) return a.fontSize > b.fontSize;
+                      return strcmp(a.text, b.text) < 0;
+                  });
+        {
+            int out = 0;
+            for (int i = 0; i < (int)textLabels.size(); i++) {
+                bool dup = false;
+                for (int j = 0; j < out; j++) {
+                    if (strcmp(textLabels[i].text, textLabels[j].text) == 0 &&
+                        abs(textLabels[i].px - textLabels[j].px) <= 2 &&
+                        abs(textLabels[i].py - textLabels[j].py) <= 2) {
+                        dup = true; break;
+                    }
+                }
+                if (!dup) {
+                    if (out != i) textLabels[out] = textLabels[i];
+                    out++;
+                }
+            }
+            textLabels.resize(out);
+        }
+
         map.startWrite();
         map.clearClipRect();
         if (vlwFontLoaded) {
@@ -641,7 +667,7 @@ namespace MapEngine {
             int th = map.fontHeight();
             int lx = lbl.px - tw / 2;
             int ly = lbl.py - th;
-            const int PAD = 4;
+            const int PAD = (zoom <= 9) ? 2 : 4;
             if (lx + tw < 0 || lx >= viewportW || ly + th < 0 || ly >= viewportH) continue;
             bool collision = false;
             for (const auto& r : placedLabels) {
