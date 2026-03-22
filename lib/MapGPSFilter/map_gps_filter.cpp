@@ -39,15 +39,30 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     ESP_LOGV(TAG, "Update called: location.isValid=%d, sats=%d, hdop=%.1f",
              fix.valid.location, fix.satellites, hdopVal);
 
-    // Basic sanity check: need a valid location and a realistic number of satellites.
-    if (!fix.valid.location || !fix.valid.satellites ||
-        fix.satellites < 7 || fix.satellites > 90) {
+    // Basic sanity check: need a valid location.
+    if (!fix.valid.location || !fix.valid.satellites || fix.satellites > 90) {
         return;
     }
 
     double lat = fix.latitude();
     double lon = fix.longitude();
     uint32_t now = MILLIS();
+
+    // 6 sats or fewer: allow initial fix only, then freeze position until 7+
+    if (fix.satellites <= 6) {
+        if (!ownPositionValid) {
+            if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+                ownPositionLat = lat;
+                ownPositionLon = lon;
+                ownPositionValid = true;
+                xSemaphoreGive(_mutex);
+            }
+            lastRawLat = lat;
+            lastRawLon = lon;
+            lastValidTime = now;
+        }
+        return;
+    }
 
     // Bug #4 fix: skip if same raw position as last call (no new NMEA sentence)
     if (ownPositionValid && lat == lastRawLat && lon == lastRawLon) {
@@ -56,7 +71,7 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     lastRawLat = lat;
     lastRawLon = lon;
 
-    // Initialization if this is the first valid position
+    // Initialization if this is the first valid position (7+ sats)
     if (!ownPositionValid) {
         if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
             ownPositionLat = lat;

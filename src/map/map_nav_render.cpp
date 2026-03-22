@@ -291,6 +291,7 @@ namespace MapEngine {
                 uint8_t widthRaw = fp[4] & 0x7F;
                 if (widthRaw == 0) widthRaw = 2;
                 float widthF = widthRaw / 2.0f;
+                if (zoom <= 9) widthF *= 1.5f;
 
                 decodedCoords.clear();
                 DecodedFeature df;
