@@ -134,12 +134,20 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     // At low/medium speed, cap alpha to smooth out GPS jitter.
     float currentAlpha = 0.5f;
     if (fix.valid.speed && speedKph >= 30.0f) {
-        currentAlpha = 1.0f; // Direct assignment: no lag at car speed
+        currentAlpha = 1.0f; // Haute vitesse : on fait confiance au GPS, pas de lag
     } else if (fix.valid.hdop) {
         float hdop = fmax(1.0f, hdopVal);
-        currentAlpha = fmax(0.1f, 1.0f / hdop);
-        // Cap alpha at low speed to smooth walking trace (removes "drunk" zigzag)
-        if (speedKph < 15.0f) currentAlpha = fmin(currentAlpha, 0.5f);
+        currentAlpha = fmax(0.05f, 1.0f / hdop); // Base de confiance sur la géométrie des satellites
+
+        // Amortissement progressif basé sur la vitesse (marche / arrêt)
+        if (speedKph < 2.0f) {
+            // Quasi à l'arrêt ou très lent : on filtre énormément (bruit de positionnement)
+            currentAlpha = fmin(currentAlpha, 0.1f); 
+        } else if (speedKph < 15.0f) {
+            // Vitesse de marche/course/vélo lent (2 à 15 km/h)
+            // On map linéairement ou empiriquement. À 5km/h, on aura un alpha doux.
+            currentAlpha = fmin(currentAlpha, 0.25f);
+        }
     }
 
     // Diagnostics BEFORE update: distance between raw GPS and current filtered position
@@ -209,10 +217,10 @@ void MapGPSFilter::compactTrace() {
     keep[0] = true;              // Always keep first point (trip start)
     keep[halfCount - 1] = true;  // Always keep boundary point
 
-    // Epsilon ~0.0002 degrees (~22m) preserves route shape
-#ifndef UNIT_TEST
-    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.0001f);
-#else
+    // Epsilon ~0.00003 degrees (~3m) preserves tight route shape (walking/hiking)
+    #ifndef UNIT_TEST
+    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.00003f);
+    #else
     // Mock simplification for unit tests: keep all points
     for (int i = 0; i < halfCount; i++) {
         keep[i] = true;

@@ -206,8 +206,8 @@ namespace STATION_Utils {
         keep[0] = true;
         keep[station->traceCount - 1] = true;
 
-        // Apply Douglas-Peucker with tolerance (0.0002° ≈ 22m)
-        douglasPeuckerSimplify(linear, 0, station->traceCount - 1, keep, 0.0002f);
+        // Apply Douglas-Peucker with tolerance (0.00008° ≈ 9m)
+        douglasPeuckerSimplify(linear, 0, station->traceCount - 1, keep, 0.00008f);
 
         // Rebuild trace with kept points only
         int newCount = 0;
