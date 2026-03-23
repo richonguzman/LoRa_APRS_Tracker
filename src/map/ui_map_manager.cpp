@@ -166,14 +166,14 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
                 MapTiles::initCenterTileFromLatLon(uiLat, uiLon);
 
                 if (renderTileX != prevRenderTileX || renderTileY != prevRenderTileY) {
-                    ESP_LOGD(TAG, "Refresh (GPS moved tile, full redraw) - pendingResetPan set");
+                    ESP_LOGV(TAG, "Refresh (GPS moved tile, full redraw) - pendingResetPan set");
                     redraw_map_canvas();
                 } else if (!redraw_in_progress && !navRenderPending &&
                            (offsetX != 0 || offsetY != 0 || positionChanged)) {
                     // Apply precise pixel offset based on new map_center_lat/lon without re-rendering the whole tile.
                     // pendingResetPan will ensure offsetX/Y are zeroed in applyRenderedViewport.
                     MapRender::applyRenderedViewport();
-                    ESP_LOGD(TAG, "Refresh (GPS moved inside tile, pan viewport) - pendingResetPan set");
+                    ESP_LOGV(TAG, "Refresh (GPS moved inside tile, pan viewport) - pendingResetPan set");
                 }
             } else if (!redraw_in_progress && !navRenderPending) {
                 ESP_LOGD(TAG, "Refresh (station overlay only)");

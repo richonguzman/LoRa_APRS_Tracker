@@ -254,10 +254,10 @@ namespace MapRender {
 
         lv_obj_invalidate(map_canvas);
         if (navRenderPending) {
-            ESP_LOGD(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d) — Core 0 still active, keeping pending",
+            ESP_LOGV(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d) — Core 0 still active, keeping pending",
                           map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
         } else {
-            ESP_LOGD(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
+            ESP_LOGV(TAG, "Viewport applied (Z%d) sprTile(%d,%d) offset(%d,%d)",
                           map_current_zoom, centerTileX, centerTileY, offsetX, offsetY);
         }
     }
