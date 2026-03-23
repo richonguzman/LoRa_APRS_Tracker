@@ -59,8 +59,8 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
             }
             lastRawLat = lat;
             lastRawLon = lon;
-            lastValidTime = now;
         }
+        lastValidTime = now;  // Prevent dtSeconds from growing during low-sat periods
         return;
     }
 
@@ -131,13 +131,15 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
 
     // 3. Smooth Interpolation (Low-pass filter)
     // At high speed (>=30 km/h), GPS track is reliable: use direct assignment (alpha=1).
-    // At low speed, HDOP-adaptive smoothing suppresses jitter.
+    // At low/medium speed, cap alpha to smooth out GPS jitter.
     float currentAlpha = 0.5f;
     if (fix.valid.speed && speedKph >= 30.0f) {
         currentAlpha = 1.0f; // Direct assignment: no lag at car speed
     } else if (fix.valid.hdop) {
         float hdop = fmax(1.0f, hdopVal);
         currentAlpha = fmax(0.1f, 1.0f / hdop);
+        // Cap alpha at low speed to smooth walking trace (removes "drunk" zigzag)
+        if (speedKph < 15.0f) currentAlpha = fmin(currentAlpha, 0.5f);
     }
 
     // Diagnostics BEFORE update: distance between raw GPS and current filtered position
@@ -209,7 +211,7 @@ void MapGPSFilter::compactTrace() {
 
     // Epsilon ~0.0002 degrees (~22m) preserves route shape
 #ifndef UNIT_TEST
-    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.0002f);
+    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.0001f);
 #else
     // Mock simplification for unit tests: keep all points
     for (int i = 0; i < halfCount; i++) {
