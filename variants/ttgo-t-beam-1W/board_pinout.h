@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- * 
+ *
  * This file is part of LoRa APRS Tracker.
- * 
+ *
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or 
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -42,8 +42,8 @@
     #define OLED_RST            -1
 
     //  GPS
-    #define GPS_RX              5
-    #define GPS_TX              6
+    #define GPS_RX              6
+    #define GPS_TX              5
     #define GPS_PPS             7
     #define GPS_WAKEUP          16
 
@@ -59,6 +59,6 @@
     #define FAN_CTRL_PIN        41
 
     //#define HAS_AXP2101     // ?????????????
-    
+
 
 #endif
