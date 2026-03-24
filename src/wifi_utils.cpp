@@ -276,12 +276,11 @@ namespace WIFI_Utils {
 
     bool needsWebConfig() {
         // Check with bounds safety - if vectors are empty, we need web config
-        if (Config.beacons.size() == 0 || Config.wifiAPs.size() == 0) {
+        if (Config.beacons.size() == 0) {
             return true;
         }
         return (Config.wifiAutoAP.active ||
-                Config.beacons[0].callsign == "NOCALL-7" ||
-                Config.wifiAPs[0].ssid == "");
+                Config.beacons[0].callsign == "NOCALL-7");
     }
 
     void setup() {
