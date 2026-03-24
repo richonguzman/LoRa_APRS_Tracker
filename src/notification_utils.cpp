@@ -113,11 +113,18 @@ namespace NOTIFICATION_Utils {
     }
 #else
     void playTone(int frequency, uint8_t duration) {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+        ledcAttach(Config.notification.buzzerPinTone, frequency, resolution);
+        ledcWrite(Config.notification.buzzerPinTone, 128);
+        delay(duration);
+        ledcWrite(Config.notification.buzzerPinTone, 0);
+#else
         ledcSetup(channel, frequency, resolution);
-        ledcAttachPin(Config.notification.buzzerPinTone, 0);
+        ledcAttachPin(Config.notification.buzzerPinTone, channel);
         ledcWrite(channel, 128);
         delay(duration);
         ledcWrite(channel, 0);
+#endif
         delay(pauseDuration);
     }
 #endif
