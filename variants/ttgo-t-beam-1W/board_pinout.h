@@ -55,7 +55,7 @@
 
     //ON_BOARD_LED 18
 
-    #define TEMP_PIN            14  // measure temperature and start Fan if needed
+    #define TEMP_PIN            14  // NTC Temperature sensor
     #define FAN_CTRL_PIN        41
 
     //#define HAS_AXP2101     // ?????????????
