@@ -25,6 +25,8 @@ jobs:
                       chip: esp32
                     - name: ttgo_t_beam_s3_SUPREME_v3
                       chip: esp32s3
+                    - name: ttgo-t-beam-1W
+                      chip: esp32s3
                     - name: ttgo_t_deck_GPS
                       chip: esp32s3
                     - name: ttgo_t_deck_plus
