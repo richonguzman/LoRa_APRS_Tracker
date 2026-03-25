@@ -83,6 +83,12 @@ namespace GPS_Utils {
         #endif
         
         gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
+        #ifdef TTGO_T_DECK_PLUS
+            // L76K: restrict output to RMC + GGA only (reduces UART load, speeds up parsing)
+            delay(100);
+            ESP_LOGI(TAG, "Sending PMTK314 command to L76K to restrict sentences to RMC+GGA");
+            gpsSerial.print("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
+        #endif
     }
 
     static bool newFixAvailable = false;
@@ -100,6 +106,26 @@ namespace GPS_Utils {
         while (nmeaGPS.available(gpsSerial)) {
             gpsFix = nmeaGPS.read();
             newFixAvailable = true;
+
+            #ifdef TTGO_T_DECK_PLUS
+                // Debug logging to verify L76K fix behavior, PMTK filtering, and HDOP availability
+                static uint32_t lastLogMs = 0;
+                static uint32_t lastChars = 0;
+
+                if (millis() - lastLogMs >= 5000) {
+                    lastLogMs = millis();
+                    uint32_t currentChars = nmeaGPS.statistics.chars;
+                    uint32_t deltaChars = currentChars - lastChars;
+                    lastChars = currentChars;
+
+                    float hdop = gpsFix.valid.hdop ? (float)gpsFix.hdop / 1000.0f : 99.0f;
+                    uint8_t sats = gpsFix.valid.satellites ? gpsFix.satellites : 0;
+
+                    // A delta of ~750 chars in 5 sec means 2 sentences/sec (RMC + GGA) -> PMTK command worked
+                    ESP_LOGI(TAG, "L76K Coherent Fix -> HDOP:%.1f (valid:%d), Sats:%d, Chars/5s:%u (target ~750)",
+                             hdop, gpsFix.valid.hdop, sats, deltaChars);
+                }
+            #endif
         }
     }
 
