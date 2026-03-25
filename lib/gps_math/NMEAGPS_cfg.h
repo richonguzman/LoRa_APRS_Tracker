@@ -17,8 +17,9 @@
 //#define NMEAGPS_PARSE_ZDA
 
 // Last sentence in each GPS update interval
-// ==> CONFIRM THIS WITH NMEAorder.ino on the L76K <==
-#define LAST_SENTENCE_IN_INTERVAL NMEAGPS::NMEA_RMC
+// L76K sentence order: RMC → GGA (GGA comes after RMC)
+// Must be GGA so HDOP is available when the fix is dispatched
+#define LAST_SENTENCE_IN_INTERVAL NMEAGPS::NMEA_GGA
 
 // Coherent fix: all data from same cycle
 #define NMEAGPS_COHERENT
