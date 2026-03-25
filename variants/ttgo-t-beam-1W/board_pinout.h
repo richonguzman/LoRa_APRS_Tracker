@@ -58,7 +58,5 @@
     #define TEMP_PIN            14  // NTC Temperature sensor
     #define FAN_CTRL_PIN        41
 
-    //#define HAS_AXP2101     // ?????????????
-
 
 #endif
