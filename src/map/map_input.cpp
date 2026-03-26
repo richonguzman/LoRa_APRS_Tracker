@@ -109,12 +109,11 @@ namespace MapInput {
 
         MapEngine::stopRenderTask();
 
-        if (navModeActive) {
-            navModeActive = false;
-            MapEngine::clearTileCache();
-            MapEngine::destroyNavPool();
-            MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
-        }
+        // Do not destroy NAV pool or clear cache on exit to prevent PSRAM fragmentation.
+        // Keep NAV mode active if it was, so returning to map keeps the same zoom/context.
+        // MapEngine::clearTileCache();
+        // MapEngine::destroyNavPool();
+        // MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
 
         MapRender::cleanup_station_buttons();
         map_follow_gps = true;
