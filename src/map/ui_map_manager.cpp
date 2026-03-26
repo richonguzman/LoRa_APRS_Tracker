@@ -410,6 +410,7 @@ void create_map_screen() {
     btn_recenter = lv_btn_create(title_bar);
     lv_obj_set_size(btn_recenter, 30, 25);
     lv_obj_set_style_bg_color(btn_recenter, map_follow_gps ? lv_color_hex(0x16213e) : lv_color_hex(0xff6600), 0);
+    lv_obj_set_style_bg_color(btn_recenter, lv_color_hex(0xff6600), LV_STATE_PRESSED);
     lv_obj_align(btn_recenter, LV_ALIGN_RIGHT_MID, -105, 0);
     lv_obj_add_event_cb(btn_recenter, MapInput::btn_map_recenter_clicked, LV_EVENT_CLICKED, NULL);
     lv_obj_t* lbl_recenter = lv_label_create(btn_recenter);
@@ -420,6 +421,7 @@ void create_map_screen() {
     btn_zoomin = lv_btn_create(title_bar);
     lv_obj_set_size(btn_zoomin, 30, 25);
     lv_obj_set_style_bg_color(btn_zoomin, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_bg_color(btn_zoomin, lv_color_hex(0xff6600), LV_STATE_PRESSED);
     lv_obj_align(btn_zoomin, LV_ALIGN_RIGHT_MID, -70, 0);
     lv_obj_add_event_cb(btn_zoomin, MapInput::btn_map_zoomin_clicked, LV_EVENT_RELEASED, NULL);
     lv_obj_t* lbl_zoomin = lv_label_create(btn_zoomin);
@@ -429,6 +431,7 @@ void create_map_screen() {
     btn_zoomout = lv_btn_create(title_bar);
     lv_obj_set_size(btn_zoomout, 30, 25);
     lv_obj_set_style_bg_color(btn_zoomout, lv_color_hex(0x16213e), 0);
+    lv_obj_set_style_bg_color(btn_zoomout, lv_color_hex(0xff6600), LV_STATE_PRESSED);
     lv_obj_align(btn_zoomout, LV_ALIGN_RIGHT_MID, -35, 0);
     lv_obj_add_event_cb(btn_zoomout, MapInput::btn_map_zoomout_clicked, LV_EVENT_RELEASED, NULL);
     lv_obj_t* lbl_zoomout = lv_label_create(btn_zoomout);
@@ -483,7 +486,10 @@ void create_map_screen() {
     }
 
     // Initialize the static tile cache pool now that critical sprites are allocated
-    MapEngine::initTileCache(&tft);
+    // Only if we are not in persistent NAV mode (to avoid reallocating 2MB of raster tiles)
+    if (!navModeActive) {
+        MapEngine::initTileCache(&tft);
+    }
     // Point canvas buffer directly at front sprite (no separate allocation)
     if (frontViewportSprite) {
         map_canvas_buf = (lv_color_t*)frontViewportSprite->getBuffer();

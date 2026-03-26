@@ -116,7 +116,8 @@ namespace MapInput {
         // MapTiles::switchZoomTable(raster_zooms, raster_zoom_count);
 
         MapRender::cleanup_station_buttons();
-        map_follow_gps = true;
+        // Commented out to preserve user panning/follow state between map sessions
+        // map_follow_gps = true;
         if (map_refresh_timer) {
             lv_timer_del(map_refresh_timer);
             map_refresh_timer = nullptr;
@@ -134,6 +135,11 @@ namespace MapInput {
     void btn_map_recenter_clicked(lv_event_t* e) {
         ESP_LOGI(TAG, "Recentering on GPS");
         map_follow_gps = true;
+        // Apply PRESSED state (orange) FIRST, then silently change the base color to blue underneath.
+        // This prevents the brief blue flicker when clicking the orange button.
+        if (btn_recenter) lv_obj_add_state(btn_recenter, LV_STATE_PRESSED);
+        if (btn_recenter) lv_obj_set_style_bg_color(btn_recenter, lv_color_hex(0x16213e), 0);
+
         double initLat, initLon;
         if (gpsFilter.getUiPosition(&initLat, &initLon)) {
             ESP_LOGI(TAG, "Recentered on GPS: %.4f, %.4f", initLat, initLon);
@@ -240,6 +246,9 @@ namespace MapInput {
                     if (map_follow_gps) {
                         map_follow_gps = false;
                         ESP_LOGD(TAG, "map_follow_gps DISABLED due to confirmed drag.");
+                        if (btn_recenter) {
+                            lv_obj_set_style_bg_color(btn_recenter, lv_color_hex(0xff6600), 0); // Passe à l'orange
+                        }
                     }
                     pendingResetPan = false;
                 }
