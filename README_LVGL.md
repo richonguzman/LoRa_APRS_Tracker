@@ -1,7 +1,7 @@
 # LoRa APRS Tracker - LVGL UI Edition
 
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-ready-orange)
-![Version](https://img.shields.io/badge/version-2.9.0-blue)
+![Version](https://img.shields.io/badge/version-2.9.1-blue)
 ![License](https://img.shields.io/badge/license-GPL-green)
 
 **ESP32-S3 LoRa APRS tracker with modern touchscreen interface for Lilygo T-Deck Plus**
@@ -15,7 +15,9 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 | **Dashboard** | **Vector Map** | **Messaging** |
 
 ---
-## What's New in v2.9.x
+## What's New in v2.9.1
+- **Strict 3D Fix (PDOP)** - New configurable mode to enforce PDOP filtering for altitude reliability, with a visual indicator on the dashboard.
+- **Persistent Map State** - Map's NAV memory pool and zoom/pan state are preserved across sessions to avoid PSRAM fragmentation and improve user experience.
 - **NeoGPS migration** - Replaced TinyGPS++ (legacy 2013) with NeoGPS: coherent fix merging, HDOP from GGA, configurable sentence parsing
 - **GPS Doppler cross-check filter** - New jitter rejection: when GPS reports low speed (< 8 km/h) but position barely moved (< 25m), the update is rejected. Fixes L76K Doppler noise at rest
 - **HDOP quality indicator** - Satellite count on dashboard shows signal quality: `+` (≤ 2.0), `-` (2-5), `X` (> 5)
