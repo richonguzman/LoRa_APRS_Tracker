@@ -389,9 +389,17 @@ void loop() {
         }
         SMARTBEACON_Utils::checkFixedBeaconTime();
 
-        // Only send beacon if GPS has good quality fix
-        // Require: at least 6 satellites AND HDOP <= 5
-        bool gpsQualityOk = (gpsFix.satellites >= 6) && (gpsHdop() <= 5.0f);
+        // Check if GPS quality meets criteria for sending a beacon
+        bool gpsQualityOk = false;
+        if (Config.gpsConfig.strict3DFix) {
+            // Strict Mountain Mode: Requires a very accurate 3D position to avoid sending wrong altitudes
+            // PDOP <= 5.0 ensures that both HDOP and VDOP are geometrically solid
+            gpsQualityOk = (gpsFix.satellites >= 6) && (gpsPdop() <= 5.0f);
+        } else {
+            // Normal Mode: Only cares about 2D horizontal accuracy (HDOP)
+            gpsQualityOk = (gpsFix.satellites >= 6) && (gpsHdop() <= 5.0f);
+        }
+
         if (sendUpdate && gps_loc_update && gpsQualityOk) {
             STATION_Utils::sendBeacon();
         } else if (sendUpdate && gps_loc_update && !gpsQualityOk) {
@@ -401,8 +409,13 @@ void loop() {
             gpsQualitySkipCount++;
             uint32_t now = millis();
             if (now - lastGpsQualityLogMs >= 30000) {
-                ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon (x%u)",
-                         gpsFix.satellites, gpsHdop(), gpsQualitySkipCount);
+                if (Config.gpsConfig.strict3DFix) {
+                    ESP_LOGD(TAG, "GPS strict 3D quality too low (sats=%d, PDOP=%.1f), skipping beacon (x%u)",
+                             gpsFix.satellites, gpsPdop(), gpsQualitySkipCount);
+                } else {
+                    ESP_LOGD(TAG, "GPS quality too low (sats=%d, HDOP=%.1f), skipping beacon (x%u)",
+                             gpsFix.satellites, gpsHdop(), gpsQualitySkipCount);
+                }
                 lastGpsQualityLogMs = now;
                 gpsQualitySkipCount = 0;
             }

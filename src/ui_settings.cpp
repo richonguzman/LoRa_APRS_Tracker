@@ -66,6 +66,7 @@ static lv_obj_t *screen_callsign = nullptr;
 static lv_obj_t *screen_display = nullptr;
 static lv_obj_t *screen_sound = nullptr;
 static lv_obj_t *screen_repeater = nullptr;
+static lv_obj_t *screen_gps = nullptr;
 static lv_obj_t *screen_wifi = nullptr;
 static lv_obj_t *screen_bluetooth = nullptr;
 static lv_obj_t *screen_webconf = nullptr;
@@ -110,6 +111,7 @@ static void setup_item_speed(lv_event_t *e);
 static void setup_item_display(lv_event_t *e);
 static void setup_item_sound(lv_event_t *e);
 static void setup_item_repeater(lv_event_t *e);
+static void setup_item_gps(lv_event_t *e);
 static void setup_item_wifi(lv_event_t *e);
 static void setup_item_bluetooth(lv_event_t *e);
 static void setup_item_webconf(lv_event_t *e);
@@ -118,6 +120,7 @@ static void setup_item_reboot(lv_event_t *e);
 static void freq_item_clicked(lv_event_t *e);
 static void speed_item_clicked(lv_event_t *e);
 static void callsign_item_clicked(lv_event_t *e);
+static void gps_strict3d_switch_changed(lv_event_t *e);
 
 static void wifi_switch_changed(lv_event_t *e);
 static void wifi_screen_timer_cb(lv_timer_t *timer);
@@ -226,6 +229,14 @@ static void setup_item_repeater(lv_event_t *e) {
         UISettings::createRepeaterScreen();
     }
     lv_scr_load_anim(screen_repeater, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
+}
+
+static void setup_item_gps(lv_event_t *e) {
+    ESP_LOGD(TAG, "GPS selected");
+    if (!screen_gps) {
+        UISettings::createGPSScreen();
+    }
+    lv_scr_load_anim(screen_gps, LV_SCR_LOAD_ANIM_MOVE_LEFT, 100, 0, false);
 }
 
 static void setup_item_wifi(lv_event_t *e) {
@@ -345,6 +356,9 @@ void UISettings::createSetupScreen() {
 
     btn = lv_list_add_btn(list, LV_SYMBOL_LOOP, "Repeater");
     lv_obj_add_event_cb(btn, setup_item_repeater, LV_EVENT_CLICKED, NULL);
+
+    btn = lv_list_add_btn(list, LV_SYMBOL_GPS, "GPS");
+    lv_obj_add_event_cb(btn, setup_item_gps, LV_EVENT_CLICKED, NULL);
 
     btn = lv_list_add_btn(list, LV_SYMBOL_WIFI, "WiFi");
     lv_obj_add_event_cb(btn, setup_item_wifi, LV_EVENT_CLICKED, NULL);
@@ -1320,10 +1334,93 @@ void UISettings::createRepeaterScreen() {
     lv_obj_set_style_text_font(desc_label, &lv_font_montserrat_12, 0);
 
     ESP_LOGD(TAG, "Repeater screen created");
-}
+    }
 
-// =============================================================================
-// WiFi Screen
+    // =============================================================================
+    // GPS Screen
+    // =============================================================================
+
+    static void gps_strict3d_switch_changed(lv_event_t *e) {
+    lv_obj_t *sw = lv_event_get_target(e);
+    bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    Config.gpsConfig.strict3DFix = is_on;
+    Config.writeFile();
+    UIDashboard::updateGPSStrictIcon();
+    ESP_LOGI(TAG, "GPS Strict 3D Fix (PDOP) saved: %d", is_on);
+    }
+
+    void UISettings::createGPSScreen() {
+    screen_gps = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen_gps, lv_color_hex(UIColors::BG_DARK), 0);
+
+    // Title bar (blue)
+    lv_obj_t *title_bar = lv_obj_create(screen_gps);
+    lv_obj_set_size(title_bar, UI_SCREEN_WIDTH, 35);
+    lv_obj_set_pos(title_bar, 0, 0);
+    lv_obj_set_style_bg_color(title_bar, lv_color_hex(UIColors::BTN_BLUE), 0);
+    lv_obj_set_style_border_width(title_bar, 0, 0);
+    lv_obj_set_style_radius(title_bar, 0, 0);
+    lv_obj_set_style_pad_all(title_bar, 5, 0);
+
+    // Back button
+    lv_obj_t *btn_back = lv_btn_create(title_bar);
+    lv_obj_set_size(btn_back, 60, 25);
+    lv_obj_set_style_bg_color(btn_back, lv_color_hex(UIColors::BG_HEADER), 0);
+    lv_obj_add_event_cb(btn_back, btn_back_to_setup_clicked, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *lbl_back = lv_label_create(btn_back);
+    lv_label_set_text(lbl_back, "< BACK");
+    lv_obj_center(lbl_back);
+
+    // Title
+    lv_obj_t *title = lv_label_create(title_bar);
+    lv_label_set_text(title, "GPS Settings");
+    lv_obj_set_style_text_color(title, lv_color_hex(UIColors::TEXT_WHITE), 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 20, 0);
+
+    // Content area
+    lv_obj_t *content = lv_obj_create(screen_gps);
+    lv_obj_set_size(content, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT - 35);
+    lv_obj_set_pos(content, 0, 35);
+    lv_obj_set_style_bg_color(content, lv_color_hex(UIColors::BG_DARK), 0);
+    lv_obj_set_style_border_width(content, 0, 0);
+    lv_obj_set_style_pad_all(content, 10, 0);
+    lv_obj_set_layout(content, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
+
+    // Strict 3D Fix row
+    lv_obj_t *row1 = lv_obj_create(content);
+    lv_obj_set_size(row1, lv_pct(100), 50);
+    lv_obj_set_style_bg_opa(row1, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(row1, 0, 0);
+    lv_obj_set_style_pad_all(row1, 5, 0);
+
+    lv_obj_t *lbl1 = lv_label_create(row1);
+    lv_label_set_text(lbl1, "Strict 3D Fix (Mountain)");
+    lv_obj_set_style_text_color(lbl1, lv_color_hex(UIColors::TEXT_WHITE), 0);
+    lv_obj_set_style_text_font(lbl1, &lv_font_montserrat_14, 0);
+    lv_obj_align(lbl1, LV_ALIGN_LEFT_MID, 0, 0);
+
+    lv_obj_t *sw1 = lv_switch_create(row1);
+    lv_obj_align(sw1, LV_ALIGN_RIGHT_MID, 0, 0);
+    if (Config.gpsConfig.strict3DFix) {
+        lv_obj_add_state(sw1, LV_STATE_CHECKED);
+    }
+    lv_obj_add_event_cb(sw1, gps_strict3d_switch_changed, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // Description text
+    lv_obj_t *lbl_desc = lv_label_create(content);
+    lv_label_set_text(lbl_desc, "Limits APRS TX to highly accurate 3D positions (PDOP <= 5).\nWarning: May cause long transmission delays in forest/city.");
+    lv_obj_set_width(lbl_desc, lv_pct(95));
+    lv_label_set_long_mode(lbl_desc, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_color(lbl_desc, lv_color_hex(0xaaaaaa), 0); // Gris
+    lv_obj_set_style_text_font(lbl_desc, &lv_font_montserrat_12, 0);
+    lv_obj_align(lbl_desc, LV_ALIGN_CENTER, 0, 0);
+    }
+
+    // =============================================================================
+    // WiFi Screen
 // =============================================================================
 
 void UISettings::createWifiScreen() {

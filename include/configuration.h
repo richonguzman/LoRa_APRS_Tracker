@@ -60,6 +60,11 @@ public:
     bool    turn180;
 };
 
+class GPSConfig {
+public:
+    bool    strict3DFix; // Global setting for PDOP filtering
+};
+
 class Battery {
 public:
     bool    sendVoltage;
@@ -154,6 +159,7 @@ public:
     Battery                 battery;
     Winlink                 winlink;
     Telemetry               telemetry;
+    GPSConfig               gpsConfig;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
     Lora                    lora;

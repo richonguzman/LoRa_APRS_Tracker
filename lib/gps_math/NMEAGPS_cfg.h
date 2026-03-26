@@ -8,8 +8,8 @@
 // Sentence parsing — only what we need
 #define NMEAGPS_PARSE_GGA
 //#define NMEAGPS_PARSE_GLL
-// GSA disabled: HDOP comes from GGA, and GSA requires PARSE_SATELLITES
-//#define NMEAGPS_PARSE_GSA
+// GSA enabled: required for PDOP/VDOP extraction (strict 3D mode)
+#define NMEAGPS_PARSE_GSA
 //#define NMEAGPS_PARSE_GSV
 //#define NMEAGPS_PARSE_GST
 #define NMEAGPS_PARSE_RMC

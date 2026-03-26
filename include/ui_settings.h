@@ -20,6 +20,7 @@ namespace UISettings {
     void createSpeedScreen();
     void createCallsignScreen();
     void createDisplayScreen();
+    void createGPSScreen();
     void createSoundScreen();
     void createRepeaterScreen();
     void createWifiScreen();

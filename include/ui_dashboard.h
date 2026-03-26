@@ -29,6 +29,7 @@ namespace UIDashboard {
     void updateLoRa(const char* lastRx, int rssi);
     void refreshLoRaInfo();
     void updateLastRx();
+    void updateGPSStrictIcon();
     void updateWiFi(bool connected, int rssi);
     void updateCallsign(const char* callsign);
     void updateTime(int day, int month, int year, int hour, int minute, int second);

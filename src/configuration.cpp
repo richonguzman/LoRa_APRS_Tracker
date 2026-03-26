@@ -67,6 +67,8 @@ bool Configuration::writeFile() {
         data["display"]["turn180"]                  = display.turn180;
         data["display"]["showSymbol"]               = display.showSymbol;
 
+        data["gpsConfig"]["strict3DFix"]            = gpsConfig.strict3DFix;
+
         data["bluetooth"]["active"]                 = bluetooth.active;
         data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
         #ifdef HAS_BT_CLASSIC
@@ -216,6 +218,9 @@ bool Configuration::readFile() {
         display.timeout                 = data["display"]["timeout"] | 4;
         display.turn180                 = data["display"]["turn180"] | false;
         display.showSymbol              = data["display"]["showSymbol"] | true;
+
+        if (!data["gpsConfig"].containsKey("strict3DFix")) needsRewrite = true;
+        gpsConfig.strict3DFix           = data["gpsConfig"]["strict3DFix"] | false;
 
         if (!data["bluetooth"].containsKey("active") ||
             !data["bluetooth"].containsKey("deviceName") ||
@@ -425,6 +430,8 @@ void Configuration::setDefaultValues() {
     display.timeout                 = 4;
     display.turn180                 = false;
     display.showSymbol              = true;
+
+    gpsConfig.strict3DFix           = false;
 
     bluetooth.active                = false;
     bluetooth.deviceName            = "LoRaTracker";

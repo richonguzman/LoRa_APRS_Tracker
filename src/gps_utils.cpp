@@ -84,11 +84,11 @@ namespace GPS_Utils {
         
         gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
         #ifdef TTGO_T_DECK_PLUS
-            // L76K: restrict output to RMC + GGA only (reduces UART load, speeds up parsing)
+            // L76K: restrict output to RMC, GGA, and GSA only (reduces UART load, speeds up parsing)
             // Note: The L76K module on the T-Deck may ignore this command depending on firmware/wiring,
             // but it is kept as best practice.
             delay(100);
-            gpsSerial.print("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
+            gpsSerial.print("$PMTK314,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n");
         #endif
     }
 

@@ -42,5 +42,7 @@ extern gps_fix  gpsFix;
 inline float gpsSpeedKnots() { return gpsFix.valid.speed ? gpsFix.speed_kph() / 1.852f : 0.0f; }
 inline int32_t gpsAltFeet()  { return gpsFix.valid.altitude ? (int32_t)(gpsFix.alt.whole * 3.28084f) : 0; }
 inline float gpsHdop()       { return gpsFix.valid.hdop ? (float)gpsFix.hdop / 1000.0f : 99.0f; }
+inline float gpsVdop()       { return gpsFix.valid.vdop ? (float)gpsFix.vdop / 1000.0f : 99.0f; }
+inline float gpsPdop()       { return gpsFix.valid.pdop ? (float)gpsFix.pdop / 1000.0f : 99.0f; }
 
 #endif
