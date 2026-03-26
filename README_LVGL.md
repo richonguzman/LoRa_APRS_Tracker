@@ -15,7 +15,7 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 | **Dashboard** | **Vector Map** | **Messaging** |
 
 ---
-## What's New in v2.9.1
+## What's New in v2.9.x
 - **Strict 3D Fix (PDOP)** - New configurable mode to enforce PDOP filtering for altitude reliability, with a visual indicator on the dashboard.
 - **Persistent Map State** - Map's NAV memory pool and zoom/pan state are preserved across sessions to avoid PSRAM fragmentation and improve user experience.
 - **NeoGPS migration** - Replaced TinyGPS++ (legacy 2013) with NeoGPS: coherent fix merging, HDOP from GGA, configurable sentence parsing
