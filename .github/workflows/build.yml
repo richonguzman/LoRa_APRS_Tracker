@@ -27,12 +27,12 @@ jobs:
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
-                      spiffs_offset: "0x310000"                      
+                      spiffs_offset: "0x310000"
                     - name: ttgo-t-beam-1W
                       chip: esp32s3
                       flash_size: 16MB
                       flash_mode: qio
-                      spiffs_offset: "0xc90000"                      
+                      spiffs_offset: "0xc90000"
                     - name: ttgo_t_deck_GPS
                       chip: esp32s3
                       flash_size: 8MB
@@ -145,7 +145,7 @@ jobs:
 
             - name: Build target
               run: |
-                  pio run -e ${{ matrix.target.name }} 
+                  pio run -e ${{ matrix.target.name }}
 
             - name: Build FS
               run: |
@@ -160,7 +160,7 @@ jobs:
                   cp .pio/build/${{ matrix.target.name }}/partitions.bin installer/firmware/
                   cp .pio/build/${{ matrix.target.name }}/spiffs.bin installer/firmware/
                   cp ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin installer/firmware/
-              
+
             - name: Merge for web flashing
               run: |
                   if [ "${{ matrix.target.chip }}" == "esp32" ]; then
@@ -190,7 +190,6 @@ jobs:
                         -o installer/web_factory.bin \
                         --flash_mode ${{ matrix.target.flash_mode }} \
                         --flash_size ${{ matrix.target.flash_size }} \
-                        --flash_freq 40m \
                         0x0000   installer/firmware/bootloader.bin \
                         0x8000   installer/firmware/partitions.bin \
                         0xe000   installer/firmware/boot_app0.bin \
