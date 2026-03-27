@@ -21,6 +21,7 @@
 #include "gpx_writer.h"
 #include "lvgl_ui.h"
 #include "ui_map_manager.h"  // For SCREEN_WIDTH, SCREEN_HEIGHT, MAP_VISIBLE_HEIGHT, MAP_MARGIN_X/Y, MAP_TILE_SIZE, redraw_map_canvas
+#include "ui_dashboard.h"
 
 using namespace MapState;
 
@@ -129,8 +130,11 @@ namespace MapInput {
                       heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
                       heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
                       heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
-        LVGL_UI::return_to_dashboard();
-    }
+
+        // Retour explicite au dashboard avec del=true pour détruire la map et libérer la DRAM
+        lv_scr_load_anim(UIDashboard::getMainScreen(), LV_SCR_LOAD_ANIM_MOVE_RIGHT, 100, 0, true);
+        MapState::screen_map = nullptr;
+        }
 
     void btn_map_recenter_clicked(lv_event_t* e) {
         ESP_LOGI(TAG, "Recentering on GPS");
