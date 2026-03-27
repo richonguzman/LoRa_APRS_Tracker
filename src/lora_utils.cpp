@@ -24,6 +24,7 @@
 #include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
+#include "geofence.h"
 
 extern logging::Logger  logger;
 extern Configuration    Config;
@@ -196,6 +197,7 @@ namespace LoRa_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa Tx", "TX blocked by geofence");
             transmitFlag = true;
         return;
+        }
                     
         if (Config.ptt.active) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
