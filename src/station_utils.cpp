@@ -252,8 +252,10 @@ namespace STATION_Utils {
         }
 
         applyGeofence(gps, currentBeacon);
-
-        displayShow("<<< TX >>>", "", packet, 100);
+        if (!geofence_pause)
+            {
+                displayShow("<<< TX >>>", "", packet, 100);
+            }
         LoRa_Utils::sendNewPacket(packet);
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
