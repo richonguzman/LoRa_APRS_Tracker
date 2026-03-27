@@ -54,6 +54,10 @@ bool Configuration::writeFile() {
             data["beacons"][i]["gpsEcoMode"]            = beacons[i].gpsEcoMode;
             data["beacons"][i]["profileLabel"]          = beacons[i].profileLabel;
             data["beacons"][i]["status"]                = beacons[i].status;
+            data["beacons"][i]["geofence_latitude"]     = beacons[i].geofence_latitude;
+            data["beacons"][i]["geofence_longitude"]    = beacons[i].geofence_longitude;
+            data["beacons"][i]["geofence_radius"]       = beacons[i].geofence_radius;
+            data["beacons"][i]["geofence_mode"]         = beacons[i].geofence_mode;
         }
 
         data["display"]["ecoMode"]                  = display.ecoMode;
@@ -165,6 +169,10 @@ bool Configuration::readFile() {
             bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
             bcn.profileLabel            = BeaconsArray[i]["profileLabel"] | "";
+            bcn.geofence_latitude       = BeaconsArray[i]["geofence_latitude"] | 0.0;
+            bcn.geofence_longitude      = BeaconsArray[i]["geofence_longitude"] | 0.0;
+            bcn.geofence_radius         = BeaconsArray[i]["geofence_radius"] | 0;
+            bcn.geofence_mode           = BeaconsArray[i]["geofence_mode"] | "inactive";
             beacons.push_back(bcn);
         }
 
