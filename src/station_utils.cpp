@@ -31,6 +31,7 @@
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "geofence.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -249,6 +250,8 @@ namespace STATION_Utils {
         } else {
             packet += "**LowVoltagePowerOff**";
         }
+
+        applyGeofence(gps, currentBeacon);
 
         displayShow("<<< TX >>>", "", packet, 100);
         LoRa_Utils::sendNewPacket(packet);
