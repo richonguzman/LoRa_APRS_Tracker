@@ -42,6 +42,10 @@ public:
     bool    gpsEcoMode;
     String  profileLabel;
     String  status;
+    double  geofence_latitude = 0.0;
+    double  geofence_longitude = 0.0;
+    int     geofence_radius = 0 ;
+    String  geofence_mode = "inactive";
 };
 
 class Display {
