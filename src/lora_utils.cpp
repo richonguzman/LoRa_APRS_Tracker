@@ -187,11 +187,16 @@ namespace LoRa_Utils {
     }
 
     void sendNewPacket(const String& newPacket) {
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s | geofence_pause=%s", newPacket.c_str(), geofence_pause ? "TRUE" : "FALSE");
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa","Send data: %s", newPacket.c_str());*/
 
+        if (geofence_pause) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa Tx", "TX blocked by geofence");
+            transmitFlag = true;
+        return;
+                    
         if (Config.ptt.active) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
