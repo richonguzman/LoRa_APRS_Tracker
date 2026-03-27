@@ -27,7 +27,7 @@ void applyGeofence(TinyGPSPlus &gps, Beacon* currentBeacon) {
 
         if (currentBeacon->geofence_mode == "pause") {
             geofence_pause = true;
-            displayShow("GEOFENCE", "", "TX pausing", 100);
+            displayShow("GEOFENCE","", "TX pausing","Radius: " + String(double(currentBeacon->geofence_radius),0)+" m","Distance: " + String(distance,0) + " m","", 100);
             delay(2000);
             return;
         }
