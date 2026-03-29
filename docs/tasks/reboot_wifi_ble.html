@@ -1,0 +1,58 @@
+<h1>Mémoire et Coexistence (WiFi / BLE / Map) sur ESP32-S3</h1>
+<p>Ce document synthétise les analyses et les correctifs appliqués pour résoudre les crashs de type <code>Malloc failed</code> (suivi d&#39;un <code>abort()</code> matériel) lors de l&#39;utilisation simultanée ou séquentielle du WiFi, du Bluetooth Low Energy (NimBLE) et de l&#39;écran de cartographie vectorielle (LovyanGFX / LVGL).</p>
+<h2>Le problème initial</h2>
+<p>L&#39;ESP32-S3 dispose d&#39;environ 320 Ko de DRAM interne utilisable (SRAM1 et SRAM2).
+La configuration matérielle et logicielle du T-Deck sollicite lourdement cette mémoire :</p>
+<ol>
+<li><strong>Contrôleur Bluetooth (libbt.a)</strong> : Nécessite une allocation de ~65 Ko de DRAM <strong>contiguë</strong> à son initialisation (buffers HCI, DMA).</li>
+<li><strong>Pile WiFi</strong> : Consomme entre 35 Ko et 50 Ko de DRAM lorsqu&#39;elle est active.</li>
+<li><strong>Affichage (LVGL &amp; LovyanGFX)</strong> : Alloue dynamiquement de la mémoire pour l&#39;arborescence des widgets, les timers, et les tâches de fond.</li>
+<li><strong>Cartographie Vectorielle (Map Z9+)</strong> : <ul>
+<li>L&#39;ouverture de l&#39;écran Map instancie des files d&#39;attentes FreeRTOS (<code>Queue</code>).</li>
+<li>Le passage en mode vectoriel (NAV) ouvre plusieurs fichiers (<code>File</code>) sur la carte SD. La librairie FATFS sous-jacente alloue un buffer de secteur (~600 octets) en DRAM pour chaque fichier ouvert.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Le symptôme</strong> : 
+Après avoir utilisé le WiFi ou la carte, l&#39;activation du Bluetooth échouait avec <code>BLE_INIT: Malloc failed</code> suivi de l&#39;erreur HCI <code>519</code> (Memory Capacity Exceeded). 
+Si le Bluetooth parvenait à démarrer, ouvrir la carte vectorielle réduisait la DRAM libre à moins de 1 Ko. À la première réception d&#39;un paquet BLE (Gatt Write), le système s&#39;effondrait (<code>abort()</code>) faute de mémoire pour allouer la structure de traitement.</p>
+<h2>L&#39;analyse de la fragmentation (Le &quot;Gruyère&quot;)</h2>
+<p>L&#39;ESP-IDF ne dispose pas de défragmenteur de RAM. Même avec 71 Ko de DRAM libre totale, le contrôleur BT échouait car il ne trouvait pas de <strong>bloc contigu</strong> suffisant (le plus grand bloc n&#39;était que de 31 Ko).</p>
+<p>La DRAM était fragmentée par plusieurs éléments :</p>
+<ul>
+<li><strong>Les piles (stacks) des tâches FreeRTOS</strong> allouées au démarrage, placées en plein milieu de la DRAM.</li>
+<li><strong>La tâche principale Arduino (<code>loopTask</code>)</strong>, configurée par défaut à 16 Ko, qui agissait comme un mur infranchissable.</li>
+<li>Les petites allocations C++ (<code>String</code>, objets LVGL) éparpillées.</li>
+</ul>
+<h2>Les correctifs appliqués (Optimisation &quot;Bottom-Up&quot;)</h2>
+<p>Une stratégie en plusieurs étapes a été déployée pour maximiser la DRAM contiguë disponible.</p>
+<h3>1. Fuite mémoire de l&#39;écran LVGL</h3>
+<p>Lorsqu&#39;on quittait l&#39;écran de la carte, la fonction <code>lv_scr_load_anim</code> était appelée avec le paramètre <code>del = false</code>. L&#39;écran (et ses objets) n&#39;était jamais détruit, créant une fuite de ~7 Ko de DRAM à chaque passage.</p>
+<ul>
+<li><strong>Fix</strong> : Passage du paramètre à <code>true</code> pour forcer la destruction de l&#39;écran précédent et récupérer la DRAM (<code>src/map/map_input.cpp</code>).</li>
+</ul>
+<h3>2. Déplacement en PSRAM (MALLOC_CAP_SPIRAM)</h3>
+<p>Toutes les allocations qui n&#39;ont pas strictement besoin de la DRAM (ex: accès DMA) ont été forcées en mémoire externe (PSRAM) :</p>
+<ul>
+<li><strong>Stacks des tâches Map</strong> : Utilisation de <code>xTaskCreatePinnedToCoreWithCaps</code> pour allouer les piles de <code>MapRender</code> (16 Ko) et <code>TilePreload</code> (4 Ko) en PSRAM. (Gain: 20 Ko DRAM).</li>
+<li><strong>Objets LGFX_Sprite</strong> : Bien que le buffer pixel soit en PSRAM (<code>setPsram(true)</code>), l&#39;objet C++ lui-même était alloué en DRAM via <code>new</code>. Utilisation d&#39;un placement <code>new</code> personnalisé (<code>psram_new</code>) via <code>heap_caps_malloc</code> pour stocker l&#39;instance C++ complète en PSRAM. (Gain: ~9 Ko DRAM pour 18 sprites).</li>
+<li><strong>Files d&#39;attente (Queues) FreeRTOS</strong> : Remplacement des <code>xQueueCreate</code> (qui allouent le buffer en DRAM) par des <code>xQueueCreateStatic</code> couplés à des buffers alloués manuellement en PSRAM. (Gain: ~2 Ko DRAM).</li>
+<li><strong>Seuil d&#39;allocation interne</strong> : Réduction de <code>CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL</code> de 4096 à 256 octets dans <code>platformio.ini</code>. Force toutes les allocations C++ moyennes (&gt; 256 octets) à utiliser la PSRAM au lieu d&#39;encombrer la DRAM.</li>
+</ul>
+<h3>3. Coalescence par réduction de la tâche principale</h3>
+<p>Pour résoudre le problème critique de fragmentation (le plus grand bloc bloqué à 31 Ko), la taille de la pile de la tâche Arduino (<code>loopTask</code>) a été diminuée.</p>
+<ul>
+<li><strong>Fix</strong> : Modification de <code>board_build.arduino.loop_stack_size</code> de <code>16384</code> à <code>6144</code> octets dans <code>platformio.ini</code>.</li>
+<li><strong>Résultat</strong> : Le &quot;mur&quot; au milieu de la DRAM a rétréci de 10 Ko, permettant aux blocs libres adjacents de fusionner (coalescence). Le plus grand bloc contigu est passé de 31 Ko à <strong>+ de 65 Ko</strong>, permettant enfin au contrôleur BT de s&#39;initialiser à chaud.</li>
+</ul>
+<h3>4. La solution finale : Pause/Resume du BLE pour la carte</h3>
+<p>Malgré toutes ces optimisations, le cumul des allocations incompressibles (Contrôleur BT + Stack NimBLE + LVGL + 5 buffers FATFS pour les tuiles NAV) laissait la DRAM sous le seuil critique des 4 Ko lors de la navigation sur la carte, provoquant des crashs lors des réceptions BLE.
+Puisque l&#39;utilisateur ne configure pas l&#39;appareil en Bluetooth tout en regardant la carte vectorielle simultanément, une stratégie de bascule a été implémentée :</p>
+<ul>
+<li><strong>À l&#39;ouverture de la carte</strong> : Si le Bluetooth est actif, il est temporairement stoppé (<code>BLE_Utils::stop()</code>), libérant instantanément ~65 Ko de DRAM pour l&#39;affichage cartographique.</li>
+<li><strong>À la fermeture de la carte</strong> : Le Bluetooth est relancé automatiquement (<code>BLE_Utils::setup()</code>).</li>
+<li><strong>Fichiers modifiés</strong> : <code>map_state.h</code>, <code>ui_dashboard.cpp</code>, <code>map_input.cpp</code>.</li>
+</ul>
+<h2>Bilan</h2>
+<p>Le système est désormais stable. Il permet la cohabitation asynchrone du WiFi, du BLE et du rendu de cartes vectorielles complexes sur un ESP32-S3 sans saturer la DRAM ni nécessiter de redémarrage matériel.</p>
+
