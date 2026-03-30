@@ -1,6 +1,6 @@
 {
   "name": "LoRa APRS Tracker - T-Deck Plus 433MHz (Stable)",
-  "version": "2.7.5 (2026-03-05)",
+  "version": "2.9.1 (2026-03-30)",
   "new_install_prompt_erase": true,
   "builds": [
     {
@@ -8,8 +8,7 @@
       "parts": [
         { "path": "firmware/stable/bootloader.bin", "offset": 0 },
         { "path": "firmware/stable/partitions.bin", "offset": 32768 },
-        { "path": "firmware/stable/firmware.bin", "offset": 65536 },
-        { "path": "firmware/stable/spiffs.bin", "offset": 3211264 }
+        { "path": "firmware/stable/firmware.bin", "offset": 65536 }
       ]
     }
   ]
