@@ -73,8 +73,9 @@
 // No proprietary sentences
 //#define NMEAGPS_PARSE_PROPRIETARY
 
-// No satellite array tracking (we only need fix.satellites count)
-//#define NMEAGPS_PARSE_SATELLITES
+// Enable satellite array tracking (required by NeoGPS GSA parser bug)
+#define NMEAGPS_PARSE_SATELLITES
+#define NMEAGPS_MAX_SATELLITES 24
 //#define NMEAGPS_PARSE_SATELLITE_INFO
 
 // Statistics (for charsProcessed equivalent)
