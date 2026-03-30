@@ -8,6 +8,9 @@
 
 This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/LoRa_APRS_Tracker) featuring a complete LVGL-based touchscreen interface with vector map rendering (NAV format compatible with [IceNav-v3](https://github.com/jgauchia/IceNav-v3)), LovyanGFX graphics library for enhanced performance, advanced APRS messaging, and optimized memory management.
 
+> 📖 **[Read the Full User Guide on the Wiki](https://github.com/moricef/LoRa_APRS_Tracker/wiki/en/README)**
+> *(Includes Installation, Dashboard, Maps, Messaging, Settings and Troubleshooting)*
+
 ## Screenshots
 
 |<img src="docs/tdeck_dashboard.jpg" width="250">|<img src="docs/tdeck_vector_map.jpg" width="250">|<img src="docs/tdeck_messaging.jpg" width="250">|
