@@ -132,11 +132,13 @@ You will find details about:
 - [LovyanGFX](https://github.com/lovyan03/LovyanGFX) - Graphics library
 - [IceNav-v3](https://github.com/jgauchia/IceNav-v3) - NAV format and vector rendering
 
+**Map data**: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
+
 **LVGL UI development**: F4MLV
 
 ## Support This Project
 
-If you find this project useful:
+If you find this project useful, please **star ⭐ the repo**!
 
 [PayPal donation](https://paypal.me/moricef09) | [GitHub Sponsors](https://github.com/sponsors/moricef)
 
@@ -145,8 +147,6 @@ If you find this project useful:
 ## License
 
 Same license as original CA2RXU LoRa APRS Tracker.
-
-Map data: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 
 ## Issues & Support
 
