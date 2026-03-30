@@ -132,7 +132,7 @@ You will find details about:
 - [LovyanGFX](https://github.com/lovyan03/LovyanGFX) - Graphics library
 - [IceNav-v3](https://github.com/jgauchia/IceNav-v3) - NAV format and vector rendering
 
-**LVGL UI development**: F4MLV with Claude AI assistance
+**LVGL UI development**: F4MLV
 
 ## Support This Project
 
