@@ -413,17 +413,20 @@ void Configuration::setDefaultValues() {
 
 Configuration::Configuration() {
     if (!SPIFFS.begin(false)) {
-        Serial.println("SPIFFS Mount Failed");
-        return;
-    } else {
-        Serial.println("SPIFFS Mounted");
-    }
+        Serial.println("SPIFFS Mount Failed, formatting...");
 
-    bool exists = SPIFFS.exists("/tracker_conf.json");
-    if (!exists) {
+        if (!SPIFFS.begin(true)) {
+            Serial.println("SPIFFS Format Failed");
+            return;
+        }
+    }
+    Serial.println("SPIFFS Ready");
+
+    if (!SPIFFS.exists("/tracker_conf.json")) {
+        Serial.println("Config not found, creating default...");
         setDefaultValues();
         writeFile();
-        delay(1000);
+        delay(500);
         ESP.restart();
     }
 
