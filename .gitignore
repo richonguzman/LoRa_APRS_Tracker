@@ -40,3 +40,7 @@ docs/ui_map_manager.cpp_orig
 docs/ui_map_manager.cpp_orig_mod_gps
 include/map_touch_controller.h
 src/map_touch_controller.cpp
+
+# Gemini-generated planning documents (local only)
+docs/tasks/
+TODO.md
