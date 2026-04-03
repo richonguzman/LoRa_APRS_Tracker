@@ -7,8 +7,12 @@
 #ifdef USE_LVGL_UI
 
 #include <lvgl.h>
+#if defined(CROWPANEL_ADVANCE_35)
+#include "LGFX_CrowPanel_35.h"
+#else
 #include "LGFX_TDeck.h"
-#include <freertos/FreeRTOS.h>
+#endif
+#include <SD.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <freertos/event_groups.h>

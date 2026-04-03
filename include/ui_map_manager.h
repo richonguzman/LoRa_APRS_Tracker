@@ -10,7 +10,6 @@
 #include <lvgl.h>
 #include <Arduino.h>
 #include <NMEAGPS.h>
-#include "LGFX_TDeck.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include "map_state.h"
@@ -22,7 +21,13 @@ class Configuration;
 // External data sources from lvgl_ui.cpp and other global variables
 extern gps_fix gpsFix;
 extern Configuration Config;
-extern LGFX_TDeck tft;
+#if defined(CROWPANEL_ADVANCE_35)
+    #include "LGFX_CrowPanel_35.h"
+    extern LGFX_CrowPanel_35 tft;
+#else
+    #include "LGFX_TDeck.h"
+    extern LGFX_TDeck tft;
+#endif
 extern uint8_t myBeaconsIndex;
 extern int mapStationsCount;
 extern SemaphoreHandle_t spiMutex; // Declared extern for SPI bus mutex access

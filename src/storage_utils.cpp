@@ -98,11 +98,17 @@ namespace STORAGE_Utils {
         }
 
         #ifdef BOARD_SDCARD_CS
-            // Try to init SD card on shared SPI bus
-            // SD card uses the same SPI as display/LoRa on T-Deck Plus
-            SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
-
-            if (SD.begin(BOARD_SDCARD_CS, SPI, 20000000)) {  // 20 MHz (was 4 MHz)
+            #if defined(CROWPANEL_ADVANCE_35)
+                // CrowPanel uses a different SPI bus for SD card
+                static SPIClass sdSPI(HSPI);
+                sdSPI.begin(BOARD_SDCARD_SCK, BOARD_SDCARD_MISO, BOARD_SDCARD_MOSI, BOARD_SDCARD_CS);
+                if (SD.begin(BOARD_SDCARD_CS, sdSPI, 20000000)) {
+            #else
+                // Try to init SD card on shared SPI bus
+                // SD card uses the same SPI as display/LoRa on T-Deck Plus
+                SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
+                if (SD.begin(BOARD_SDCARD_CS, SPI, 20000000)) {  // 20 MHz (was 4 MHz)
+            #endif
                 sdAvailable = true;
                 uint8_t cardType = SD.cardType();
 

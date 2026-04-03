@@ -10,7 +10,11 @@ static const char *TAG = "LVGL";
 #include <APRSPacketLib.h>
 #include <Arduino.h>
 #include <FS.h>
+#if defined(CROWPANEL_ADVANCE_35)
+#include "LGFX_CrowPanel_35.h"
+#else
 #include "LGFX_TDeck.h"
+#endif
 #include <NMEAGPS.h>
 #include "gps_utils.h"
 #include <WiFi.h>

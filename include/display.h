@@ -31,8 +31,13 @@
 #include <Arduino.h>
 
 #ifdef HAS_TFT
+#if defined(CROWPANEL_ADVANCE_35)
+#include "LGFX_CrowPanel_35.h"
+extern LGFX_CrowPanel_35 tft;
+#else
 #include "LGFX_TDeck.h"
 extern LGFX_TDeck tft;
+#endif
 #endif
 
 void displaySetBrightness(uint8_t value);

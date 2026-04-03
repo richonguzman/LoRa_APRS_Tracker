@@ -30,9 +30,13 @@ static const char *TAG = "Display";
 
 
 #ifdef HAS_TFT
-    #include "LGFX_TDeck.h"
-
-    LGFX_TDeck  tft;
+    #if defined(CROWPANEL_ADVANCE_35)
+        #include "LGFX_CrowPanel_35.h"
+        LGFX_CrowPanel_35 tft;
+    #else
+        #include "LGFX_TDeck.h"
+        LGFX_TDeck  tft;
+    #endif
     LGFX_Sprite sprite(&tft);
 
     #ifdef HELTEC_WIRELESS_TRACKER
