@@ -176,9 +176,9 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
 #endif
 }
 
-void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
+bool MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
     double lat, lon;
-    if (!getUiPosition(&lat, &lon)) return;
+    if (!getUiPosition(&lat, &lon)) return false;
 
     uint32_t now = MILLIS();
 
@@ -201,7 +201,7 @@ void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
 
     // Time gate: minimum interval between points
     if (ownTraceCount > 0 && (now - lastTraceTime) < minTime) {
-        return;
+        return false;
     }
 
     // Distance from last recorded trace point
@@ -211,7 +211,7 @@ void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
 
     // Anti-jitter: ignore micro-movements
     if (distM < minDist) {
-        return;
+        return false;
     }
 
     // Heading delta from last recorded point
@@ -228,7 +228,7 @@ void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
     bool firstPoint      = (ownTraceCount == 0);
 
     if (!firstPoint && !headingTrigger && !distanceTrigger) {
-        return;
+        return false;
     }
 
     // Record point — simple ring buffer overwrite (no compaction, no recursion)
@@ -247,6 +247,7 @@ void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
     lastTraceLat  = (float)lat;
     lastTraceLon  = (float)lon;
     if (currentHeading >= 0.0f) lastTraceHeading = currentHeading;
+    return true;
 }
 
 

@@ -46,7 +46,8 @@ public:
     void updateFilteredOwnPosition(const gps_fix& fix);
 
     // Add current position to trace history (SmartBeacon-like criteria)
-    void addOwnTracePoint(const gps_fix& fix);
+    // Returns true if a point was actually recorded
+    bool addOwnTracePoint(const gps_fix& fix);
 
     // Get best available position for UI (Single Source of Truth)
     bool getUiPosition(double* lat, double* lon) const;

@@ -38,6 +38,7 @@
 #include "storage_utils.h"
 #include "lvgl_ui.h"
 #include "map_gps_filter.h"
+#include "trace_sd.h"
 #include <esp_task_wdt.h>
 #include <esp_log.h>
 
@@ -61,7 +62,12 @@ void redraw_map_canvas();
 // =============================================================================
 
 void addOwnTracePoint() {
-    gpsFilter.addOwnTracePoint(gpsFix);
+    if (gpsFilter.addOwnTracePoint(gpsFix)) {
+        double lat, lon;
+        if (gpsFilter.getUiPosition(&lat, &lon)) {
+            TraceSD::appendPoint((float)lat, (float)lon, millis());
+        }
+    }
 }
 
 // =============================================================================
@@ -92,7 +98,12 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
         double oldLon = gpsFilter.getOwnLon();
 
         gpsFilter.updateFilteredOwnPosition(gpsFix);
-        gpsFilter.addOwnTracePoint(gpsFix);
+        if (gpsFilter.addOwnTracePoint(gpsFix)) {
+            double tLat, tLon;
+            if (gpsFilter.getUiPosition(&tLat, &tLon)) {
+                TraceSD::appendPoint((float)tLat, (float)tLon, millis());
+            }
+        }
 
         // Trigger UI refresh if filtered position moved by at least ~1m (avoid float noise spam)
         double dLat = gpsFilter.getOwnLat() - oldLat;
@@ -340,6 +351,9 @@ void create_map_screen() {
         map_center_lat = gpsFix.latitude();
         map_center_lon = gpsFix.longitude();
     }
+
+    // Initialize trace SD persistence
+    TraceSD::init();
 
     // Discover and set the map region if it's not already defined
     MapTiles::discoverAndSetMapRegion();
