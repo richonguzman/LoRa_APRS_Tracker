@@ -61,7 +61,7 @@ void redraw_map_canvas();
 // =============================================================================
 
 void addOwnTracePoint() {
-    gpsFilter.addOwnTracePoint();
+    gpsFilter.addOwnTracePoint(gpsFix);
 }
 
 // =============================================================================
@@ -92,7 +92,7 @@ static void map_refresh_timer_cb(lv_timer_t* timer) {
         double oldLon = gpsFilter.getOwnLon();
 
         gpsFilter.updateFilteredOwnPosition(gpsFix);
-        gpsFilter.addOwnTracePoint();
+        gpsFilter.addOwnTracePoint(gpsFix);
 
         // Trigger UI refresh if filtered position moved by at least ~1m (avoid float noise spam)
         double dLat = gpsFilter.getOwnLat() - oldLat;

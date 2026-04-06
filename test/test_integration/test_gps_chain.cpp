@@ -10,6 +10,7 @@ struct FixSequence {
   float hdop;
   float speed_kmph;
   uint32_t millis_delta;
+  float heading = -1.0f;
 };
 
 class GPSChainTest : public ::testing::Test {
@@ -38,8 +39,13 @@ protected:
       fix.valid.speed = true;
       fix.spd.whole = static_cast<uint16_t>(f.speed_kmph * 100);
 
+      if (f.heading >= 0.0f) {
+          fix.valid.heading = true;
+          fix.hdg.value = f.heading;
+      }
+
       filter.updateFilteredOwnPosition(fix);
-      filter.addOwnTracePoint();
+      filter.addOwnTracePoint(fix);
     }
   }
 };
@@ -63,10 +69,10 @@ TEST_F(GPSChainTest, Stationary_Indoor_Jitter_Should_Freeze) {
 // Outdoor walking/cycling: good sats, low HDOP → position follows with low-pass smoothing
 TEST_F(GPSChainTest, Moving_Outdoor_Normal_Should_Follow) {
   std::vector<FixSequence> seq = {
-      {48.8566, 2.3522, 10, 1.2, 0.0, 0},       // init
-      {48.8570, 2.3525, 10, 1.1, 12.0, 5000},    // ~15 km/h
-      {48.8578, 2.3531, 10, 1.3, 15.0, 4000},
-      {48.8585, 2.3538, 10, 1.0, 18.0, 4000},
+      {48.8566, 2.3522, 10, 1.2, 0.0, 0, 0.0f},          // init
+      {48.8570, 2.3525, 10, 1.1, 12.0, 5000, 30.0f},     // heading change → trace point
+      {48.8578, 2.3531, 10, 1.3, 15.0, 4000, 60.0f},     // heading change → trace point
+      {48.8585, 2.3538, 10, 1.0, 18.0, 4000, 90.0f},     // heading change → trace point
   };
 
   feedSequence(seq);

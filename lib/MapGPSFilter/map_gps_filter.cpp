@@ -4,6 +4,7 @@
 #include "mock_arduino.h"  // For native tests
 #define MILLIS() MockArduino::millis()
 #include <cstdio>  // For printf in mock logs
+#define ESP_LOGV(TAG, fmt, ...) ((void)0)
 #define ESP_LOGW(TAG, fmt, ...) printf("WARN: " fmt "\n", ##__VA_ARGS__)
 #define ESP_LOGD(TAG, fmt, ...) printf("DEBUG: " fmt "\n", ##__VA_ARGS__)
 #else
@@ -30,6 +31,10 @@ void MapGPSFilter::reset() {
     ownTraceCount = 0;
     ownTraceHead = 0;
     memset(ownTrace, 0, sizeof(ownTrace));
+    lastTraceHeading = -1.0f;
+    lastTraceTime = 0;
+    lastTraceLat = 0.0f;
+    lastTraceLon = 0.0f;
     lastDeltaMeters = 0.0f;
     lastAlpha = 0.0f;
 }
@@ -171,79 +176,79 @@ void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
 #endif
 }
 
-void MapGPSFilter::addOwnTracePoint() {
+void MapGPSFilter::addOwnTracePoint(const gps_fix& fix) {
     double lat, lon;
-    if (!getUiPosition(&lat, &lon)) return; // No valid GPS position yet
+    if (!getUiPosition(&lat, &lon)) return;
 
-    // Ensure we only add a new point if we moved enough from the last trace point.
-    if (ownTraceCount > 0) {
-        int lastIdx = (ownTraceHead - 1 + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
-        float lastLat = ownTrace[lastIdx].lat;
-        float lastLon = ownTrace[lastIdx].lon;
+    uint32_t now = MILLIS();
 
-        if (fabs(lat - lastLat) < TRACE_MIN_DISTANCE && fabs(lon - lastLon) < TRACE_MIN_DISTANCE) {
-            return; // Hasn't moved enough from the last recorded trace point
-        }
+    // Adaptive thresholds based on speed
+    float speedKph = (fix.valid.speed) ? fix.speed_kph() : 0.0f;
+    float minDist;
+    float maxDist;
+    uint32_t minTime;
+    if (speedKph < 10.0f) {
+        // Walking / slow cycling: finer resolution
+        minDist = 2.0f;
+        maxDist = 50.0f;
+        minTime = 1000;
+    } else {
+        // Cycling / driving: coarser, heading-driven
+        minDist = TRACE_MIN_DIST_M;
+        maxDist = TRACE_MAX_DIST_M;
+        minTime = TRACE_MIN_TIME_MS;
     }
 
-    // Compact when buffer is full: simplify first half to free space
-    if (ownTraceCount >= OWN_TRACE_MAX_POINTS) {
-        compactTrace();
+    // Time gate: minimum interval between points
+    if (ownTraceCount > 0 && (now - lastTraceTime) < minTime) {
+        return;
     }
 
-    // Add point to circular buffer (TracePoint uses float — acceptable for trace)
-    ownTrace[ownTraceHead].lat = (float)lat;
-    ownTrace[ownTraceHead].lon = (float)lon;
+    // Distance from last recorded trace point
+    float distM = (ownTraceCount > 0)
+        ? (float)calcDist(lastTraceLat, lastTraceLon, lat, lon)
+        : 999.0f;  // Force first point
 
-    // Update circular buffer indices
+    // Anti-jitter: ignore micro-movements
+    if (distM < minDist) {
+        return;
+    }
+
+    // Heading delta from last recorded point
+    float currentHeading = (fix.valid.heading) ? fix.heading() : -1.0f;
+    float headingDelta = 0.0f;
+    if (currentHeading >= 0.0f && lastTraceHeading >= 0.0f) {
+        headingDelta = fabsf(currentHeading - lastTraceHeading);
+        if (headingDelta > 180.0f) headingDelta = 360.0f - headingDelta;
+    }
+
+    // SmartBeacon decision: record if heading changed OR max distance reached
+    bool headingTrigger  = (headingDelta >= TRACE_HEADING_DELTA);
+    bool distanceTrigger = (distM >= maxDist);
+    bool firstPoint      = (ownTraceCount == 0);
+
+    if (!firstPoint && !headingTrigger && !distanceTrigger) {
+        return;
+    }
+
+    // Record point — simple ring buffer overwrite (no compaction, no recursion)
+    ownTrace[ownTraceHead].lat  = (float)lat;
+    ownTrace[ownTraceHead].lon  = (float)lon;
+    ownTrace[ownTraceHead].time = now;
+
     ownTraceHead = (ownTraceHead + 1) % OWN_TRACE_MAX_POINTS;
     if (ownTraceCount < OWN_TRACE_MAX_POINTS) {
         ownTraceCount++;
     }
+    // else: oldest point silently overwritten (ring buffer)
+
+    // Update trace state
+    lastTraceTime = now;
+    lastTraceLat  = (float)lat;
+    lastTraceLon  = (float)lon;
+    if (currentHeading >= 0.0f) lastTraceHeading = currentHeading;
 }
 
-void MapGPSFilter::compactTrace() {
-    // Linearize circular buffer into a temporary array (static to avoid 6KB stack usage)
-    static TracePoint linear[OWN_TRACE_MAX_POINTS];
-    int startIdx = (ownTraceHead - ownTraceCount + OWN_TRACE_MAX_POINTS) % OWN_TRACE_MAX_POINTS;
-    for (int i = 0; i < ownTraceCount; i++) {
-        linear[i] = ownTrace[(startIdx + i) % OWN_TRACE_MAX_POINTS];
-    }
-
-    // Douglas-Peucker on the first half: simplify older points
-    int halfCount = ownTraceCount / 2;
-    static bool keep[OWN_TRACE_MAX_POINTS];
-    memset(keep, 0, sizeof(keep));
-    keep[0] = true;              // Always keep first point (trip start)
-    keep[halfCount - 1] = true;  // Always keep boundary point
-
-    // Epsilon ~0.00003 degrees (~3m) preserves tight route shape (walking/hiking)
-    #ifndef UNIT_TEST
-    STATION_Utils::douglasPeuckerSimplify(linear, 0, halfCount - 1, keep, 0.00003f);
-    #else
-    // Mock simplification for unit tests: keep all points
-    for (int i = 0; i < halfCount; i++) {
-        keep[i] = true;
-    }
-#endif
-
-    // Rebuild: kept points from first half + all points from second half
-    int writeIdx = 0;
-    for (int i = 0; i < halfCount; i++) {
-        if (keep[i]) {
-            ownTrace[writeIdx++] = linear[i];
-        }
-    }
-    for (int i = halfCount; i < ownTraceCount; i++) {
-        ownTrace[writeIdx++] = linear[i];
-    }
-
-    ownTraceCount = writeIdx;
-    // Ensure head stays within circular buffer bounds (0..OWN_TRACE_MAX_POINTS-1)
-    ownTraceHead = writeIdx % OWN_TRACE_MAX_POINTS;
-
-    ESP_LOGD(TAG, "Trace compacted: %d -> %d points", OWN_TRACE_MAX_POINTS, writeIdx);
-}
 
 bool MapGPSFilter::getUiPosition(double* lat, double* lon) const {
     if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(5)) != pdTRUE) return false;

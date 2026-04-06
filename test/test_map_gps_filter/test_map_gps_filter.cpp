@@ -8,20 +8,11 @@
 #include "mock_arduino.h"
 #endif
 
-// Mock implementation of STATION_Utils::douglasPeuckerSimplify for unit tests
-namespace STATION_Utils {
-    void douglasPeuckerSimplify(TracePoint* trace, int start, int end, bool* keep, float epsilon) {
-        // Simplified mock: keep all points between start and end (inclusive)
-        for (int i = start; i <= end; i++) {
-            keep[i] = true;
-        }
-    }
-}
-
 // Helper to build a gps_fix with specified values
 gps_fix makeFix(double lat, double lon, unsigned int sats, double hdop,
                 double speed_kmph = 0.0,
-                bool valid_location = true, bool valid_hdop = true, bool valid_speed = true) {
+                bool valid_location = true, bool valid_hdop = true, bool valid_speed = true,
+                float heading = -1.0f) {
     gps_fix fix;
 
     if (valid_location) {
@@ -40,9 +31,12 @@ gps_fix makeFix(double lat, double lon, unsigned int sats, double hdop,
 
     if (valid_speed) {
         fix.valid.speed = true;
-        // NeoGPS speed is stored internally; speed_kph() returns from internal representation
-        // We set it via the whole/frac fields
-        fix.spd.whole = static_cast<uint16_t>(speed_kmph * 100);  // speed in cm/s * factor
+        fix.spd.whole = static_cast<uint16_t>(speed_kmph * 100);
+    }
+
+    if (heading >= 0.0f) {
+        fix.valid.heading = true;
+        fix.hdg.value = heading;
     }
 
     return fix;
@@ -78,10 +72,20 @@ TEST_F(MapGPSFilterTest, UpdateWithInvalidLocation) {
     EXPECT_FALSE(filter.isOwnPositionValid());
 }
 
-TEST_F(MapGPSFilterTest, UpdateWithLowSatellites) {
-    gps_fix fix = makeFix(37.7749, -122.4194, 2, 1.0);
-    filter.updateFilteredOwnPosition(fix);
-    EXPECT_FALSE(filter.isOwnPositionValid());
+TEST_F(MapGPSFilterTest, UpdateWithLowSatellites_InitialAcceptThenFreeze) {
+    // First fix with ≤6 sats: accepted to initialize the map
+    gps_fix fix1 = makeFix(37.7749, -122.4194, 2, 1.0);
+    filter.updateFilteredOwnPosition(fix1);
+    EXPECT_TRUE(filter.isOwnPositionValid());
+    EXPECT_NEAR(37.7749f, filter.getOwnLat(), 0.001f);
+
+    // Second fix with ≤6 sats: position frozen (no update)
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 2000;
+#endif
+    gps_fix fix2 = makeFix(37.7800, -122.4200, 2, 1.0);
+    filter.updateFilteredOwnPosition(fix2);
+    EXPECT_NEAR(37.7749f, filter.getOwnLat(), 0.001f);
 }
 
 TEST_F(MapGPSFilterTest, UpdateWithMinSatellites) {
@@ -100,52 +104,108 @@ TEST_F(MapGPSFilterTest, FirstFilteredUpdate) {
     EXPECT_NEAR(-122.4195f, filter.getOwnLon(), 0.001f);
 }
 
-TEST_F(MapGPSFilterTest, AddTracePoint) {
-    gps_fix fix = makeFix(37.7750, -122.4195, 7, 1.0, 10.0);
+TEST_F(MapGPSFilterTest, AddTracePoint_FirstPoint) {
+    gps_fix fix = makeFix(37.7750, -122.4195, 7, 1.0, 10.0, true, true, true, 90.0f);
     filter.updateFilteredOwnPosition(fix);
+    filter.addOwnTracePoint(fix);
 
-    filter.addOwnTracePoint();
     EXPECT_EQ(1, filter.getOwnTraceCount());
     const TracePoint& point = filter.getOwnTracePoint(0);
     EXPECT_NEAR(37.7750f, point.lat, 0.001f);
     EXPECT_NEAR(-122.4195f, point.lon, 0.001f);
 }
 
-TEST_F(MapGPSFilterTest, AddCloseTracePointNoAdd) {
-    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 10.0);
+TEST_F(MapGPSFilterTest, AddTracePoint_TooClose_NoAdd) {
+    // First point
+    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 10.0, true, true, true, 90.0f);
     filter.updateFilteredOwnPosition(fix1);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix1);
 
-    gps_fix fix2 = makeFix(37.7750 + 0.00002, -122.4195 + 0.00002, 7, 1.0, 10.0);
+    // Second point: 2m away, same heading, 2s later → distance < 5m anti-jitter → no add
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 2000;
+#endif
+    gps_fix fix2 = makeFix(37.7750 + 0.00002, -122.4195 + 0.00002, 7, 1.0, 10.0, true, true, true, 90.0f);
     filter.updateFilteredOwnPosition(fix2);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix2);
 
     EXPECT_EQ(1, filter.getOwnTraceCount());
 }
 
-TEST_F(MapGPSFilterTest, AddFarTracePointAdd) {
-    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 10.0);
+TEST_F(MapGPSFilterTest, AddTracePoint_HeadingChange_Adds) {
+    // First point heading North
+    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 40.0, true, true, true, 0.0f);
     filter.updateFilteredOwnPosition(fix1);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix1);
 
-    gps_fix fix2 = makeFix(37.7750 + 0.0005, -122.4195 + 0.0005, 7, 1.0, 10.0);
+    // Second point: 50m away, heading changed by 20° (> 11° threshold), 2s later
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 2000;
+#endif
+    gps_fix fix2 = makeFix(37.7750 + 0.0005, -122.4195, 7, 1.0, 40.0, true, true, true, 20.0f);
     filter.updateFilteredOwnPosition(fix2);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix2);
 
     EXPECT_EQ(2, filter.getOwnTraceCount());
 }
 
+TEST_F(MapGPSFilterTest, AddTracePoint_MaxDistance_Adds) {
+    // First point
+    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 80.0, true, true, true, 90.0f);
+    filter.updateFilteredOwnPosition(fix1);
+    filter.addOwnTracePoint(fix1);
+
+    // Second point: ~220m away, same heading, 10s later → max distance 200m → add
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 10000;
+#endif
+    gps_fix fix2 = makeFix(37.7750, -122.4195 + 0.003, 7, 1.0, 80.0, true, true, true, 90.0f);
+    filter.updateFilteredOwnPosition(fix2);
+    filter.addOwnTracePoint(fix2);
+
+    EXPECT_EQ(2, filter.getOwnTraceCount());
+}
+
+TEST_F(MapGPSFilterTest, AddTracePoint_TooSoon_NoAdd) {
+    // First point
+    gps_fix fix1 = makeFix(37.7750, -122.4195, 7, 1.0, 80.0, true, true, true, 0.0f);
+    filter.updateFilteredOwnPosition(fix1);
+    filter.addOwnTracePoint(fix1);
+
+    // Second point: far enough, heading changed, but only 500ms later → time gate → no add
+#ifdef UNIT_TEST
+    MockArduino::current_millis = 500;
+#endif
+    gps_fix fix2 = makeFix(37.7750 + 0.001, -122.4195, 7, 1.0, 80.0, true, true, true, 45.0f);
+    filter.updateFilteredOwnPosition(fix2);
+    filter.addOwnTracePoint(fix2);
+
+    EXPECT_EQ(1, filter.getOwnTraceCount());
+}
+
 TEST_F(MapGPSFilterTest, CircularBufferWrapAround) {
+    // Fill buffer with realistic data: ~50m apart, 10s intervals, alternating heading
+    // 50m in 10s = 18 km/h — well within spike filter (150 km/h)
     for (int i = 0; i < MapGPSFilter::OWN_TRACE_MAX_POINTS; ++i) {
-        gps_fix fix = makeFix(37.7750 + i * 0.001, -122.4195, 7, 1.0, 10.0);
+#ifdef UNIT_TEST
+        MockArduino::current_millis = i * 10000;  // 10s apart
+#endif
+        float heading = (i % 2 == 0) ? 0.0f : 180.0f;  // Alternate heading to trigger
+        gps_fix fix = makeFix(37.7750 + i * 0.00045, -122.4195, 10, 1.0, 18.0,
+                              true, true, true, heading);
         filter.updateFilteredOwnPosition(fix);
-        filter.addOwnTracePoint();
+        filter.addOwnTracePoint(fix);
     }
     EXPECT_EQ(MapGPSFilter::OWN_TRACE_MAX_POINTS, filter.getOwnTraceCount());
 
-    gps_fix fix_extra = makeFix(40.0, -120.0, 7, 1.0, 10.0);
+    // One more: overwrites oldest (ring buffer), not rejected by spike filter
+#ifdef UNIT_TEST
+    MockArduino::current_millis = MapGPSFilter::OWN_TRACE_MAX_POINTS * 10000;
+#endif
+    gps_fix fix_extra = makeFix(37.7750 + MapGPSFilter::OWN_TRACE_MAX_POINTS * 0.00045,
+                                -122.4195, 10, 1.0, 18.0, true, true, true, 90.0f);
     filter.updateFilteredOwnPosition(fix_extra);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix_extra);
 
     EXPECT_EQ(MapGPSFilter::OWN_TRACE_MAX_POINTS, filter.getOwnTraceCount());
 }
@@ -161,9 +221,9 @@ TEST_F(MapGPSFilterTest, GetUiPosition) {
 }
 
 TEST_F(MapGPSFilterTest, ResetClearsAll) {
-    gps_fix fix = makeFix(37.7750, -122.4195, 7, 1.0, 10.0);
+    gps_fix fix = makeFix(37.7750, -122.4195, 7, 1.0, 10.0, true, true, true, 90.0f);
     filter.updateFilteredOwnPosition(fix);
-    filter.addOwnTracePoint();
+    filter.addOwnTracePoint(fix);
 
     filter.reset();
 
