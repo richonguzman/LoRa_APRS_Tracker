@@ -1,7 +1,7 @@
 # LoRa APRS Tracker - LVGL UI Edition
 
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-ready-orange)
-![Version](https://img.shields.io/badge/version-2.9.1-blue)
+![Version](https://img.shields.io/badge/version-2.9.2-blue)
 ![License](https://img.shields.io/badge/license-GPL-green)
 
 **ESP32-S3 LoRa APRS tracker with modern touchscreen interface for Lilygo T-Deck Plus**
@@ -23,6 +23,10 @@ This is a fork of [CA2RXU's LoRa APRS Tracker](https://github.com/richonguzman/L
 - **HDOP quality indicator** - Satellite count on dashboard shows signal quality: `+` (≤ 2.0), `-` (2-5), `X` (> 5)
 - **Trace z-order fix** - GPS traces now render under station icons
 - **Map module refactoring** - `ui_map_manager.cpp` split into `map_state`, `map_tiles`, `map_render`, `map_input` modules (2247 → 655 lines)
+- **PSRAM cache for GPS traces** - SD trace files are loaded into PSRAM at startup; viewport queries scan RAM instead of SD card, drastically improving map rendering performance
+- **SmartBeacon-like trace compaction** - Replaced recursive Douglas-Peucker algorithm with speed/distance criteria similar to SmartBeacon for more natural trail preservation
+- **CrowPanel Advance 3.5" support** - New display variant with ILI9488 + GT911 touch controller and separate SPI buses
+- **mass_copy utility** - Python script for efficient bulk copying of map tiles to SD card (from IceNav-v3)
 
 ## What's New in v2.8.x
 - **IceNav pan model** - Ported IceNav integer tile pan model: smooth inertia, no visual snap during async render, decoupled visual offset from render cycle
