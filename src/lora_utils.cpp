@@ -41,6 +41,7 @@ static const char *TAG = "LoRa";
 
 bool operationDone   = true;
 bool transmitFlag    = true;
+bool loraInitOk      = false;  // Set true only after successful radio.begin()
 
 // Flags for configuration changes to apply outside ISR
 bool pendingFrequencyChange = false;
@@ -88,6 +89,7 @@ namespace LoRa_Utils {
     }
 
     void processPendingChanges() {
+        if (!loraInitOk) return;
         // Call from main loop, not from ISR
         if (pendingFrequencyChange) {
             pendingFrequencyChange = false;
@@ -289,6 +291,13 @@ namespace LoRa_Utils {
     }
 
     void setup() {
+        #ifdef CROWPANEL_ADVANCE_35
+            // CrowPanel: LoRa module is external and optional.
+            // Skip SPI init entirely if no module — SPI.begin() with LoRa pins
+            // corrupts the bus used by SD/display and SPI.end() won't restore it.
+            ESP_LOGW(TAG, "CrowPanel: LoRa setup skipped (external module not required for UI testing)");
+            return;
+        #endif
         #ifdef LIGHTTRACKER_PLUS_1_0
             pinMode(RADIO_VCC_PIN,OUTPUT);
             digitalWrite(RADIO_VCC_PIN,HIGH);
@@ -312,7 +321,8 @@ namespace LoRa_Utils {
             #endif
         } else {
             ESP_LOGE(TAG, "Starting LoRa failed! State: %d", state);
-            while (true);
+            SPI.end();  // Restore SPI bus before returning
+            return;
         }
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
             radio.setDio1Action(setFlag);
@@ -351,13 +361,15 @@ namespace LoRa_Utils {
 
         if (state == RADIOLIB_ERR_NONE) {
             ESP_LOGI(TAG, "LoRa init done!");
+            loraInitOk = true;
         } else {
-            ESP_LOGE(TAG, "Starting LoRa failed! State: %d", state);
-            while (true);
-        }        
+            ESP_LOGE(TAG, "LoRa config failed! State: %d", state);
+            return;
+        }
     }
 
     void sendNewPacket(const String& newPacket) {
+        if (!loraInitOk) return;
         ESP_LOGI(TAG, "Tx ---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
         ESP_LOGE(TAG,"Send data: %s", newPacket.c_str());
@@ -413,6 +425,7 @@ namespace LoRa_Utils {
 
     ReceivedLoRaPacket receivePacket() {
         ReceivedLoRaPacket receivedLoraPacket;
+        if (!loraInitOk) return receivedLoraPacket;
         String packet = "";
         if (operationDone) {
             operationDone = false;
@@ -440,6 +453,7 @@ namespace LoRa_Utils {
     }
 
     void sleepRadio() {
+        if (!loraInitOk) return;
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         radio.sleep();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);

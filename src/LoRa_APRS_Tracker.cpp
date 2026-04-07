@@ -202,7 +202,9 @@ void setup() {
     #endif
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
-    Utils::i2cScannerForPeripherals();
+    #if !defined(CROWPANEL_ADVANCE_35)
+    Utils::i2cScannerForPeripherals();  // GT911 on CrowPanel crashes on I2C scan
+    #endif
     WX_Utils::setup();
 
     #ifdef BUTTON_PIN

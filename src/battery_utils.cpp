@@ -90,6 +90,9 @@ namespace BATTERY_Utils {
             return (PMU.getBattVoltage() / 1000.0);
         #else
             #ifdef BATTERY_PIN
+                #if BATTERY_PIN == -1
+                return 0.0;
+                #endif
                 int sampleSum = 0;
                 analogRead(BATTERY_PIN);    // Dummy Read
                 delay(1);

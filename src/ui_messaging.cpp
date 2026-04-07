@@ -8,6 +8,7 @@
 
 #include "ui_messaging.h"
 #include "ui_common.h"
+#include "ui_map_manager.h"  // For SCREEN_WIDTH/SCREEN_HEIGHT
 #include "ui_popups.h"
 #include "ui_dashboard.h"
 #include "lvgl_ui.h"
@@ -32,10 +33,6 @@ extern SemaphoreHandle_t spiMutex;
 extern uint32_t lastActivityTime;
 extern bool screenDimmed;
 extern uint8_t screenBrightness;
-
-// Screen dimensions
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
 
 namespace UIMessaging {
 

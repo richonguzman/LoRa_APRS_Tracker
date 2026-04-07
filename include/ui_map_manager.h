@@ -36,14 +36,19 @@ extern SemaphoreHandle_t spiMutex; // Declared extern for SPI bus mutex access
 #define MAP_TILE_SIZE 256
 #define MAP_TILES_GRID     3
 #define MAP_SPRITE_SIZE    (MAP_TILES_GRID * MAP_TILE_SIZE)  // 768 = 3×256
-#define MAP_VISIBLE_WIDTH 320  // Visible area on screen
-#define MAP_VISIBLE_HEIGHT 200
-#define MAP_MARGIN_X  ((MAP_SPRITE_SIZE - SCREEN_WIDTH) / 2)       // 224
-#define MAP_MARGIN_Y  ((MAP_SPRITE_SIZE - MAP_VISIBLE_HEIGHT) / 2) // 284
-
 // Dimensions de l'affichage
+#if defined(CROWPANEL_ADVANCE_35)
+#define SCREEN_WIDTH  480
+#define SCREEN_HEIGHT 320
+#else
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
+#endif
+
+#define MAP_VISIBLE_WIDTH  SCREEN_WIDTH
+#define MAP_VISIBLE_HEIGHT (SCREEN_HEIGHT - 120)  // Reserve space for title+info bars
+#define MAP_MARGIN_X  ((MAP_SPRITE_SIZE - SCREEN_WIDTH) / 2)
+#define MAP_MARGIN_Y  ((MAP_SPRITE_SIZE - MAP_VISIBLE_HEIGHT) / 2)
 
 namespace UIMapManager {
 

@@ -20,8 +20,13 @@
 // Display Constants
 // =============================================================================
 
+#if defined(CROWPANEL_ADVANCE_35)
+#define UI_SCREEN_WIDTH 480
+#define UI_SCREEN_HEIGHT 320
+#else
 #define UI_SCREEN_WIDTH 320
 #define UI_SCREEN_HEIGHT 240
+#endif
 
 // =============================================================================
 // Color Constants (APRS-inspired palette)

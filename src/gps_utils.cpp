@@ -188,10 +188,14 @@ namespace GPS_Utils {
 
     void checkStartUpFrames() {
         if (disableGPS) return;
+        #if defined(CROWPANEL_ADVANCE_35)
+        // Bypass GPS error spam on Crowpanel where module is external and might not be connected
+        return;
+        #endif
         if ((millis() > 10000 && nmeaGPS.statistics.chars < 10)) {
             ESP_LOGE(TAG, "No GPS frames detected! Try to reset the GPS Chip with this "
                         "firmware: https://github.com/richonguzman/TTGO_T_BEAM_GPS_RESET");
-            displayShow("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
+            // displayShow("ERROR", "No GPS frames!", "Reset the GPS Chip", 2000);
         }
     }
 

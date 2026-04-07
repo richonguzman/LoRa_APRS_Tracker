@@ -47,10 +47,6 @@ extern const char *symbolArray[];
 extern const int symbolArraySize;
 extern const uint8_t *symbolsAPRS[];
 
-// Screen dimensions
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
-
 // APRS symbol canvas dimensions
 #define APRS_CANVAS_WIDTH SYMBOL_WIDTH
 #define APRS_CANVAS_HEIGHT SYMBOL_HEIGHT
