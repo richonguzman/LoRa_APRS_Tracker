@@ -9,6 +9,7 @@ class LGFX_TDeck : public lgfx::LGFX_Device
     lgfx::Panel_ST7789 _panel_instance;
     lgfx::Bus_SPI      _bus_instance;
     lgfx::Light_PWM    _light_instance;
+    lgfx::Touch_GT911  _touch_instance;
 
 public:
     LGFX_TDeck(void)
@@ -62,6 +63,26 @@ public:
             _panel_instance.setLight(&_light_instance);
         }
         
+        { // Configure touch (GT911 on T-Deck Plus, auto-detects address 0x14 or 0x5D)
+            auto cfg = _touch_instance.config();
+            cfg.x_min      = 0;
+            cfg.x_max      = 319;
+            cfg.y_min      = 0;
+            cfg.y_max      = 239;
+            cfg.pin_int    = -1;
+            cfg.bus_shared = false;
+            cfg.offset_rotation = 0;
+
+            cfg.i2c_port = 0;
+            cfg.i2c_addr = 0x14;  // LovyanGFX tries both 0x14 and 0x5D automatically
+            cfg.pin_sda  = 18;
+            cfg.pin_scl  = 8;
+            cfg.freq = 400000;
+
+            _touch_instance.config(cfg);
+            _panel_instance.setTouch(&_touch_instance);
+        }
+
         setPanel(&_panel_instance);
     }
 };

@@ -21,36 +21,20 @@
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "touch_utils.h"
+#include "display.h"  // for tft (LovyanGFX)
 
 static const char *TAG = "Touch";
 
 #ifdef HAS_TOUCHSCREEN
 
-    #define TOUCH_MODULES_GT911
-    #include <TouchLib.h>
-
     extern Configuration    Config;
-    extern uint8_t          touchModuleAddress;
-
-    TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
 
     void (*lastCalledAction)() = nullptr;       // keep track of last calledAction from Touch
 
     extern      bool            sendUpdate;
 
-    int16_t     xCalibratedMin  = 5;
-    int16_t     xCalibratedMax  = 314;
-    int16_t     yCalibratedMin  = 6;
-    int16_t     yCalibratedMax  = 233;
-
-    int16_t     xValueMax       = 320;
-    int16_t     yValueMax       = 240;
-
     int         touchDebounce   = 300;
     uint32_t    lastTouchTime   = 0;
-
-    int16_t     xlastValue      = 0;
-    int16_t     ylastValue      = 0;
 
     extern int menuDisplay;
 
@@ -93,31 +77,17 @@ static const char *TAG = "Touch";
         }
 
         void loop() {
-            if (touch.read() && (millis() - lastTouchTime > touchDebounce)) {
-                TP_Point touchPoint = touch.getPoint(0);
-                uint16_t xValueTouched = map(touchPoint.y, xCalibratedMin, xCalibratedMax, 0, xValueMax);   // x and y values are inverted because
-                uint16_t yValueTouched = map(touchPoint.x, yCalibratedMin, yCalibratedMax, 0, yValueMax);   // TFT screen is rotated!!!!
+            uint16_t x, y;
+            if (tft.getTouch(&x, &y) && (millis() - lastTouchTime > touchDebounce)) {
                 lastTouchTime = millis();
-                //Serial.print(" X="); Serial.print(xValueTouched); Serial.print("  Y="); Serial.println(yValueTouched);
-                checkLiveButtons(xValueTouched, yValueTouched);
+                checkLiveButtons(x, y);
             }
             if (millis() - lastTouchTime > 1000) lastCalledAction = nullptr;    // reset touchButton when staying in same menu (like Tx/Send)
         }
 
         void setup() {
-            if (!Config.simplifiedTrackerMode) {
-                if (touchModuleAddress != 0x00) {
-                    if (touchModuleAddress == 0x14) {
-                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
-                        touch.init();
-                    } else if (touchModuleAddress == 0x5d) {
-                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
-                        touch.init();
-                    } else {
-                        ESP_LOGW(TAG, "No Touch Module Address found");
-                    }
-                }
-            }
+            // Touch is initialized natively by LovyanGFX (GT911 configured in LGFX classes)
+            ESP_LOGI(TAG, "Touch managed by LovyanGFX");
         }
 
     }

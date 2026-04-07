@@ -39,7 +39,7 @@ static const char *TAG = "LVGL";
 #include "utils.h"
 #include "wifi_utils.h"
 #include <SD.h> // Added because used for sent messages
-#include <TouchLib.h>
+// Touch handled natively by LovyanGFX (GT911 in LGFX classes)
 #include <Wire.h>
 #include <algorithm> // For std::sort
 #include <freertos/FreeRTOS.h>
@@ -105,25 +105,7 @@ extern int mapStationsCount; // Station counter for the map
 #define LVGL_BUF_SIZE (UI_SCREEN_WIDTH * UI_SCREEN_HEIGHT)
 
 
-// External touch module address (found by I2C scan in utils.cpp)
-extern uint8_t touchModuleAddress;
-
-// Touch controller - static instance, initialized in setup()
-static TouchLib touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
-static bool touchInitialized = false;
-
-// Touch calibration (same as touch_utils.cpp)
-#if defined(CROWPANEL_ADVANCE_35)
-static const int16_t xCalibratedMin = 0;
-static const int16_t xCalibratedMax = 479;
-static const int16_t yCalibratedMin = 0;
-static const int16_t yCalibratedMax = 319;
-#else
-static const int16_t xCalibratedMin = 5;
-static const int16_t xCalibratedMax = 314;
-static const int16_t yCalibratedMin = 6;
-static const int16_t yCalibratedMax = 233;
-#endif
+// Touch is read via tft.getTouch() — LovyanGFX handles GT911 natively
 
 // LVGL display buffer (in PSRAM)
 static lv_disp_draw_buf_t draw_buf;
@@ -171,9 +153,7 @@ static void disp_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
 // Touch read callback
 static uint32_t lastTouchDebug = 0;
 static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
-#if defined(CROWPANEL_ADVANCE_35)
   uint16_t x, y;
-  // LovyanGFX handles touch internally for CrowPanel
   if (tft.getTouch(&x, &y)) {
     data->state = LV_INDEV_STATE_PR;
     data->point.x = x;
@@ -181,64 +161,31 @@ static void touch_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
 
     // Reset activity timer on touch
     lastActivityTime = millis();
-    
-    // Wake up screen if dimmed
-    displaySetBrightness(screenBrightness);
-    if (screenDimmed) {
-      screenDimmed = false;
-      if (lv_scr_act() == MapState::screen_map) {
-        setCpuFrequencyMhz(240);
-        UIMapManager::redraw_map_canvas();
-      }
-      SD_Logger::logScreenState(false);
-    }
-  } else {
-    data->state = LV_INDEV_STATE_REL;
-  }
-#else
-  if (touchInitialized && touch.read()) {
-    TP_Point t = touch.getPoint(0);
-    // X and Y are swapped and Y is inverted because TFT screen is rotated
-    uint16_t x = map(t.y, xCalibratedMin, xCalibratedMax, 0, UI_SCREEN_WIDTH);
-    uint16_t y = UI_SCREEN_HEIGHT -
-                 map(t.x, yCalibratedMin, yCalibratedMax, 0, UI_SCREEN_HEIGHT);
-    data->state = LV_INDEV_STATE_PR;
-    data->point.x = x;
-    data->point.y = y;
 
-    // Reset activity timer on touch
-    lastActivityTime = millis();
-
-    // Wake up screen if dimmed
     // Always reassert backlight on touch — guards against LEDC channel loss
     // (GPIO 42 shared between LovyanGFX Light_PWM and Arduino analogWrite)
     displaySetBrightness(screenBrightness);
-    
+
     if (screenDimmed) {
       screenDimmed = false;
-
-      // Boost CPU to 240 MHz if on map screen
       if (lv_scr_act() == MapState::screen_map) {
         setCpuFrequencyMhz(240);
         ESP_LOGI(TAG, "Screen woken up, CPU boosted to %d MHz (map)",
                       getCpuFrequencyMhz());
-        // Force immediate map redraw centered on current GPS position
         UIMapManager::redraw_map_canvas();
       } else {
         ESP_LOGI(TAG, "Screen woken up by touch");
       }
-      SD_Logger::logScreenState(false); // Log screen active
+      SD_Logger::logScreenState(false);
     }
 
-    // Debug: print touch coordinates
     if (millis() - lastTouchDebug > 500) {
-      ESP_LOGD(TAG, "Touch x=%d y=%d (raw: %d,%d)", x, y, t.x, t.y);
+      ESP_LOGD(TAG, "Touch x=%d y=%d", x, y);
       lastTouchDebug = millis();
     }
   } else {
     data->state = LV_INDEV_STATE_REL;
   }
-#endif
 }
 
 // Note: Setup, Freq, Speed, Callsign, Display, Sound, WiFi, Bluetooth screens
@@ -554,38 +501,12 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       ESP_LOGD(TAG, "Display already initialized by splash screen");
     }
 
-    // Initialize touch input
-#if defined(CROWPANEL_ADVANCE_35)
-    // Crowpanel touch is managed internally by LovyanGFX ILI9488 + GT911 panel configuration
+    // Initialize touch input (GT911 managed natively by LovyanGFX)
     lv_indev_drv_init(&indev_drv);
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = touch_read_cb;
     lv_indev_drv_register(&indev_drv);
-    ESP_LOGI(TAG, "Touch input registered (LGFX internal)");
-#else
-    if (touchModuleAddress != 0x00) {
-      ESP_LOGI(TAG, "Touch module found at 0x%02X",
-                    touchModuleAddress);
-      if (touchModuleAddress == 0x14) {
-        touch =
-            TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
-      } else if (touchModuleAddress == 0x5D) {
-        touch =
-            TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
-      }
-      touch.init();
-      touchInitialized = true;
-
-      // Register LVGL input device
-      lv_indev_drv_init(&indev_drv);
-      indev_drv.type = LV_INDEV_TYPE_POINTER;
-      indev_drv.read_cb = touch_read_cb;
-      lv_indev_drv_register(&indev_drv);
-      ESP_LOGI(TAG, "Touch input registered");
-    } else {
-      ESP_LOGW(TAG, "No touch module detected");
-    }
-#endif
+    ESP_LOGI(TAG, "Touch input registered (LGFX native GT911)");
 
     // Create the UI (dashboard module)
     UIDashboard::createDashboard();
