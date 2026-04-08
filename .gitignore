@@ -34,6 +34,7 @@ docs/ui_map_manager.cpp_orig
 docs/ui_map_manager.cpp_orig_mod_gps
 docs/tasks/
 docs_privees/
+docs/docs_privees/
 
 # Unused source stubs
 include/map_touch_controller.h
