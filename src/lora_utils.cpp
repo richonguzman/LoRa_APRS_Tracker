@@ -292,6 +292,12 @@ namespace LoRa_Utils {
 
     void setup() {
         #ifdef CROWPANEL_ADVANCE_35
+            // Switch IO45 to LOW to activate Wireless Module header instead of internal MIC
+            // IO9 and IO10 are shared between I2S Mic and SPI Radio
+            pinMode(45, OUTPUT);
+            digitalWrite(45, LOW);
+            delay(50); // Small delay for power stabilization
+
             // CrowPanel: LoRa module is external and optional.
             // Skip SPI init entirely if no module — SPI.begin() with LoRa pins
             // corrupts the bus used by SD/display and SPI.end() won't restore it.

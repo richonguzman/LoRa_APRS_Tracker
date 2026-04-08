@@ -44,3 +44,6 @@ src/map_touch_controller.cpp
 # Gemini-generated planning documents (local only)
 docs/tasks/
 TODO.md
+
+# Private documentation (local only)
+docs_privees/

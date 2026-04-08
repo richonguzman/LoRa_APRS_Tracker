@@ -46,7 +46,7 @@ extern SemaphoreHandle_t spiMutex; // Declared extern for SPI bus mutex access
 #endif
 
 #define MAP_VISIBLE_WIDTH  SCREEN_WIDTH
-#define MAP_VISIBLE_HEIGHT (SCREEN_HEIGHT - 120)  // Reserve space for title+info bars
+#define MAP_VISIBLE_HEIGHT (SCREEN_HEIGHT - 60)   // title_bar(35) + info_bar(25) = 60
 #define MAP_MARGIN_X  ((MAP_SPRITE_SIZE - SCREEN_WIDTH) / 2)
 #define MAP_MARGIN_Y  ((MAP_SPRITE_SIZE - MAP_VISIBLE_HEIGHT) / 2)
 
