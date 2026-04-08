@@ -9,7 +9,7 @@ installer/firmware
 installer/*.bin
 **/__pycache__/
 
-# Internal dev documentation
+# Internal dev documentation (local only)
 LVGL_TODO.md
 LVGL_TODO.html
 .aider*
@@ -17,33 +17,24 @@ TOUCH_PAN_ANALYSIS.md
 CLAUDE.md
 METHODOLOGIE.md
 VERSIONING.md
-TOUCH_PAN_ANALYSIS.md
-IceNav-v3/
-docs/ARCHITECTURE.md
-docs/ASYNC_NAV_CORE0.md
-docs/UPDATE_WORKFLOW.html
-docs/REFACTORING_MAP.md
 DEBUG_ASYNC_NAV.md
-
-# Local dev scripts
+IceNav-v3/
+IcENav-V3_reference/
+TODO.md
 update_version.sh
 
-# Pi session and temporary files
+# Docs local only
 docs/*.txt
 docs/*.log
 docs/*.html
 docs/*.kate-swp
-IcENav-V3_reference/
 docs/restored_files/
 docs/restored_prompts/
 docs/ui_map_manager.cpp_orig
 docs/ui_map_manager.cpp_orig_mod_gps
+docs/tasks/
+docs_privees/
+
+# Unused source stubs
 include/map_touch_controller.h
 src/map_touch_controller.cpp
-
-# Gemini-generated planning documents (local only)
-docs/tasks/
-TODO.md
-
-# Private documentation (local only)
-docs_privees/
