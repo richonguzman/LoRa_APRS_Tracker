@@ -175,7 +175,7 @@ void setup() {
         startupScreen(loraIndex, versionDate);
     #endif
 
-    // Storage + Config first: SPIFFS must be ready before WiFi/BLE read Config
+    // Storage + Config after TFT init: SD uses the same SPI bus as display
     #ifdef USE_LVGL_UI
         LVGL_UI::updateInitStatus("Storage...");
     #endif

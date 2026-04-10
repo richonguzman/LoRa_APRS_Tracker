@@ -50,7 +50,12 @@ bool pendingDataRateChange = false;
 int pendingDataRate = -1;
 
 #if defined(HAS_SX1262)
-    SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+    #if defined(CROWPANEL_ADVANCE_35)
+        // CrowPanel shares IO2 for both TFT RST and LoRa RST. Let RadioLib ignore the RST pin.
+        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIOLIB_NC, RADIO_BUSY_PIN);
+    #else
+        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+    #endif
 #endif
 #if defined(HAS_SX1268)
     #if defined(LIGHTTRACKER_PLUS_1_0)
@@ -297,12 +302,6 @@ namespace LoRa_Utils {
             pinMode(45, OUTPUT);
             digitalWrite(45, LOW);
             delay(50); // Small delay for power stabilization
-
-            // CrowPanel: LoRa module is external and optional.
-            // Skip SPI init entirely if no module — SPI.begin() with LoRa pins
-            // corrupts the bus used by SD/display and SPI.end() won't restore it.
-            ESP_LOGW(TAG, "CrowPanel: LoRa setup skipped (external module not required for UI testing)");
-            return;
         #endif
         #ifdef LIGHTTRACKER_PLUS_1_0
             pinMode(RADIO_VCC_PIN,OUTPUT);
@@ -322,6 +321,10 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
             ESP_LOGI(TAG, "Initializing SX126X ...");
+            // Configure DIO2 as not connected (CrowPanel doesn't route it)
+            #if defined(CROWPANEL_ADVANCE_35)
+                radio.setDio2AsRfSwitch(false);
+            #endif
             #else
             ESP_LOGI(TAG, "Initializing SX127X ...");
             #endif

@@ -391,6 +391,16 @@ bool Configuration::readFile() {
             delay(1000);
             ESP.restart();
         }
+
+        // Sanity check for GPIO pins to prevent heap corruption on ESP32
+        // If a garbage value (like 226) got stored, reset it to safe default
+        if (notification.ledTxPin > 48 || notification.ledTxPin < 0) notification.ledTxPin = 13;
+        if (notification.ledMessagePin > 48 || notification.ledMessagePin < 0) notification.ledMessagePin = 2;
+        if (notification.buzzerPinTone > 48 || notification.buzzerPinTone < 0) notification.buzzerPinTone = 33;
+        if (notification.buzzerPinVcc > 48 || notification.buzzerPinVcc < 0) notification.buzzerPinVcc = 25;
+        if (notification.ledFlashlightPin > 48 || notification.ledFlashlightPin < 0) notification.ledFlashlightPin = 14;
+        if (ptt.io_pin > 48 || ptt.io_pin < 0) ptt.io_pin = 4;
+
         ESP_LOGI(TAG, "Config read successfully");
         return true;
     } else {

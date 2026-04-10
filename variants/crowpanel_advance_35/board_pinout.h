@@ -19,6 +19,8 @@
     #define RADIO_CS_PIN        0U  // NSS (0U prevents ambiguity with null pointer)
     #define RADIO_RST_PIN       2   // Shared with TFT_RST
     #define RADIO_DIO1_PIN      1
+    #define RADIO_DIO2_PIN      RADIOLIB_NC  // Not connected on CrowPanel
+    #define RADIO_DIO3_PIN      RADIOLIB_NC  // Not connected on CrowPanel
     #define RADIO_BUSY_PIN      46
 
     //  Display
