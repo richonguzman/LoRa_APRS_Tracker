@@ -89,7 +89,7 @@ namespace WEB_Utils {
     }
 
     void handleReceivedPackets(AsyncWebServerRequest *request) {
-        StaticJsonDocument<2048> data;
+        JsonDocument data;
 
         String buffer;
 
