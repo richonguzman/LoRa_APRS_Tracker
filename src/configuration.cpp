@@ -29,7 +29,7 @@ bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
 
-    StaticJsonDocument<3584> data;
+    JsonDocument data;
     File configFile = SPIFFS.open("/tracker_conf.json", "w");
 
     if (!configFile) {
@@ -138,15 +138,14 @@ bool Configuration::readFile() {
 
     if (configFile) {
         bool needsRewrite = false;
-        StaticJsonDocument<3584> data;
-
+        JsonDocument data;
         DeserializationError error = deserializeJson(data, configFile);
         if (error) {
             Serial.println("Failed to read file, using default configuration");
         }
 
-        if (!data["wifiAP"].containsKey("active") ||
-            !data["wifiAP"].containsKey("password")) needsRewrite = true;
+        if (data["wifiAP"]["active"].isNull() ||
+            data["wifiAP"]["password"].isNull()) needsRewrite = true;
         wifiAP.active               = data["wifiAP"]["active"] | true;
         wifiAP.password             = data["wifiAP"]["password"] | "1234567890";
 
@@ -168,19 +167,19 @@ bool Configuration::readFile() {
             beacons.push_back(bcn);
         }
 
-        if (!data["display"].containsKey("ecoMode") ||
-            !data["display"].containsKey("timeout") ||
-            !data["display"].containsKey("turn180") ||
-            !data["display"].containsKey("showSymbol")) needsRewrite = true;
+        if (data["display"]["ecoMode"].isNull() ||
+            data["display"]["timeout"].isNull() ||
+            data["display"]["turn180"].isNull() ||
+            data["display"]["showSymbol"].isNull()) needsRewrite = true;
         display.ecoMode                 = data["display"]["ecoMode"] | false;
         display.timeout                 = data["display"]["timeout"] | 4;
         display.turn180                 = data["display"]["turn180"] | false;
         display.showSymbol              = data["display"]["showSymbol"] | true;
 
-        if (!data["bluetooth"].containsKey("active") ||
-            !data["bluetooth"].containsKey("deviceName") ||
-            !data["bluetooth"].containsKey("useBLE") ||
-            !data["bluetooth"].containsKey("useKISS")) needsRewrite = true;
+        if (data["bluetooth"]["active"].isNull() ||
+            data["bluetooth"]["deviceName"].isNull() ||
+            data["bluetooth"]["useBLE"].isNull() ||
+            data["bluetooth"]["useKISS"].isNull()) needsRewrite = true;
         bluetooth.active                = data["bluetooth"]["active"] | false;
         bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
         #ifdef HAS_BT_CLASSIC
@@ -203,42 +202,42 @@ bool Configuration::readFile() {
             loraTypes.push_back(loraType);
         }
 
-        if (!data["battery"].containsKey("sendVoltage") ||
-            !data["battery"].containsKey("voltageAsTelemetry") ||
-            !data["battery"].containsKey("sendVoltageAlways") ||
-            !data["battery"].containsKey("monitorVoltage") ||
-            !data["battery"].containsKey("sleepVoltage")) needsRewrite = true;
+        if (data["battery"]["sendVoltage"].isNull() ||
+            data["battery"]["voltageAsTelemetry"].isNull() ||
+            data["battery"]["sendVoltageAlways"].isNull() ||
+            data["battery"]["monitorVoltage"].isNull() ||
+            data["battery"]["sleepVoltage"].isNull()) needsRewrite = true;
         battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
         battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
         battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
         battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
         battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
 
-        if (!data["telemetry"].containsKey("active") ||
-            !data["telemetry"].containsKey("sendTelemetry") ||
-            !data["telemetry"].containsKey("temperatureCorrection")) needsRewrite = true;
+        if (data["telemetry"]["active"].isNull() ||
+            data["telemetry"]["sendTelemetry"].isNull() ||
+            data["telemetry"]["temperatureCorrection"].isNull()) needsRewrite = true;
         telemetry.active                = data["telemetry"]["active"] | false;
         telemetry.sendTelemetry         = data["telemetry"]["sendTelemetry"] | false;
         telemetry.temperatureCorrection = data["telemetry"]["temperatureCorrection"] | 0.0;
 
-        if (!data["winlink"].containsKey("password")) needsRewrite = true;
+        if (data["winlink"]["password"].isNull()) needsRewrite = true;
         winlink.password                = data["winlink"]["password"] | "NOPASS";
 
-        if (!data["notification"].containsKey("ledTx") ||
-            !data["notification"].containsKey("ledTxPin") ||
-            !data["notification"].containsKey("ledMessage") ||
-            !data["notification"].containsKey("ledMessagePin") ||
-            !data["notification"].containsKey("buzzerActive") ||
-            !data["notification"].containsKey("buzzerPinTone") ||
-            !data["notification"].containsKey("buzzerPinVcc") ||
-            !data["notification"].containsKey("bootUpBeep") ||
-            !data["notification"].containsKey("txBeep") ||
-            !data["notification"].containsKey("messageRxBeep") ||
-            !data["notification"].containsKey("stationBeep") ||
-            !data["notification"].containsKey("lowBatteryBeep") ||
-            !data["notification"].containsKey("shutDownBeep") ||
-            !data["notification"].containsKey("ledFlashlight") ||
-            !data["notification"].containsKey("ledFlashlightPin")) needsRewrite = true;
+        if (data["notification"]["ledTx"].isNull() ||
+            data["notification"]["ledTxPin"].isNull() ||
+            data["notification"]["ledMessage"].isNull() ||
+            data["notification"]["ledMessagePin"].isNull() ||
+            data["notification"]["buzzerActive"].isNull() ||
+            data["notification"]["buzzerPinTone"].isNull() ||
+            data["notification"]["buzzerPinVcc"].isNull() ||
+            data["notification"]["bootUpBeep"].isNull() ||
+            data["notification"]["txBeep"].isNull() ||
+            data["notification"]["messageRxBeep"].isNull() ||
+            data["notification"]["stationBeep"].isNull() ||
+            data["notification"]["lowBatteryBeep"].isNull() ||
+            data["notification"]["shutDownBeep"].isNull() ||
+            data["notification"]["ledFlashlight"].isNull() ||
+            data["notification"]["ledFlashlightPin"].isNull()) needsRewrite = true;
         notification.ledTx              = data["notification"]["ledTx"] | false;
         notification.ledTxPin           = data["notification"]["ledTxPin"]| 13;
         notification.ledMessage         = data["notification"]["ledMessage"] | false;
@@ -255,26 +254,26 @@ bool Configuration::readFile() {
         notification.ledFlashlight      = data["notification"]["ledFlashlight"] | false;
         notification.ledFlashlightPin   = data["notification"]["ledFlashlightPin"] | 14;
 
-        if (!data["pttTrigger"].containsKey("active") ||
-            !data["pttTrigger"].containsKey("reverse") ||
-            !data["pttTrigger"].containsKey("preDelay") ||
-            !data["pttTrigger"].containsKey("postDelay") ||
-            !data["pttTrigger"].containsKey("io_pin")) needsRewrite = true;
+        if (data["pttTrigger"]["active"].isNull() ||
+            data["pttTrigger"]["reverse"].isNull() ||
+            data["pttTrigger"]["preDelay"].isNull() ||
+            data["pttTrigger"]["postDelay"].isNull() ||
+            data["pttTrigger"]["io_pin"].isNull()) needsRewrite = true;
         ptt.active                      = data["pttTrigger"]["active"] | false;
         ptt.reverse                     = data["pttTrigger"]["reverse"] | false;
         ptt.preDelay                    = data["pttTrigger"]["preDelay"] | 0;
         ptt.postDelay                   = data["pttTrigger"]["postDelay"] | 0;
         ptt.io_pin                      = data["pttTrigger"]["io_pin"] | 4;
 
-        if (!data["other"].containsKey("simplifiedTrackerMode") ||
-            !data["other"].containsKey("sendCommentAfterXBeacons") ||
-            !data["other"].containsKey("path") ||
-            !data["other"].containsKey("nonSmartBeaconRate") ||
-            !data["other"].containsKey("rememberStationTime") ||
-            !data["other"].containsKey("standingUpdateTime") ||
-            !data["other"].containsKey("sendAltitude") ||
-            !data["other"].containsKey("disableGPS") ||
-            !data["other"].containsKey("email")) needsRewrite = true;
+        if (data["other"]["simplifiedTrackerMode"].isNull() ||
+            data["other"]["sendCommentAfterXBeacons"].isNull() ||
+            data["other"]["path"].isNull() ||
+            data["other"]["nonSmartBeaconRate"].isNull() ||
+            data["other"]["rememberStationTime"].isNull() ||
+            data["other"]["standingUpdateTime"].isNull() ||
+            data["other"]["sendAltitude"].isNull() ||
+            data["other"]["disableGPS"].isNull() ||
+            data["other"]["email"].isNull()) needsRewrite = true;
         simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
         path                            = data["other"]["path"] | "WIDE1-1";

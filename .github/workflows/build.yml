@@ -87,6 +87,11 @@ jobs:
                       chip: esp32
                     - name: ttgo-t-lora32-v2_1_TNC_915
                       chip: esp32
+                    - name: ttgo_lora32_t3s3_v1_2_GPS
+                      chip: esp32s3
+                      flash_size: 4MB
+                      flash_mode: dio
+                      spiffs_offset: "0x310000"
                     - name: ESP32_DIY_LoRa_GPS
                       chip: esp32
                     - name: ESP32_DIY_LoRa_GPS_915
