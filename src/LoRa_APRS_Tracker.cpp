@@ -164,10 +164,6 @@ void setup() {
     #endif
     POWER_Utils::externalPinSetup();
 
-    // Storage + Config first: needed so splash screen respects display.turn180
-    STORAGE_Utils::setup();        // Formats SPIFFS on first boot
-    Config.init();                 // Now SPIFFS is ready, load or create config
-
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
     STATION_Utils::nearStationInit();
@@ -179,6 +175,12 @@ void setup() {
         startupScreen(loraIndex, versionDate);
     #endif
 
+    // Storage + Config first: SPIFFS must be ready before WiFi/BLE read Config
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("Storage...");
+    #endif
+    STORAGE_Utils::setup();        // Formats SPIFFS on first boot
+    Config.init();                 // Now SPIFFS is ready, load or create config
     STORAGE_Utils::loadStats();
 
     // WiFi/BLE: no auto-start at boot — manual activation only via Settings
@@ -200,8 +202,14 @@ void setup() {
     #endif
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("I2C scan...");
+    #endif
     #if !defined(CROWPANEL_ADVANCE_35)
     Utils::i2cScannerForPeripherals();  // GT911 on CrowPanel crashes on I2C scan
+    #endif
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("WX...");
     #endif
     WX_Utils::setup();
 
@@ -210,6 +218,9 @@ void setup() {
     #endif
     #ifdef HAS_JOYSTICK
         JOYSTICK_Utils::setup();
+    #endif
+    #ifdef USE_LVGL_UI
+        LVGL_UI::updateInitStatus("Keyboard...");
     #endif
     KEYBOARD_Utils::setup();
     #ifdef HAS_TOUCHSCREEN

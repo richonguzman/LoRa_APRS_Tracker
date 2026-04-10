@@ -66,9 +66,9 @@ public:
         { // Configure touch (GT911 on T-Deck Plus, auto-detects address 0x14 or 0x5D)
             auto cfg = _touch_instance.config();
             cfg.x_min      = 0;
-            cfg.x_max      = 319;
+            cfg.x_max      = 239;
             cfg.y_min      = 0;
-            cfg.y_max      = 239;
+            cfg.y_max      = 319;
             cfg.pin_int    = -1;
             cfg.bus_shared = false;
             cfg.offset_rotation = 0;

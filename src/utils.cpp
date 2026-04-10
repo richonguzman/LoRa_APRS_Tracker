@@ -153,23 +153,38 @@ namespace Utils {
 
     void i2cScannerForPeripherals() {
         uint8_t err, addr;
+
+        // Telemetry sensor scan (BME280/BME680 at 0x76 or 0x77)
+        // Skip full bus scan when LVGL manages the GT911 touch on the same I2C bus
+        // — scanning 0x14/0x5D while LovyanGFX owns the GT911 causes I2C lockup
         if (Config.telemetry.active) {
-            for (addr = 1; addr < 0x7F; addr++) {
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_2_GPS)
-                    Wire1.beginTransmission(addr);
-                    err = Wire1.endTransmission();
-                #else
-                    Wire.beginTransmission(addr);
-                    err = Wire.endTransmission();
-                #endif
-                if (err == 0) {
-                    //Serial.println(addr); this shows any connected board to I2C
-                    if (addr == 0x76 || addr == 0x77) {
-                        wxModuleAddress = addr;
+            #ifdef USE_LVGL_UI
+                // Probe only BME addresses to avoid GT911 conflict
+                for (uint8_t bmeAddr : {0x76, 0x77}) {
+                    Wire.beginTransmission(bmeAddr);
+                    if (Wire.endTransmission() == 0) {
+                        wxModuleAddress = bmeAddr;
                         ESP_LOGI(TAG, "Wx Module Connected to I2C");
+                        break;
                     }
                 }
-            }
+            #else
+                for (addr = 1; addr < 0x7F; addr++) {
+                    #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_2_GPS)
+                        Wire1.beginTransmission(addr);
+                        err = Wire1.endTransmission();
+                    #else
+                        Wire.beginTransmission(addr);
+                        err = Wire.endTransmission();
+                    #endif
+                    if (err == 0) {
+                        if (addr == 0x76 || addr == 0x77) {
+                            wxModuleAddress = addr;
+                            ESP_LOGI(TAG, "Wx Module Connected to I2C");
+                        }
+                    }
+                }
+            #endif
         }
 
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
@@ -190,14 +205,14 @@ namespace Utils {
                 Wire.beginTransmission(addr);
                 err = Wire.endTransmission();
                 if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
-                    //Serial.println(addr); this shows any connected board to I2C
                     keyboardAddress = addr;
                     ESP_LOGI(TAG, "CARDKB Keyboard Connected to I2C");
                 }
             }
         #endif
 
-        #ifdef HAS_TOUCHSCREEN
+        // Touch scan not needed when LovyanGFX manages the touchscreen natively
+        #if defined(HAS_TOUCHSCREEN) && !defined(USE_LVGL_UI)
             for (addr = 1; addr < 0x7F; addr++) {
                 Wire.beginTransmission(addr);
                 err = Wire.endTransmission();
