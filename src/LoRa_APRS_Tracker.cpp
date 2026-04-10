@@ -162,7 +162,6 @@ void setup() {
     #ifndef USE_LVGL_UI
         displaySetup();  // Skip for LVGL - it does its own TFT init
     #endif
-    POWER_Utils::externalPinSetup();
 
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
@@ -181,6 +180,7 @@ void setup() {
     #endif
     STORAGE_Utils::setup();        // Formats SPIFFS on first boot
     Config.init();                 // Now SPIFFS is ready, load or create config
+    POWER_Utils::externalPinSetup();  // After Config.init — needs valid GPIO pins
     STORAGE_Utils::loadStats();
 
     // WiFi/BLE: no auto-start at boot — manual activation only via Settings

@@ -129,76 +129,65 @@ namespace NOTIFICATION_Utils {
     }
 #endif
 
-    void beaconTxBeep() {
+    static inline void buzzerVccHigh() {
         #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
+            if (Config.notification.buzzerPinVcc >= 0 && Config.notification.buzzerPinVcc <= 48)
+                digitalWrite(Config.notification.buzzerPinVcc, HIGH);
         #endif
+    }
+    static inline void buzzerVccLow() {
+        #ifndef HAS_I2S
+            if (Config.notification.buzzerPinVcc >= 0 && Config.notification.buzzerPinVcc <= 48)
+                digitalWrite(Config.notification.buzzerPinVcc, LOW);
+        #endif
+    }
+
+    void beaconTxBeep() {
+        buzzerVccHigh();
         playTone(1320,100);
         if (digipeaterActive) {
             playTone(1560,100);
         }
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
     void messageBeep() {
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        #endif
+        buzzerVccHigh();
         playTone(1100,100);
         playTone(1100,100);
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
     void stationHeardBeep() {
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        #endif
+        buzzerVccHigh();
         playTone(1200,100);
         playTone(600,100);
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
     void shutDownBeep() {
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        #endif
+        buzzerVccHigh();
         for (int i = 0; i < sizeof(shutDownSound) / sizeof(shutDownSound[0]); i++) {
             playTone(shutDownSound[i], shutDownSoundDuration[i]);
         }
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
     void lowBatteryBeep() {
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        #endif
+        buzzerVccHigh();
         playTone(1550,100);
         playTone(650,100);
         playTone(1550,100);
         playTone(650,100);
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
     void start() {
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, HIGH);
-        #endif
+        buzzerVccHigh();
         for (int i = 0; i < sizeof(startUpSound) / sizeof(startUpSound[0]); i++) {
             playTone(startUpSound[i], startUpSoundDuration[i]);
         }
-        #ifndef HAS_I2S
-            digitalWrite(Config.notification.buzzerPinVcc, LOW);
-        #endif
+        buzzerVccLow();
     }
 
 }

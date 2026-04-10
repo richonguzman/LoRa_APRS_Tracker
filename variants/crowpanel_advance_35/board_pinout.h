@@ -36,9 +36,12 @@
     #define GPS_TX              18 // TODO: Configure for your wiring
     #define GPS_BAUDRATE        9600
 
+    //  Audio
+    #define BUZZER_PIN          8   // Direct PWM buzzer (no VCC pin needed)
+
     //  OTHER
     // Battery measurement is undefined (IO4 is SD_MISO)
-    #define BATTERY_PIN         -1 
+    #define BATTERY_PIN         -1
 
     // SD Card
     #define BOARD_SDCARD_CS     7

@@ -384,11 +384,13 @@ namespace LoRa_Utils {
         ESP_LOGE(TAG,"Send data: %s", newPacket.c_str());
         ESP_LOGD(TAG,"Send data: %s", newPacket.c_str());*/
 
-        if (Config.ptt.active) {
+        if (Config.ptt.active && Config.ptt.io_pin >= 0 && Config.ptt.io_pin <= 48) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
         }
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
+        if (Config.notification.ledTx && Config.notification.ledTxPin >= 0 && Config.notification.ledTxPin <= 48) {
+            digitalWrite(Config.notification.ledTxPin, HIGH);
+        }
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
         // Acquire SPI mutex — SD card shares the same SPI bus
@@ -401,9 +403,11 @@ namespace LoRa_Utils {
         } else {
             ESP_LOGE(TAG, "Tx failed, code %d", state);
         }
-        
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
-        if (Config.ptt.active) {
+
+        if (Config.notification.ledTx && Config.notification.ledTxPin >= 0 && Config.notification.ledTxPin <= 48) {
+            digitalWrite(Config.notification.ledTxPin, LOW);
+        }
+        if (Config.ptt.active && Config.ptt.io_pin >= 0 && Config.ptt.io_pin <= 48) {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }

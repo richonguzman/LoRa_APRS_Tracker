@@ -225,49 +225,65 @@ namespace POWER_Utils {
     }
 
     void externalPinSetup() {
+        #ifdef CROWPANEL_ADVANCE_35
+            // CrowPanel: buzzer on IO8, no LEDs or PTT
+            Config.notification.buzzerPinTone = 8;
+            Config.notification.buzzerPinVcc = -1;  // No VCC pin, buzzer driven directly
+            Config.notification.ledTx = false;
+            Config.notification.ledMessage = false;
+            Config.notification.ledFlashlight = false;
+            Config.ptt.active = false;
+        #endif
+        ESP_LOGI(TAG, "Pin setup: buzzerTone=%d buzzerVcc=%d ledTx=%d ledMsg=%d ptt=%d",
+                 Config.notification.buzzerPinTone, Config.notification.buzzerPinVcc,
+                 Config.notification.ledTxPin, Config.notification.ledMessagePin,
+                 Config.ptt.io_pin);
         #ifdef HAS_I2S
             // T-Deck Plus uses I2S speaker, no GPIO buzzer pins needed
             if (Config.notification.buzzerActive && Config.notification.bootUpBeep) {
                 NOTIFICATION_Utils::start();
             }
         #else
-            if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinVcc >= 0) {
+            if (Config.notification.buzzerActive && Config.notification.buzzerPinTone >= 0 && Config.notification.buzzerPinTone <= 48) {
                 pinMode(Config.notification.buzzerPinTone, OUTPUT);
-                pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+                if (Config.notification.buzzerPinVcc >= 0 && Config.notification.buzzerPinVcc <= 48) {
+                    pinMode(Config.notification.buzzerPinVcc, OUTPUT);
+                }
                 if (Config.notification.bootUpBeep) NOTIFICATION_Utils::start();
-            } else if (Config.notification.buzzerActive && (Config.notification.buzzerPinTone < 0 || Config.notification.buzzerPinVcc < 0)) {
-                ESP_LOGW(TAG, "Buzzer Pins not defined");
-                while (1);
+            } else if (Config.notification.buzzerActive) {
+                ESP_LOGW(TAG, "Buzzer tone pin invalid (%d), disabling",
+                         Config.notification.buzzerPinTone);
+                Config.notification.buzzerActive = false;
             }
         #endif
 
-        if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
+        if (Config.notification.ledTx && Config.notification.ledTxPin >= 0 && Config.notification.ledTxPin <= 48) {
             pinMode(Config.notification.ledTxPin, OUTPUT);
-        } else if (Config.notification.ledTx && Config.notification.ledTxPin < 0) {
-            ESP_LOGW(TAG, "Led Tx Pin not defined");
-            while (1);
+        } else if (Config.notification.ledTx) {
+            ESP_LOGW(TAG, "Led Tx Pin invalid (%d), disabling", Config.notification.ledTxPin);
+            Config.notification.ledTx = false;
         }
 
-        if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
+        if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0 && Config.notification.ledMessagePin <= 48) {
             pinMode(Config.notification.ledMessagePin, OUTPUT);
-        } else if (Config.notification.ledMessage && Config.notification.ledMessagePin < 0) {
-            ESP_LOGW(TAG, "Led Message Pin not defined");
-            while (1);
+        } else if (Config.notification.ledMessage) {
+            ESP_LOGW(TAG, "Led Message Pin invalid (%d), disabling", Config.notification.ledMessagePin);
+            Config.notification.ledMessage = false;
         }
 
-        if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
+        if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0 && Config.notification.ledFlashlightPin <= 48) {
             pinMode(Config.notification.ledFlashlightPin, OUTPUT);
-        } else if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin < 0) {
-            ESP_LOGW(TAG, "Led Flashlight Pin not defined");
-            while (1);
+        } else if (Config.notification.ledFlashlight) {
+            ESP_LOGW(TAG, "Led Flashlight Pin invalid (%d), disabling", Config.notification.ledFlashlightPin);
+            Config.notification.ledFlashlight = false;
         }
 
-        if (Config.ptt.active && Config.ptt.io_pin >= 0) {
+        if (Config.ptt.active && Config.ptt.io_pin >= 0 && Config.ptt.io_pin <= 48) {
             pinMode(Config.ptt.io_pin, OUTPUT);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
-        } else if (Config.ptt.active && Config.ptt.io_pin < 0) {
-            ESP_LOGW(TAG, "PTT Pin not defined");
-            while (1);
+        } else if (Config.ptt.active) {
+            ESP_LOGW(TAG, "PTT Pin invalid (%d), disabling", Config.ptt.io_pin);
+            Config.ptt.active = false;
         }
     }
 
