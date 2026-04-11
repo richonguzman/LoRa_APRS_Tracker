@@ -347,7 +347,7 @@ namespace LoRa_Utils {
             radio.XTAL = true;
         #endif
         #if defined(CROWPANEL_ADVANCE_35)
-            int state = radio.begin(freq);
+            int state = radio.begin(freq, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 3.3);
         #else
             int state = radio.begin(freq);
         #endif
@@ -355,8 +355,6 @@ namespace LoRa_Utils {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
             ESP_LOGI(TAG, "Initializing SX126X ...");
             #if defined(CROWPANEL_ADVANCE_35)
-                // HT-RA62: TCXO via DIO3 (3.3V, 5ms stabilization) + RF switch via DIO2
-                radio.setTCXO(3.3, 5000);
                 radio.setDio2AsRfSwitch(true);
             #endif
             #else
@@ -409,6 +407,7 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             loraInitOk = true;
 
+            #if defined(CROWPANEL_ADVANCE_35)
             // DIAGNOSTIC: probe SPI health over time
             for (int i = 0; i < 6; i++) {
                 int16_t st = radio.standby();
@@ -417,14 +416,15 @@ namespace LoRa_Utils {
                 if (i < 5) delay(500);
             }
 
-            radio.startReceive();
+            // DIAGNOSTIC: test XOSC standby mode before TX
+            {
+                int16_t xoscState = radio.standby(RADIOLIB_SX126X_STANDBY_XOSC);
+                delay(10);
+                ESP_LOGW(TAG, "DIAG-XOSC: standby(XOSC)=%d BUSY=%d", xoscState, digitalRead(RADIO_BUSY_PIN));
+            }
 
-            // DIAGNOSTIC: probe SPI immediately after startReceive()
-            int16_t postRx = radio.standby();
-            ESP_LOGW(TAG, "DIAG-postRX: standby()=%d BUSY=%d (immediately after startReceive)", postRx, digitalRead(RADIO_BUSY_PIN));
-
-            // DIAGNOSTIC: non-blocking TX — bypass DIO1 polling, check IRQ via SPI
-            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit (non-blocking)...");
+            // DIAGNOSTIC: TX direct depuis STANDBY (pas de startReceive avant)
+            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit from STANDBY...");
             uint8_t testData[] = "TEST1234";
             int16_t txStart = radio.startTransmit(testData, 8);
             ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit()=%d BUSY=%d DIO1=%d", txStart, digitalRead(RADIO_BUSY_PIN), digitalRead(RADIO_DIO1_PIN));
@@ -443,13 +443,35 @@ namespace LoRa_Utils {
                 }
                 if (irq == 0) {
                     ESP_LOGE(TAG, "DIAG-TX-TEST: timeout 5s, IRQ still 0x0000 DIO1=%d BUSY=%d", digitalRead(RADIO_DIO1_PIN), digitalRead(RADIO_BUSY_PIN));
+                    // Read device errors via raw SPI (getDeviceErrors() is protected)
+                    // SX1262 SPI frame: [CMD] [NOP→status] [NOP→errHi] [NOP→errLo]
+                    {
+                        while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+                        loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+                        digitalWrite(RADIO_CS_PIN, LOW);
+                        loraSPI.transfer(0x17);  // CMD_GET_DEVICE_ERRORS → RFU
+                        uint8_t status = loraSPI.transfer(0x00);  // NOP → status
+                        uint8_t err_hi = loraSPI.transfer(0x00);  // NOP → errors[15:8]
+                        uint8_t err_lo = loraSPI.transfer(0x00);  // NOP → errors[7:0]
+                        digitalWrite(RADIO_CS_PIN, HIGH);
+                        loraSPI.endTransaction();
+                        uint16_t errors = ((uint16_t)err_hi << 8) | err_lo;
+                        ESP_LOGE(TAG, "DIAG-TX-TEST: deviceErrors=0x%04X status=0x%02X (RC64K=%d RC13M=%d PLL_CAL=%d ADC=%d IMG=%d XOSC=%d PLL_LOCK=%d PA_RAMP=%d)",
+                            errors, status,
+                            (errors >> 0) & 1, (errors >> 1) & 1, (errors >> 2) & 1, (errors >> 3) & 1,
+                            (errors >> 4) & 1, (errors >> 5) & 1, (errors >> 6) & 1, (errors >> 7) & 1);
+                    }
                 }
                 radio.clearIrqFlags(0xFFFF);
-                radio.standby();
             }
             // IRQ bits: 0x0001=TX_DONE, 0x0002=RX_DONE, 0x0200=TIMEOUT
+            #endif
 
+            radio.startReceive();
+
+            #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
             loraSpiEnd();  // Restore SD GPIO mapping — LoRa setup done
+            #endif
             operationDone = false;  // No pending operation yet — avoid spurious readData()
             transmitFlag = false;   // We're in RX mode, not post-TX
             ESP_LOGI(TAG, "LoRa init done! BUSY=%d", digitalRead(RADIO_BUSY_PIN));
