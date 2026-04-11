@@ -329,6 +329,11 @@ namespace LoRa_Utils {
             digitalWrite(RADIO_VCC_PIN,HIGH);
         #endif
         ESP_LOGD(TAG, "Set SPI pins!");
+        #if defined(CROWPANEL_ADVANCE_35)
+            // GPIO45 LOW = enable LoRa module (factory firmware: digitalWrite(45, LOW))
+            pinMode(45, OUTPUT);
+            digitalWrite(45, LOW);
+        #endif
         #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
             loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN);
         #else
