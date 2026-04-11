@@ -47,7 +47,7 @@ static const char *TAG = "LoRa";
 // LoRa gets a dedicated SPIClass on HSPI — pin reconfiguration via loraSpiBegin()
 // before each LoRa operation (spiMutex protects against SD contention).
 #if defined(CROWPANEL_ADVANCE_35)
-    SPIClass loraSPI(HSPI);
+    SPIClass loraSPI(FSPI);  // DIAGNOSTIC: try FSPI like factory firmware (was HSPI)
 #endif
 static inline void loraSpiBegin() {
     // DIAGNOSTIC: no-op — HSPI stays on LoRa pins from setup
