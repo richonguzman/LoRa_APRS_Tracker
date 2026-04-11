@@ -69,7 +69,7 @@ int pendingDataRate = -1;
 #if defined(HAS_SX1262)
     #if defined(CROWPANEL_ADVANCE_35)
         // CrowPanel: LoRa on HSPI, display on FSPI. IO2 shared with TFT RST — managed manually.
-        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN, loraSPI);  // DIAG: pass RST like Meshtastic
+        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIOLIB_NC, RADIO_BUSY_PIN, loraSPI);
     #else
         SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
     #endif
@@ -340,8 +340,14 @@ namespace LoRa_Utils {
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
         #endif
         float freq = (float)currentLoRaType->frequency/1000000;
-        // CrowPanel: RST (IO2) now passed to RadioLib — it handles reset internally
-        // Display will glitch but we're testing if proper reset fixes TX
+        #if defined(CROWPANEL_ADVANCE_35)
+            // Manual hardware reset with RadioLib timing (10ms+10ms)
+            pinMode(RADIO_RST_PIN, OUTPUT);
+            digitalWrite(RADIO_RST_PIN, LOW);
+            delay(10);
+            digitalWrite(RADIO_RST_PIN, HIGH);
+            delay(10);
+        #endif
         #if defined(RADIO_HAS_XTAL)
             radio.XTAL = true;
         #endif
