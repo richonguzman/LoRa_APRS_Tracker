@@ -158,6 +158,17 @@ void setup() {
         digitalWrite(BOARD_BL_PIN, LOW);
     #endif
 
+    // CrowPanel: IO2 is shared between TFT RST and LoRa RST.
+    // Reset SX1262 NOW (before TFT init) so RadioLib doesn't need to pulse IO2 later.
+    #if defined(CROWPANEL_ADVANCE_35)
+        pinMode(RADIO_RST_PIN, OUTPUT);
+        digitalWrite(RADIO_RST_PIN, LOW);
+        delay(10);
+        digitalWrite(RADIO_RST_PIN, HIGH);
+        delay(20);
+        ESP_LOGI(TAG, "SX1262 pre-reset done on IO%d", RADIO_RST_PIN);
+    #endif
+
     POWER_Utils::setup();
     #ifndef USE_LVGL_UI
         displaySetup();  // Skip for LVGL - it does its own TFT init
@@ -202,6 +213,12 @@ void setup() {
     #endif
     currentLoRaType = &Config.loraTypes[loraIndex];
     LoRa_Utils::setup();
+    // CrowPanel: ensure IO2 (shared TFT RST / LoRa NRESET) stays HIGH after LoRa init
+    #if defined(CROWPANEL_ADVANCE_35)
+        pinMode(RADIO_RST_PIN, OUTPUT);
+        digitalWrite(RADIO_RST_PIN, HIGH);
+        ESP_LOGD(TAG, "IO2 forced HIGH after LoRa init, BUSY=%d", digitalRead(RADIO_BUSY_PIN));
+    #endif
     #ifdef USE_LVGL_UI
         LVGL_UI::updateInitStatus("I2C scan...");
     #endif
@@ -253,11 +270,13 @@ void setup() {
     esp_task_wdt_add(NULL);       // Add current task to watchdog
     ESP_LOGI(TAG, "Watchdog initialized (30s timeout)");
 
-    ESP_LOGI(TAG, "Setup Done!");
+    ESP_LOGI(TAG, "Setup Done! BUSY=%d", digitalRead(RADIO_BUSY_PIN));
 
     // Lower CPU frequency for power saving in normal operation
     // Map screen will boost back to 240MHz when needed
-    POWER_Utils::lowerCpuFrequency();
+    // DIAGNOSTIC: disabled to test if CPU freq change breaks LoRa SPI
+    // POWER_Utils::lowerCpuFrequency();
+    ESP_LOGD(TAG, "CPU freq unchanged (diagnostic): BUSY=%d", digitalRead(RADIO_BUSY_PIN));
 
     menuDisplay = 0;
 }
@@ -299,6 +318,15 @@ void loop() {
 
     // Process pending LoRa configuration changes (from ISR)
     LoRa_Utils::processPendingChanges();
+
+    {
+        static bool busyLogged = false;
+        int b = digitalRead(RADIO_BUSY_PIN);
+        if (b == 1 && !busyLogged) {
+            ESP_LOGW(TAG, "BUSY went HIGH at %lu ms, RST(IO2)=%d", millis(), digitalRead(RADIO_RST_PIN));
+            busyLogged = true;
+        }
+    }
 
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
 

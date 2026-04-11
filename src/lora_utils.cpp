@@ -19,6 +19,10 @@
 #include <esp_log.h>
 #include <RadioLib.h>
 #include <SPI.h>
+#if defined(CROWPANEL_ADVANCE_35)
+#include "esp32-hal-matrix.h"   // pinMatrixOutAttach/InAttach for GPIO matrix remapping
+#include "soc/gpio_sig_map.h"   // SPI3_CLK_OUT_IDX, SPI3_D_IN_IDX, SPI3_Q_OUT_IDX
+#endif
 #include <freertos/semphr.h>
 #include "notification_utils.h"
 #include "configuration.h"
@@ -39,6 +43,19 @@ extern SemaphoreHandle_t spiMutex;
 
 static const char *TAG = "LoRa";
 
+// CrowPanel: display owns FSPI (SPI2_HOST), SD owns HSPI (SPI3_HOST) at boot.
+// LoRa gets a dedicated SPIClass on HSPI — pin reconfiguration via loraSpiBegin()
+// before each LoRa operation (spiMutex protects against SD contention).
+#if defined(CROWPANEL_ADVANCE_35)
+    SPIClass loraSPI(HSPI);
+#endif
+static inline void loraSpiBegin() {
+    // DIAGNOSTIC: no-op — HSPI stays on LoRa pins from setup
+}
+static inline void loraSpiEnd() {
+    // DIAGNOSTIC: no-op — SD will be broken but LoRa TX/RX should work
+}
+
 bool operationDone   = true;
 bool transmitFlag    = true;
 bool loraInitOk      = false;  // Set true only after successful radio.begin()
@@ -51,8 +68,8 @@ int pendingDataRate = -1;
 
 #if defined(HAS_SX1262)
     #if defined(CROWPANEL_ADVANCE_35)
-        // CrowPanel shares IO2 for both TFT RST and LoRa RST. Let RadioLib ignore the RST pin.
-        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIOLIB_NC, RADIO_BUSY_PIN);
+        // CrowPanel: LoRa on HSPI, display on FSPI. IO2 shared with TFT RST — managed manually.
+        SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIOLIB_NC, RADIO_BUSY_PIN, loraSPI);
     #else
         SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
     #endif
@@ -210,10 +227,12 @@ namespace LoRa_Utils {
 
         // Reconfigure radio with new parameters
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
         radio.setSpreadingFactor(config.spreadingFactor);
         radio.setCodingRate(config.codingRate4);
         float signalBandwidth = config.signalBandwidth / 1000;
         radio.setBandwidth(signalBandwidth);
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
 
         ESP_LOGI(TAG, "Data Rate changed to %d bps (SF%d, CR4/%d)",
@@ -253,6 +272,7 @@ namespace LoRa_Utils {
 
         float freq = (float)currentLoRaType->frequency/1000000;
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
         radio.setFrequency(freq);
         radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
         float signalBandwidth = currentLoRaType->signalBandwidth/1000;
@@ -264,6 +284,7 @@ namespace LoRa_Utils {
         #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
         #endif
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
 
         String loraCountryFreq;
@@ -308,29 +329,46 @@ namespace LoRa_Utils {
             digitalWrite(RADIO_VCC_PIN,HIGH);
         #endif
         ESP_LOGD(TAG, "Set SPI pins!");
-        #if defined(LIGHTTRACKER_PLUS_1_0)
+        #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
             loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN);
         #else
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);
         #endif
         float freq = (float)currentLoRaType->frequency/1000000;
+        #if defined(CROWPANEL_ADVANCE_35)
+            // Manual hardware reset — RadioLib can't use IO2 (shared with TFT_RST)
+            pinMode(RADIO_RST_PIN, OUTPUT);
+            digitalWrite(RADIO_RST_PIN, LOW);
+            delay(1);
+            digitalWrite(RADIO_RST_PIN, HIGH);
+            delay(5);
+        #endif
         #if defined(RADIO_HAS_XTAL)
             radio.XTAL = true;
         #endif
-        int state = radio.begin(freq);
+        #if defined(CROWPANEL_ADVANCE_35)
+            int state = radio.begin(freq);
+        #else
+            int state = radio.begin(freq);
+        #endif
         if (state == RADIOLIB_ERR_NONE) {
             #if defined(HAS_SX1262) || defined(HAS_SX1268)
             ESP_LOGI(TAG, "Initializing SX126X ...");
-            // Configure DIO2 as not connected (CrowPanel doesn't route it)
             #if defined(CROWPANEL_ADVANCE_35)
-                radio.setDio2AsRfSwitch(false);
+                // HT-RA62: TCXO via DIO3 (3.3V, 5ms stabilization) + RF switch via DIO2
+                radio.setTCXO(3.3, 5000);
+                radio.setDio2AsRfSwitch(true);
             #endif
             #else
             ESP_LOGI(TAG, "Initializing SX127X ...");
             #endif
         } else {
             ESP_LOGE(TAG, "Starting LoRa failed! State: %d", state);
-            SPI.end();  // Restore SPI bus before returning
+            #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
+                loraSpiEnd();
+            #else
+                SPI.end();
+            #endif
             return;
         }
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
@@ -369,10 +407,55 @@ namespace LoRa_Utils {
         #endif
 
         if (state == RADIOLIB_ERR_NONE) {
-            ESP_LOGI(TAG, "LoRa init done!");
             loraInitOk = true;
+
+            // DIAGNOSTIC: probe SPI health over time
+            for (int i = 0; i < 6; i++) {
+                int16_t st = radio.standby();
+                ESP_LOGW(TAG, "DIAG[%d] standby=%d BUSY=%d IO45=%d IO2=%d",
+                    i, st, digitalRead(RADIO_BUSY_PIN), digitalRead(45), digitalRead(RADIO_RST_PIN));
+                if (i < 5) delay(500);
+            }
+
+            radio.startReceive();
+
+            // DIAGNOSTIC: probe SPI immediately after startReceive()
+            int16_t postRx = radio.standby();
+            ESP_LOGW(TAG, "DIAG-postRX: standby()=%d BUSY=%d (immediately after startReceive)", postRx, digitalRead(RADIO_BUSY_PIN));
+
+            // DIAGNOSTIC: non-blocking TX — bypass DIO1 polling, check IRQ via SPI
+            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit (non-blocking)...");
+            uint8_t testData[] = "TEST1234";
+            int16_t txStart = radio.startTransmit(testData, 8);
+            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit()=%d BUSY=%d DIO1=%d", txStart, digitalRead(RADIO_BUSY_PIN), digitalRead(RADIO_DIO1_PIN));
+
+            if (txStart == RADIOLIB_ERR_NONE) {
+                // Poll IRQ flags via SPI for up to 5 seconds
+                uint32_t txStartMs = millis();
+                uint32_t irq = 0;
+                while (millis() - txStartMs < 5000) {
+                    irq = radio.getIrqFlags();
+                    if (irq != 0) {
+                        ESP_LOGW(TAG, "DIAG-TX-TEST: IRQ=0x%04X after %lums DIO1=%d", irq, millis() - txStartMs, digitalRead(RADIO_DIO1_PIN));
+                        break;
+                    }
+                    delay(10);
+                }
+                if (irq == 0) {
+                    ESP_LOGE(TAG, "DIAG-TX-TEST: timeout 5s, IRQ still 0x0000 DIO1=%d BUSY=%d", digitalRead(RADIO_DIO1_PIN), digitalRead(RADIO_BUSY_PIN));
+                }
+                radio.clearIrqFlags(0xFFFF);
+                radio.standby();
+            }
+            // IRQ bits: 0x0001=TX_DONE, 0x0002=RX_DONE, 0x0200=TIMEOUT
+
+            loraSpiEnd();  // Restore SD GPIO mapping — LoRa setup done
+            operationDone = false;  // No pending operation yet — avoid spurious readData()
+            transmitFlag = false;   // We're in RX mode, not post-TX
+            ESP_LOGI(TAG, "LoRa init done! BUSY=%d", digitalRead(RADIO_BUSY_PIN));
         } else {
             ESP_LOGE(TAG, "LoRa config failed! State: %d", state);
+            loraSpiEnd();
             return;
         }
     }
@@ -384,6 +467,8 @@ namespace LoRa_Utils {
         ESP_LOGE(TAG,"Send data: %s", newPacket.c_str());
         ESP_LOGD(TAG,"Send data: %s", newPacket.c_str());*/
 
+        ESP_LOGD(TAG, "TX: BUSY=%d at entry", digitalRead(RADIO_BUSY_PIN));
+
         if (Config.ptt.active && Config.ptt.io_pin >= 0 && Config.ptt.io_pin <= 48) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
@@ -394,9 +479,17 @@ namespace LoRa_Utils {
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
         // Acquire SPI mutex — SD card shares the same SPI bus
+        ESP_LOGD(TAG, "TX: BUSY=%d after beep", digitalRead(RADIO_BUSY_PIN));
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
+
+        // DIAGNOSTIC: probe SPI health while radio is in RX mode (before transmit calls standby)
+        int16_t probeStby = radio.standby();
+        ESP_LOGW(TAG, "DIAG-TX: standby()=%d BUSY=%d before transmit()", probeStby, digitalRead(RADIO_BUSY_PIN));
+
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         if (state == RADIOLIB_ERR_NONE) {
             STORAGE_Utils::updateTxStats();
@@ -415,7 +508,9 @@ namespace LoRa_Utils {
 
     void wakeRadio() {
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
         radio.startReceive();
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
     }
 
@@ -423,6 +518,7 @@ namespace LoRa_Utils {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
         int state = radio.readData(packet);
         if (state == RADIOLIB_ERR_NONE) {
             receivedLoraPacket.text       = packet;
@@ -432,6 +528,7 @@ namespace LoRa_Utils {
         } else {
             //
         }
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         return receivedLoraPacket;
     }
@@ -441,13 +538,16 @@ namespace LoRa_Utils {
         if (!loraInitOk) return receivedLoraPacket;
         String packet = "";
         if (operationDone) {
+            ESP_LOGW(TAG, "operationDone=true, transmitFlag=%d, BUSY=%d", transmitFlag, digitalRead(RADIO_BUSY_PIN));
             operationDone = false;
             if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+            loraSpiBegin();
             if (transmitFlag) {
                 radio.startReceive();
                 transmitFlag = false;
             } else {
                 int state = radio.readData(packet);
+                ESP_LOGD(TAG, "readData state=%d, BUSY=%d", state, digitalRead(RADIO_BUSY_PIN));
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
                         ESP_LOGI(TAG, "Rx ---> %s", packet.substring(3).c_str());
@@ -460,6 +560,7 @@ namespace LoRa_Utils {
                     ESP_LOGE(TAG, "Rx failed, code %d", state);  // 7 = CRC mismatch
                 }
             }
+            loraSpiEnd();
             if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         }
         return receivedLoraPacket;
@@ -468,7 +569,9 @@ namespace LoRa_Utils {
     void sleepRadio() {
         if (!loraInitOk) return;
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
+        loraSpiBegin();
         radio.sleep();
+        loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
     }
 

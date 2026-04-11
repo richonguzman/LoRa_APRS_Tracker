@@ -37,7 +37,7 @@ public:
         {
             auto cfg = _panel_instance.config();
             cfg.pin_cs           = 40;
-            cfg.pin_rst          = 2;
+            cfg.pin_rst          = -1;  // IO2 shared with LoRa NRESET — managed manually at boot
             cfg.pin_busy         = -1;
             cfg.memory_width     = 320;
             cfg.memory_height    = 480;

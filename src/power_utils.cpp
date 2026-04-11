@@ -230,9 +230,13 @@ namespace POWER_Utils {
             Config.notification.buzzerPinTone = 8;
             Config.notification.buzzerPinVcc = -1;  // No VCC pin, buzzer driven directly
             Config.notification.ledTx = false;
+            Config.notification.ledTxPin = -1;       // No LED on CrowPanel
             Config.notification.ledMessage = false;
+            Config.notification.ledMessagePin = -1;  // IO2 is LoRa NRESET — must not be used as LED!
             Config.notification.ledFlashlight = false;
+            Config.notification.ledFlashlightPin = -1;
             Config.ptt.active = false;
+            Config.ptt.io_pin = -1;
         #endif
         ESP_LOGI(TAG, "Pin setup: buzzerTone=%d buzzerVcc=%d ledTx=%d ledMsg=%d ptt=%d",
                  Config.notification.buzzerPinTone, Config.notification.buzzerPinVcc,
