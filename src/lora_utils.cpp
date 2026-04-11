@@ -497,8 +497,56 @@ namespace LoRa_Utils {
                 ESP_LOGW(TAG, "DIAG-XOSC: errors after standby(XOSC)=0x%04X (XOSC=%d)", xoscErr, (xoscErr >> 5) & 1);
             }
 
-            // DIAGNOSTIC: TX direct depuis STANDBY (pas de startReceive avant)
-            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit from STANDBY (after TCXO recfg)...");
+            // DIAGNOSTIC: test FS mode (PLL lock without PA) — isolates PA vs XOSC issue
+            {
+                // Clear errors first
+                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+                digitalWrite(RADIO_CS_PIN, LOW);
+                loraSPI.transfer(0x07); loraSPI.transfer(0x00); loraSPI.transfer(0x00);
+                digitalWrite(RADIO_CS_PIN, HIGH);
+                loraSPI.endTransaction();
+
+                // SetFs (0xC1) — enters frequency synthesis mode, PLL locks, no PA
+                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+                digitalWrite(RADIO_CS_PIN, LOW);
+                loraSPI.transfer(0xC1);  // CMD_SET_FS
+                digitalWrite(RADIO_CS_PIN, HIGH);
+                loraSPI.endTransaction();
+                delay(500);
+
+                // Read status + errors
+                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+                digitalWrite(RADIO_CS_PIN, LOW);
+                uint8_t fsStatus = loraSPI.transfer(0xC0);
+                digitalWrite(RADIO_CS_PIN, HIGH);
+                loraSPI.endTransaction();
+
+                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+                digitalWrite(RADIO_CS_PIN, LOW);
+                loraSPI.transfer(0x17);
+                uint8_t fss = loraSPI.transfer(0x00);
+                uint8_t feh = loraSPI.transfer(0x00);
+                uint8_t fel = loraSPI.transfer(0x00);
+                digitalWrite(RADIO_CS_PIN, HIGH);
+                loraSPI.endTransaction();
+                uint16_t fsErr = ((uint16_t)feh << 8) | fel;
+                uint8_t fsMode = (fsStatus >> 4) & 0x07;
+                ESP_LOGW(TAG, "DIAG-FS: status=0x%02X mode=%d (%s) errors=0x%04X (XOSC=%d PLL=%d)",
+                    fsStatus, fsMode,
+                    fsMode == 2 ? "STBY_RC" : fsMode == 3 ? "STBY_XOSC" : fsMode == 4 ? "FS" : fsMode == 5 ? "RX" : fsMode == 6 ? "TX" : "?",
+                    fsErr, (fsErr >> 5) & 1, (fsErr >> 6) & 1);
+
+                // Back to standby for TX test
+                radio.standby();
+            }
+
+            // DIAGNOSTIC: TX at minimum power to reduce PA current draw
+            radio.setOutputPower(-9);
+            ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit at -9dBm from STANDBY (after TCXO recfg)...");
             uint8_t testData[] = "TEST1234";
             int16_t txStart = radio.startTransmit(testData, 8);
             ESP_LOGW(TAG, "DIAG-TX-TEST: startTransmit()=%d BUSY=%d DIO1=%d (after TCXO 1s timeout)", txStart, digitalRead(RADIO_BUSY_PIN), digitalRead(RADIO_DIO1_PIN));
