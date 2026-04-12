@@ -666,7 +666,7 @@ namespace LoRa_Utils {
             #endif  // raw SPI diags
             #endif  // CROWPANEL_ADVANCE_35
 
-            radio.startReceive();
+            radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);  // single-shot: after RX_DONE, radio goes STBY, BUSY=0 guaranteed
 
             #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
             loraSpiEnd();  // Restore SD GPIO mapping — LoRa setup done
@@ -730,7 +730,7 @@ namespace LoRa_Utils {
     void wakeRadio() {
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         loraSpiBegin();
-        radio.startReceive();
+        radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);
         loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
     }
@@ -764,10 +764,17 @@ namespace LoRa_Utils {
             if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
             loraSpiBegin();
             if (transmitFlag) {
-                radio.startReceive();
+                radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);
                 transmitFlag = false;
             } else {
+                // Single-shot RX: after RX_DONE, radio is in STBY_RC with BUSY=0 — no wait needed.
+                // Safety wait in case of unexpected BUSY (e.g., startup race): 500ms max.
+                uint32_t busyWaitStart = millis();
+                while (digitalRead(RADIO_BUSY_PIN) && (millis() - busyWaitStart < 500)) {
+                    yield();
+                }
                 int state = radio.readData(packet);
+                radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);  // re-arm single-shot RX
                 ESP_LOGD(TAG, "readData state=%d, BUSY=%d", state, digitalRead(RADIO_BUSY_PIN));
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
