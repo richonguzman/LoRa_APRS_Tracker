@@ -181,4 +181,4 @@ Le SD card et le LoRa partagent le bus HSPI (SPI3_HOST) avec des pins différent
 - Lib LoRa : SX126x-Arduino (pas RadioLib)
 - SPI LoRa : FSPI (SPIClass par défaut), pas HSPI
 - Config : `USE_DIO2_ANT_SWITCH=true`, `USE_DIO3_TCXO=true`, `TCXO_CTRL_3_3V`, `TXEN=-1`, `RXEN=-1`
-- **Attention** : ce firmware est pour un module eByte E22 / RFM1262 (TCXO), PAS pour un HT-RA62 (XTAL)
+

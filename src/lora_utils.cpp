@@ -66,6 +66,42 @@ static inline void loraSpiEnd() {
     #endif
 }
 
+#if defined(CROWPANEL_ADVANCE_35)
+static inline uint16_t readDeviceErrors() {
+    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(RADIO_CS_PIN, LOW);
+    loraSPI.transfer(0x17);  // CMD_GET_DEVICE_ERRORS
+    uint8_t status = loraSPI.transfer(0x00);
+    uint8_t errHi = loraSPI.transfer(0x00);
+    uint8_t errLo = loraSPI.transfer(0x00);
+    digitalWrite(RADIO_CS_PIN, HIGH);
+    loraSPI.endTransaction();
+    return ((uint16_t)errHi << 8) | errLo;
+}
+
+static inline uint8_t readStatus() {
+    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(RADIO_CS_PIN, LOW);
+    uint8_t status = loraSPI.transfer(0xC0);  // CMD_GET_STATUS
+    digitalWrite(RADIO_CS_PIN, HIGH);
+    loraSPI.endTransaction();
+    return status;
+}
+
+static inline void clearErrorsRaw() {
+    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
+    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(RADIO_CS_PIN, LOW);
+    loraSPI.transfer(0x07);  // CMD_CLEAR_DEVICE_ERRORS
+    loraSPI.transfer(0x00);
+    loraSPI.transfer(0x00);
+    digitalWrite(RADIO_CS_PIN, HIGH);
+    loraSPI.endTransaction();
+}
+#endif
+
 bool operationDone   = true;
 bool transmitFlag    = true;
 bool loraInitOk      = false;  // Set true only after successful radio.begin()
@@ -431,6 +467,15 @@ namespace LoRa_Utils {
                 if (i < 5) delay(500);
             }
 
+            // DIAG-TX-DIRECT: test TX immediately after begin(), before any startReceive()
+            {
+                int16_t txState = radio.transmit("\x3c\xff\x01" "TEST");
+                uint16_t txErrors = readDeviceErrors();
+                uint8_t txStatus = readStatus();
+                ESP_LOGW(TAG, "DIAG-TX-DIRECT: state=%d errors=0x%04X (XOSC=%d) mode=%d",
+                    txState, txErrors, (txErrors >> 5) & 1, (txStatus >> 4) & 0x07);
+            }
+
             #if 0  // raw SPI diags — disabled: desyncs RadioLib state
             // DIAGNOSTIC: reconfigure TCXO with longer timeout (1s) + recalibrate
             {
@@ -704,12 +749,38 @@ namespace LoRa_Utils {
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         loraSpiBegin();
 
-        // DIAGNOSTIC: probe SPI health while radio is in RX mode (before transmit calls standby)
+        #if defined(CROWPANEL_ADVANCE_35)
+        uint16_t errorsBefore = readDeviceErrors();
+        uint8_t statusBefore = readStatus();
+        ESP_LOGW(TAG, "DIAG-TX: before workaround - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsBefore, (errorsBefore >> 5) & 1, (statusBefore >> 4) & 0x07, ((statusBefore >> 4) & 0x07) == 5 ? "RX" : "?");
+
+        // Brutal workaround: re-apply TCXO config and clear errors right before TX
+        radio.standby();
+        radio.setTCXO(3.3);
+        clearErrorsRaw();
+
+        uint16_t errorsAfterWa = readDeviceErrors();
+        uint8_t statusAfterWa = readStatus();
+        ESP_LOGW(TAG, "DIAG-TX: after workaround - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterWa, (errorsAfterWa >> 5) & 1, (statusAfterWa >> 4) & 0x07, ((statusAfterWa >> 4) & 0x07) == 2 ? "STBY_RC" : "?");
+        #endif
+
         int16_t probeStby = radio.standby();
         ESP_LOGW(TAG, "DIAG-TX: standby()=%d BUSY=%d before transmit()", probeStby, digitalRead(RADIO_BUSY_PIN));
 
+        #if defined(CROWPANEL_ADVANCE_35)
+        uint16_t errorsAfterStandby = readDeviceErrors();
+        uint8_t statusAfterStandby = readStatus();
+        ESP_LOGW(TAG, "DIAG-TX: after standby() - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterStandby, (errorsAfterStandby >> 5) & 1, (statusAfterStandby >> 4) & 0x07, ((statusAfterStandby >> 4) & 0x07) == 2 ? "STBY_RC" : "?");
+        #endif
+
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
+        
+        #if defined(CROWPANEL_ADVANCE_35)
+        uint16_t errorsAfterTransmit = readDeviceErrors();
+        uint8_t statusAfterTransmit = readStatus();
+        ESP_LOGW(TAG, "DIAG-TX: after transmit() - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterTransmit, (errorsAfterTransmit >> 5) & 1, (statusAfterTransmit >> 4) & 0x07, ((statusAfterTransmit >> 4) & 0x07) == 6 ? "TX" : "?");
+        #endif
         loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         if (state == RADIOLIB_ERR_NONE) {
