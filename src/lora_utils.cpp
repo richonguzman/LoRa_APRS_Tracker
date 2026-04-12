@@ -50,10 +50,20 @@ static const char *TAG = "LoRa";
     SPIClass loraSPI(HSPI);
 #endif
 static inline void loraSpiBegin() {
-    // DIAGNOSTIC: no-op — HSPI stays on LoRa pins from setup
+    #if defined(CROWPANEL_ADVANCE_35)
+    // Direct GPIO matrix remap — SPIClass::begin() is idempotent (_spi non-null → no-op)
+    pinMatrixOutAttach(RADIO_SCLK_PIN, SPI3_CLK_OUT_IDX, false, false);
+    pinMatrixOutAttach(RADIO_MOSI_PIN, SPI3_D_OUT_IDX,   false, false);
+    pinMatrixInAttach( RADIO_MISO_PIN, SPI3_Q_IN_IDX,    false);
+    #endif
 }
 static inline void loraSpiEnd() {
-    // DIAGNOSTIC: no-op — SD will be broken but LoRa TX/RX should work
+    #if defined(CROWPANEL_ADVANCE_35)
+    // Restore SD pins on HSPI GPIO matrix
+    pinMatrixOutAttach(BOARD_SDCARD_SCK,  SPI3_CLK_OUT_IDX, false, false);
+    pinMatrixOutAttach(BOARD_SDCARD_MOSI, SPI3_D_OUT_IDX,   false, false);
+    pinMatrixInAttach( BOARD_SDCARD_MISO, SPI3_Q_IN_IDX,    false);
+    #endif
 }
 
 bool operationDone   = true;
@@ -421,6 +431,7 @@ namespace LoRa_Utils {
                 if (i < 5) delay(500);
             }
 
+            #if 0  // raw SPI diags — disabled: desyncs RadioLib state
             // DIAGNOSTIC: reconfigure TCXO with longer timeout (1s) + recalibrate
             {
                 radio.standby();  // must be in STBY_RC for SetDio3AsTcxoCtrl
@@ -652,7 +663,8 @@ namespace LoRa_Utils {
 
             radio.standby();
             radio.clearIrqFlags(0xFFFF);
-            #endif
+            #endif  // raw SPI diags
+            #endif  // CROWPANEL_ADVANCE_35
 
             radio.startReceive();
 

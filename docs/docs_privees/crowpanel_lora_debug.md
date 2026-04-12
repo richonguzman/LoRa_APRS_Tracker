@@ -5,7 +5,7 @@
 ## Hardware
 
 - **Board** : CrowPanel Advance 3.5" (ESP32-S3)
-- **Module LoRa** : Heltec HT-RA62 (SX1262, cristal 32 MHz XTAL, **PAS de TCXO**)
+- **Module LoRa** : Heltec HT-RA62 (SX1262, **TCXO 32MHz** — datasheet dit "XTAL" mais schéma interne X1 confirme TCXO 4 pins avec VDD alimenté par DIO3)
 - **Connecteur LoRa CrowPanel** : SPI + DIO1 + DIO2 + DIO3 + BUSY + RST. **Pas de TXEN/RXEN connectés.**
 
 ## Pinout LoRa (board_pinout.h)
@@ -141,17 +141,19 @@ Le LoRa ne transmet pas sur CrowPanel. `radio.begin()` réussit mais `radio.tran
 - Le TCXO timeout (78ms ou 1s)
 - La librairie (RadioLib ou raw SPI)
 
-**Hypothèse : problème hardware** — le module HT-RA62 ou son intégration sur le CrowPanel empêche le TX. Possibilités :
-1. Module HT-RA62 défectueux (PA ou circuit XOSC/TCXO)
-2. TXEN/RXEN (pins 5/11 du HT-RA62) nécessaires mais non connectés sur CrowPanel
-3. Problème de découplage alimentation PA sur le PCB CrowPanel
-4. Antenne non connectée → VSWR infini (mais -9dBm devrait pas poser problème)
+**TXEN/RXEN : fausse piste confirmée**
 
-### Prochaine étape critique
+Le schéma de référence Heltec (HT-RA62_Reference_design.pdf) montre que TXEN (pin 5) et RXEN (pin 11) sont **NC** — non connectés au MCU dans le design officiel. Le HT-RA62 fonctionne sans les piloter. Le switch RF est géré en interne.
 
-**Flasher le firmware factory Elecrow (HMI3-5.ino)** et vérifier si le TX fonctionne :
-- Si TX OK → on rate une config, comparer avec SX126x-Arduino init sequence
-- Si TX KO → hardware défectueux, retour board
+**Cause réelle du -2 (CHIP_NOT_FOUND) et -5 (TX_TIMEOUT) : conflit SPI HSPI**
+
+Le SD card et le LoRa partagent le bus HSPI (SPI3_HOST) avec des pins différentes :
+- LoRa : SCK=10, MISO=9, MOSI=3, CS=0
+- SD : SCK=5, MISO=4, MOSI=6, CS=7
+
+`loraSpiBegin/loraSpiEnd` étaient en **no-op**. Après chaque accès SD, HSPI reste configuré sur les pins SD. Le LoRa ne peut plus communiquer → -2 CHIP_NOT_FOUND ou -707 SPI_CMD_TIMEOUT.
+
+**Fix** : `loraSpiBegin()` doit rappeler `loraSPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_CS_PIN)` avant chaque accès LoRa. Voir stash "WIP: CrowPanel HT-RA62 TXEN/RXEN debug (non-working)" pour l'historique complet.
 
 ## Code diagnostique en place (à retirer après résolution)
 
