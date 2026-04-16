@@ -453,26 +453,7 @@ namespace MapRender {
             addPixelPoint(sdBuf[i].lat, sdBuf[i].lon);
         }
 
-        // Draw what remains of SD before starting RAM (optional, RAM might link nicely if consecutive)
-        // We link SD and RAM together by not calling drawCurrentSegment() yet.
-        // Actually, the last SD point and first RAM point might be far apart if the trace was interrupted.
-        // Better to check continuity, but RAM traces don't give global cache indices. 
-        // We'll just assume they connect if the gap is small, or just let it link.
-        // If we want safety, we can draw and break here. But let's leave it connected for now.
-
-        // 2. RAM points (recent, may overlap with SD — pixel skip handles dedup)
-        const TracePoint* trace = gpsFilter.getOwnTrace();
-        int traceHead  = gpsFilter.getOwnTraceHead();
-        int traceCount = gpsFilter.getOwnTraceCount();
-        if (traceCount > 0) {
-            int startIdx = (traceHead - traceCount + MapGPSFilter::OWN_TRACE_MAX_POINTS) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
-            for (int i = 0; i < traceCount; ++i) {
-                int idx = (startIdx + i) % MapGPSFilter::OWN_TRACE_MAX_POINTS;
-                addPixelPoint(trace[idx].lat, trace[idx].lon);
-            }
-        }
-
-        // 3. Current position (tip of the trace)
+        // 2. Current position (tip of the trace)
         double uiLat, uiLon;
         if (gpsFilter.getUiPosition(&uiLat, &uiLon) && validPts < TRACE_RENDER_MAX) {
             int cx, cy;
