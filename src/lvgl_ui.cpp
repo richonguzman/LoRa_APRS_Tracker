@@ -251,7 +251,11 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
 
     // Init TFT
     tft.init();
+#if defined(CROWPANEL_ADVANCE_35)
+    tft.setRotation(3); // Landscape 180°
+#else
     tft.setRotation(1); // Standard landscape
+#endif
     tft.fillScreen(TFT_BLACK); // Clear to black before showing anything
 
 // Now turn on backlight with saved brightness
@@ -463,7 +467,11 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
 
       // Re-init TFT for LVGL
       tft.init();
+#if defined(CROWPANEL_ADVANCE_35)
+      tft.setRotation(3); // Landscape 180°
+#else
       tft.setRotation(1); // Landscape, keyboard at bottom
+#endif
 
       // Initialize LVGL
       lv_init();

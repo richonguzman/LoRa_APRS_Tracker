@@ -43,6 +43,11 @@
     // Battery measurement is undefined (IO4 is SD_MISO)
     #define BATTERY_PIN         -1
 
+    // I2C fuel gauge (MAX17048) on external I2C bus (shared with GT911 touch)
+    #define HAS_FUEL_GAUGE_I2C
+    #define FUEL_GAUGE_I2C_SDA  15
+    #define FUEL_GAUGE_I2C_SCL  16
+
     // SD Card
     #define BOARD_SDCARD_CS     7
     #define BOARD_SDCARD_MOSI   6

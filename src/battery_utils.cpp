@@ -23,6 +23,12 @@
 #include "power_utils.h"
 #include "display.h"
 
+#ifdef HAS_FUEL_GAUGE_I2C
+    #include <Wire.h>
+    #include "Adafruit_MAX1704X.h"
+    static Adafruit_MAX17048 fuelGauge;
+    static bool fuelGaugeReady = false;
+#endif
 
 #ifdef ADC_CTRL
     uint32_t    adcCtrlTime         = 0;
@@ -85,7 +91,24 @@ namespace BATTERY_Utils {
         return batteryVoltage;
     }
 
+    void initBatteryGauge() {
+        #ifdef HAS_FUEL_GAUGE_I2C
+            Wire.begin(FUEL_GAUGE_I2C_SDA, FUEL_GAUGE_I2C_SCL);
+            fuelGaugeReady = fuelGauge.begin(&Wire);
+            if (fuelGaugeReady) {
+                Serial.printf("[BATT] MAX17048 OK - cell=%.3fV SOC=%.1f%%\n",
+                              fuelGauge.cellVoltage(), fuelGauge.cellPercent());
+            } else {
+                Serial.println("[BATT] MAX17048 not found, battery monitoring disabled");
+            }
+        #endif
+    }
+
     float readBatteryVoltage() {
+        #ifdef HAS_FUEL_GAUGE_I2C
+            if (fuelGaugeReady) return fuelGauge.cellVoltage();
+            return 0.0;
+        #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             return (PMU.getBattVoltage() / 1000.0);
         #else
@@ -128,6 +151,16 @@ namespace BATTERY_Utils {
     }
 
     void obtainBatteryInfo() {
+        #ifdef HAS_FUEL_GAUGE_I2C
+            if (fuelGaugeReady) {
+                batteryVoltage   = String(fuelGauge.cellVoltage(), 2);
+                batteryConnected = (batteryVoltage.toFloat() > 1.5);
+            } else {
+                batteryVoltage   = "0.00";
+                batteryConnected = false;
+            }
+            return;
+        #endif
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             batteryConnected = PMU.isBatteryConnect();
             if (batteryConnected) {
@@ -138,7 +171,7 @@ namespace BATTERY_Utils {
             batteryVoltage = String(readBatteryVoltage(), 2);
             if (batteryVoltage.toFloat() > 1.5) batteryConnected = true;
         #endif
-    }   
+    }
 
     void monitor() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -147,7 +180,7 @@ namespace BATTERY_Utils {
                 POWER_Utils::handleChargingLed();
                 batteryMeasurmentTime = millis();
             }
-        #elif defined(BATTERY_PIN)
+        #elif defined(BATTERY_PIN) || defined(HAS_FUEL_GAUGE_I2C)
             if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000){ //At least 30 seconds have to pass between measurements
                 #ifdef ADC_CTRL
                     switch(measuringState){

@@ -257,6 +257,8 @@ void setup() {
         }
     #endif
 
+    BATTERY_Utils::initBatteryGauge();
+
     ESP_LOGD(TAG, "Smart Beacon is: %s", Utils::getSmartBeaconState());
 
     // Memory stats
