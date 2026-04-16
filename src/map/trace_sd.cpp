@@ -139,7 +139,7 @@ namespace TraceSD {
     }
 
     int readViewport(float minLat, float maxLat, float minLon, float maxLon,
-                     TraceRecord* outBuf, int maxPoints) {
+                     TraceRecord* outBuf, int maxPoints, int* outIndices) {
         if (!initialized || !cache || maxPoints <= 0) return 0;
 
         // Scan PSRAM cache — no SD access, no mutex
@@ -147,6 +147,7 @@ namespace TraceSD {
         for (int i = 0; i < cacheCount && count < maxPoints; ++i) {
             if (cache[i].lat >= minLat && cache[i].lat <= maxLat &&
                 cache[i].lon >= minLon && cache[i].lon <= maxLon) {
+                if (outIndices) outIndices[count] = i;
                 outBuf[count++] = cache[i];
             }
         }

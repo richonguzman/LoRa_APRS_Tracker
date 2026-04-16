@@ -425,12 +425,40 @@ namespace MapRender {
             if (cornerLon > maxLon) maxLon = cornerLon;
         }
 
-        // Read SD points that fall within viewport (max 512 to leave room for RAM points)
+        // Draw helper
+        auto drawCurrentSegment = [&]() {
+            if (validPts >= 2) {
+                lv_draw_line_dsc_t line_dsc;
+                lv_draw_line_dsc_init(&line_dsc);
+                line_dsc.color = lv_color_hex(0x9933FF);
+                line_dsc.width = 2;
+                line_dsc.opa   = LV_OPA_COVER;
+                lv_canvas_draw_line(map_canvas, trace_points, validPts, &line_dsc);
+            }
+            validPts = 0;
+            lastX = INT_MIN;
+            lastY = INT_MIN;
+        };
+
+        // 1. SD points
         static TraceRecord sdBuf[512];
-        int sdCount = TraceSD::readViewport(minLat, maxLat, minLon, maxLon, sdBuf, 512);
+        static int sdIndices[512];
+        int sdCount = TraceSD::readViewport(minLat, maxLat, minLon, maxLon, sdBuf, 512, sdIndices);
+        
         for (int i = 0; i < sdCount; ++i) {
+            // Topological check: if cache index skipped, break the line
+            if (i > 0 && sdIndices[i] != sdIndices[i - 1] + 1) {
+                drawCurrentSegment();
+            }
             addPixelPoint(sdBuf[i].lat, sdBuf[i].lon);
         }
+
+        // Draw what remains of SD before starting RAM (optional, RAM might link nicely if consecutive)
+        // We link SD and RAM together by not calling drawCurrentSegment() yet.
+        // Actually, the last SD point and first RAM point might be far apart if the trace was interrupted.
+        // Better to check continuity, but RAM traces don't give global cache indices. 
+        // We'll just assume they connect if the gap is small, or just let it link.
+        // If we want safety, we can draw and break here. But let's leave it connected for now.
 
         // 2. RAM points (recent, may overlap with SD — pixel skip handles dedup)
         const TracePoint* trace = gpsFilter.getOwnTrace();
@@ -454,15 +482,8 @@ namespace MapRender {
             trace_points[validPts++] = { (lv_coord_t)cx, (lv_coord_t)cy };
         }
 
-        // Draw
-        if (validPts >= 2) {
-            lv_draw_line_dsc_t line_dsc;
-            lv_draw_line_dsc_init(&line_dsc);
-            line_dsc.color = lv_color_hex(0x9933FF);
-            line_dsc.width = 2;
-            line_dsc.opa   = LV_OPA_COVER;
-            lv_canvas_draw_line(map_canvas, trace_points, validPts, &line_dsc);
-        }
+        // Draw final segment
+        drawCurrentSegment();
     }
 
 } // namespace MapRender

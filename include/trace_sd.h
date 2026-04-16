@@ -31,10 +31,9 @@ namespace TraceSD {
 
     // Read points from SD that fall within a lat/lon bounding box.
     // Fills outBuf (caller-provided), returns number of points loaded.
-    // Applies pixel-distance skip: minPixDist2 = squared min pixel distance (0 = no skip).
-    // The skip uses the provided map parameters to convert lat/lon → pixel.
+    // Optionally fills outIndices with the original cache index for continuity checking.
     int readViewport(float minLat, float maxLat, float minLon, float maxLon,
-                     TraceRecord* outBuf, int maxPoints);
+                     TraceRecord* outBuf, int maxPoints, int* outIndices = nullptr);
 
     // Get total number of records in today's file
     int getTodayPointCount();
