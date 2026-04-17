@@ -51,6 +51,19 @@ namespace NOTIFICATION_Utils {
     void initI2S() {
         if (i2sInitialized) return;
 
+        #ifdef CROWPANEL_ADVANCE_35
+        // Elecrow factory code pulls these LOW before audio tests.
+        // Likely amplifier enable or routing switches.
+        pinMode(14, OUTPUT);
+        digitalWrite(14, LOW);
+        pinMode(21, OUTPUT);
+        digitalWrite(21, LOW);
+
+        // Give the hardware amplifier time to wake up and stabilize
+        // otherwise the first few hundred milliseconds of audio (the boot beeps) are swallowed.
+        delay(250);
+        #endif
+
         i2s_config_t i2s_config = {
             .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
             .sample_rate = I2S_SAMPLE_RATE,

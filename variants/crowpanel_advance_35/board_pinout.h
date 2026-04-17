@@ -36,8 +36,15 @@
     #define GPS_TX              18 // TODO: Configure for your wiring
     #define GPS_BAUDRATE        9600
 
-    //  Audio
+    // Audio
     #define BUZZER_PIN          8   // Direct PWM buzzer (no VCC pin needed)
+    
+    // I2S Speaker
+    #define HAS_I2S
+    #define DAC_I2S_WS          11  // I2S_LRC
+    #define DAC_I2S_DOUT        12  // I2S_DOUT
+    #define DAC_I2S_BCK         13  // I2S_BCLK
+    #define SPK_I2S_PORT        I2S_NUM_0
 
     //  OTHER
     // Battery measurement is undefined (IO4 is SD_MISO)
