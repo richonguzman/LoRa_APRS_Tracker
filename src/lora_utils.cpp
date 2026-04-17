@@ -66,42 +66,6 @@ static inline void loraSpiEnd() {
     #endif
 }
 
-#if defined(CROWPANEL_ADVANCE_35)
-static inline uint16_t readDeviceErrors() {
-    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-    digitalWrite(RADIO_CS_PIN, LOW);
-    loraSPI.transfer(0x17);  // CMD_GET_DEVICE_ERRORS
-    uint8_t status = loraSPI.transfer(0x00);
-    uint8_t errHi = loraSPI.transfer(0x00);
-    uint8_t errLo = loraSPI.transfer(0x00);
-    digitalWrite(RADIO_CS_PIN, HIGH);
-    loraSPI.endTransaction();
-    return ((uint16_t)errHi << 8) | errLo;
-}
-
-static inline uint8_t readStatus() {
-    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-    digitalWrite(RADIO_CS_PIN, LOW);
-    uint8_t status = loraSPI.transfer(0xC0);  // CMD_GET_STATUS
-    digitalWrite(RADIO_CS_PIN, HIGH);
-    loraSPI.endTransaction();
-    return status;
-}
-
-static inline void clearErrorsRaw() {
-    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-    digitalWrite(RADIO_CS_PIN, LOW);
-    loraSPI.transfer(0x07);  // CMD_CLEAR_DEVICE_ERRORS
-    loraSPI.transfer(0x00);
-    loraSPI.transfer(0x00);
-    digitalWrite(RADIO_CS_PIN, HIGH);
-    loraSPI.endTransaction();
-}
-#endif
-
 bool operationDone   = true;
 bool transmitFlag    = true;
 bool loraInitOk      = false;  // Set true only after successful radio.begin()
@@ -458,267 +422,14 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             loraInitOk = true;
 
-            #if defined(CROWPANEL_ADVANCE_35)
-            // DIAGNOSTIC: probe SPI health over time
-            for (int i = 0; i < 6; i++) {
-                int16_t st = radio.standby();
-                ESP_LOGW(TAG, "DIAG[%d] standby=%d BUSY=%d IO45=%d IO2=%d",
-                    i, st, digitalRead(RADIO_BUSY_PIN), digitalRead(45), digitalRead(RADIO_RST_PIN));
-                if (i < 5) delay(500);
-            }
-
-            // DIAG-TX-DIRECT: test TX immediately after begin(), before any startReceive()
-            {
-                int16_t txState = radio.transmit("\x3c\xff\x01" "TEST");
-                uint16_t txErrors = readDeviceErrors();
-                uint8_t txStatus = readStatus();
-                ESP_LOGW(TAG, "DIAG-TX-DIRECT: state=%d errors=0x%04X (XOSC=%d) mode=%d",
-                    txState, txErrors, (txErrors >> 5) & 1, (txStatus >> 4) & 0x07);
-            }
-
-            #if 0  // raw SPI diags — disabled: desyncs RadioLib state
-            // DIAGNOSTIC: reconfigure TCXO with longer timeout (1s) + recalibrate
-            {
-                radio.standby();  // must be in STBY_RC for SetDio3AsTcxoCtrl
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                // SetDio3AsTcxoCtrl (0x97): voltage=3.3V (0x07), timeout=64000 (~1s in 15.625µs units)
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x97);  // CMD_SET_DIO3_AS_TCXO_CTRL
-                loraSPI.transfer(0x07);  // 3.3V
-                loraSPI.transfer(0x00);  // timeout[23:16]
-                loraSPI.transfer(0xFA);  // timeout[15:8]  (64000 = 0x00FA00)
-                loraSPI.transfer(0x00);  // timeout[7:0]
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                delay(1100);  // wait for TCXO to stabilize (>1s)
-                ESP_LOGW(TAG, "DIAG-TCXO: reconfigured 3.3V timeout=64000 (~1s), BUSY=%d", digitalRead(RADIO_BUSY_PIN));
-
-                // Calibrate all (0x89): param=0x7F (all calibrations)
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x89);  // CMD_CALIBRATE
-                loraSPI.transfer(0x7F);  // all calibrations
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                delay(50);  // calibration takes ~3.5ms per datasheet
-                ESP_LOGW(TAG, "DIAG-TCXO: recalibrated, BUSY=%d", digitalRead(RADIO_BUSY_PIN));
-
-                // Read errors after recalibration
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x17);
-                uint8_t st = loraSPI.transfer(0x00);
-                uint8_t eh = loraSPI.transfer(0x00);
-                uint8_t el = loraSPI.transfer(0x00);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                uint16_t postCalErr = ((uint16_t)eh << 8) | el;
-                ESP_LOGW(TAG, "DIAG-TCXO: post-recal errors=0x%04X status=0x%02X (XOSC=%d PLL=%d)", postCalErr, st, (postCalErr >> 5) & 1, (postCalErr >> 6) & 1);
-
-                // Clear errors
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x07);  // CMD_CLEAR_DEVICE_ERRORS
-                loraSPI.transfer(0x00);
-                loraSPI.transfer(0x00);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                // Test XOSC standby + read actual chip status
-                int16_t xoscState = radio.standby(RADIOLIB_SX126X_STANDBY_XOSC);
-                delay(500);  // give XOSC 500ms to start
-                // GetStatus (0xC0): [opcode] → [status]
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                uint8_t chipStatus = loraSPI.transfer(0xC0);  // GetStatus — status returned on MISO during CMD byte
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                // Status bits[6:4]: 0x2=STBY_RC, 0x3=STBY_XOSC, 0x4=FS, 0x5=RX, 0x6=TX
-                uint8_t chipMode = (chipStatus >> 4) & 0x07;
-                ESP_LOGW(TAG, "DIAG-XOSC: standby(XOSC)=%d BUSY=%d status=0x%02X chipMode=%d (%s)",
-                    xoscState, digitalRead(RADIO_BUSY_PIN), chipStatus, chipMode,
-                    chipMode == 2 ? "STBY_RC" : chipMode == 3 ? "STBY_XOSC" : chipMode == 4 ? "FS" : "?");
-
-                // Read errors after XOSC attempt
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x17);
-                uint8_t xst = loraSPI.transfer(0x00);
-                uint8_t xeh = loraSPI.transfer(0x00);
-                uint8_t xel = loraSPI.transfer(0x00);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                uint16_t xoscErr = ((uint16_t)xeh << 8) | xel;
-                ESP_LOGW(TAG, "DIAG-XOSC: errors after standby(XOSC)=0x%04X (XOSC=%d)", xoscErr, (xoscErr >> 5) & 1);
-            }
-
-            // DIAGNOSTIC: test FS mode (PLL lock without PA) — isolates PA vs XOSC issue
-            {
-                // Clear errors first
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x07); loraSPI.transfer(0x00); loraSPI.transfer(0x00);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                // SetFs (0xC1) — enters frequency synthesis mode, PLL locks, no PA
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0xC1);  // CMD_SET_FS
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                delay(500);
-
-                // Read status + errors
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                uint8_t fsStatus = loraSPI.transfer(0xC0);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x17);
-                uint8_t fss = loraSPI.transfer(0x00);
-                uint8_t feh = loraSPI.transfer(0x00);
-                uint8_t fel = loraSPI.transfer(0x00);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-                uint16_t fsErr = ((uint16_t)feh << 8) | fel;
-                uint8_t fsMode = (fsStatus >> 4) & 0x07;
-                ESP_LOGW(TAG, "DIAG-FS: status=0x%02X mode=%d (%s) errors=0x%04X (XOSC=%d PLL=%d)",
-                    fsStatus, fsMode,
-                    fsMode == 2 ? "STBY_RC" : fsMode == 3 ? "STBY_XOSC" : fsMode == 4 ? "FS" : fsMode == 5 ? "RX" : fsMode == 6 ? "TX" : "?",
-                    fsErr, (fsErr >> 5) & 1, (fsErr >> 6) & 1);
-
-                // DON'T go back to standby — stay in FS mode for raw TX test
-                // From FS mode: XOSC running, PLL locked → SetTx should work
-                ESP_LOGW(TAG, "DIAG-TX-RAW: sending SetTx from FS mode (XOSC already active)...");
-
-                // SetDioIrqParams (0x08): map TX_DONE to DIO1
-                // irqMask=0x0201 (TX_DONE|TIMEOUT), dio1Mask=0x0201, dio2=0, dio3=0
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x08);  // CMD_SET_DIO_IRQ_PARAMS
-                loraSPI.transfer(0x02); loraSPI.transfer(0x01);  // irqMask = 0x0201
-                loraSPI.transfer(0x02); loraSPI.transfer(0x01);  // dio1Mask = 0x0201
-                loraSPI.transfer(0x00); loraSPI.transfer(0x00);  // dio2Mask = 0
-                loraSPI.transfer(0x00); loraSPI.transfer(0x00);  // dio3Mask = 0
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                // WriteBuffer (0x0E): offset=0, data="TEST1234"
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x0E);  // CMD_WRITE_BUFFER
-                loraSPI.transfer(0x00);  // offset
-                uint8_t testPayload[] = "TEST1234";
-                for (int i = 0; i < 8; i++) loraSPI.transfer(testPayload[i]);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                // ClearIrqStatus (0x02): clear all
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x02);  // CMD_CLEAR_IRQ_STATUS
-                loraSPI.transfer(0xFF); loraSPI.transfer(0xFF);
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                // SetTx (0x83): timeout=0 (no timeout)
-                while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                digitalWrite(RADIO_CS_PIN, LOW);
-                loraSPI.transfer(0x83);  // CMD_SET_TX
-                loraSPI.transfer(0x00); loraSPI.transfer(0x00); loraSPI.transfer(0x00);  // timeout=0
-                digitalWrite(RADIO_CS_PIN, HIGH);
-                loraSPI.endTransaction();
-
-                ESP_LOGW(TAG, "DIAG-TX-RAW: SetTx sent, BUSY=%d DIO1=%d", digitalRead(RADIO_BUSY_PIN), digitalRead(RADIO_DIO1_PIN));
-
-                // Poll for TX_DONE (IRQ or DIO1) for 5 seconds
-                uint32_t txStartMs = millis();
-                while (millis() - txStartMs < 5000) {
-                    if (digitalRead(RADIO_DIO1_PIN)) {
-                        ESP_LOGW(TAG, "DIAG-TX-RAW: DIO1 HIGH after %lums!", millis() - txStartMs);
-                        break;
-                    }
-                    // Also check via SPI every 100ms
-                    if ((millis() - txStartMs) % 100 < 11) {
-                        while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                        loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                        digitalWrite(RADIO_CS_PIN, LOW);
-                        loraSPI.transfer(0x12);
-                        uint8_t s = loraSPI.transfer(0x00);
-                        uint8_t h = loraSPI.transfer(0x00);
-                        uint8_t l = loraSPI.transfer(0x00);
-                        digitalWrite(RADIO_CS_PIN, HIGH);
-                        loraSPI.endTransaction();
-                        uint16_t irq = ((uint16_t)h << 8) | l;
-                        if (irq != 0) {
-                            ESP_LOGW(TAG, "DIAG-TX-RAW: IRQ=0x%04X after %lums DIO1=%d (TX_DONE=%d TIMEOUT=%d)",
-                                irq, millis() - txStartMs, digitalRead(RADIO_DIO1_PIN), irq & 1, (irq >> 9) & 1);
-                            break;
-                        }
-                    }
-                    delay(10);
-                }
-
-                // Read final status + errors
-                {
-                    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                    digitalWrite(RADIO_CS_PIN, LOW);
-                    uint8_t postTxStatus = loraSPI.transfer(0xC0);
-                    digitalWrite(RADIO_CS_PIN, HIGH);
-                    loraSPI.endTransaction();
-                    uint8_t postTxMode = (postTxStatus >> 4) & 0x07;
-
-                    while (digitalRead(RADIO_BUSY_PIN)) { delay(1); }
-                    loraSPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-                    digitalWrite(RADIO_CS_PIN, LOW);
-                    loraSPI.transfer(0x17);
-                    uint8_t errSt = loraSPI.transfer(0x00);
-                    uint8_t errHi = loraSPI.transfer(0x00);
-                    uint8_t errLo = loraSPI.transfer(0x00);
-                    digitalWrite(RADIO_CS_PIN, HIGH);
-                    loraSPI.endTransaction();
-                    uint16_t errors = ((uint16_t)errHi << 8) | errLo;
-
-                    ESP_LOGW(TAG, "DIAG-TX-RAW: FINAL status=0x%02X mode=%d(%s) errors=0x%04X(XOSC=%d PLL=%d PA=%d) DIO1=%d BUSY=%d",
-                        postTxStatus, postTxMode,
-                        postTxMode == 2 ? "STBY_RC" : postTxMode == 3 ? "STBY_XOSC" : postTxMode == 4 ? "FS" : postTxMode == 5 ? "RX" : postTxMode == 6 ? "TX" : "?",
-                        errors, (errors >> 5) & 1, (errors >> 6) & 1, (errors >> 7) & 1,
-                        digitalRead(RADIO_DIO1_PIN), digitalRead(RADIO_BUSY_PIN));
-                }
-            }
-
-            radio.standby();
-            radio.clearIrqFlags(0xFFFF);
-            #endif  // raw SPI diags
-            #endif  // CROWPANEL_ADVANCE_35
-
-            radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);  // single-shot: after RX_DONE, radio goes STBY, BUSY=0 guaranteed
+            radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);
 
             #if defined(LIGHTTRACKER_PLUS_1_0) || defined(CROWPANEL_ADVANCE_35)
             loraSpiEnd();  // Restore SD GPIO mapping — LoRa setup done
             #endif
             operationDone = false;  // No pending operation yet — avoid spurious readData()
             transmitFlag = false;   // We're in RX mode, not post-TX
-            ESP_LOGI(TAG, "LoRa init done! BUSY=%d", digitalRead(RADIO_BUSY_PIN));
+            ESP_LOGI(TAG, "LoRa init done!");
         } else {
             ESP_LOGE(TAG, "LoRa config failed! State: %d", state);
             loraSpiEnd();
@@ -733,8 +444,6 @@ namespace LoRa_Utils {
         ESP_LOGE(TAG,"Send data: %s", newPacket.c_str());
         ESP_LOGD(TAG,"Send data: %s", newPacket.c_str());*/
 
-        ESP_LOGD(TAG, "TX: BUSY=%d at entry", digitalRead(RADIO_BUSY_PIN));
-
         if (Config.ptt.active && Config.ptt.io_pin >= 0 && Config.ptt.io_pin <= 48) {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
@@ -745,42 +454,11 @@ namespace LoRa_Utils {
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
         // Acquire SPI mutex — SD card shares the same SPI bus
-        ESP_LOGD(TAG, "TX: BUSY=%d after beep", digitalRead(RADIO_BUSY_PIN));
         if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
         loraSpiBegin();
 
-        #if defined(CROWPANEL_ADVANCE_35)
-        uint16_t errorsBefore = readDeviceErrors();
-        uint8_t statusBefore = readStatus();
-        ESP_LOGW(TAG, "DIAG-TX: before workaround - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsBefore, (errorsBefore >> 5) & 1, (statusBefore >> 4) & 0x07, ((statusBefore >> 4) & 0x07) == 5 ? "RX" : "?");
-
-        // Brutal workaround: re-apply TCXO config and clear errors right before TX
-        radio.standby();
-        radio.setTCXO(3.3);
-        clearErrorsRaw();
-
-        uint16_t errorsAfterWa = readDeviceErrors();
-        uint8_t statusAfterWa = readStatus();
-        ESP_LOGW(TAG, "DIAG-TX: after workaround - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterWa, (errorsAfterWa >> 5) & 1, (statusAfterWa >> 4) & 0x07, ((statusAfterWa >> 4) & 0x07) == 2 ? "STBY_RC" : "?");
-        #endif
-
-        int16_t probeStby = radio.standby();
-        ESP_LOGW(TAG, "DIAG-TX: standby()=%d BUSY=%d before transmit()", probeStby, digitalRead(RADIO_BUSY_PIN));
-
-        #if defined(CROWPANEL_ADVANCE_35)
-        uint16_t errorsAfterStandby = readDeviceErrors();
-        uint8_t statusAfterStandby = readStatus();
-        ESP_LOGW(TAG, "DIAG-TX: after standby() - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterStandby, (errorsAfterStandby >> 5) & 1, (statusAfterStandby >> 4) & 0x07, ((statusAfterStandby >> 4) & 0x07) == 2 ? "STBY_RC" : "?");
-        #endif
-
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
         transmitFlag = true;
-        
-        #if defined(CROWPANEL_ADVANCE_35)
-        uint16_t errorsAfterTransmit = readDeviceErrors();
-        uint8_t statusAfterTransmit = readStatus();
-        ESP_LOGW(TAG, "DIAG-TX: after transmit() - errors=0x%04X (XOSC=%d) mode=%d (%s)", errorsAfterTransmit, (errorsAfterTransmit >> 5) & 1, (statusAfterTransmit >> 4) & 0x07, ((statusAfterTransmit >> 4) & 0x07) == 6 ? "TX" : "?");
-        #endif
         loraSpiEnd();
         if (spiMutex) xSemaphoreGiveRecursive(spiMutex);
         if (state == RADIOLIB_ERR_NONE) {
@@ -830,7 +508,6 @@ namespace LoRa_Utils {
         if (!loraInitOk) return receivedLoraPacket;
         String packet = "";
         if (operationDone) {
-            ESP_LOGW(TAG, "operationDone=true, transmitFlag=%d, BUSY=%d", transmitFlag, digitalRead(RADIO_BUSY_PIN));
             operationDone = false;
             if (spiMutex) xSemaphoreTakeRecursive(spiMutex, portMAX_DELAY);
             loraSpiBegin();
@@ -846,7 +523,7 @@ namespace LoRa_Utils {
                 }
                 int state = radio.readData(packet);
                 radio.startReceive(RADIOLIB_SX126X_RX_TIMEOUT_NONE);  // re-arm single-shot RX
-                ESP_LOGD(TAG, "readData state=%d, BUSY=%d", state, digitalRead(RADIO_BUSY_PIN));
+                ESP_LOGD(TAG, "readData state=%d", state);
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
                         ESP_LOGI(TAG, "Rx ---> %s", packet.substring(3).c_str());

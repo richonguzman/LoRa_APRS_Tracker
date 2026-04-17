@@ -5,7 +5,7 @@
 ## Hardware
 
 - **Board** : CrowPanel Advance 3.5" (ESP32-S3)
-- **Module LoRa** : Heltec HT-RA62 (SX1262, **TCXO 32MHz** — datasheet dit "XTAL" mais schéma interne X1 confirme TCXO 4 pins avec VDD alimenté par DIO3)
+- **Module LoRa** : Heltec HT-RA62 (SX1262, **TCXO 32MHz** — X1 4 pins, pin 4 → capa → DIO3, pas de XTB)
 - **Connecteur LoRa CrowPanel** : SPI + DIO1 + DIO2 + DIO3 + BUSY + RST. **Pas de TXEN/RXEN connectés.**
 
 ## Pinout LoRa (board_pinout.h)
@@ -77,11 +77,11 @@ Le LoRa ne transmet pas sur CrowPanel. `radio.begin()` réussit mais `radio.tran
 
 ### Découvertes clés
 
-#### 1. TCXO vs XTAL (CAUSE RACINE PROBABLE)
-- **Le firmware factory Elecrow** utilise `USE_DIO3_TCXO = true` avec `TCXO_CTRL_3_3V` (3.3V)
-- **Le firmware factory est écrit pour** un "eByte E22" / "CircuitRocks Alora RFM1262" qui ont un **TCXO**
-- **Le HT-RA62 a un cristal 32 MHz (XTAL), PAS un TCXO**
-- Configurer DIO3 comme TCXO quand le module a un XTAL → le SX1262 attend un oscillateur qui ne démarre jamais → bloqué en TX/RX
+#### 1. TCXO confirmé (schéma HT-RA62)
+- **Schéma HT-RA62** : X1 est un composant 4 broches, pin 4 → capa → DIO3. Pas de XTB → **TCXO 32MHz**, pas XTAL.
+- **Config requise** : `radio.begin(..., 3.3)` — DIO3 alimente le TCXO à 3.3V. Seule configuration valide.
+- **Firmware factory Elecrow** : `USE_DIO3_TCXO=true`, `TCXO_CTRL_3_3V` — cohérent.
+- L'erreur de blocage TX ne vient pas d'un conflit d'oscillateur.
 
 #### 2. Tension TCXO insuffisante (résolu partiellement)
 - Code initial : TCXO 1.8V → standby OK mais startReceive() → BUSY=1 immédiat, SPI mort
@@ -98,10 +98,10 @@ Le LoRa ne transmet pas sur CrowPanel. `radio.begin()` réussit mais `radio.tran
 
 ### Résultats des tests (session 2026-04-11)
 
-#### 1. XTAL vs TCXO
+#### 1. TCXO obligatoire
 - `radio.XTAL = true` → begin() échoue -707 (BUSY timeout pendant calibration)
 - `radio.begin(..., 3.3)` (TCXO 3.3V) → begin() OK, standby OK
-- **Conclusion** : le module NÉCESSITE la config TCXO 3.3V via DIO3 pour que begin() fonctionne
+- **Conclusion** : TCXO 3.3V via DIO3 obligatoire (cohérent avec le schéma du module)
 
 #### 2. Diagnostic XOSC_START_ERR
 `getDeviceErrors()` après échec TX (via SPI brut, cmd 0x17) :

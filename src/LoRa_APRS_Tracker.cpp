@@ -217,7 +217,7 @@ void setup() {
     #if defined(CROWPANEL_ADVANCE_35)
         pinMode(RADIO_RST_PIN, OUTPUT);
         digitalWrite(RADIO_RST_PIN, HIGH);
-        ESP_LOGD(TAG, "IO2 forced HIGH after LoRa init, BUSY=%d", digitalRead(RADIO_BUSY_PIN));
+        ESP_LOGD(TAG, "IO2 forced HIGH after LoRa init");
     #endif
     #ifdef USE_LVGL_UI
         LVGL_UI::updateInitStatus("I2C scan...");
@@ -272,13 +272,11 @@ void setup() {
     esp_task_wdt_add(NULL);       // Add current task to watchdog
     ESP_LOGI(TAG, "Watchdog initialized (30s timeout)");
 
-    ESP_LOGI(TAG, "Setup Done! BUSY=%d", digitalRead(RADIO_BUSY_PIN));
+    ESP_LOGI(TAG, "Setup Done!");
 
     // Lower CPU frequency for power saving in normal operation
     // Map screen will boost back to 240MHz when needed
-    // DIAGNOSTIC: disabled to test if CPU freq change breaks LoRa SPI
-    // POWER_Utils::lowerCpuFrequency();
-    ESP_LOGD(TAG, "CPU freq unchanged (diagnostic): BUSY=%d", digitalRead(RADIO_BUSY_PIN));
+    POWER_Utils::lowerCpuFrequency();
 
     menuDisplay = 0;
 }
