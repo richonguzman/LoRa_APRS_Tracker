@@ -416,6 +416,80 @@ namespace POWER_Utils {
             pinMode(FAN_CTRL_PIN, OUTPUT);
             digitalWrite(FAN_CTRL_PIN, HIGH);
         #endif
+
+        #if defined(LILYGO_T_LORA_PAGER)
+            // Part A: start I2C bus shared by XL9555, BQ25896, BQ27220, RTC, IMU, haptic
+            Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
+
+            // Part D: pull all SPI CS lines HIGH before SPI.begin() so no device
+            //         accidentally responds while the bus is being configured
+            const uint8_t spi_cs_pins[] = { RADIO_CS_PIN, DISP_CS, BOARD_SDCARD_CS, NFC_CS };
+            for (auto pin : spi_cs_pins) {
+                pinMode(pin, OUTPUT);
+                digitalWrite(pin, HIGH);
+            }
+            pinMode(RADIO_RST_PIN, OUTPUT);
+            digitalWrite(RADIO_RST_PIN, HIGH);
+
+            // Part B & C: XL9555 GPIO expander init + ordered power-on sequence.
+            // The XL9555 sits at I2C 0x20.  After power-up every pin defaults to
+            // high-impedance input, so nothing is powered until we explicitly set
+            // the config and output registers.
+            static constexpr uint8_t XL9555_ADDR = 0x20;
+            static constexpr uint8_t XL9555_OUT0 = 0x02; // output latch port 0 (pins 0-7)
+            static constexpr uint8_t XL9555_OUT1 = 0x03; // output latch port 1 (pins 8-15)
+            static constexpr uint8_t XL9555_CFG0 = 0x06; // direction port 0 (0=output, 1=input)
+            static constexpr uint8_t XL9555_CFG1 = 0x07; // direction port 1
+
+            // Port 0 (pins 0-7): all outputs
+            Wire.beginTransmission(XL9555_ADDR);
+            Wire.write(XL9555_CFG0);
+            Wire.write(0x00);
+            Wire.endTransmission();
+
+            // Port 1 (pins 8-15): SD_DET(10=bit2) and SD_PULLEN(11=bit3) stay as
+            // inputs for card-detect sensing; everything else is an output
+            Wire.beginTransmission(XL9555_ADDR);
+            Wire.write(XL9555_CFG1);
+            Wire.write(0x0C); // 0b00001100
+            Wire.endTransmission();
+
+            // Enable each peripheral in order, writing incrementally so each rail
+            // has settled before the next one is asserted.  Small delays match the
+            // stabilisation pattern used in the original trail-mate board driver.
+            static constexpr uint8_t power_seq[] = {
+                EXPANDS_KB_RST,   // release keyboard MCU reset first
+                EXPANDS_LORA_EN,  // LoRa radio power rail
+                EXPANDS_GPS_EN,   // GPS module power
+                EXPANDS_GPS_RST,  // release GPS reset after power is up
+                EXPANDS_KB_EN,    // keyboard enable (after reset is deasserted)
+                EXPANDS_DRV_EN,   // haptic motor driver
+                EXPANDS_AMP_EN,   // audio amplifier
+                EXPANDS_NFC_EN,   // NFC controller
+                EXPANDS_SD_EN,    // SD card power
+            };
+
+            uint8_t out0 = 0x00, out1 = 0x00;
+            for (auto pin : power_seq) {
+                if (pin < 8) {
+                    out0 |= (1 << pin);
+                    Wire.beginTransmission(XL9555_ADDR);
+                    Wire.write(XL9555_OUT0);
+                    Wire.write(out0);
+                    Wire.endTransmission();
+                } else {
+                    out1 |= (1 << (pin - 8));
+                    Wire.beginTransmission(XL9555_ADDR);
+                    Wire.write(XL9555_OUT1);
+                    Wire.write(out1);
+                    Wire.endTransmission();
+                }
+                delay(5);
+            }
+
+            // Give all rails time to stabilise before SPI and radio init begin
+            delay(100);
+        #endif
     }
 
     void lowerCpuFrequency() {

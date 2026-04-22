@@ -56,6 +56,23 @@
         extern String topHeader1_3;
         extern String topHeader2;
     #endif
+    #if defined(LILYGO_T_LORA_PAGER)
+        #define color1  TFT_BLACK
+        #define color2  0x0249
+        #define green   0x1B08
+
+        #define bigSizeFont     4
+        #define normalSizeFont  2
+        #define smallSizeFont   1
+        #define lineSpacing     20
+        #define maxLineLength   32  // 480px wide — fits ~32 chars at textSize 2
+
+        extern String topHeader1;
+        extern String topHeader1_1;
+        extern String topHeader1_2;
+        extern String topHeader1_3;
+        extern String topHeader2;
+    #endif
 #else
     #include <Adafruit_GFX.h>
 
@@ -230,25 +247,59 @@ extern logging::Logger logger;
 
 #endif
 
+#if defined(HAS_TFT) && defined(LILYGO_T_LORA_PAGER)
+    void draw_T_LORA_PAGER_Top() {
+        sprite.fillSprite(TFT_BLACK);
+        sprite.fillRect(0, 0, 480, 38, redColor);
+        sprite.setTextFont(0);
+        sprite.setTextSize(bigSizeFont);
+        sprite.setTextColor(TFT_WHITE, redColor);
+        sprite.drawString(topHeader1, 3, 5);
+
+        sprite.setTextSize(smallSizeFont);
+        sprite.setTextColor(TFT_WHITE, redColor);
+        sprite.drawString(topHeader1_1, 378, 5);
+        sprite.drawString("UTC:" + topHeader1_2, 366, 15);
+
+        sprite.fillRect(0, 38, 480, 2, redColorDark);
+
+        sprite.fillRect(0, 40, 480, 2, greyColorLight);
+        sprite.fillRect(0, 42, 480, 20, greyColor);
+        sprite.setTextSize(2);
+        sprite.setTextColor(TFT_WHITE, greyColor);
+        sprite.drawString(topHeader2, 8, 44);
+        sprite.fillRect(0, 60, 480, 2, greyColorDark);
+    }
+#endif
+
 void displaySetup() {
     delay(500);
     STATION_Utils::loadIndex(2);    // Screen Brightness value
     #ifdef HAS_TFT
+        #ifdef LILYGO_T_LORA_PAGER
+            SPI.begin(DISP_SCK, DISP_MISO, DISP_MOSI, DISP_CS);
+        #endif
         tft.init();
         tft.begin();
+        #ifdef LILYGO_T_LORA_PAGER
+            tft.setRotation(Config.display.turn180 ? 1 : 3);
+        #else
         if (Config.display.turn180) {
                 tft.setRotation(3);
         } else {
             tft.setRotation(1);
         }
+        #endif
         pinMode(TFT_BL, OUTPUT);
         analogWrite(TFT_BL, screenBrightness);
         tft.setTextFont(0);
         tft.fillScreen(TFT_BLACK);
-        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-            sprite.createSprite(320,240);
+        #if defined(LILYGO_T_LORA_PAGER)
+            sprite.createSprite(480, 222);
+        #elif defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+            sprite.createSprite(320, 240);
         #else
-            sprite.createSprite(160,80);
+            sprite.createSprite(160, 80);
         #endif
     #else
         #ifdef OLED_DISPLAY_HAS_RST_PIN
@@ -315,6 +366,30 @@ void displayToggle(bool toggle) {
 
 void displayShow(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
+        #if defined(LILYGO_T_LORA_PAGER)
+            draw_T_LORA_PAGER_Top();
+
+            sprite.setTextSize(normalSizeFont);
+            sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+            const String* const lines[] = {&header, &line1, &line2};
+            int yLineOffset = 70;
+
+            for (int i = 0; i < 3; i++) {
+                String text = *lines[i];
+                if (text.length() > 0) {
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 35, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
+            }
+        #endif
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
 
@@ -405,6 +480,9 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
         #if defined(HELTEC_WIRELESS_TRACKER)
             sprite.drawBitmap(128 - SYMBOL_WIDTH, 3, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
         #endif
+        #if defined(LILYGO_T_LORA_PAGER)
+            sprite.drawBitmap(440, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+        #endif
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             sprite.drawBitmap(280, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
         #endif
@@ -415,6 +493,30 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
+        #if defined(LILYGO_T_LORA_PAGER)
+            draw_T_LORA_PAGER_Top();
+            sprite.setTextSize(normalSizeFont);
+            sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+            const String* const lines[] = {&header, &line1, &line2, &line3, &line4, &line5};
+            int yLineOffset = 70;
+
+            for (int i = 0; i < 6; i++) {
+                String text = *lines[i];
+                if (text.length() > 0) {
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 35, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
+            }
+
+        #endif
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
             sprite.setTextSize(normalSizeFont);

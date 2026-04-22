@@ -74,7 +74,7 @@ extern bool                 gpsIsActive;
 String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
 
-#if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
+#if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS) || defined(LILYGO_T_LORA_PAGER)
     String topHeader1   = "";
     String topHeader1_1 = "";
     String topHeader1_2 = "";
@@ -135,7 +135,7 @@ namespace MENU_Utils {
             lastLine = "1P=Down 2P=Back LP=Go";
         }
 
-        #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
+        #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS) || defined(LILYGO_T_LORA_PAGER)
             topHeader1      = currentBeacon->callsign;
             const auto time_now = now();
             topHeader1_1    = Utils::createDateString(time_now);

@@ -21,6 +21,9 @@
 #include <logger.h>
 #include <Wire.h>
 #include "keyboard_utils.h"
+#ifdef LILYGO_T_LORA_PAGER
+    #include <Adafruit_TCA8418.h>
+#endif
 #include "winlink_utils.h"
 #include "station_utils.h"
 #include "configuration.h"
@@ -81,6 +84,83 @@ String      messageText             = "";
 int         messagesIterator        = 0;
 
 bool        showHumanHeading        = false;
+
+
+// ---- T-LoRa-Pager keyboard (TCA8418 4x10 matrix) ---------------------------
+#ifdef LILYGO_T_LORA_PAGER
+
+static Adafruit_TCA8418 tca;
+static bool pagerKbReady = false;
+static bool symbolMode   = false;
+
+// Physical key layout - matches trail-mate keymap exactly
+static constexpr char keymap[4][10] = {
+    {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'},
+    {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '\r'},
+    {'\0', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '\0', '\0'},
+    {' ', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'}
+};
+
+static constexpr char symbolMap[4][10] = {
+    {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'},
+    {'*', '/', '+', '-', '=', ':', '\'', '"', '@', '\r'},
+    {'\0', '_', '$', ';', '?', '!', ',', '.', '\0', '\0'},
+    {' ', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'}
+};
+
+// TCA8418 key codes are 1-indexed: code = row*10 + col + 1
+static constexpr uint8_t KEY_BACKSPACE  = 29; // row 2, col 8
+static constexpr uint8_t KEY_SYMBOL_TOG = 30; // row 2, col 9
+
+static void setupPagerKeyboard() {
+    if (!tca.begin(TCA8418_DEFAULT_ADDR, &Wire)) {
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "KB", "TCA8418 not found");
+        return;
+    }
+    tca.matrix(4, 10);
+    tca.flush();
+    tca.enableInterrupts();
+    pinMode(KB_INT, INPUT_PULLUP);
+    pagerKbReady = true;
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "KB", "Pager keyboard ready");
+}
+
+static void readPagerKeyboard() {
+    if (!pagerKbReady) return;
+    if (digitalRead(KB_INT) == HIGH) return; // no events pending
+
+    while (tca.available()) {
+        uint8_t event   = tca.getEvent();
+        bool    pressed = (event & 0x80) != 0;
+        uint8_t keycode = event & 0x7F; // 1-40 for 4x10 matrix
+
+        if (!pressed || keycode == 0) continue;
+
+        uint8_t row = (keycode - 1) / 10;
+        uint8_t col = (keycode - 1) % 10;
+        if (row >= 4 || col >= 10) continue;
+
+        if (keycode == KEY_SYMBOL_TOG) {
+            symbolMode = !symbolMode;
+            continue;
+        }
+
+        if (keycode == KEY_BACKSPACE) {
+            keyboardTime = millis();
+            KEYBOARD_Utils::processPressedKey(8);
+            continue;
+        }
+
+        char c = symbolMode ? symbolMap[row][col] : keymap[row][col];
+        if (c == '\0') continue;
+        if (c == '\r') c = 13;
+
+        keyboardTime = millis();
+        KEYBOARD_Utils::processPressedKey(c);
+    }
+}
+#endif
+// -----------------------------------------------------------------------------
 
 
 namespace KEYBOARD_Utils {
@@ -779,6 +859,11 @@ namespace KEYBOARD_Utils {
     }
 
     void read() {
+        #ifdef LILYGO_T_LORA_PAGER
+            if (millis() - keyboardTime > 30 * 1000) keyDetected = false;
+            readPagerKeyboard();
+            return;
+        #endif
         if (keyboardConnected) {
             uint32_t lastKey = millis() - keyboardTime;
             if (lastKey > 30 * 1000) keyDetected = false;
@@ -788,13 +873,17 @@ namespace KEYBOARD_Utils {
                 if (c != 0) {
                     //Serial.print(c, DEC); Serial.print(" "); Serial.print(c, HEX); Serial.print(" "); Serial.println(char(c));    // just for debugging
                     keyboardTime = millis();
-                    processPressedKey(c);
+                    KEYBOARD_Utils::processPressedKey(c);
                 }
             }
         }
     }
 
     void setup() {
+        #ifdef LILYGO_T_LORA_PAGER
+            setupPagerKeyboard();
+            return;
+        #endif
         if (!Config.simplifiedTrackerMode) {
             if (keyboardAddress != 0x00) keyboardConnected = true;
         }

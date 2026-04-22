@@ -92,7 +92,11 @@ namespace GPS_Utils {
 
     void getData() {
         if (disableGPS) return;
-        while (gpsSerial.available() > 0) gps.encode(gpsSerial.read());
+        while (gpsSerial.available() > 0) {
+            char c = gpsSerial.read();
+            //Serial.write(c);// For debugging purposes, print raw GPS data to Serial Monitor
+            gps.encode(c);
+        }
     }
 
     void setDateFromData() {
