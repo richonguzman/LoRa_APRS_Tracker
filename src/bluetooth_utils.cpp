@@ -125,7 +125,7 @@ namespace BLUETOOTH_Utils {
         if (!packet.isEmpty()) {
             if (useKiss) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX Kiss", "%s", serialReceived.c_str());
-                SerialBT.println(KISS_Utils::encodeKISS(packet));
+                SerialBT.print(KISS_Utils::encodeKISS(packet));
             } else {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT RX TNC2", "%s", serialReceived.c_str());
                 SerialBT.println(packet);
