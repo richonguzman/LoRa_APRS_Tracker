@@ -70,7 +70,7 @@ ____________________________________________________________________*/
 
 
 String      versionDate             = "2026-04-22";
-String      versionNumber           = "2.4.3.3";
+String      versionNumber           = "2.4.3.2";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
