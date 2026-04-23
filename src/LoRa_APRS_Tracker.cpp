@@ -172,6 +172,9 @@ void setup() {
         TOUCH_Utils::setup();
     #endif
 
+    esp_random();
+    randomSeed(esp_random());
+
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
