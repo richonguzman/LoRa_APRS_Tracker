@@ -352,8 +352,12 @@ void create_map_screen() {
         map_center_lon = gpsFix.longitude();
     }
 
-    // Initialize trace SD persistence
-    TraceSD::init();
+    // Resync GPS filter to current fix: filter is frozen while off-map, and a
+    // long gap + km of movement would otherwise be rejected as "GPS teleport"
+    // forever, leaving the own-position icon stuck at the last pre-exit point.
+    if (gpsFix.valid.location) {
+        gpsFilter.forcePosition(gpsFix.latitude(), gpsFix.longitude());
+    }
 
     // Discover and set the map region if it's not already defined
     MapTiles::discoverAndSetMapRegion();

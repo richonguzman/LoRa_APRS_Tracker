@@ -445,17 +445,33 @@ namespace MapRender {
         static int sdIndices[512];
         int sdCount = TraceSD::readViewport(minLat, maxLat, minLon, maxLon, sdBuf, 512, sdIndices);
         
+        // Break the polyline when consecutive points are separated by a long
+        // time gap (off-map period with no trace recording): prevents a
+        // straight line artifact across the map between pre-exit and post-return
+        // trace segments. 2 minutes is well above normal GPS cadence.
+        static constexpr uint32_t TRACE_TIME_BREAK_MS = 2 * 60 * 1000;
+        uint32_t lastPointTimeMs = 0;
+
         for (int i = 0; i < sdCount; ++i) {
-            // Topological check: if cache index skipped, break the line
-            if (i > 0 && sdIndices[i] != sdIndices[i - 1] + 1) {
+            // Break on topological skip (viewport-filtered gap) OR temporal gap
+            bool topoBreak = (i > 0 && sdIndices[i] != sdIndices[i - 1] + 1);
+            bool timeBreak = (i > 0 &&
+                              sdBuf[i].time_ms - sdBuf[i - 1].time_ms > TRACE_TIME_BREAK_MS);
+            if (topoBreak || timeBreak) {
                 drawCurrentSegment();
             }
             addPixelPoint(sdBuf[i].lat, sdBuf[i].lon);
+            lastPointTimeMs = sdBuf[i].time_ms;
         }
 
         // 2. Current position (tip of the trace)
         double uiLat, uiLon;
         if (gpsFilter.getUiPosition(&uiLat, &uiLon) && validPts < TRACE_RENDER_MAX) {
+            // Break if current position is temporally far from last SD point
+            // (e.g., map just reopened after a long off-map period).
+            if (sdCount > 0 && millis() - lastPointTimeMs > TRACE_TIME_BREAK_MS) {
+                drawCurrentSegment();
+            }
             int cx, cy;
             MapMath::latLonToPixel(uiLat, uiLon,
                           map_center_lat, map_center_lon, map_current_zoom,

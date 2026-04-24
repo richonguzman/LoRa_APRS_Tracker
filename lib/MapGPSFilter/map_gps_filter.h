@@ -45,6 +45,11 @@ public:
     // Update filtered position from GPS data (includes all filtering logic)
     void updateFilteredOwnPosition(const gps_fix& fix);
 
+    // Force filtered position to (lat, lon) bypassing spike/jitter/teleport rejection.
+    // Used on map re-entry after off-map period: the filter is frozen while off-map,
+    // so a long gap + km of movement would be rejected as "teleport" forever.
+    void forcePosition(double lat, double lon);
+
     // Add current position to trace history (SmartBeacon-like criteria)
     // Returns true if a point was actually recorded
     bool addOwnTracePoint(const gps_fix& fix);

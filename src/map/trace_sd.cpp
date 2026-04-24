@@ -1,6 +1,7 @@
 /* trace_sd.cpp — Binary trace persistence on SD card
- * PSRAM cache: SD is read once at init, then only appended to.
- * readViewport() scans the PSRAM cache (microseconds, no SD access).
+ * Session-only: file is wiped at boot, rebuilt during the trip.
+ * Fixed filename — no date dependency, no midnight rollover issues.
+ * PSRAM cache mirrors the file; readViewport() scans the cache (microseconds, no SD).
  */
 
 #ifdef USE_LVGL_UI
@@ -11,14 +12,14 @@
 #include <esp_heap_caps.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-#include <NMEAGPS.h>
 
 static const char* TAG = "TraceSD";
 
 extern SemaphoreHandle_t spiMutex;
-extern gps_fix gpsFix;
 
-static char currentFilePath[64] = "";
+static constexpr const char* TRACE_DIR  = "/LoRa_Tracker/trace";
+static constexpr const char* TRACE_PATH = "/LoRa_Tracker/trace/trace_session.bin";
+
 static bool initialized = false;
 
 // PSRAM cache — dynamically grown
@@ -27,17 +28,6 @@ static int cacheCount    = 0;
 static int cacheCapacity = 0;
 static constexpr int CACHE_GROW_STEP = 512;  // Grow by 512 records (6 KB) at a time
 static constexpr int CACHE_MAX       = 32768; // ~384 KB max — well within PSRAM
-
-// Build today's filename from GPS date
-static void updateFilePath() {
-    if (gpsFix.valid.date) {
-        snprintf(currentFilePath, sizeof(currentFilePath),
-                 "/LoRa_Tracker/trace/trace_%04d%02d%02d.bin",
-                 2000 + gpsFix.dateTime.year, gpsFix.dateTime.month, gpsFix.dateTime.date);
-    } else {
-        strncpy(currentFilePath, "/LoRa_Tracker/trace/trace_nodate.bin", sizeof(currentFilePath));
-    }
-}
 
 // Grow cache in PSRAM if needed. Returns true if space is available.
 static bool ensureCacheSpace() {
@@ -57,67 +47,54 @@ static bool ensureCacheSpace() {
     return true;
 }
 
-// Load existing SD file into PSRAM cache
-static void loadFromSD() {
+// Clear session file and reset PSRAM cache
+static void clearTraceSD() {
     if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(2000)) != pdTRUE) {
         return;
     }
 
-    File file = SD.open(currentFilePath, FILE_READ);
-    if (!file) {
-        xSemaphoreGiveRecursive(spiMutex);
-        ESP_LOGI(TAG, "No existing trace file, starting fresh");
-        return;
+    if (SD.exists(TRACE_PATH)) {
+        SD.remove(TRACE_PATH);
+        ESP_LOGI(TAG, "Deleted previous session trace: %s", TRACE_PATH);
     }
 
-    int fileRecords = file.size() / sizeof(TraceRecord);
-    ESP_LOGI(TAG, "Loading %d records from SD (%d bytes)", fileRecords, (int)file.size());
-
-    // Read in chunks to avoid huge stack buffers
-    TraceRecord rec;
-    while (file.available() >= (int)sizeof(rec)) {
-        if (file.read((uint8_t*)&rec, sizeof(rec)) != sizeof(rec)) break;
-        if (!ensureCacheSpace()) {
-            ESP_LOGW(TAG, "Cache full at %d records, truncating SD load", cacheCount);
-            break;
-        }
-        cache[cacheCount++] = rec;
+    File file = SD.open(TRACE_PATH, FILE_WRITE);
+    if (file) {
+        file.close();
     }
 
-    file.close();
     xSemaphoreGiveRecursive(spiMutex);
 
-    ESP_LOGI(TAG, "Loaded %d records into PSRAM cache (%d KB)",
-             cacheCount, (int)(cacheCount * sizeof(TraceRecord) / 1024));
+    cacheCount = 0;
+    if (cache) {
+        heap_caps_free(cache);
+        cache = nullptr;
+    }
+    cacheCapacity = 0;
 }
 
 namespace TraceSD {
 
     void init() {
+        if (initialized) return;
+
         if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
             return;
         }
-        if (!SD.exists("/LoRa_Tracker/trace")) {
-            SD.mkdir("/LoRa_Tracker/trace");
+        if (!SD.exists(TRACE_DIR)) {
+            SD.mkdir(TRACE_DIR);
         }
         xSemaphoreGiveRecursive(spiMutex);
 
-        updateFilePath();
-
-        // Reset cache
-        cacheCount = 0;
-
-        // Load existing trace from SD into PSRAM
-        loadFromSD();
+        // Fresh session: clear leftover file from previous boot.
+        clearTraceSD();
 
         initialized = true;
-        ESP_LOGI(TAG, "Trace SD initialized: %s (%d cached)", currentFilePath, cacheCount);
+        ESP_LOGI(TAG, "Trace SD initialized: %s", TRACE_PATH);
     }
 
     void appendPoint(float lat, float lon, uint32_t time_ms) {
         if (!initialized) return;
-
-        updateFilePath();
 
         TraceRecord rec = { lat, lon, time_ms };
 
@@ -130,7 +107,7 @@ namespace TraceSD {
         if (spiMutex == NULL || xSemaphoreTakeRecursive(spiMutex, pdMS_TO_TICKS(200)) != pdTRUE) {
             return;
         }
-        File file = SD.open(currentFilePath, FILE_APPEND);
+        File file = SD.open(TRACE_PATH, FILE_APPEND);
         if (file) {
             file.write((const uint8_t*)&rec, sizeof(rec));
             file.close();

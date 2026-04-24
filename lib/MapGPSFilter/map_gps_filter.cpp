@@ -39,6 +39,18 @@ void MapGPSFilter::reset() {
     lastAlpha = 0.0f;
 }
 
+void MapGPSFilter::forcePosition(double lat, double lon) {
+    if (xSemaphoreTake(_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        ownPositionLat   = lat;
+        ownPositionLon   = lon;
+        ownPositionValid = true;
+        lastRawLat       = lat;
+        lastRawLon       = lon;
+        lastValidTime    = MILLIS();
+        xSemaphoreGive(_mutex);
+    }
+}
+
 void MapGPSFilter::updateFilteredOwnPosition(const gps_fix& fix) {
     float hdopVal = fix.valid.hdop ? (float)fix.hdop / 1000.0f : 99.0f;
     ESP_LOGV(TAG, "Update called: location.isValid=%d, sats=%d, hdop=%.1f",

@@ -79,6 +79,7 @@ static const char *TAG = "Main";
 #endif
 #ifdef USE_LVGL_UI
 #include "lvgl_ui.h"
+#include "trace_sd.h"
 #endif
 
 
@@ -202,6 +203,12 @@ void setup() {
     // Initialize SD logger for debugging reboots
     SD_Logger::init();
     SD_Logger::logBootInfo();
+
+    #ifdef USE_LVGL_UI
+        // Trace persistence: open dir + guard. Session clear is deferred until
+        // GPS has a valid date (see trace_sd.cpp appendPoint).
+        TraceSD::init();
+    #endif
 
     #ifdef USE_LVGL_UI
         LVGL_UI::updateInitStatus("GPS...");

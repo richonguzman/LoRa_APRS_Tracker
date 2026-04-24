@@ -1,6 +1,6 @@
 /* trace_sd.h — Binary trace persistence on SD card
  * Format: fixed 12-byte records (float lat, float lon, uint32_t time_ms)
- * One file per day: /LoRa_Tracker/trace/trace_YYYYMMDD.bin
+ * Session-only file: /LoRa_Tracker/trace/trace_session.bin (wiped at each boot)
  */
 
 #ifndef TRACE_SD_H
