@@ -538,6 +538,7 @@ namespace STATION_Utils {
             case 2: filePath = "/brightness.txt"; break;
             case 3: filePath = "/displayEcoMode.txt"; break;
             case 4: filePath = "/ecoTimeout.txt"; break;
+            case 5: filePath = "/soundVolume.txt"; break;
             default: return; // Invalid type, exit function
         }
 
@@ -553,6 +554,7 @@ namespace STATION_Utils {
                 case 2: logMessage = "New Brightness"; break;
                 case 3: logMessage = "Display Eco Mode"; break;
                 case 4: logMessage = "ECO Timeout"; break;
+                case 5: logMessage = "Sound Volume"; break;
                 default: return; // Invalid type, exit function
             }
             ESP_LOGD(TAG, "%s = %d saved to SPIFFS", logMessage.c_str(), index);
@@ -568,6 +570,7 @@ namespace STATION_Utils {
             case 2: filePath = "/brightness.txt"; break;
             case 3: filePath = "/displayEcoMode.txt"; break;
             case 4: filePath = "/ecoTimeout.txt"; break;
+            case 5: filePath = "/soundVolume.txt"; break;
             default: return; // Invalid type, exit function
         }
 
@@ -584,6 +587,7 @@ namespace STATION_Utils {
                     break;
                 case 3: displayEcoMode = false; break;  // Default: off
                 case 4: break;  // Keep Config.display.timeout default from JSON
+                case 5: break;  // Keep Config.notification.volume default from JSON
                 default: return; // Invalid type, exit function
             }
             return;
@@ -610,6 +614,11 @@ namespace STATION_Utils {
                         Config.display.timeout = index;
                     }
                     logMessage = "ECO Timeout:";
+                } else if (type == 5) {
+                    if (index >= 0 && index <= 100) {
+                        Config.notification.volume = index;
+                    }
+                    logMessage = "Sound Volume:";
                 }
                 ESP_LOGD(TAG, "%s %d (from SPIFFS)", logMessage.c_str(), index);
             }

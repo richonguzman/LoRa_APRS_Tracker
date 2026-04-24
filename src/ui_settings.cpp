@@ -941,6 +941,8 @@ static void volume_slider_changed(lv_event_t *e) {
 }
 
 static void volume_slider_released(lv_event_t *e) {
+    STATION_Utils::saveIndex(5, (uint8_t)Config.notification.volume);
+    ESP_LOGI(TAG, "Sound Volume saved: %d%%", Config.notification.volume);
     if (Config.notification.buzzerActive) {
         NOTIFICATION_Utils::playTone(1000, 100);
     }
