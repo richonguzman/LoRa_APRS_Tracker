@@ -231,8 +231,11 @@ namespace MapEngine {
         memcpy(&colorRgb565, fp + 1, 2);
         float widthF = widthRaw / 2.0f;
 
-        // LOD — IceNav L1036-1040
-        int16_t lodThreshold = (zoom >= 15) ? 2 : 1;
+        // LOD — IceNav L1036-1040 (fix inversé, IceNav 8a4a8ba)
+        int16_t lodThreshold;
+        if (zoom <= 12)      lodThreshold = 3;
+        else if (zoom <= 14) lodThreshold = 2;
+        else                 lodThreshold = 1;
 
         // Single-loop render — IceNav L1042-1061
         int16_t lastPx = -32768;
