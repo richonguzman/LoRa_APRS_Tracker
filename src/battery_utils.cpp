@@ -94,10 +94,16 @@ namespace BATTERY_Utils {
     void initBatteryGauge() {
         #ifdef HAS_FUEL_GAUGE_I2C
             Wire.begin(FUEL_GAUGE_I2C_SDA, FUEL_GAUGE_I2C_SCL);
+            delay(5);  // let I2C bus settle (shared with GT911 touch via lgfx)
             fuelGaugeReady = fuelGauge.begin(&Wire);
             if (fuelGaugeReady) {
+                float v = fuelGauge.cellVoltage();
+                if (v == 0.0f || isnan(v)) {
+                    delay(50);  // retry after touch scan window
+                    v = fuelGauge.cellVoltage();
+                }
                 Serial.printf("[BATT] MAX17048 OK - cell=%.3fV SOC=%.1f%%\n",
-                              fuelGauge.cellVoltage(), fuelGauge.cellPercent());
+                              v, fuelGauge.cellPercent());
             } else {
                 Serial.println("[BATT] MAX17048 not found, battery monitoring disabled");
             }
