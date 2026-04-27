@@ -83,6 +83,14 @@ namespace BATTERY_Utils {
     }
 
     String getPercentVoltageBattery(float voltage) {
+        #ifdef HAS_FUEL_GAUGE_I2C
+            if (fuelGaugeReady) {
+                int percent = (int)(fuelGauge.cellPercent() + 0.5f);
+                if (percent > 100) percent = 100;
+                if (percent < 0)   percent = 0;
+                return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
+            }
+        #endif
         int percent = voltageToPercent(voltage);
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
