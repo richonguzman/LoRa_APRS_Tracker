@@ -265,9 +265,9 @@ void app_main(void)
     };
     gps_uart_init(&gps_filter);
 
-    // Protocol UART (toward S3) — DISABLED for debug (shared CP2102N)
-    // proto_uart_init();
-    // proto_set_rx_handler(on_s3_message);
+    /* Protocol UART (toward S3) */
+    proto_uart_init();
+    proto_set_rx_handler(on_s3_message);
 
     /* LoRa radio init — default 433.775 MHz APRS */
     lora_config_t lora_cfg = {
