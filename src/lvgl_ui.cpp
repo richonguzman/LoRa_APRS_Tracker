@@ -621,7 +621,7 @@ void LVGL_UI::open_compose_with_callsign(const String &callsign) {
       // Update battery
       if (batteryVoltage.length() > 0) {
         float voltage = batteryVoltage.toFloat();
-        int percent = BATTERY_Utils::voltageToPercent(voltage);
+        int percent = BATTERY_Utils::getPercentVoltageBattery(voltage).toInt();
         UIDashboard::updateBattery(percent, voltage);
       }
 
