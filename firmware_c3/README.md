@@ -1,6 +1,6 @@
 # Firmware ESP32-C3 — LoRa APRS Tracker
 
-Boîtier radio/GPS autonome. ESP-IDF v5.1 natif, communication UART avec ESP32-S3.
+Boîtier radio/GPS autonome. ESP-IDF v5.3.5 natif, communication UART avec ESP32-S3.
 
 ## Pinout
 
@@ -41,22 +41,12 @@ Console sur USB_SERIAL_JTAG (GPIO18/19). Sur DevKitM-1, ces pins sont sur header
 ## Build
 
 ```bash
-source ~/.espressif/v5.1/esp-idf/export.sh
+source ~/.espressif/v5.3.5/esp-idf/export.sh  # depuis un shell propre (pas PlatformIO)
 idf.py set-target esp32c3
 idf.py build
 ```
 
-### Note : chip revision C3 eco7 (v1.1)
-
-ESP-IDF v5.1 limite par défaut à `REV_MAX=99` (v0.99). Pour supporter C3 v1.1 :
-
-```
-# Patch manuel requis :
-# ~/.espressif/v5.1/esp-idf/components/esp_hw_support/port/esp32c3/Kconfig.hw_support
-# Ligne 48 : default 99 → default 199
-```
-
-Sans ce patch, le bootloader refuse de charger l'app : `Image requires chip rev <= v0.99, but chip is v1.1`.
+v5.3.5 supporte nativement C3 eco7 (v1.1) — pas de patch Kconfig nécessaire.
 
 ## Flash
 
