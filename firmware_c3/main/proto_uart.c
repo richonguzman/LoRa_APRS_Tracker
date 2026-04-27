@@ -73,6 +73,8 @@ void proto_set_rx_handler(proto_rx_handler_t handler)
 
 void proto_send(uint8_t type, const uint8_t *payload, uint16_t length)
 {
+    if (!tx_mutex) return;  /* proto UART not initialized */
+
     uint8_t frame[PROTO_MAX_FRAME];
     size_t frame_len = proto_build_frame(frame, type, payload, length);
 

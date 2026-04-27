@@ -34,6 +34,7 @@ static bool          config_received = false;
 static gps_fix_t     last_sent_fix;
 static bool          smartbeacon_active = true;
 static bool          lora_ready = false;
+static bool          proto_ready = false;   /* proto UART init'd */
 
 /* APRS identity — defaults, updated by CONFIG from S3 */
 static aprs_config_t aprs_cfg = {
@@ -179,6 +180,8 @@ static void main_loop_task(void *arg)
     gps_fix_t fix;
     memset(&fix, 0, sizeof(fix));
 
+    ESP_LOGI(TAG, "Main loop started");
+
     for (;;) {
         int64_t now = esp_timer_get_time();
 
@@ -237,6 +240,9 @@ static void main_loop_task(void *arg)
 
 void app_main(void)
 {
+    /* Wait for CP2102N UART bridge to stabilise after ROM bootloader reinit */
+    esp_rom_delay_us(50000);
+
     ESP_LOGI(TAG, "LoRa APRS C3 starting...");
 
     /* Default SmartBeaconing config */
@@ -259,9 +265,9 @@ void app_main(void)
     };
     gps_uart_init(&gps_filter);
 
-    /* Protocol UART (toward S3) */
-    proto_uart_init();
-    proto_set_rx_handler(on_s3_message);
+    // Protocol UART (toward S3) — DISABLED for debug (shared CP2102N)
+    // proto_uart_init();
+    // proto_set_rx_handler(on_s3_message);
 
     /* LoRa radio init — default 433.775 MHz APRS */
     lora_config_t lora_cfg = {
@@ -275,15 +281,16 @@ void app_main(void)
     int lora_ret = lora_init(&lora_cfg);
     if (lora_ret == 0) {
         lora_ready = true;
+        esp_rom_delay_us(100000); /* let UART settle before RX */
         lora_start_rx(on_lora_rx);
         ESP_LOGI(TAG, "LoRa radio ready, RX started");
     } else {
         ESP_LOGE(TAG, "LoRa init failed (%d) — running without radio", lora_ret);
-        proto_send_error(ERR_LORA_INIT, (uint16_t)lora_ret);
+        // proto_send_error(ERR_LORA_INIT, (uint16_t)lora_ret);  // proto disabled
     }
 
     /* Main loop */
-    xTaskCreate(main_loop_task, "main_loop", 4096, NULL, 4, NULL);
+    xTaskCreate(main_loop_task, "main_loop", 6144, NULL, 4, NULL);
 
     ESP_LOGI(TAG, "All tasks started");
 }

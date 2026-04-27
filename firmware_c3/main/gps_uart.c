@@ -256,6 +256,13 @@ static void process_nmea_line(char *line, int len)
     fix_valid = true;
     portEXIT_CRITICAL(&fix_lock);
 
+    /* Log every 10th fix to avoid spam */
+    if (filtered_count % 10 == 1) {
+        ESP_LOGI(TAG, "Fix #%d: lat=%.6f lon=%.6f alt=%d sats=%d hdop=%.1f",
+                 (int)filtered_count, fix.lat / 1e7, fix.lon / 1e7,
+                 (int)fix.alt, (int)fix.sats, fix.hdop / 10.0f);
+    }
+
     filtered_count++;
 
     /* Reset parse state for next cycle */
@@ -291,6 +298,10 @@ static void gps_rx_task(void *arg)
                     nmea_buf[--nmea_idx] = '\0';
                 }
                 process_nmea_line(nmea_buf, nmea_idx);
+                raw_count++;
+                if (raw_count == 1) {
+                    ESP_LOGI(TAG, "First NMEA: %s", nmea_buf);
+                }
                 nmea_idx = 0;
             }
         }
