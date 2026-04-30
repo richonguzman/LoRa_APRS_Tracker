@@ -38,6 +38,7 @@ namespace SMARTBEACON_Utils {
     void checkInterval(int speed);
     void checkFixedBeaconTime();
     void checkState();
+    int  getProfileDefault(byte profileIndex, byte paramIndex);  // 7 params per profile
 
 }
 

@@ -21,6 +21,7 @@
 #include <SPIFFS.h>
 #include "configuration.h"
 #include "lora_utils.h"
+#include "smartbeacon_utils.h"
 #include "board_pinout.h"
 #include "display.h"
 static const char *TAG = "Config";
@@ -57,6 +58,14 @@ bool Configuration::writeFile() {
             data["beacons"][i]["comment"]               = beacons[i].comment;
             data["beacons"][i]["smartBeaconActive"]     = beacons[i].smartBeaconActive;
             data["beacons"][i]["smartBeaconSetting"]    = beacons[i].smartBeaconSetting;
+            // SmartBeacon profile defaults (expose to web UI for display)
+            data["beacons"][i]["sbSlowRate"]            = beacons[i].sbSlowRate ? beacons[i].sbSlowRate : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 0);
+            data["beacons"][i]["sbFastRate"]            = beacons[i].sbFastRate ? beacons[i].sbFastRate : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 1);
+            data["beacons"][i]["sbMinSpeed"]            = beacons[i].sbMinSpeed ? beacons[i].sbMinSpeed : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 2);
+            data["beacons"][i]["sbMaxSpeed"]            = beacons[i].sbMaxSpeed ? beacons[i].sbMaxSpeed : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 3);
+            data["beacons"][i]["sbMinTurnAngle"]        = beacons[i].sbMinTurnAngle ? beacons[i].sbMinTurnAngle : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 4);
+            data["beacons"][i]["sbTurnSlope"]           = beacons[i].sbTurnSlope ? beacons[i].sbTurnSlope : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 5);
+            data["beacons"][i]["sbMinBeaconTime"]       = beacons[i].sbMinBeaconTime ? beacons[i].sbMinBeaconTime : SMARTBEACON_Utils::getProfileDefault(beacons[i].smartBeaconSetting, 6);
             data["beacons"][i]["gpsEcoMode"]            = beacons[i].gpsEcoMode;
             data["beacons"][i]["profileLabel"]          = beacons[i].profileLabel;
             data["beacons"][i]["status"]                = beacons[i].status;
@@ -205,6 +214,13 @@ bool Configuration::readFile() {
             bcn.status                  = BeaconsArray[i]["status"] | "";
             bcn.smartBeaconActive       = BeaconsArray[i]["smartBeaconActive"] | true;
             bcn.smartBeaconSetting      = BeaconsArray[i]["smartBeaconSetting"] | 0;
+            bcn.sbSlowRate             = BeaconsArray[i]["sbSlowRate"] | 0;
+            bcn.sbFastRate             = BeaconsArray[i]["sbFastRate"] | 0;
+            bcn.sbMinSpeed             = BeaconsArray[i]["sbMinSpeed"] | 0;
+            bcn.sbMaxSpeed             = BeaconsArray[i]["sbMaxSpeed"] | 0;
+            bcn.sbMinTurnAngle         = BeaconsArray[i]["sbMinTurnAngle"] | 0;
+            bcn.sbTurnSlope            = BeaconsArray[i]["sbTurnSlope"] | 0;
+            bcn.sbMinBeaconTime        = BeaconsArray[i]["sbMinBeaconTime"] | 0;
             bcn.gpsEcoMode              = BeaconsArray[i]["gpsEcoMode"] | false;
             bcn.profileLabel            = BeaconsArray[i]["profileLabel"] | "";
             beacons.push_back(bcn);

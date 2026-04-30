@@ -164,6 +164,13 @@ namespace WEB_Utils {
             Config.beacons[i].gpsEcoMode        = request->hasParam(prefix + "gpsEcoMode", true);
             Config.beacons[i].smartBeaconActive = request->hasParam(prefix + "smartBeaconActive", true);
             Config.beacons[i].smartBeaconSetting = getParamIntSafe(prefix + "smartBeaconSetting", Config.beacons[i].smartBeaconSetting);
+            Config.beacons[i].sbSlowRate       = getParamIntSafe(prefix + "sbSlowRate", Config.beacons[i].sbSlowRate);
+            Config.beacons[i].sbFastRate       = getParamIntSafe(prefix + "sbFastRate", Config.beacons[i].sbFastRate);
+            Config.beacons[i].sbMinSpeed       = getParamIntSafe(prefix + "sbMinSpeed", Config.beacons[i].sbMinSpeed);
+            Config.beacons[i].sbMaxSpeed       = getParamIntSafe(prefix + "sbMaxSpeed", Config.beacons[i].sbMaxSpeed);
+            Config.beacons[i].sbMinTurnAngle   = getParamIntSafe(prefix + "sbMinTurnAngle", Config.beacons[i].sbMinTurnAngle);
+            Config.beacons[i].sbTurnSlope      = getParamIntSafe(prefix + "sbTurnSlope", Config.beacons[i].sbTurnSlope);
+            Config.beacons[i].sbMinBeaconTime  = getParamIntSafe(prefix + "sbMinBeaconTime", Config.beacons[i].sbMinBeaconTime);
         }
         
         //  Station Config

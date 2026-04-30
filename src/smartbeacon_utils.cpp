@@ -44,6 +44,25 @@ SmartBeaconValues   smartBeaconSettings[3] = {
 
 namespace SMARTBEACON_Utils {
 
+    /**
+     * Returns profile default value for web UI display.
+     * paramIndex: 0=slowRate 1=fastRate 2=minSpeed 3=maxSpeed 4=turnMinDeg 5=turnSlope 6=minDeltaBeacon
+     */
+    int getProfileDefault(byte profileIndex, byte paramIndex) {
+        if (profileIndex > 2) profileIndex = 0;
+        const SmartBeaconValues &p = smartBeaconSettings[profileIndex];
+        switch (paramIndex) {
+            case 0: return p.slowRate;
+            case 1: return p.fastRate;
+            case 2: return p.slowSpeed;      // min speed
+            case 3: return p.fastSpeed;      // max speed
+            case 4: return p.turnMinDeg;
+            case 5: return p.turnSlope;
+            case 6: return p.minDeltaBeacon;
+            default: return 0;
+        }
+    }
+
     void checkSettings(byte index) {
         if (smartBeaconSettingsIndex != index) {
             currentSmartBeaconValues = smartBeaconSettings[index];

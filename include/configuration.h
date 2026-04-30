@@ -47,6 +47,14 @@ public:
     String  comment;
     bool    smartBeaconActive;
     byte    smartBeaconSetting;
+    // SmartBeacon custom parameters (0 = use built-in profile defaults)
+    int     sbSlowRate;       // seconds, beacon rate at low speed (0=profile default)
+    int     sbFastRate;       // seconds, beacon rate at high speed
+    int     sbMinSpeed;       // km/h, low speed threshold
+    int     sbMaxSpeed;       // km/h, high speed threshold
+    int     sbMinTurnAngle;   // degrees, direction change threshold
+    int     sbTurnSlope;      // coefficient for turn angle speed compensation
+    int     sbMinBeaconTime;  // seconds, minimum time between beacons
     bool    gpsEcoMode;
     String  profileLabel;
     String  status;
