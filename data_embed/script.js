@@ -142,6 +142,40 @@ function loadSettings(settings) {
                     <option value="1" ${beacons.smartBeaconSetting == 1 ? 'selected' : ''}>Bicycle (Mid Speed)</option>
                     <option value="2" ${beacons.smartBeaconSetting == 2 ? 'selected' : ''}>Car/Motorcycle (Fast Speed)</option>
                 </select>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="resetSmartBeaconDefaults(${index})">↺ Reset to profile defaults</button>
+            </div>
+            <div class="smartbeacon-params col-12 col-md-11 ms-3 mb-2 p-2 bg-light rounded">
+                <small class="text-muted">Custom SmartBeacon parameters</small>
+                <div class="row">
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Slow Rate (s)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="120" name="beacons.${index}.sbSlowRate" id="beacons.${index}.sbSlowRate" min="0" step="1" value="${beacons.sbSlowRate || 120}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Fast Rate (s)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="60" name="beacons.${index}.sbFastRate" id="beacons.${index}.sbFastRate" min="0" step="1" value="${beacons.sbFastRate || 60}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Min Speed (km/h)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="5" name="beacons.${index}.sbMinSpeed" id="beacons.${index}.sbMinSpeed" min="0" step="1" value="${beacons.sbMinSpeed || 5}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Max Speed (km/h)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="70" name="beacons.${index}.sbMaxSpeed" id="beacons.${index}.sbMaxSpeed" min="0" step="1" value="${beacons.sbMaxSpeed || 70}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Min Turn Angle (&deg;)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="28" name="beacons.${index}.sbMinTurnAngle" id="beacons.${index}.sbMinTurnAngle" min="0" max="180" step="1" value="${beacons.sbMinTurnAngle || 28}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Turn Slope</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="240" name="beacons.${index}.sbTurnSlope" id="beacons.${index}.sbTurnSlope" min="0" step="1" value="${beacons.sbTurnSlope || 240}">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label small mb-0">Min Beacon Time (s)</label>
+                        <input type="number" class="form-control form-control-sm" placeholder="60" name="beacons.${index}.sbMinBeaconTime" id="beacons.${index}.sbMinBeaconTime" min="0" step="1" value="${beacons.sbMinBeaconTime || 60}">
+                    </div>
+                </div>
             </div>
             <div class="form-floating col-12 col-md-9 px-1 mb-2" style="margin-left: 50px;">
                  <input
@@ -542,6 +576,20 @@ form.addEventListener("submit", async (event) => {
     saveModal.show();
     setTimeout(checkConnection, 2000);
 });
+function resetSmartBeaconDefaults(index) {
+    const defaults = [
+        [120, 60,  5, 15, 28, 240, 12],  // Runner
+        [120, 60,  5, 40, 28, 240, 12],  // Bike
+        [120, 60, 10, 70, 28, 240, 10],  // Car
+    ];
+    const setting = parseInt(document.getElementById(`beacons.${index}.smartBeaconSetting`).value) || 0;
+    const d = defaults[setting];
+    const fields = ['sbSlowRate','sbFastRate','sbMinSpeed','sbMaxSpeed','sbMinTurnAngle','sbTurnSlope','sbMinBeaconTime'];
+    fields.forEach((f, i) => {
+        const el = document.getElementById(`beacons.${index}.${f}`);
+        if (el) el.value = d[i];
+    });
+}
 
 
 fetchSettings();
