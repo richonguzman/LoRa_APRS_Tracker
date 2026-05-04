@@ -1,3 +1,22 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "configuration.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "touch_utils.h"
@@ -7,7 +26,8 @@
     #define TOUCH_MODULES_GT911
     #include <TouchLib.h>
 
-    extern uint8_t touchModuleAddress;
+    extern Configuration    Config;
+    extern uint8_t          touchModuleAddress;
 
     TouchLib    touch(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, 0x00);
 
@@ -36,7 +56,7 @@
 
         void sendBeaconFromTouch() { sendUpdate = true;}
 
-        void enterMenuFromTouch() { BUTTON_Utils::doublePress();}
+        void enterMenuFromTouch() { BUTTON_Utils::doublePress1();}
 
         void exitFromTouch() {
             menuDisplay = 0;
@@ -48,12 +68,12 @@
             {125, 205,   0,  28, "Menu",    0, enterMenuFromTouch},     // Button Menu  //drawButton(125, 210, 80, 28, "Menu", 0);
             {210, 305,   0,  28, "Exit",    2, exitFromTouch}           // Button Exit  //drawButton(210, 210, 95, 28, "Exit", 2);
         };
-        
+
 
         bool touchButtonPressed(int touchX, int touchY, int Xmin, int Xmax, int Ymin, int Ymax) {
             return (touchX >= (Xmin - 5) && touchX <= (Xmax + 5) && touchY >= (Ymin - 5) && touchY <= (Ymax + 5));
         }
-        
+
         void checkLiveButtons(uint16_t x, uint16_t y) {
             for (int i = 0; i < sizeof(touchButtons_0) / sizeof(touchButtons_0[0]); i++) {
                 if (touchButtonPressed(x, y, touchButtons_0[i].Xmin, touchButtons_0[i].Xmax, touchButtons_0[i].Ymin, touchButtons_0[i].Ymax)) {
@@ -82,18 +102,20 @@
         }
 
         void setup() {
-            if (touchModuleAddress != 0x00) {
-                if (touchModuleAddress == 0x14) {
-                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
-                    touch.init();
-                } else if (touchModuleAddress == 0x5d) {
-                    touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
-                    touch.init();
-                } else {
-                    Serial.println("No Touch Module Address found");
+            if (!Config.simplifiedTrackerMode) {
+                if (touchModuleAddress != 0x00) {
+                    if (touchModuleAddress == 0x14) {
+                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS2);
+                        touch.init();
+                    } else if (touchModuleAddress == 0x5d) {
+                        touch = TouchLib(Wire, BOARD_I2C_SDA, BOARD_I2C_SCL, GT911_SLAVE_ADDRESS1);
+                        touch.init();
+                    } else {
+                        Serial.println("No Touch Module Address found");
+                    }
                 }
             }
-        }  
+        }
 
     }
 

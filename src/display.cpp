@@ -1,4 +1,25 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <logger.h>
+#include <APRSPacketLib.h>
+#include <TinyGPS++.h>
+#include <math.h>
 #include <Wire.h>
 #include "custom_characters.h"
 #include "custom_colors.h"
@@ -15,12 +36,11 @@
     TFT_eSPI    tft     = TFT_eSPI(); 
     TFT_eSprite sprite  = TFT_eSprite(&tft);
 
-    unsigned short      grays[13];      // ready to delete this?
-    
     #ifdef HELTEC_WIRELESS_TRACKER
         #define bigSizeFont     2
         #define smallSizeFont   1
         #define lineSpacing     12
+        #define maxLineLength   26
     #endif
     #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
         #define color1  TFT_BLACK
@@ -30,7 +50,8 @@
         #define bigSizeFont     4
         #define normalSizeFont  2
         #define smallSizeFont   1
-        #define lineSpacing     22
+        #define lineSpacing     20
+        #define maxLineLength   22
 
         extern String topHeader1;
         extern String topHeader1_1;
@@ -66,24 +87,80 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             bluetoothConnected;
+extern bool             bluetoothActive;
+extern TinyGPSPlus      gps;
+extern APRSPacket       lastReceivedPacket;
 
 const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
-                                "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_"};
+                                "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
 int   symbolArraySize         = sizeof(symbolArray)/sizeof(symbolArray[0]);
 const uint8_t *symbolsAPRS[]  = {runnerSymbol, carSymbol, jeepSymbol, bikeSymbol, motorcycleSymbol, shipSymbol, 
                                 truck18Symbol, recreationalVehicleSymbol, vanSymbol, carsateliteSymbol, tentSymbol,
                                 houseSymbol, truckSymbol, canoeSymbol, ambulanceSymbol, yatchSymbol, baloonSymbol,
-                                aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol};
+                                aircraftSymbol, trainSymbol, yagiSymbol, busSymbol, dogSymbol, wxSymbol, wheelchairSymbol};
 // T-Beams bought with soldered OLED Screen comes with only 4 pins (VCC, GND, SDA, SCL)
 // If your board didn't come with 4 pins OLED Screen and comes with 5 and one of them is RST...
 // Uncomment Next Line (Remember ONLY if your OLED Screen has a RST pin). This is to avoid memory issues.
 //#define OLED_DISPLAY_HAS_RST_PIN
 
-int         lastMenuDisplay         = 0;
 uint8_t     screenBrightness        = 1;    //from 1 to 255 to regulate brightness of screens
 bool        symbolAvailable         = true;
+// --- RX Signal meter ---
+static int   g_lastRxRssi = 0;
+static float g_lastRxSnr  = 0.0f;
+static uint32_t g_lastRxMs = 0;
+
+void displaySetLastRxMetrics(int rssi, float snr) {
+  g_lastRxRssi = rssi;
+  g_lastRxSnr  = snr;
+  g_lastRxMs   = millis();
+}
 
 extern logging::Logger logger;
+
+#if defined(HAS_TFT) && defined(TTGO_T_DECK_PLUS)
+    static const int kTDeckPlusBodyTopY      = 90;
+    static const int kTDeckPlusStatusStripY  = 76;
+    static const int kTDeckPlusStatusStripH  = 12;
+    static const int kTDeckPlusTextX         = 35;
+    static const int kTDeckPlusHudRightLimit = 276;
+    static const int kTDeckPlusCompassCx     = 300;
+#endif
+
+#if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
+    static String trimToPixelWidth(const String& text, int maxWidth) {
+        if (maxWidth <= 0) return "";
+        String trimmed = text;
+        while (trimmed.length() > 0 && sprite.textWidth(trimmed) > maxWidth) {
+            trimmed.remove(trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
+    static void drawWrappedLines(const String* const lines[], int lineCount, int textX, int yStart) {
+        int yLineOffset = yStart;
+        for (int i = 0; i < lineCount; i++) {
+            String text = *lines[i];
+            if (text.length() > 0) {
+                while (text.length() > 0) {
+                    String chunk = text.substring(0, maxLineLength);
+                    #if defined(TTGO_T_DECK_PLUS)
+                    int maxX = (menuDisplay == 0) ? kTDeckPlusHudRightLimit : (320 - (SYMBOL_WIDTH + 8 + 8));
+                    while (chunk.length() > 0 && (textX + sprite.textWidth(chunk)) > maxX) {
+                        chunk.remove(chunk.length() - 1);
+                    }
+                    #endif
+                    sprite.drawString(chunk, textX, yLineOffset);
+                    text = text.substring(maxLineLength);
+                    yLineOffset += lineSpacing;
+                }
+            } else {
+                sprite.drawString(text, textX, yLineOffset);
+                yLineOffset += lineSpacing;
+            }
+        }
+    }
+#endif
 
 
 #if defined(HAS_TFT) && (defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS))
@@ -105,6 +182,11 @@ extern logging::Logger logger;
                 lightColor  = redColorLight;
                 darkColor   = redColorDark;
                 break;
+            case 3:     // Blue (Primary) Theme - T-Deck Plus UI
+                baseColor   = primaryColor;
+                lightColor  = primaryColorLight;
+                darkColor   = primaryColorDark;
+                break;
             default:    // Fallback color
                 baseColor   = 0x0000;   // Black
                 lightColor  = 0xFFFF;   // White
@@ -117,200 +199,315 @@ extern logging::Logger logger;
         sprite.fillRect(xPos, yPos, wide, 2, lightColor);               // Línea superior
         sprite.fillRect(xPos, yPos, 2, height, lightColor);             // Línea izquierda
         sprite.fillRect(xPos + wide - 2, yPos, 2, height, darkColor);   // Línea derecha
-        
-        sprite.setTextSize(2);
-        sprite.setTextColor(TFT_WHITE, baseColor);
 
-        // Calcula la posición del texto para que esté centrado
-        int textWidth = sprite.textWidth(buttonText);           // Ancho del texto
-        int textHeight = 16;                                    // Altura aproximada (depende de `setTextSize`)
-        int textX = xPos + (wide - textWidth) / 2;              // Centrado horizontal
-        int textY = yPos + (height - textHeight) / 2;           // Centrado vertical
+    #if defined(TTGO_T_DECK_PLUS)
+    // Better font for buttons on T-Deck Plus
+    sprite.setTextFont(2);
+    sprite.setTextSize(1);
+    #else
+    sprite.setTextSize(2);
+    #endif
 
-        sprite.drawString(buttonText, textX, textY);
+    sprite.setTextColor(TFT_WHITE, baseColor);
+
+    // Center text
+    int textWidth  = sprite.textWidth(buttonText);
+    int textHeight = sprite.fontHeight();   // <<-- usa l'altezza reale del font
+    int textX = xPos + (wide - textWidth) / 2;
+    int textY = yPos + (height - textHeight) / 2;
+
+    sprite.drawString(buttonText, textX, textY);
     }
 
-    void draw_T_DECK_Top() {//const String& header, const String& datetime, const String& location) {  
-        sprite.fillSprite(TFT_BLACK); 
-        sprite.fillRect(0, 0, 320, 38, redColor);
-        sprite.setTextFont(0);
-        sprite.setTextSize(bigSizeFont);
-        sprite.setTextColor(TFT_WHITE, redColor);
-        sprite.drawString(topHeader1, 3, 5);
-        
-        sprite.setTextSize(smallSizeFont);
-        sprite.setTextColor(TFT_WHITE, redColor);
-        //String date = datetime.substring(0, datetime.indexOf("   "));
-        sprite.drawString(topHeader1_1, 258, 5);
-        //String time = datetime.substring(datetime.indexOf("   ") + 3);
-        sprite.drawString("UTC:" + topHeader1_2, 246, 15);
+    void draw_T_DECK_Top() {
+    // Enhanced header rendering.
+#if defined(TTGO_T_DECK_PLUS)
+    // Clear the sprite with a dark shade.
+    sprite.fillSprite(TFT_BLACK);
 
-        sprite.fillRect(0, 38, 320, 2, redColorDark);//TFT_ORANGE);
+    // Top bar: main header with callsign.
+    sprite.fillRect(0, 0, 320, 50, primaryColor);
+    sprite.setTextFont(4);
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE, primaryColor);
+    sprite.drawString(topHeader1, 10, 10);
 
-        sprite.fillRect(0, 40, 320, 2, greyColorLight);
-        sprite.fillRect(0, 42, 320, 20, greyColor);
-        sprite.setTextSize(2);
-        sprite.setTextColor(TFT_WHITE, greyColor);
-        sprite.drawString(topHeader2, 8, 44);
-        sprite.fillRect(0, 60, 320, 2, greyColorDark);
+    // Date and time on the right side.
+    sprite.setTextFont(2);
+    sprite.setTextSize(1);
+    String dateStr = topHeader1_1;
+    String timeStr = "UTC:" + topHeader1_2;
+
+    int padRight = 8;                 // right tft margin offset
+    int xDate = 320 - padRight - sprite.textWidth(dateStr);
+    int xTime = 320 - padRight - sprite.textWidth(timeStr);
+
+    sprite.drawString(dateStr, xDate, 10);
+    sprite.drawString(timeStr, xTime, 28);
+
+    // Second bar: coordinates and satellites.
+    sprite.fillRect(0, 50, 320, 24, primaryColorLight);
+    sprite.setTextFont(2);
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE, primaryColorLight);
+
+    // RSSI on the right side of the coordinate bar
+    sprite.setTextFont(2);
+    sprite.setTextSize(1);
+    String rssiTxt = (g_lastRxMs == 0) ? "RSSI --" : (String(g_lastRxRssi) + "dBm");
+    int rssiX = 320 - 8 - sprite.textWidth(rssiTxt);
+
+    String coordTxt = trimToPixelWidth(topHeader2, rssiX - 16);
+    sprite.setTextColor(TFT_WHITE, primaryColorLight);
+    sprite.drawString(coordTxt, 8, 54);
+    sprite.drawString(rssiTxt, rssiX, 54);
+
+    // Separator line below the coordinate bar
+    sprite.fillRect(0, 74, 320, 2, primaryColorDark);
+
+    // Status strip: keep compact telemetry in a dedicated row to avoid text overlap.
+    sprite.fillRect(0, kTDeckPlusStatusStripY, 320, kTDeckPlusStatusStripH, primaryColorDark);
+    sprite.setTextFont(1);
+    sprite.setTextSize(1);
+    sprite.setTextColor(TFT_WHITE, primaryColorDark);
+
+    uint32_t rxAgeSec = (g_lastRxMs == 0) ? 0 : ((millis() - g_lastRxMs) / 1000);
+    uint32_t rxAgeDisplay = (rxAgeSec > 999U) ? 999U : rxAgeSec;
+    String rxAgeTxt = (g_lastRxMs == 0) ? "RX:-" : ("RX:" + String(rxAgeDisplay) + "s");
+    String snrTxt = "SNR:" + String(g_lastRxSnr, 1);
+    String btTxt = bluetoothActive ? (bluetoothConnected ? "BT:LINK" : "BT:ON") : "BT:OFF";
+
+    int btX = 320 - 8 - sprite.textWidth(btTxt);
+    int snrX = (320 - sprite.textWidth(snrTxt)) / 2;
+    if (snrX + sprite.textWidth(snrTxt) > btX - 8) {
+        snrX = btX - 8 - sprite.textWidth(snrTxt);
     }
+
+    sprite.drawString(rxAgeTxt, 8, kTDeckPlusStatusStripY + 2);
+    sprite.drawString(snrTxt, snrX, kTDeckPlusStatusStripY + 2);
+    sprite.drawString(btTxt, btX, kTDeckPlusStatusStripY + 2);
+
+    // Body area starts below the status strip.
+    sprite.fillRect(0, kTDeckPlusBodyTopY, 320, 240 - kTDeckPlusBodyTopY, TFT_BLACK);
+#else
+    // Original header design for T-Deck GPS and other variants.
+    sprite.fillSprite(TFT_BLACK);
+    sprite.fillRect(0, 0, 320, 38, redColor);
+    sprite.setTextFont(0);
+    sprite.setTextSize(bigSizeFont);
+    sprite.setTextColor(TFT_WHITE, redColor);
+    sprite.drawString(topHeader1, 3, 5);
+
+    sprite.setTextSize(smallSizeFont);
+    sprite.setTextColor(TFT_WHITE, redColor);
+    sprite.drawString(topHeader1_1, 258, 5);
+    sprite.drawString("UTC:" + topHeader1_2, 246, 15);
+
+    sprite.fillRect(0, 38, 320, 2, redColorDark);
+
+    sprite.fillRect(0, 40, 320, 2, greyColorLight);
+    sprite.fillRect(0, 42, 320, 20, greyColor);
+    sprite.setTextSize(2);
+    sprite.setTextColor(TFT_WHITE, greyColor);
+    sprite.drawString(topHeader2, 8, 44);
+    sprite.fillRect(0, 60, 320, 2, greyColorDark);
+#endif
+    }
+
+    #if defined(TTGO_T_DECK_PLUS)
+    void draw_T_DECK_PlusToast(const String& text) {
+        if (text.length() == 0) return;
+        sprite.setTextFont(2);
+        sprite.setTextSize(1);
+        String toastText = trimToPixelWidth(text, 280);
+        int toastW = sprite.textWidth(toastText) + 24;
+        if (toastW < 120) toastW = 120;
+        if (toastW > 292) toastW = 292;
+
+        int toastH = 24;
+        int toastX = (320 - toastW) / 2;
+        int toastY = 200;
+
+        sprite.fillRoundRect(toastX, toastY, toastW, toastH, 8, primaryColorDark);
+        sprite.drawRoundRect(toastX, toastY, toastW, toastH, 8, primaryColorLight);
+        sprite.setTextColor(TFT_WHITE, primaryColorDark);
+        int tx = toastX + (toastW - sprite.textWidth(toastText)) / 2;
+        sprite.drawString(toastText, tx, toastY + 5);
+    }
+
+    static int getLastPacketBearingToMe() {
+        if (!gps.location.isValid()) return -1;
+        if (!(lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4)) return -1;
+        if (lastReceivedPacket.latitude == 0.0 && lastReceivedPacket.longitude == 0.0) return -1;
+
+        double courseTo = TinyGPSPlus::courseTo(
+            gps.location.lat(),
+            gps.location.lng(),
+            lastReceivedPacket.latitude,
+            lastReceivedPacket.longitude
+        );
+        if (courseTo < 0.0 || courseTo > 360.0) return -1;
+
+        int bearing = static_cast<int>(courseTo + 0.5);
+        if (bearing == 360) bearing = 0;
+        return bearing;
+    }
+
+    static float getLastPacketDistanceKmToMe() {
+        if (!gps.location.isValid()) return -1.0f;
+        if (!(lastReceivedPacket.type == 0 || lastReceivedPacket.type == 4)) return -1.0f;
+        if (lastReceivedPacket.latitude == 0.0 && lastReceivedPacket.longitude == 0.0) return -1.0f;
+
+        double meters = TinyGPSPlus::distanceBetween(
+            gps.location.lat(),
+            gps.location.lng(),
+            lastReceivedPacket.latitude,
+            lastReceivedPacket.longitude
+        );
+        if (meters < 0.0) return -1.0f;
+        return static_cast<float>(meters / 1000.0);
+    }
+
+    static void draw_T_DECK_PlusCompass() {
+        const int cx = kTDeckPlusCompassCx;
+        const int cy = 156;
+        const int radius = 14;
+
+        int bearing = getLastPacketBearingToMe();
+        float distanceKm = getLastPacketDistanceKmToMe();
+
+        sprite.drawCircle(cx, cy, radius, primaryColorLight);
+        sprite.drawCircle(cx, cy, radius - 1, primaryColorDark);
+
+        sprite.setTextFont(1);
+        sprite.setTextSize(1);
+        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+        sprite.drawString("RX", cx - 6, cy - radius - 18);
+        sprite.drawString("N", cx - 2, cy - radius - 8);
+
+        String bearingTxt = "--";
+        if (bearing >= 0) {
+            float angle = (bearing - 90) * DEG_TO_RAD;
+            int tipX = cx + static_cast<int>(cosf(angle) * (radius - 2));
+            int tipY = cy + static_cast<int>(sinf(angle) * (radius - 2));
+            int tailX = cx - static_cast<int>(cosf(angle) * (radius - 6));
+            int tailY = cy - static_cast<int>(sinf(angle) * (radius - 6));
+
+            sprite.drawLine(cx, cy, tailX, tailY, redColorDark);
+            sprite.drawLine(cx, cy, tipX, tipY, greenColorLight);
+            sprite.fillCircle(cx, cy, 2, TFT_WHITE);
+
+            bearingTxt = String(bearing) + "d";
+        } else {
+            sprite.drawLine(cx - 4, cy - 4, cx + 4, cy + 4, greyColorLight);
+            sprite.drawLine(cx - 4, cy + 4, cx + 4, cy - 4, greyColorLight);
+        }
+
+        String distanceTxt = "--";
+        if (distanceKm >= 0.0f) {
+            if (distanceKm < 1.0f) {
+                distanceTxt = String(static_cast<int>(distanceKm * 1000.0f)) + "m";
+            } else {
+                distanceTxt = String(distanceKm, 1) + "km";
+            }
+        }
+
+        int bearingX = cx - (sprite.textWidth(bearingTxt) / 2);
+        int distanceX = cx - (sprite.textWidth(distanceTxt) / 2);
+        sprite.drawString(bearingTxt, bearingX, cy + radius + 3);
+        sprite.drawString(distanceTxt, distanceX, cy + radius + 12);
+    }
+    #endif
 
     void draw_T_DECK_MenuButtons(int menu) {
-        int ladoCuadrado            = 45;
-        int curvaCuadrado           = 8;
-        int espacioEntreCuadrados   = 18;
-        int margenLineaCuadrados    = 10;
-        int alturaPrimeraLinea      = 75;
-        int alturaSegundaLinea      = 145;
-        int16_t colorCuadrados      = 0x2925;
-        int16_t colorDestacado      = greyColor;
+        // Improved menu buttons for T-Deck Plus: larger hit targets,
+// cleaner spacing, blue highlight on selection.
+#if defined(TTGO_T_DECK_PLUS)
+    int side              = 48;
+    int radius            = 10;
+    int spacing           = 22;
+    int margin            = 8;
+    int yFirstRow         = 85;
+    int ySecondRow        = 155;
 
-        for (int i = 0; i < 5; i++) {
-            if (i == menu - 1) {
-                sprite.fillRoundRect(
-                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)) - 1,
-                    alturaPrimeraLinea - 1,
-                    ladoCuadrado + 2,
-                    ladoCuadrado + 2,
-                    curvaCuadrado,
-                    TFT_WHITE
-                );
-                sprite.fillRoundRect(
-                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
-                    alturaPrimeraLinea,
-                    ladoCuadrado,
-                    ladoCuadrado,
-                    curvaCuadrado,
-                    TFT_BLACK
-                );
-                sprite.fillRoundRect(
-                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-                    alturaPrimeraLinea,                                                     // y-coordinate
-                    ladoCuadrado,                                                           // width
-                    ladoCuadrado,                                                           // height
-                    curvaCuadrado,                                                          // corner radius
-                    colorDestacado                                                          // color
-                );
-            } else {
-                sprite.fillRoundRect(
-                    margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-                    alturaPrimeraLinea,                                                     // y-coordinate
-                    ladoCuadrado,                                                           // width
-                    ladoCuadrado,                                                           // height
-                    curvaCuadrado,                                                          // corner radius
-                    colorCuadrados                                                          // color
-                );
-            }
-            sprite.fillRoundRect(
-                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),    // x-coordinate
-                alturaSegundaLinea,                                                     // y-coordinate
-                ladoCuadrado,                                                           // width
-                ladoCuadrado,                                                           // height
-                curvaCuadrado,                                                          // corner radius
-                colorCuadrados                                                          // color
-            );
-        }
+    uint16_t defaultColor = primaryColorDark;
+    uint16_t highlight    = primaryColor;
+
+    // First row (5 buttons), highlight selected
+    for (int i = 0; i < 5; i++) {
+        int x = margin + i * (side + spacing);
+        uint16_t fill = (i == menu - 1) ? highlight : defaultColor;
+        sprite.fillRoundRect(x, yFirstRow, side, side, radius, fill);
+        sprite.drawRoundRect(x, yFirstRow, side, side, radius, primaryColorLight);
     }
 
-    void draw_T_DECK_Body(const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, const String& line6) {
-        
-        sprite.setTextSize(normalSizeFont);
-        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // Second row (5 placeholders)
+    for (int i = 0; i < 5; i++) {
+        int x = margin + i * (side + spacing);
+        sprite.fillRoundRect(x, ySecondRow, side, side, radius, defaultColor);
+        sprite.drawRoundRect(x, ySecondRow, side, side, radius, primaryColorLight);
+    }
+#else
+    // Original rendering for T-Deck GPS and other variants.
+    int ladoCuadrado            = 45;
+    int curvaCuadrado           = 8;
+    int espacioEntreCuadrados   = 18;
+    int margenLineaCuadrados    = 10;
+    int alturaPrimeraLinea      = 75;
+    int alturaSegundaLinea      = 145;
+    int16_t colorCuadrados      = 0x2925;
+    int16_t colorDestacado      = greyColor;
 
-        int lineLength  = 22;
-        int line3Length = line3.length();
-
-        String line3Temp, line4Temp, line5Temp;
-        if (line3.length() > 0 && line4 == "" && line5 == "") {
-            line3Temp = line3.substring(0, lineLength);
-            if (line3Length > lineLength) {
-                line4Temp = line3.substring(lineLength, min(2 * lineLength, line3Length));
-                if (line3Length > 2 * lineLength) {
-                    line5Temp = line3.substring(2 * lineLength);
-                }
-            }
+    for (int i = 0; i < 5; i++) {
+        if (i == menu - 1) {
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)) - 1,
+                alturaPrimeraLinea - 1,
+                ladoCuadrado + 2,
+                ladoCuadrado + 2,
+                curvaCuadrado,
+                TFT_WHITE
+            );
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+                alturaPrimeraLinea,
+                ladoCuadrado,
+                ladoCuadrado,
+                curvaCuadrado,
+                TFT_BLACK
+            );
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+                alturaPrimeraLinea,
+                ladoCuadrado,
+                ladoCuadrado,
+                curvaCuadrado,
+                colorDestacado
+            );
         } else {
-            line3Temp = line3;
-            line4Temp = line4;
-            line5Temp = line5;
+            sprite.fillRoundRect(
+                margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+                alturaPrimeraLinea,
+                ladoCuadrado,
+                ladoCuadrado,
+                curvaCuadrado,
+                colorCuadrados
+            );
         }
 
-        const String* const lines[] = {&line1, &line2, &line3Temp, &line4Temp, &line5Temp, &line6};
-        for (int i = 0; i < 6; i++) {
-            sprite.drawString(*lines[i], 35, 70 + (i * 20));
-        }
-
-        //drawButton(125, 210, 80, 28, "Menu", 0);
-
-        drawButton(30,  210, 80, 28, "Send", 1);
-        drawButton(125, 210, 80, 28, "Menu", 0);
-        drawButton(220, 210, 80, 28, "Exit", 2);
-        //}
+        sprite.fillRoundRect(
+            margenLineaCuadrados + (i * (ladoCuadrado + espacioEntreCuadrados)),
+            alturaSegundaLinea,
+            ladoCuadrado,
+            ladoCuadrado,
+            curvaCuadrado,
+            colorCuadrados
+        );
+    }
+#endif
     }
 
 #endif
-    
-    //sprite.fillRect(0, 38, 320, 2, TFT_DARKGREY);
-    //sprite.fillRect(0, 20,  320, 2,  color2);                                           // linea bajo techo
-    //sprite.fillRect(0, 202, 320, 2,  0xBC81);                                           // linea abajo amarilla
-
-    //sprite.fillSmoothRoundRect(  0, 218, 320, 22 , 2, redColor, TFT_BLACK);                  // piso
-    
-    //sprite.fillSmoothRoundRect(  4,   2,  56, 14 , 2, grays[6],     grays[9]);          // cuadrado gris izquierda arriba
-    //sprite.fillSmoothRoundRect(  2,   2,  16, 14 , 2, TFT_BLUE,          grays[9]);     // cuadrado rojo izquierda arriba
-
-    //sprite.fillSmoothRoundRect(272,   2,  40, 16 , 2, green,        grays[9]);          // bateria
-    //sprite.fillSmoothRoundRect(308,   6,   8,  8 , 2, green,        grays[9]);          // bateria
-    //sprite.fillSmoothRoundRect(275,   4,  34, 12 , 2, TFT_BLACK,    green);             // centro bateria
-
-    //for (int i = 0; i < 9; i++) sprite.drawFastHLine(4, 38+(i*18), 312, grays[8]);      // draw horizonatl lines
-    
-    /*sprite.setTextFont(0);
-    sprite.setTextSize(1);
-    sprite.setTextColor(TFT_WHITE, TFT_BLUE);
-    sprite.drawString("LoRa", 6, 4);
-    sprite.setTextColor(TFT_BLACK, grays[6]);
-    sprite.drawString("APRS", 21, 4);           // escribir DECK en x=21 , y=4*/
-
-    /*sprite.setTextColor(grays[1],c olor2);
-    sprite.drawString(notice, 6, 223, 2);
-
-    for (int i = 0; i < nMsg + 1; i++) {
-        if (msg[i].length() > 0) {
-            if (writer[i] == 1) {
-                sprite.setTextColor(grays[1], color1); else sprite.setTextColor(0x663C, color1);
-                sprite.drawString(msg[i], 6, 25 + (i*18), 2);
-            }
-        }
-    }
-
-    sprite.setTextColor(grays[5], TFT_BLACK);
-    sprite.unloadFont(); 
-    sprite.drawString("Your ID: " + name, 2, 208);
-    sprite.setTextColor(grays[4],grays[9]);
-    sprite.drawString("VOLOS", 210, 2);
-    sprite.setTextColor(grays[5], grays[9]);
-    sprite.drawString("projects", 210, 9);
-    sprite.setTextColor(grays[2], TFT_BLACK);
-    sprite.drawString(String(analogRead(4)), 280, 7);
-
-    sprite.setTextColor(grays[8], color2);
-    sprite.drawString("ENTER YOUR MESSAGE", 200, 226);
-
-    sprite.setTextColor(grays[7], TFT_BLACK);
-    sprite.drawString("SND:", 120, 208);
-    sprite.drawString(String(sndN), 145, 8);
-
-    sprite.drawString("REC:",190,208);
-    sprite.drawString(String(recN), 215, 208);*/
-
-String fillStringLength(const String& line, uint8_t length) {
-    String outputLine = line;
-    for (int a = line.length(); a < length; a++) {
-        outputLine += " ";
-    }
-    return outputLine;
-}
 
 void displaySetup() {
     delay(500);
@@ -332,11 +529,6 @@ void displaySetup() {
         #else
             sprite.createSprite(160,80);
         #endif
-        int co = 210;
-        for (int i = 0; i < 13; i++) {
-            grays[i] = tft.color565(co, co, co);
-            co = co - 20;
-        }
     #else
         #ifdef OLED_DISPLAY_HAS_RST_PIN
             pinMode(OLED_RST, OUTPUT);
@@ -404,36 +596,28 @@ void displayShow(const String& header, const String& line1, const String& line2,
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
-            String tftLine1, tftLine2, tftLine3, tftLine4;
-            if (line1.length() > 22 && line2.length() > 22) {
-                tftLine1 = line1.substring(0,22);
-                tftLine2 = line1.substring(22);
-                tftLine3 = line2.substring(0,22);
-                tftLine4 = line2.substring(22);
-            } else if (line1.length() > 22) {
-                tftLine1 = line1.substring(0,22);
-                tftLine2 = line1.substring(22);
-                tftLine3 = line2;
-                tftLine4 = "";
-            } else if (line2.length() > 22) {
-                tftLine1 = line1;
-                tftLine2 = line2.substring(0,22);
-                tftLine3 = line2.substring(22);
-                tftLine4 = "";
-            } else {
-                tftLine1 = line1;
-                tftLine2 = line2;
-                tftLine3 = "";
-                tftLine4 = "";
-            }
-            draw_T_DECK_Body(header, tftLine1, tftLine2, tftLine3, tftLine4, "");
+
+            sprite.setTextFont(2);
+            sprite.setTextSize(1);
+            sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+            const String* const lines[] = {&header, &line1, &line2};
+            #if defined(TTGO_T_DECK_PLUS)
+                drawWrappedLines(lines, 3, kTDeckPlusTextX, 98);
+                if (wait >= 700) {
+                    String toastMessage = line2.length() > 0 ? line2 : line1;
+                    draw_T_DECK_PlusToast(toastMessage);
+                }
+            #else
+                drawWrappedLines(lines, 3, 35, 98);
+            #endif
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
-            sprite.fillSprite(TFT_BLACK); 
-            sprite.fillRect(0, 0, 160, 19, redColor);
+            sprite.fillSprite(TFT_BLACK);
+            sprite.fillRect(0, 0, 160, 19, TFT_YELLOW);
             sprite.setTextFont(0);
             sprite.setTextSize(bigSizeFont);
-            sprite.setTextColor(TFT_WHITE, redColor);
+            sprite.setTextColor(TFT_BLACK, TFT_YELLOW);
             sprite.drawString(header, 3, 3);
 
             const String* const lines[] = {&line1, &line2};
@@ -441,8 +625,21 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextSize(smallSizeFont);
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
+            int yLineOffset = (lineSpacing * 2) - 2;
+
             for (int i = 0; i < 2; i++) {
-                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
+                String text = *lines[i];
+                if (text.length() > 0) {                    
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 3, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
             }
         #endif
         sprite.pushSprite(0,0);
@@ -475,25 +672,63 @@ void displayShow(const String& header, const String& line1, const String& line2,
 }
 
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
-    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
-    #ifdef HAS_TFT
-        if (bluetoothActive) bitMap = bluetoothSymbol;
-        #if defined(HELTEC_WIRELESS_TRACKER)
-            sprite.drawBitmap(128 - SYMBOL_WIDTH, 3, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
-        #endif
-        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-            sprite.drawBitmap(280, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
-        #endif
-    #else
-        display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
+#ifdef HAS_TFT
+    // Guard: invalid index
+    if (symbolIndex < 0 || symbolIndex >= symbolArraySize) {
+    #if defined(TTGO_T_DECK_PLUS)
+        int x = kTDeckPlusCompassCx - (SYMBOL_WIDTH / 2);
+        int y = 96;
+        sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
+        sprite.setTextFont(2);
+        sprite.setTextSize(1);
+        sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+        sprite.drawString("?", x + 3, y - 1);
     #endif
+        return;
+    }
+
+    // Pick bitmap
+    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
+    if (bluetoothActive) bitMap = bluetoothSymbol;
+
+    #if defined(HELTEC_WIRELESS_TRACKER)
+        sprite.drawBitmap(128 - SYMBOL_WIDTH, 3, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+    #endif
+
+    #if defined(TTGO_T_DECK_PLUS)
+        // Draw symbol in the BODY (background is black)
+        int x = kTDeckPlusCompassCx - (SYMBOL_WIDTH / 2);
+        int y = 96;
+        sprite.drawBitmap(x, y, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+        sprite.drawRect(x - 4, y - 4, SYMBOL_WIDTH + 8, SYMBOL_HEIGHT + 8, primaryColorLight);
+    #elif defined(TTGO_T_DECK_GPS)
+        sprite.drawBitmap(280, 70, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, TFT_WHITE);
+    #endif
+#else
+    // OLED path
+    const uint8_t *bitMap = symbolsAPRS[symbolIndex];
+    display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
+#endif
 }
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
-            draw_T_DECK_Body(header, line1, line2, line3, line4, line5);
+            sprite.setTextSize(1);
+            sprite.setTextFont(2);
+            sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+
+            const String* const lines[] = {&header, &line1, &line2, &line3, &line4, &line5};
+            #if defined(TTGO_T_DECK_PLUS)
+                drawWrappedLines(lines, 6, kTDeckPlusTextX, kTDeckPlusBodyTopY);
+            #else
+                drawWrappedLines(lines, 6, 35, 82);
+            #endif
+
+            drawButton(30,  210, 80, 28, "Send", 3);
+            drawButton(125, 210, 80, 28, "Menu", 3);
+            drawButton(220, 210, 80, 28, "Exit", 2);
         #endif
         #if defined(HELTEC_WIRELESS_TRACKER)
             sprite.fillSprite(TFT_BLACK); 
@@ -508,8 +743,21 @@ void displayShow(const String& header, const String& line1, const String& line2,
             sprite.setTextSize(smallSizeFont);
             sprite.setTextColor(TFT_WHITE, TFT_BLACK);
 
+            int yLineOffset = (lineSpacing * 2) - 2;
+
             for (int i = 0; i < 5; i++) {
-                sprite.drawString(*lines[i], 3, (lineSpacing * (2 + i)) - 2);
+                String text = *lines[i];
+                if (text.length() > 0) {
+                    while (text.length() > 0) {
+                        String chunk = text.substring(0, maxLineLength);
+                        sprite.drawString(chunk, 3, yLineOffset);
+                        text = text.substring(maxLineLength);
+                        yLineOffset += lineSpacing;
+                    }
+                } else {
+                    sprite.drawString(text, 3, yLineOffset);
+                    yLineOffset += lineSpacing;
+                }
             }
         #endif
             if (menuDisplay == 0 && Config.display.showSymbol) {
@@ -534,6 +782,11 @@ void displayShow(const String& header, const String& line1, const String& line2,
                     drawSymbol(symbol, true);
                 }
             }
+            #if defined(TTGO_T_DECK_PLUS)
+                if (menuDisplay == 0) {
+                    draw_T_DECK_PlusCompass();
+                }
+            #endif
         sprite.pushSprite(0,0);
     #else
         const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};
@@ -594,12 +847,13 @@ void displayShow(const String& header, const String& line1, const String& line2,
 void startupScreen(uint8_t index, const String& version) {
     String workingFreq = "    LoRa Freq [";
     switch (index) {
-        case 0: workingFreq += "Eu]"; break;
+        case 0: workingFreq += "EU]"; break;
         case 1: workingFreq += "PL]"; break;
         case 2: workingFreq += "UK]"; break;
+        case 3: workingFreq += "US]"; break;
     }
-    displayShow(" LoRa APRS", "      (TRACKER)", workingFreq, "", "", "  CA2RXU  " + version, 4000);
-    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "RichonGuzman (CA2RXU) --> LoRa APRS Tracker/Station");
+    displayShow(" LoRa APRS", "T-DECK Plus IU1BOT mod", workingFreq, "", "", "CA2RXU " + version, 4000);
+    logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CA2RXU + IU1BOT mod --> LoRa APRS Tracker");
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Version: %s", version);
 }
 
@@ -609,33 +863,4 @@ String fillMessageLine(const String& line, const int& length) {
         completeLine = completeLine + " ";
     }
     return completeLine;
-}
-
-void displayMessage(const String& sender, const String& message, bool next, int wait) {
-    String messageLine1, messageLine2, messageLine3;
-
-    int messageLength   = message.length();
-    int lineLength      = 0;
-    #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
-        lineLength = 22;
-    #else   // Heltec Wireless Tracker
-        lineLength = 26;
-    #endif
-
-    if (message.length() > 0) {
-        messageLine1 = message.substring(0, min(lineLength, messageLength));
-        if (messageLength > lineLength) {
-            messageLine2 = message.substring(lineLength, min(2 * lineLength, messageLength));
-            if (messageLength > 2 * lineLength) {
-                messageLine3 = message.substring(2 * lineLength);
-            }
-        }
-    }
-    if (next) {
-        String nextLine = fillMessageLine("Next=Down", lineLength);
-        displayShow("MSG_APRS>", "From --> " + sender, fillMessageLine(messageLine1, lineLength), fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), nextLine);
-    } else {
-        displayShow("< MSG Rx >", "From --> " + sender, "", fillMessageLine(messageLine1, lineLength) , fillMessageLine(messageLine2, lineLength), fillMessageLine(messageLine3, lineLength), wait);
-    }
-
 }

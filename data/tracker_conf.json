@@ -1,34 +1,40 @@
 {
 	"beacons": [
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": "[",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 0	
+			"smartBeaconSetting": 0,
+			"profileLabel": ""
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": ">",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 2
+			"smartBeaconSetting": 2,
+			"profileLabel": ""
 		},
 		{
-			"callsign": "NOCALL-7",
+			"callsign": "N0CALL",
 			"gpsEcoMode": false,
 			"symbol": "b",
 			"overlay": "/",
 			"micE": "",
 			"comment": "",
+			"status": "",
 			"smartBeaconActive": true,
-			"smartBeaconSetting": 1
+			"smartBeaconSetting": 1,
+			"profileLabel": ""
 		}
 	],
 	"display": {
@@ -38,7 +44,7 @@
 		"turn180" : false
     },
 	"battery": {
-		"sendVoltage": false,
+		"sendVoltage": true,
 		"voltageAsTelemetry": false,
 		"sendVoltageAlways": false,
 		"monitorVoltage": false,
@@ -53,21 +59,20 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
-		"acceptOwnFrameFromTNC": false,
 		"email": ""
 	},
 	"winlink": {
-		"password": "ABCDEF"
+		"password": ""
 	},
-	"wxsensor": {
+	"telemetry": {
 		"active": false,
-		"temperatureCorrection": 0.0,
-		"sendTelemetry": false
+		"sendTelemetry": false,
+		"temperatureCorrection": 0.0		
 	},
 	"notification": {
-		"ledTx": false,
+		"ledTx": true,
 		"ledTxPin": 13,
-		"ledMessage": false,
+		"ledMessage": true,
 		"ledMessagePin": 2,
 		"ledFlashlight": false,
 		"ledFlashlightPin": 14,
@@ -75,8 +80,8 @@
 		"buzzerPinTone": 33,
 		"buzzerPinVcc": 25,
 		"bootUpBeep": false,
-		"txBeep": false,
-		"messageRxBeep": false,
+		"txBeep": true,
+		"messageRxBeep": true,
 		"stationBeep": false,
 		"lowBatteryBeep": false,
 		"shutDownBeep": false
@@ -102,12 +107,19 @@
 			"signalBandwidth": 125000,
 			"codingRate4": 5,
 			"power": 20
+		},
+		{
+			"frequency": 915000000,
+			"spreadingFactor": 12,
+			"signalBandwidth": 125000,
+			"codingRate4": 5,
+			"power": 20
 		}
 	],
 	"bluetooth": {
-		"active": false,
+		"active": true,
 		"deviceName": "LoRaTracker",
-		"useBLE": false,
+		"useBLE": true,
 		"useKISS": false
 	},
 	"pttTrigger": {

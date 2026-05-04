@@ -1,6 +1,25 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
+#include "battery_utils.h"
 #include "board_pinout.h"
 #include "power_utils.h"
 #include "lora_utils.h"
@@ -31,95 +50,101 @@
     XPowersAXP2101 PMU;
 #endif
 
+extern  Configuration                   Config;
+extern  logging::Logger                 logger;
+extern  bool                            transmitFlag;
+extern  bool                            gpsIsActive;
 
-extern Configuration    Config;
-extern logging::Logger  logger;
-extern bool             transmitFlag;
-extern bool             gpsIsActive;
+bool    pmuInterrupt;
+bool    disableGPS;
 
-uint32_t    batteryMeasurmentTime   = 0;
-
-bool        pmuInterrupt;
-float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to reflect the real battery voltage (adjust this to your needs)
-bool        disableGPS;
+String  batteryChargeDischargeCurrent    = "";
 
 
-namespace POWER_Utils {
+namespace POWER_Utils {    
 
-    bool   BatteryIsConnected = false;
-    String batteryVoltage = "";
-    String batteryChargeDischargeCurrent = "";
-
-    double getBatteryVoltage() {
-    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-        return (PMU.getBattVoltage() / 1000.0);
-    #else
-        #ifdef BATTERY_PIN
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
+    #ifdef VEXT_CTRL
+        void vext_ctrl_ON() {
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(VEXT_CTRL, HIGH);
             #endif
-                int adc_value = analogRead(BATTERY_PIN);
-            #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
-                batteryMeasurmentTime = millis();
+            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(VEXT_CTRL, LOW);
             #endif
-
-            double voltage = (adc_value * 3.3 ) / 4095.0;
-            
-            #ifdef LIGHTTRACKER_PLUS_1_0
-                double inputDivider = (1.0 / (560.0 + 100.0)) * 100.0;  // The voltage divider is a 560k + 100k resistor in series, 100k on the low side.
-                return (voltage / inputDivider) + 0.1;
-            #endif
-            #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_T_LORA32_V2_1_GPS) || defined(TTGO_T_LORA32_V2_1_GPS_915) || defined(TTGO_T_LORA32_V2_1_TNC) || defined(TTGO_T_LORA32_V2_1_TNC_915) || defined(ESP32_DIY_LoRa_GPS) || defined(ESP32_DIY_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS) || defined(ESP32_DIY_1W_LoRa_GPS_915) || defined(ESP32_DIY_1W_LoRa_GPS_LLCC68) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_GPS) || defined(ESP32S3_DIY_LoRa_GPS_915) || defined(TROY_LoRa_APRS)
-                return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
-            #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
-                double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side. 
-                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
-            #endif
-            #if defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(F4GOH_1W_LoRa_Tracker)
-                double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side. 
-                return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
-            #endif
-        #else
-            return 0.0;
-        #endif
-    #endif    
-    }
-
-    const String getBatteryInfoVoltage() {
-        return batteryVoltage;
-    }
-
-    const String getBatteryInfoCurrent() {
-        return batteryChargeDischargeCurrent;
-    }
-
-    bool getBatteryInfoIsConnected() {
-        return BatteryIsConnected;
-    }
-
-    void enableChgLed() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
-        #endif
-    }
-
-    void disableChgLed() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
-        #endif
         }
+
+        void vext_ctrl_OFF() {
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(VEXT_CTRL, LOW);
+            #endif
+            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(VEXT_CTRL, HIGH);
+            #endif
+        }
+    #endif
+
+
+    #ifdef ADC_CTRL
+        void adc_ctrl_ON() {
+            #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(ADC_CTRL, HIGH);
+            #endif
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(ADC_CTRL, LOW);
+            #endif
+        }
+
+        void adc_ctrl_OFF() {
+            #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
+                digitalWrite(ADC_CTRL, LOW);
+            #endif
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+                digitalWrite(ADC_CTRL, HIGH);
+            #endif
+        }
+    #endif
+
+    #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+        void activateMeasurement() {
+                PMU.disableTSPinMeasure();
+                PMU.enableBattDetection();
+                PMU.enableVbusVoltageMeasure();
+                PMU.enableBattVoltageMeasure();
+                PMU.enableSystemVoltageMeasure();
+        }
+
+        void enableChgLed() {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
+        }
+
+        void disableChgLed() {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
+        }
+
+        void handleChargingLed() {
+            if (isCharging()) {
+                enableChgLed();
+            } else {
+                disableChgLed();
+            }
+        }
+
+        String getBatteryInfoCurrent() {
+            return batteryChargeDischargeCurrent;
+        }
+
+        float getBatteryChargeDischargeCurrent() {
+            #ifdef HAS_AXP192
+                if (PMU.isCharging()) {
+                    return PMU.getBatteryChargeCurrent();
+                }
+                return -1.0 * PMU.getBattDischargeCurrent();
+            #endif
+            #ifdef HAS_AXP2101
+                return PMU.getBatteryPercent();
+            #endif
+        }
+    #endif
 
     bool isCharging() {
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -127,72 +152,7 @@ namespace POWER_Utils {
         #else
             return 0;
         #endif
-    }
-
-    void handleChargingLed() {
-        if (isCharging()) {
-            enableChgLed();
-        } else {
-            disableChgLed();
-        }
-    }
-
-    double getBatteryChargeDischargeCurrent() {
-        #if !defined(HAS_AXP192) && !defined(HAS_AXP2101)
-            return 0;
-        #endif
-        #ifdef HAS_AXP192
-            if (PMU.isCharging()) {
-                return PMU.getBatteryChargeCurrent();
-            }
-            return -1.0 * PMU.getBattDischargeCurrent();
-        #endif
-        #ifdef HAS_AXP2101
-            return PMU.getBatteryPercent();
-        #endif
-    }
-
-    bool isBatteryConnected() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            return PMU.isBatteryConnect();
-        #else
-            if(getBatteryVoltage() > 1.0) {
-                return true;
-            } else {
-                return false;
-            }
-        #endif
-    }
-
-    void obtainBatteryInfo() {
-        static unsigned int rate_limit_check_battery = 0;
-        if (!(rate_limit_check_battery++ % 60)) BatteryIsConnected = isBatteryConnected();
-        if (BatteryIsConnected) {
-            batteryVoltage                  = String(getBatteryVoltage(), 2);
-            batteryChargeDischargeCurrent   = String(getBatteryChargeDischargeCurrent(), 0);
-        }
-    }
-
-    void batteryManager() {
-        #ifdef ADC_CTRL
-            if (batteryMeasurmentTime == 0 || (millis() - batteryMeasurmentTime) > 30 * 1000) obtainBatteryInfo();
-        #else
-            obtainBatteryInfo();
-        #endif
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            handleChargingLed();
-        #endif
-    }
-
-    void activateMeasurement() {
-        #if defined(HAS_AXP192) || defined(HAS_AXP2101)
-            PMU.disableTSPinMeasure();
-            PMU.enableBattDetection();
-            PMU.enableVbusVoltageMeasure();
-            PMU.enableBattVoltageMeasure();
-            PMU.enableSystemVoltageMeasure();
-        #endif
-    }
+    }  
 
     void activateGPS() {
         #ifdef HAS_AXP192
@@ -210,7 +170,7 @@ namespace POWER_Utils {
             #endif
         #endif
         #ifdef HELTEC_WIRELESS_TRACKER
-            digitalWrite(VEXT_CTRL, HIGH);
+            vext_ctrl_ON();
         #endif
         gpsIsActive = true;
     }
@@ -228,7 +188,7 @@ namespace POWER_Utils {
             #endif
         #endif
         #ifdef HELTEC_WIRELESS_TRACKER
-            digitalWrite(VEXT_CTRL, LOW);
+            vext_ctrl_OFF();
         #endif
         gpsIsActive = false;
     }
@@ -363,7 +323,7 @@ namespace POWER_Utils {
                 disableGPS = true;
             } else {
                 disableGPS = Config.disableGPS;
-            }            
+            }
         #endif
 
         #ifdef HAS_AXP192
@@ -421,12 +381,7 @@ namespace POWER_Utils {
 
         #ifdef VEXT_CTRL
             pinMode(VEXT_CTRL,OUTPUT);
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                digitalWrite(VEXT_CTRL, HIGH);   // HWT needs this for GPS and TFT Screen
-            #endif
-            #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                digitalWrite(VEXT_CTRL, LOW);
-            #endif
+            vext_ctrl_ON();
         #endif
         
         #ifdef ADC_CTRL
@@ -467,6 +422,7 @@ namespace POWER_Utils {
     }
 
     void shutdown() {
+        delay(3000);
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "SHUTDOWN !!!");
         #if defined(HAS_AXP192) || defined(HAS_AXP2101)
             if (Config.notification.shutDownBeep) NOTIFICATION_Utils::shutDownBeep();
@@ -480,21 +436,11 @@ namespace POWER_Utils {
             }*/
 
             #ifdef VEXT_CTRL
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(VEXT_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(VEXT_CTRL, HIGH);
-                #endif
+                vext_ctrl_OFF();
             #endif
 
             #ifdef ADC_CTRL
-                #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
-                    digitalWrite(ADC_CTRL, LOW);
-                #endif
-                #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
-                    digitalWrite(ADC_CTRL, HIGH);
-                #endif
+                adc_ctrl_OFF();
             #endif
 
             #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
@@ -505,7 +451,7 @@ namespace POWER_Utils {
 
             long DEEP_SLEEP_TIME_SEC = 1296000; // 15 days
             esp_sleep_enable_timer_wakeup(1000000ULL * DEEP_SLEEP_TIME_SEC);
-            delay(500);           
+            delay(500);
             esp_deep_sleep_start();
         #endif
     }

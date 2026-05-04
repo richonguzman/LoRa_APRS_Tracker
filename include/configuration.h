@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef CONFIGURATION_H_
 #define CONFIGURATION_H_
 
@@ -16,11 +34,13 @@ public:
     String  callsign;
     String  symbol;
     String  overlay;
+    String  micE;
     String  comment;
     bool    smartBeaconActive;
     byte    smartBeaconSetting;
-    String  micE;
     bool    gpsEcoMode;
+    String  profileLabel;
+    String  status;
 };
 
 class Display {
@@ -45,11 +65,11 @@ public:
     String  password;
 };
 
-class WXSENSOR {
+class Telemetry {
 public:
     bool    active;
-    float   temperatureCorrection;
     bool    sendTelemetry;
+    float   temperatureCorrection;
 };
 
 class Notification {
@@ -106,7 +126,7 @@ public:
     Display                 display;
     Battery                 battery;
     Winlink                 winlink;
-    WXSENSOR                wxsensor;
+    Telemetry               telemetry;
     Notification            notification;
     std::vector<LoraType>   loraTypes;
     PTT                     ptt;
@@ -121,13 +141,10 @@ public:
     int     standingUpdateTime;
     bool    sendAltitude;
     bool    disableGPS;
-    bool    acceptOwnFrameFromTNC;
 
-    void init();
-    void writeFile();
+    void setDefaultValues();
+    bool writeFile();
     Configuration();
-    bool validateConfigFile(const String& currentBeaconCallsign);
-    bool validateMicE(const String& currentBeaconMicE);
 
 private:
     bool readFile();

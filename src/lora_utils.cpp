@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <RadioLib.h>
 #include <logger.h>
 #include <SPI.h>
@@ -69,6 +87,7 @@ namespace LoRa_Utils {
             case 0: loraCountryFreq = "EU/WORLD"; break;
             case 1: loraCountryFreq = "POLAND"; break;
             case 2: loraCountryFreq = "UK"; break;
+            case 3: loraCountryFreq = "US"; break;
         }
         String currentLoRainfo = "LoRa ";
         currentLoRainfo += loraCountryFreq;
@@ -170,7 +189,7 @@ namespace LoRa_Utils {
         if (state == RADIOLIB_ERR_NONE) {
             //Serial.println(F("success!"));
         } else {
-            Serial.print(F("failed, code "));
+            Serial.print(F("Tx failed, code "));
             Serial.println(state);
         }
         
@@ -179,9 +198,6 @@ namespace LoRa_Utils {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);
         }
-        /*#ifdef HAS_TFT
-            cleanTFT();
-        #endif*/
     }
 
     void wakeRadio() {
@@ -222,7 +238,7 @@ namespace LoRa_Utils {
                         receivedLoraPacket.freqError  = radio.getFrequencyError();
                     }
                 } else {
-                    Serial.print(F("failed, code "));   // 7 = CRC mismatch
+                    Serial.print(F("Rx failed, code "));   // 7 = CRC mismatch
                     Serial.println(state);
                 }
             }

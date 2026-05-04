@@ -1,0 +1,18 @@
+- New blue theme for T‑Deck 
+- Redesigned top bar
+- Text positioning
+- Larger, themed buttons
+- System buttons according to new theme 
+- Visible APRS icon in body
+- Enlarged icon frame
+- New “APRSPH Check‑in” Menu Item  in messages under aprsthursday
+- Added RSSI indication (coordinates and sat number bar)
+- Added status bar with last rx callsign time, SNR, bluetooth status
+- added compass in main view with distance and bearing of the latest rx packet
+- make the compass update in real-time!
+- added "NO FIX" instead of zeroes into di coordinates bar 
+- removed duplicated info in main view
+- fixed GPS logic to use valid fixes (not only updated frame)
+
+
+

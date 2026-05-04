@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <APRSPacketLib.h>
 #include <logger.h>
 #include <Wire.h>
@@ -21,7 +39,7 @@ extern int                      menuDisplay;
 extern String                   versionDate;
 extern bool                     flashlight;
 
-extern bool                     statusState;
+extern bool                     statusUpdate;
 
 uint32_t    statusTime          = millis();
 uint8_t     wxModuleAddress     = 0x00;
@@ -30,7 +48,7 @@ uint8_t     touchModuleAddress  = 0x00;
 
 
 namespace Utils {
-  
+
     static char locator[11];    // letterize and getMaidenheadLocator functions are Copyright (c) 2021 Mateusz Salwach - MIT License
 
     static char letterize(int x) {
@@ -92,13 +110,17 @@ namespace Utils {
     }
 
     void checkStatus() {
-        if (statusState) {
-            uint32_t currentTime = millis();
-            uint32_t statusTx = currentTime - statusTime;
-            lastTx = currentTime - lastTxTime;
-            if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
-                LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, "https://github.com/richonguzman/LoRa_APRS_Tracker " + versionDate));
-                statusState = false;
+        if (statusUpdate) {
+            if (currentBeacon->status == "") {
+                statusUpdate = false;
+            } else {
+                uint32_t currentTime = millis();
+                uint32_t statusTx = currentTime - statusTime;
+                lastTx = currentTime - lastTxTime;
+                if (statusTx > 10 * 60 * 1000 && lastTx > 10 * 1000) {
+                    LoRa_Utils::sendNewPacket(APRSPacketLib::generateStatusPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->status));
+                    statusUpdate = false;
+                }
             }
         }
     }
@@ -120,16 +142,14 @@ namespace Utils {
     }
 
     void checkFlashlight() {
-        if (flashlight && !digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, HIGH);
-        } else if (!flashlight && digitalRead(Config.notification.ledFlashlightPin)) {
-            digitalWrite(Config.notification.ledFlashlightPin, LOW);
-        }       
+        bool desiredState       = flashlight ? HIGH : LOW;
+        uint8_t flashlightPin   = Config.notification.ledFlashlightPin;
+        if (desiredState != digitalRead(flashlightPin)) digitalWrite(flashlightPin, desiredState);
     }
 
     void i2cScannerForPeripherals() {
         uint8_t err, addr;
-        if (Config.wxsensor.active) {
+        if (Config.telemetry.active) {
             for (addr = 1; addr < 0x7F; addr++) {
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_2_GPS)
                     Wire1.beginTransmission(addr);
@@ -148,20 +168,30 @@ namespace Utils {
             }
         }
 
-        for (addr = 1; addr < 0x7F; addr++) {
-            Wire.beginTransmission(addr);
-            err = Wire.endTransmission();
-            if (err == 0) {
-                //Serial.println(addr); this shows any connected board to I2C
-                if (addr == 0x55) {         // T-Deck internal keyboard (Keyboard Backlight On = ALT + B)
-                    keyboardAddress = addr;
+        #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
+            delay(500);
+            const uint8_t keyboardAddr = 0x55;
+            for (int i = 0; i < 10; ++i) {
+                Wire.beginTransmission(keyboardAddr);
+                int err = Wire.endTransmission();
+                if (err == 0) {
+                    keyboardAddress = keyboardAddr;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected to I2C");
-                } else if (addr == 0x5F) {  // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
+                    break;
+                }
+                delay(50);
+            }
+        #else
+            for (addr = 1; addr < 0x7F; addr++) {
+                Wire.beginTransmission(addr);
+                err = Wire.endTransmission();
+                if (err == 0 && addr == 0x5F) { // CARDKB from m5stack.com (YEL - SDA / WTH SCL)
+                    //Serial.println(addr); this shows any connected board to I2C
                     keyboardAddress = addr;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "CARDKB Keyboard Connected to I2C");
                 }
             }
-        }
+        #endif
 
         #ifdef HAS_TOUCHSCREEN
             for (addr = 1; addr < 0x7F; addr++) {
@@ -176,5 +206,5 @@ namespace Utils {
             }
         #endif
     }
-  
+
 }

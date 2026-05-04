@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 /*___________________________________________________________________
 
 ██╗      ██████╗ ██████╗  █████╗      █████╗ ██████╗ ██████╗ ███████╗
@@ -50,14 +68,15 @@ ____________________________________________________________________*/
 #include "touch_utils.h"
 #endif
 
+
+String      versionDate             = "2026-03-03";
+String      versionNumber           = "1.0.0";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;
 #ifdef HAS_BT_CLASSIC
     BluetoothSerial                 SerialBT;
 #endif
-
-String      versionDate             = "2025.03.24";
 
 uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
@@ -67,8 +86,9 @@ int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
 int         menuDisplay             = 100;
+uint32_t    menuTime                = millis();
 
-bool        statusState             = true;
+bool        statusUpdate            = true;
 bool        displayEcoMode          = Config.display.ecoMode;
 bool        displayState            = true;
 uint32_t    displayTime             = millis();
@@ -86,8 +106,6 @@ double      lastTxLat               = 0.0;
 double      lastTxLng               = 0.0;
 double      lastTxDistance          = 0.0;
 
-uint32_t    menuTime                = millis();
-
 bool        flashlight              = false;
 bool        digipeaterActive        = false;
 bool        sosActive               = false;
@@ -95,8 +113,6 @@ bool        sosActive               = false;
 bool        miceActive              = false;
 
 bool        smartBeaconActive       = true;
-
-int         ackRequestNumber;
 
 uint32_t    lastGPSTime             = 0;
 
@@ -120,7 +136,7 @@ void setup() {
 
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
-    STATION_Utils::nearTrackerInit();
+    STATION_Utils::nearStationInit();
     startupScreen(loraIndex, versionDate);
 
     WIFI_Utils::checkIfWiFiAP();
@@ -131,8 +147,6 @@ void setup() {
     LoRa_Utils::setup();
     Utils::i2cScannerForPeripherals();
     WX_Utils::setup();
-    
-    ackRequestNumber = random(1,999);
 
     WiFi.mode(WIFI_OFF);
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "WiFi controller stopped");
@@ -147,18 +161,16 @@ void setup() {
         }
     }
 
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            BUTTON_Utils::setup();
-        #endif
-        #ifdef HAS_JOYSTICK
-            JOYSTICK_Utils::setup();
-        #endif
-        KEYBOARD_Utils::setup();
-        #ifdef HAS_TOUCHSCREEN
-            TOUCH_Utils::setup();
-        #endif
-    }
+    #ifdef BUTTON_PIN
+        BUTTON_Utils::setup();
+    #endif
+    #ifdef HAS_JOYSTICK
+        JOYSTICK_Utils::setup();
+    #endif
+    KEYBOARD_Utils::setup();
+    #ifdef HAS_TOUCHSCREEN
+        TOUCH_Utils::setup();
+    #endif
 
     POWER_Utils::lowerCpuFrequency();
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
@@ -168,26 +180,25 @@ void setup() {
 
 void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
-    if (statusState) {
-        if (Config.validateConfigFile(currentBeacon->callsign)) {
+    if (statusUpdate) {
+        if (APRSPacketLib::checkNocall(currentBeacon->callsign)) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your callsigns in WebConfig");
+            displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
             KEYBOARD_Utils::rightArrow();
             currentBeacon = &Config.beacons[myBeaconsIndex];
         }
-        miceActive = Config.validateMicE(currentBeacon->micE);
+        miceActive = APRSPacketLib::validateMicE(currentBeacon->micE);
     }
-    POWER_Utils::batteryManager();
 
     SMARTBEACON_Utils::checkSettings(currentBeacon->smartBeaconSetting);
     SMARTBEACON_Utils::checkState();
 
-    if (!Config.simplifiedTrackerMode) {
-        #ifdef BUTTON_PIN
-            BUTTON_Utils::loop();
-        #endif
-    }
-
+    BATTERY_Utils::monitor();
     Utils::checkDisplayEcoMode();
 
+    #ifdef BUTTON_PIN
+        BUTTON_Utils::loop();
+    #endif
     KEYBOARD_Utils::read();
     #ifdef HAS_JOYSTICK
         JOYSTICK_Utils::loop();
@@ -196,9 +207,11 @@ void loop() {
         TOUCH_Utils::loop();
     #endif
 
-
     ReceivedLoRaPacket packet = LoRa_Utils::receivePacket();
-
+    
+    if (packet.text.length() > 0) {
+  displaySetLastRxMetrics(packet.rssi, packet.snr);
+    }
     MSG_Utils::checkReceivedMessage(packet);
     MSG_Utils::processOutputBuffer();
     MSG_Utils::clean15SegBuffer();
@@ -214,34 +227,30 @@ void loop() {
             #endif
         }
     }
-    
+
     MSG_Utils::ledNotification();
     Utils::checkFlashlight();
-    STATION_Utils::checkListenedTrackersByTimeAndDelete();
+    STATION_Utils::checkListenedStationsByTimeAndDelete();
 
     lastTx = millis() - lastTxTime;
     if (gpsIsActive) {
         GPS_Utils::getData();
         bool gps_time_update = gps.time.isUpdated();
         bool gps_loc_update  = gps.location.isUpdated();
+        bool gps_loc_valid   = gps.location.isValid();
         GPS_Utils::setDateFromData();
 
         int currentSpeed = (int) gps.speed.kmph();
 
-        if (gps_loc_update) {
-            Utils::checkStatus();
-            STATION_Utils::checkTelemetryTx();
-        }
+        if (gps_loc_update || gps_loc_valid) Utils::checkStatus();
 
-        if (!gps.location.isValid()) BATTERY_Utils::checkVoltageWithoutGPSFix();
-
-        if (!sendUpdate && gps_loc_update && smartBeaconActive) {
+        if (!sendUpdate && gps_loc_valid && smartBeaconActive) {
             GPS_Utils::calculateDistanceTraveled();
             if (!sendUpdate) GPS_Utils::calculateHeadingDelta(currentSpeed);
-            STATION_Utils::checkStandingUpdateTime();
         }
+        if (!sendUpdate && smartBeaconActive) STATION_Utils::checkStandingUpdateTime();
         SMARTBEACON_Utils::checkFixedBeaconTime();
-        if (sendUpdate && gps_loc_update) STATION_Utils::sendBeacon(0);
+        if (sendUpdate && gps_loc_valid) STATION_Utils::sendBeacon();
         if (gps_time_update) SMARTBEACON_Utils::checkInterval(currentSpeed);
 
         if (millis() - refreshDisplayTime >= 1000 || gps_time_update) {
@@ -261,5 +270,3 @@ void loop() {
         }
     }
 }
-
-// eliminar keyboardConnected y reemplazar por validar si es distinto de 0x00 ?

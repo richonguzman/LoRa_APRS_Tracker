@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
@@ -53,6 +71,7 @@ std::vector<String>             outputMessagesBuffer;
 std::vector<String>             outputAckRequestBuffer;
 std::vector<Packet15SegBuffer>  packet15SegBuffer;
 
+int         ackRequestNumber    = random(1,999);
 bool        ackRequestState     = false;
 String      ackCallsignRequest  = "";
 String      ackNumberRequest    = "";
@@ -85,48 +104,67 @@ namespace MSG_Utils {
         return numWLNKMessages;
     }
 
-    void loadNumMessages() {
-        if(!SPIFFS.begin(true)) {
-            Serial.println("An Error has occurred while mounting SPIFFS");
-            return;
-        }
+void loadNumMessages() {
+  if(!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    numAPRSMessages = 0;
+    numWLNKMessages = 0;
+    return;
+  }
 
-        File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
-        if(!fileToReadAPRS) {
-            Serial.println("Failed to open APRS_Msg for reading");
-            return;
-        }
+  File fileToReadAPRS = SPIFFS.open("/aprsMessages.txt");
+  if(!fileToReadAPRS) {
+    Serial.println("Failed to open APRS_Msg for reading");
+    numAPRSMessages = 0;
+  } else {
+    std::vector<String> v1;
 
-        std::vector<String> v1;
-        while (fileToReadAPRS.available()) {
-            v1.push_back(fileToReadAPRS.readStringUntil('\n'));
-        }
-        fileToReadAPRS.close();
+    while (fileToReadAPRS.available()) {
+      String line = fileToReadAPRS.readStringUntil('\n');
+      line.trim();
 
-        numAPRSMessages = 0;
-        for (String s1 : v1) {
-            numAPRSMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
-    
-        File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
-        if(!fileToReadWLNK) {
-            Serial.println("Failed to open Winlink_Msg for reading");
-            return;
-        }
+      if (line.length() == 0) continue;
+      if (line.indexOf(",") < 0) continue;
 
-        std::vector<String> v2;
-        while (fileToReadWLNK.available()) {
-            v2.push_back(fileToReadWLNK.readStringUntil('\n'));
-        }
-        fileToReadWLNK.close();
-
-        numWLNKMessages = 0;
-        for (String s2 : v2) {
-            numWLNKMessages++;
-        }
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+      v1.push_back(line);
     }
+
+    fileToReadAPRS.close();
+
+    numAPRSMessages = 0;
+    for (String s1 : v1) {
+      (void)s1;
+      numAPRSMessages++;
+    }
+  }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of APRS Messages : %s", String(numAPRSMessages));
+
+  File fileToReadWLNK = SPIFFS.open("/winlinkMails.txt");
+  if(!fileToReadWLNK) {
+    Serial.println("Failed to open Winlink_Msg for reading");
+    numWLNKMessages = 0;
+  } else {
+    std::vector<String> v2;
+
+    while (fileToReadWLNK.available()) {
+      String line = fileToReadWLNK.readStringUntil('\n');
+      line.trim();
+      if (line.length() == 0) continue;
+      v2.push_back(line);
+    }
+
+    fileToReadWLNK.close();
+
+    numWLNKMessages = 0;
+    for (String s2 : v2) {
+      (void)s2;
+      numWLNKMessages++;
+    }
+  }
+
+  logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Number of Winlink Mails : %s", String(numWLNKMessages));
+}
 
     void loadMessagesFromMemory(uint8_t typeOfMessage) {
         File fileToRead;
@@ -139,18 +177,30 @@ namespace MSG_Utils {
                 fileToRead = SPIFFS.open("/aprsMessages.txt");
             }
             if (noAPRSMsgWarning) {
-                displayShow("   INFO", "", " NO APRS MSG SAVED", 1500);
+            displayShow(" INFO", "", " NO APRS MSG SAVED", 1500);
             } else {
-                if(!fileToRead) {
-                    Serial.println("Failed to open file for reading");
-                    return;
-                }
-                while (fileToRead.available()) {
-                    loadedAPRSMessages.push_back(fileToRead.readStringUntil('\n'));
-                }
-                fileToRead.close();
+            if(!fileToRead) {
+                Serial.println("Failed to open file for reading");
+                noAPRSMsgWarning = true;
+                return;
             }
-        } else if (typeOfMessage == 1) { // WLNK
+
+            while (fileToRead.available()) {
+            String line = fileToRead.readStringUntil('\n');
+            line.trim();
+            if (line.length() == 0) continue;
+            loadedAPRSMessages.push_back(line);
+            }
+
+            fileToRead.close();
+
+            if (loadedAPRSMessages.empty()) {
+                noAPRSMsgWarning = true;
+                displayShow(" INFO", "", " NO APRS MSG SAVED", 1500);
+            }
+            }
+                    } 
+        else if (typeOfMessage == 1) { // WLNK
             noWLNKMsgWarning = false;
             if (numWLNKMessages == 0) {
                 noWLNKMsgWarning = true;
@@ -252,7 +302,7 @@ namespace MSG_Utils {
         LoRa_Utils::sendNewPacket(newPacket);
     }
 
-    const String ackRequestNumberGenerator() {
+    String getAckRequestNumber() {
         ackRequestNumber++;
         if (ackRequestNumber > 999) {
             ackRequestNumber = 1;
@@ -279,9 +329,9 @@ namespace MSG_Utils {
                         break;
                     }
                 }
-            }               
+            }
             if (!alreadyInBuffer) {
-                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + ackRequestNumberGenerator());
+                outputMessagesBuffer.push_back(station + "," + textMessage + "{" + getAckRequestNumber());
             }
         } else if (typeOfMessage == 0) {
             alreadyInBuffer = false;
@@ -343,7 +393,7 @@ namespace MSG_Utils {
                         outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                         if (winlinkStatus > 0 && winlinkStatus < 5) {   // if not complete Winlink Challenge Process it will reset Login process
                             winlinkStatus = 0;
-                        }                     
+                        }
                     }
                     break;
             }
@@ -393,7 +443,7 @@ namespace MSG_Utils {
         if (packet.text.substring(0,3) == "\x3c\xff\x01") {              // its an APRS packet
             //Serial.println(packet.text); // only for debug
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
-            if (lastReceivedPacket.sender!=currentBeacon->callsign) {
+            if (lastReceivedPacket.sender != currentBeacon->callsign) {
 
                 if (lastReceivedPacket.payload.indexOf("\x3c\xff\x01") != -1) {
                     lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
@@ -512,14 +562,18 @@ namespace MSG_Utils {
                                 lastMsgRxTime = millis();
 
                                 #ifdef HAS_TFT
-                                    displayMessage(lastReceivedPacket.sender,lastReceivedPacket.payload, false, 3000);
+                                    #if defined(HELTEC_WIRELESS_TRACKER)
+                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
+                                    #else   // T-Deck
+                                        displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , 3000);
+                                    #endif                                    
                                 #else
-                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, "", lastReceivedPacket.payload , "", "", 3000);
+                                    displayShow("< MSG Rx >", "From --> " + lastReceivedPacket.sender, lastReceivedPacket.payload , "", "", "", 3000);
                                 #endif
 
                                 if (lastReceivedPacket.payload.indexOf("ack") != 0) {
                                     saveNewMessage(0, lastReceivedPacket.sender, lastReceivedPacket.payload);
-                                }                            
+                                }
                             }
                         }
                     } else {
@@ -530,7 +584,7 @@ namespace MSG_Utils {
                             NOTIFICATION_Utils::stationHeardBeep();
                         }
                     }
-                }                
+                }
             }
         }   
     }

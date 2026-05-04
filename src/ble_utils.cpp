@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <NimBLEDevice.h>
 #include "configuration.h"
 #include "lora_utils.h"
@@ -6,7 +24,8 @@
 #include "display.h"
 #include "logger.h"
 
-#define BLE_CHUNK_SIZE  64
+#define BLE_CHUNK_SIZE  512
+#define MAX_KISS_BUFFER 1024
 
 
 // APPLE - APRS.fi app
@@ -53,22 +72,50 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic *pCharacteristic) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
             std::string receivedData = pCharacteristic->getValue();
-            delay(100);
-            for (int i = 0; i < receivedData.length(); i++) {
-                char character = receivedData[i];
 
-                if (kissSerialBuffer.length() == 0 && character != (char)KissChar::FEND) continue;
-                kissSerialBuffer += receivedData[i];
-                
-                if (character == (char)KissChar::FEND && kissSerialBuffer.length() > 3) {
-                    bool isDataFrame = false;
+            for (uint8_t c : receivedData) {                                                // save all received data from buffer
+                kissSerialBuffer += (char)c;
+            }
+            if (kissSerialBuffer.length() > MAX_KISS_BUFFER) {                              // buffer overflow protection
+                kissSerialBuffer = "";
+                return;
+            }
 
-                    BLEToLoRaPacket = KISS_Utils::decodeKISS(kissSerialBuffer, isDataFrame);
+            int maxIterations = 10;                                                        // infinite loop protection
+            while (maxIterations-- > 0) {
 
-                    if (isDataFrame) {
-                        shouldSendBLEtoLoRa = true;
-                        kissSerialBuffer = "";
+                if (kissSerialBuffer.length() == 0) break;                                  // empty buffer protection
+
+                int fendIndex = -1;
+                if (kissSerialBuffer.charAt(0) == (char)KissChar::FEND) {                   // starts with FEND???
+                    for (int i = 1; i < kissSerialBuffer.length(); i++) {                   // look for next FEND
+                        if (kissSerialBuffer.charAt(i) == (char)KissChar::FEND) {
+                            fendIndex = i;
+                            break;
+                        }
                     }
+                } else {
+                    int firstFendIndex = kissSerialBuffer.indexOf((char)KissChar::FEND);    // find first FEND byte to discard leading corrupted bytes
+                    if (firstFendIndex != -1) {
+                        kissSerialBuffer.remove(0, firstFendIndex);                         // delete corrupted data before FEND 
+                    } else {
+                        kissSerialBuffer = "";                                              // if no FEND found, delete all
+                        break;
+                    }
+                    continue;
+                }
+
+                if (fendIndex == -1) {                                                      // exit: no FEND byte to process the kissSerialBuffer (yet)
+                    break;
+                }
+
+                String frame = kissSerialBuffer.substring(0, fendIndex + 1);                // extract full frame (With FEND at start and end)
+                kissSerialBuffer.remove(0, fendIndex + 1);
+                
+                if (frame.length() >= 4) {                                                  // FEND | CMD | DATA | FEND
+                    bool isDataFrame    = false;
+                    BLEToLoRaPacket     = KISS_Utils::decodeKISS(frame, isDataFrame);
+                    if (isDataFrame) shouldSendBLEtoLoRa = true;
                 }
             }
         } else {                            // TNC2
@@ -81,13 +128,12 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
     }
 };
 
-
 namespace BLE_Utils {
 
     void stop() {
         BLEDevice::deinit();
     }
-  
+
     void setup() {
         String BLEid = Config.bluetooth.deviceName;
         BLEDevice::init(BLEid.c_str()); 
@@ -121,15 +167,6 @@ namespace BLE_Utils {
 
     void sendToLoRa() {
         if (!shouldSendBLEtoLoRa) return;
-
-        if (!Config.acceptOwnFrameFromTNC && BLEToLoRaPacket.indexOf("::") == -1) {
-            String sender = BLEToLoRaPacket.substring(0, BLEToLoRaPacket.indexOf(">"));
-            if (sender == currentBeacon->callsign) {
-                BLEToLoRaPacket = "";
-                shouldSendBLEtoLoRa = false;
-                return;
-            }
-        }
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
         displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);

@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <TinyGPS++.h>
 #include "TimeLib.h"
 #include <APRSPacketLib.h>
@@ -56,7 +74,7 @@ namespace GPS_Utils {
             digitalWrite(GPS_VCC, LOW);
             delay(200);
         #endif
-        #ifdef F4GOH_1W_LoRa_Tracker
+        #if defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68)
             pinMode(GPS_VCC, OUTPUT);
             digitalWrite(GPS_VCC, HIGH);
             delay(200);
@@ -68,8 +86,8 @@ namespace GPS_Utils {
     void calculateDistanceCourse(const String& callsign, double checkpointLatitude, double checkPointLongitude) {
         double distanceKm = TinyGPSPlus::distanceBetween(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude) / 1000.0;
         double courseTo   = TinyGPSPlus::courseTo(gps.location.lat(), gps.location.lng(), checkpointLatitude, checkPointLongitude);
-        STATION_Utils::deleteListenedTrackersbyTime();
-        STATION_Utils::orderListenedTrackersByDistance(callsign, distanceKm, courseTo);
+        STATION_Utils::deleteListenedStationsByTime();
+        STATION_Utils::orderListenedStationsByDistance(callsign, distanceKm, courseTo);
     }
 
     void getData() {

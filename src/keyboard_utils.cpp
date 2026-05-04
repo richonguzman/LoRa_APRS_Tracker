@@ -1,3 +1,21 @@
+/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+ * 
+ * This file is part of LoRa APRS Tracker.
+ * 
+ * LoRa APRS Tracker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or 
+ * (at your option) any later version.
+ * 
+ * LoRa APRS Tracker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <logger.h>
@@ -29,7 +47,7 @@ extern bool             displayState;
 extern uint32_t         displayTime;
 extern bool             displayEcoMode;
 extern uint8_t          screenBrightness;
-extern bool             statusState;
+extern bool             statusUpdate;
 extern uint32_t         statusTime;
 extern int              messagesIterator;
 extern bool             messageLed;
@@ -71,9 +89,9 @@ namespace KEYBOARD_Utils {
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay--;
             if (menuDisplay < 1) menuDisplay = 6;
-        } else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        } else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay--;
-            if (menuDisplay < 10) menuDisplay = 13;
+            if (menuDisplay < 10) menuDisplay = 14;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay--;
             if (menuDisplay < 130) menuDisplay = 133;
@@ -138,17 +156,17 @@ namespace KEYBOARD_Utils {
                 if (!gpsIsActive) SLEEP_Utils::gpsWakeUp();
             } else {
                 displayToggle(true);
-                displayTime = millis();   
-                displayState = true;  
+                displayTime = millis();
+                displayState = true;
             }
         }
         if (menuDisplay >= 1 && menuDisplay <= 6) {
             menuDisplay++;
             if (menuDisplay > 6) menuDisplay = 1;
         }
-        else if (menuDisplay >= 10 && menuDisplay <= 13) {
+        else if (menuDisplay >= 10 && menuDisplay <= 14) {
             menuDisplay++;
-            if (menuDisplay > 13) menuDisplay = 10;
+            if (menuDisplay > 14) menuDisplay = 10;
         } else if (menuDisplay >= 130 && menuDisplay <= 133) {
             menuDisplay++;
             if (menuDisplay > 133) menuDisplay = 130;
@@ -245,7 +263,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=14) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -284,14 +302,29 @@ namespace KEYBOARD_Utils {
             }
             displayToggle(true);
             displayTime = millis();
-            statusState  = true;
+            statusUpdate  = true;
             statusTime = millis();
             winlinkCommentState = false;
-            displayShow("   INFO", "", "  CHANGING CALLSIGN!", "", "-----> " + Config.beacons[myBeaconsIndex].callsign, "", 2000);
+            
+            String newCallsign = "-----> ";
+            newCallsign += Config.beacons[myBeaconsIndex].callsign;
+            String profileLabel = "";
+            int labelLength = Config.beacons[myBeaconsIndex].profileLabel.length();
+            if (labelLength > 0 ) {
+                int extraSpaces = (max(0, (22 - (labelLength + 2)))) / 2;
+                for (int i = 0; i < extraSpaces; i++) {
+                    profileLabel += " ";
+                }
+                profileLabel += "(";
+                profileLabel += Config.beacons[myBeaconsIndex].profileLabel;
+                profileLabel += ")";
+            }
+            displayShow("   INFO", "", "  CHANGING CALLSIGN!", newCallsign, profileLabel, "", 2000);
+            
             STATION_Utils::saveIndex(0, myBeaconsIndex);
             sendStartTelemetry = true;
             if (menuDisplay == 200) menuDisplay = 20;
-        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
+        } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 && menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
             MSG_Utils::loadMessagesFromMemory(0);
@@ -309,16 +342,34 @@ namespace KEYBOARD_Utils {
             displayShow("   INFO", "", "ALL MESSAGES DELETED!", 2000);
             MSG_Utils::loadNumMessages();
             menuDisplay = 12;
-        } else if (menuDisplay == 130 || menuDisplay == 131) {
+            } else if (menuDisplay == 14) {
+
+            displayShow(" APRSPH", "Sending:", "CQ Checked-in via LoRa Tracker", "", "", "", 2000);
+
+            MSG_Utils::addToOutputBuffer(0, "APRSPH", "CQ Checked-in via LoRa Tracker");
+
+            #ifdef HAS_JOYSTICK
+            menuDisplay = 10;
+            #else
+            menuDisplay = 10;
+            #endif
+            }
+        else if (menuDisplay == 130 || menuDisplay == 131) {
             if (keyDetected) {
                 menuDisplay *= 10;
             } else {
                 displayShow(" APRS Thu.", "Sending:", "Happy #APRSThursday", "from LoRa Tracker 73!", "", "", 2000);
-                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!"); 
+                MSG_Utils::addToOutputBuffer(0, (menuDisplay == 130) ? "APRSPH" : "ANSRVR" , (menuDisplay == 130) ? "HOTG Happy #APRSThursday from LoRa Tracker 73!" : "CQ HOTG Happy #APRSThursday from LoRa Tracker 73!");
+                #ifdef HAS_JOYSTICK
+                    menuDisplay = 13;
+                #endif
             }
         } else if (menuDisplay == 132 || menuDisplay == 133) {
             displayShow(" APRS Thu.", "", (menuDisplay == 132) ? "   Unsubscribe" : "  Keep Subscribed", (menuDisplay == 132) ? "   from APRS Thursday" : "  for 12hours more", "", "", 2000);
             MSG_Utils::addToOutputBuffer(0, "ANSRVR", (menuDisplay == 132) ? "U HOTG" : "K HOTG");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 13;
+            #endif
         }
 
         else if (menuDisplay == 210) {
@@ -373,20 +424,39 @@ namespace KEYBOARD_Utils {
             displayShow("  STATUS", "", "SELECT STATUS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
         } else if (menuDisplay == 250) {
             displayShow(" NOTIFIC", "", "NOTIFICATIONS","STILL IN DEVELOPMENT!", "", "", 2000); /////////////////////////
-        } 
+        } else if (menuDisplay == 270) {
+            #if defined(HAS_AXP192) || defined(HAS_AXP2101)
+                displayShow("", "", "    POWER OFF ...", 2000);
+            #else
+                displayShow("", "", " starting DEEP SLEEP", 2000);
+            #endif
+            POWER_Utils::shutdown();
+        }
 
         else if (menuDisplay == 30) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "wrl");
             MSG_Utils::addToOutputBuffer(0, "CA2RXU-15", "wrl");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 31) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Hospital");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "hospital");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 32) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4 : Police");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "police");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         } else if (menuDisplay == 33) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Loop", "%s", "9M2PJU-4: Fire Station");
             MSG_Utils::addToOutputBuffer(0, "9M2PJU-4", "fire_station");
+            #ifdef HAS_JOYSTICK
+                menuDisplay = 3;
+            #endif
         }
 
         else if (menuDisplay == 50) {
@@ -481,7 +551,7 @@ namespace KEYBOARD_Utils {
             } else {
                 displayShow("  EXTRAS", "", "     Flashlight", "NOT ACTIVE IN CONFIG!", "", "", 2000);
             }
-        } 
+        }
 
         else if (menuDisplay == 9000) {
             #if defined(HAS_AXP192) || defined(HAS_AXP2101)
@@ -549,7 +619,11 @@ namespace KEYBOARD_Utils {
                     messageCallsign = (menuDisplay == 1300) ? "APRSPH" : "ANSRVR";
                     String prefix   = (menuDisplay == 1300) ? "HOTG "  : "CQ HOTG ";
                     MSG_Utils::addToOutputBuffer(0, messageCallsign, prefix + messageText);
-                    menuDisplay /= 10;
+                    #ifdef HAS_JOYSTICK
+                        menuDisplay = 13;
+                    #else
+                        menuDisplay /= 10;
+                    #endif
                 }
                 messageCallsign = "";
                 messageText = "";
@@ -691,7 +765,7 @@ namespace KEYBOARD_Utils {
             } else if (key == 13 && messageText.length() > 0) {
                 messageText.trim();
                 if (messageText.length() > 67) messageText = messageText.substring(0, 67);
-                String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate, "GPS"));
+                String packet = APRSPacketLib::generateBase91GPSBeaconPacket(currentBeacon->callsign, "APLRT1", Config.path, currentBeacon->overlay, APRSPacketLib::encodeGPSIntoBase91(gps.location.lat(),gps.location.lng(), gps.course.deg(), gps.speed.knots(), currentBeacon->symbol, Config.sendAltitude, gps.altitude.feet(), sendStandingUpdate));
                 packet += messageText;
                 displayShow("<<< TX >>>", "", packet,100);
                 LoRa_Utils::sendNewPacket(packet);       
@@ -700,6 +774,10 @@ namespace KEYBOARD_Utils {
             } else if (key == 8) {
                 messageText = messageText.substring(0, messageText.length() - 1);
             }
+        }
+
+        else if (key == 13) {   // Enter as Select in menu contexts
+            rightArrow();
         }
 
         else if (key == 181) {  // Arrow Up
@@ -733,7 +811,9 @@ namespace KEYBOARD_Utils {
     }
 
     void setup() {
-        if (keyboardAddress != 0x00) keyboardConnected = true;
+        if (!Config.simplifiedTrackerMode) {
+            if (keyboardAddress != 0x00) keyboardConnected = true;
+        }
     }
 
 }
