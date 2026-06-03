@@ -51,6 +51,9 @@ namespace POWER_Utils {
 
     void externalPinSetup();
 
+    void handleFan();
+    void forceFanOn(uint32_t holdTimeMs = 60000);
+
     bool begin(TwoWire &port);
     void setup();
 

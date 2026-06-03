@@ -197,6 +197,7 @@ void loop() {
     SMARTBEACON_Utils::checkState();
 
     BATTERY_Utils::monitor();
+    POWER_Utils::handleFan();
     Utils::checkDisplayEcoMode();
 
     #ifdef BUTTON_PIN
