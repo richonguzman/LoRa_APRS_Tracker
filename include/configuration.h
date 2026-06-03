@@ -145,6 +145,7 @@ public:
 
     void setDefaultValues();
     bool writeFile();
+    bool begin();
     Configuration();
 
 private:

@@ -323,6 +323,9 @@ bool Configuration::readFile() {
 }
 
 void Configuration::setDefaultValues() {
+    beacons.clear();
+    loraTypes.clear();
+
     wifiAP.active                   = true;
     wifiAP.password                 = "1234567890";
 
@@ -433,12 +436,16 @@ void Configuration::setDefaultValues() {
 }
 
 Configuration::Configuration() {
+}
+
+bool Configuration::begin() {
     if (!SPIFFS.begin(false)) {
         Serial.println("SPIFFS Mount Failed, formatting...");
 
         if (!SPIFFS.begin(true)) {
             Serial.println("SPIFFS Format Failed");
-            return;
+            setDefaultValues();
+            return false;
         }
     }
     Serial.println("SPIFFS Ready");
@@ -449,7 +456,17 @@ Configuration::Configuration() {
         writeFile();
         delay(500);
         ESP.restart();
+        return true;
     }
 
-    readFile();
+    if (!readFile() || beacons.empty() || loraTypes.empty()) {
+        Serial.println("Config invalid, creating default...");
+        setDefaultValues();
+        writeFile();
+        delay(500);
+        ESP.restart();
+        return false;
+    }
+
+    return true;
 }

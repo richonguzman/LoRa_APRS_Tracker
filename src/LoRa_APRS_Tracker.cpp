@@ -79,24 +79,24 @@ TinyGPSPlus                         gps;
 #endif
 
 uint8_t     myBeaconsIndex          = 0;
-int         myBeaconsSize           = Config.beacons.size();
-Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
+int         myBeaconsSize           = 0;
+Beacon      *currentBeacon          = nullptr;
 uint8_t     loraIndex               = 0;
-int         loraIndexSize           = Config.loraTypes.size();
-LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
+int         loraIndexSize           = 0;
+LoraType    *currentLoRaType        = nullptr;
 
 int         menuDisplay             = 100;
 uint32_t    menuTime                = millis();
 
 bool        statusUpdate            = true;
-bool        displayEcoMode          = Config.display.ecoMode;
+bool        displayEcoMode          = false;
 bool        displayState            = true;
 uint32_t    displayTime             = millis();
 uint32_t    refreshDisplayTime      = millis();
 
 bool        sendUpdate              = true;
 
-bool        bluetoothActive         = Config.bluetooth.active;
+bool        bluetoothActive         = false;
 bool        bluetoothConnected      = false;
 
 uint32_t    lastTx                  = 0.0;
@@ -129,6 +129,14 @@ void setup() {
     #ifndef DEBUG
         logger.setDebugLevel(logging::LoggerLevel::LOGGER_LEVEL_INFO);
     #endif
+
+    Config.begin();
+    myBeaconsSize       = Config.beacons.size();
+    currentBeacon       = &Config.beacons[myBeaconsIndex];
+    loraIndexSize       = Config.loraTypes.size();
+    currentLoRaType     = &Config.loraTypes[loraIndex];
+    displayEcoMode      = Config.display.ecoMode;
+    bluetoothActive     = Config.bluetooth.active;
 
     POWER_Utils::setup();
     displaySetup();
