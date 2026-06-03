@@ -17,6 +17,7 @@
  */
 
 #include <SPI.h>
+#include <math.h>
 #include "notification_utils.h"
 #include "configuration.h"
 #include "battery_utils.h"
@@ -60,8 +61,116 @@ bool    disableGPS;
 
 String  batteryChargeDischargeCurrent    = "";
 
+#if defined(TTGO_T_BEAM_1W)
+    const uint32_t FAN_CHECK_INTERVAL_MS          = 3000;
+    const uint32_t FAN_STARTUP_HOLD_MS            = 10000;
+    const uint32_t FAN_DEFAULT_TX_HOLD_MS         = 60000;
+    const int      FAN_TEMP_AVERAGE_READINGS      = 8;
+    const int      FAN_ADC_MIN_VALID              = 10;
+    const int      FAN_ADC_MAX_VALID              = 4085;
+    const double   FAN_TEMP_ON_C                  = 45.0;
+    const double   FAN_TEMP_OFF_C                 = 38.0;
+    const double   FAN_NTC_BETA                   = 3950.0;
+    const double   FAN_NTC_NOMINAL_RESISTANCE     = 10000.0;
+    const double   FAN_NTC_SERIES_RESISTANCE      = 10000.0;
+    const double   FAN_NTC_NOMINAL_TEMPERATURE_C  = 25.0;
+
+    bool            fanActive                      = false;
+    uint32_t        fanCheckTime                   = 0;
+    uint32_t        fanHoldUntil                   = 0;
+#endif
+
 
 namespace POWER_Utils {
+
+    #if defined(TTGO_T_BEAM_1W)
+        bool isFanHoldActive() {
+            if (fanHoldUntil == 0) return false;
+            if ((int32_t)(fanHoldUntil - millis()) > 0) return true;
+
+            fanHoldUntil = 0;
+            return false;
+        }
+
+        void setFanState(bool active, const char *reason) {
+            if (fanActive == active) return;
+
+            fanActive = active;
+            digitalWrite(FAN_CTRL_PIN, active ? HIGH : LOW);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Fan", "%s (%s)", active ? "ON" : "OFF", reason);
+        }
+
+        int readFanTemperatureAdc() {
+            uint32_t sampleSum = 0;
+
+            analogRead(TEMP_PIN);
+            delay(1);
+
+            for (int i = 0; i < FAN_TEMP_AVERAGE_READINGS; i++) {
+                sampleSum += analogRead(TEMP_PIN);
+                delay(1);
+            }
+
+            return sampleSum / FAN_TEMP_AVERAGE_READINGS;
+        }
+
+        double convertFanTemperature(int adcValue) {
+            if (adcValue <= FAN_ADC_MIN_VALID || adcValue >= FAN_ADC_MAX_VALID) return NAN;
+
+            double resistance = FAN_NTC_SERIES_RESISTANCE * ((4095.0 / adcValue) - 1.0);
+            if (resistance <= 0.0) return NAN;
+
+            double temperature = resistance / FAN_NTC_NOMINAL_RESISTANCE;
+            temperature = log(temperature);
+            temperature /= FAN_NTC_BETA;
+            temperature += 1.0 / (FAN_NTC_NOMINAL_TEMPERATURE_C + 273.15);
+            temperature = 1.0 / temperature;
+
+            return temperature - 273.15;
+        }
+    #endif
+
+    void forceFanOn(uint32_t holdTimeMs) {
+        #if defined(TTGO_T_BEAM_1W)
+            if (holdTimeMs == 0) holdTimeMs = FAN_DEFAULT_TX_HOLD_MS;
+
+            pinMode(FAN_CTRL_PIN, OUTPUT);
+            fanHoldUntil = millis() + holdTimeMs;
+            setFanState(true, "forced cooldown");
+        #else
+            (void)holdTimeMs;
+        #endif
+    }
+
+    void handleFan() {
+        #if defined(TTGO_T_BEAM_1W)
+            if (fanCheckTime != 0 && millis() - fanCheckTime < FAN_CHECK_INTERVAL_MS) return;
+            fanCheckTime = millis();
+
+            if (isFanHoldActive()) {
+                setFanState(true, "cooldown");
+                return;
+            }
+
+            int adcValue = readFanTemperatureAdc();
+            double temperature = convertFanTemperature(adcValue);
+
+            if (isnan(temperature)) {
+                setFanState(true, "temperature read failed");
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Fan", "Invalid NTC ADC reading: %d", adcValue);
+                return;
+            }
+
+            String temperatureText = String(temperature, 1);
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Fan", "NTC %s C, ADC %d", temperatureText.c_str(), adcValue);
+
+            if (!fanActive && temperature >= FAN_TEMP_ON_C) {
+                setFanState(true, "temperature high");
+            } else if (fanActive && temperature <= FAN_TEMP_OFF_C) {
+                setFanState(false, "temperature normal");
+            }
+        #endif
+    }
 
     #ifdef VEXT_CTRL
         void vext_ctrl_ON() {
@@ -414,7 +523,9 @@ namespace POWER_Utils {
 
         #if defined(TTGO_T_BEAM_1W)
             pinMode(FAN_CTRL_PIN, OUTPUT);
-            digitalWrite(FAN_CTRL_PIN, HIGH);
+            pinMode(TEMP_PIN, INPUT);
+            digitalWrite(FAN_CTRL_PIN, LOW);
+            forceFanOn(FAN_STARTUP_HOLD_MS);
         #endif
     }
 

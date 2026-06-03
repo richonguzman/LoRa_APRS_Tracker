@@ -51,8 +51,20 @@ float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to
 namespace BATTERY_Utils {
 
     String getPercentVoltageBattery(float voltage) {
-        int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
-        return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
+        #if defined(TTGO_T_BEAM_1W)
+            const float emptyVoltage = 6.0;
+            const float fullVoltage = 8.4;
+        #else
+            const float emptyVoltage = 3.0;
+            const float fullVoltage = 4.2;
+        #endif
+
+        int percent = ((voltage - emptyVoltage) / (fullVoltage - emptyVoltage)) * 100;
+        percent = constrain(percent, 0, 100);
+
+        if (percent < 10) return "  " + String(percent);
+        if (percent < 100) return " " + String(percent);
+        return "100";
     }
 
     String getBatteryInfoVoltage() {
@@ -83,7 +95,7 @@ namespace BATTERY_Utils {
                 #endif
                 #if defined(TTGO_T_BEAM_1W)
                     double inputDivider = (1.0 / (300.0 + 150.0)) * 150.0;  // The voltage divider is a 300k + 150k resistor in series, 150k on the low side.
-                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
+                    return voltage / inputDivider;
                 #endif
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32_C3_DIY_LoRa_GPS) || defined(ESP32_C3_DIY_LoRa_GPS_915) || defined(WEMOS_ESP32_Bat_LoRa_GPS)
                     double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side.
@@ -151,6 +163,10 @@ namespace BATTERY_Utils {
                     }
                 #else
                     obtainBatteryInfo();
+                    if (Config.battery.monitorVoltage && batteryConnected && batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
+                        displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!", 5000);
+                        POWER_Utils::shutdown();
+                    }
                 #endif
                 batteryMeasurmentTime = millis();
             }

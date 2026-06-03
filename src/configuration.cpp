@@ -25,6 +25,15 @@
 
 extern logging::Logger logger;
 
+#if defined(TTGO_T_BEAM_1W)
+    const bool  DEFAULT_BATTERY_MONITOR_VOLTAGE = false;
+    const float DEFAULT_BATTERY_SLEEP_VOLTAGE   = 6.4;
+    const float MIN_BATTERY_SLEEP_VOLTAGE       = 6.0;
+#else
+    const bool  DEFAULT_BATTERY_MONITOR_VOLTAGE = false;
+    const float DEFAULT_BATTERY_SLEEP_VOLTAGE   = 2.9;
+#endif
+
 bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
@@ -202,16 +211,29 @@ bool Configuration::readFile() {
             loraTypes.push_back(loraType);
         }
 
+        bool batteryMonitorVoltageMissing = data["battery"]["monitorVoltage"].isNull();
+        bool batterySleepVoltageMissing = data["battery"]["sleepVoltage"].isNull();
+
         if (data["battery"]["sendVoltage"].isNull() ||
             data["battery"]["voltageAsTelemetry"].isNull() ||
             data["battery"]["sendVoltageAlways"].isNull() ||
-            data["battery"]["monitorVoltage"].isNull() ||
-            data["battery"]["sleepVoltage"].isNull()) needsRewrite = true;
+            batteryMonitorVoltageMissing ||
+            batterySleepVoltageMissing) needsRewrite = true;
         battery.sendVoltage             = data["battery"]["sendVoltage"] | false;
         battery.voltageAsTelemetry      = data["battery"]["voltageAsTelemetry"] | false;
         battery.sendVoltageAlways       = data["battery"]["sendVoltageAlways"] | false;
-        battery.monitorVoltage          = data["battery"]["monitorVoltage"] | false;
-        battery.sleepVoltage            = data["battery"]["sleepVoltage"] | 2.9;
+        battery.monitorVoltage          = data["battery"]["monitorVoltage"] | DEFAULT_BATTERY_MONITOR_VOLTAGE;
+        battery.sleepVoltage            = data["battery"]["sleepVoltage"] | DEFAULT_BATTERY_SLEEP_VOLTAGE;
+        #if defined(TTGO_T_BEAM_1W)
+            if (battery.sleepVoltage < MIN_BATTERY_SLEEP_VOLTAGE) {
+                battery.sleepVoltage = DEFAULT_BATTERY_SLEEP_VOLTAGE;
+                needsRewrite = true;
+            }
+            if (battery.monitorVoltage && battery.sleepVoltage > 6.39 && battery.sleepVoltage < 6.41) {
+                battery.monitorVoltage = false;
+                needsRewrite = true;
+            }
+        #endif
 
         if (data["telemetry"]["active"].isNull() ||
             data["telemetry"]["sendTelemetry"].isNull() ||
@@ -301,6 +323,9 @@ bool Configuration::readFile() {
 }
 
 void Configuration::setDefaultValues() {
+    beacons.clear();
+    loraTypes.clear();
+
     wifiAP.active                   = true;
     wifiAP.password                 = "1234567890";
 
@@ -366,8 +391,8 @@ void Configuration::setDefaultValues() {
     battery.sendVoltage             = false;
     battery.voltageAsTelemetry      = false;
     battery.sendVoltageAlways       = false;
-    battery.monitorVoltage          = false;
-    battery.sleepVoltage            = 2.9;
+    battery.monitorVoltage          = DEFAULT_BATTERY_MONITOR_VOLTAGE;
+    battery.sleepVoltage            = DEFAULT_BATTERY_SLEEP_VOLTAGE;
 
     telemetry.active                 = false;
     telemetry.sendTelemetry          = false;
@@ -411,12 +436,16 @@ void Configuration::setDefaultValues() {
 }
 
 Configuration::Configuration() {
+}
+
+bool Configuration::begin() {
     if (!SPIFFS.begin(false)) {
         Serial.println("SPIFFS Mount Failed, formatting...");
 
         if (!SPIFFS.begin(true)) {
             Serial.println("SPIFFS Format Failed");
-            return;
+            setDefaultValues();
+            return false;
         }
     }
     Serial.println("SPIFFS Ready");
@@ -427,7 +456,17 @@ Configuration::Configuration() {
         writeFile();
         delay(500);
         ESP.restart();
+        return true;
     }
 
-    readFile();
+    if (!readFile() || beacons.empty() || loraTypes.empty()) {
+        Serial.println("Config invalid, creating default...");
+        setDefaultValues();
+        writeFile();
+        delay(500);
+        ESP.restart();
+        return false;
+    }
+
+    return true;
 }

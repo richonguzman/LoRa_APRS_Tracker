@@ -23,6 +23,7 @@
 #include "configuration.h"
 #include "board_pinout.h"
 #include "lora_utils.h"
+#include "power_utils.h"
 #include "display.h"
 
 extern logging::Logger  logger;
@@ -200,6 +201,7 @@ namespace LoRa_Utils {
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
         #if defined(TTGO_T_BEAM_1W)
+            POWER_Utils::forceFanOn();
             digitalWrite(RADIO_RXEN, LOW);
         #endif
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
