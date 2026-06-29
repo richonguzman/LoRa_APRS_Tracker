@@ -393,11 +393,13 @@ namespace POWER_Utils {
             Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
             if (begin(Wire)) beginStatus = true;
 
-            /*if (beginStatus) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "AXP2101", "init done!");
+            if (beginStatus) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Wire", "init done!");
             } else {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "AXP2101", "init failed!");
-            }*/
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Wire", "init failed!");
+            }
+
+            delay(1000);
 
             Wire.beginTransmission(0x6B);       // BQ25896 I2C Address = 0x6B
             if (Wire.endTransmission() == 0) {

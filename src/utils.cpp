@@ -169,7 +169,7 @@ namespace Utils {
         }
 
         delay(500);
-        const uint8_t keyboards[] = {0x55, 0x5F};
+        /*const uint8_t keyboards[] = {0x55, 0x5F};
         for (uint8_t addr : keyboards) {
             Wire.beginTransmission(addr);
             if (Wire.endTransmission() == 0) {
@@ -177,15 +177,19 @@ namespace Utils {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Keyboard Connected");
                 break;
             }
-        }
+        }*/
 
         Serial.println("escaneando");
         for (int addr = 0; addr < 0x7F; ++addr) {
+            Serial.println(addr);
             Wire.beginTransmission(addr);
             int err = Wire.endTransmission();
             if (err == 0) {
-                Serial.println(addr);
-                if (addr == 0x55) {             // T-Deck (old and plus) keyboard
+                Serial.print("I2C device found at address 0x");
+                if (addr < 16) Serial.print("0");
+                Serial.print(addr, HEX);
+                Serial.println("  !");
+                /*if (addr == 0x55) {             // T-Deck (old and plus) keyboard
                     keyboardAddress = addr;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Keyboard Connected");
                     break;
@@ -197,7 +201,7 @@ namespace Utils {
                     keyboardAddress = addr;
                     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "T-Deck Pro Keyboard Connected");
                     break;
-                }
+                }*/
             }
             //delay(50);
         }
