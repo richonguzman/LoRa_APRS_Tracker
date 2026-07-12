@@ -234,19 +234,29 @@ namespace POWER_Utils {
             while (1);
         }
 
-        if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
+        #ifdef RPC_MicroTracker
+            Config.notification.ledTxPin = LED_TX;
             pinMode(Config.notification.ledTxPin, OUTPUT);
-        } else if (Config.notification.ledTx && Config.notification.ledTxPin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Tx Pin not defined");
-            while (1);
-        }
+        #else
+            if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
+                pinMode(Config.notification.ledTxPin, OUTPUT);
+            } else if (Config.notification.ledTx && Config.notification.ledTxPin < 0) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Tx Pin not defined");
+                while (1);
+            }
+        #endif
 
-        if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
+        #ifdef RPC_MicroTracker
+            Config.notification.ledMessagePin = LED_RX;
             pinMode(Config.notification.ledMessagePin, OUTPUT);
-        } else if (Config.notification.ledMessage && Config.notification.ledMessagePin < 0) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Message Pin not defined");
-            while (1);
-        }
+        #else
+            if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
+                pinMode(Config.notification.ledMessagePin, OUTPUT);
+            } else if (Config.notification.ledMessage && Config.notification.ledMessagePin < 0) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "Led Message Pin not defined");
+                while (1);
+            }
+        #endif
 
         if (Config.notification.ledFlashlight && Config.notification.ledFlashlightPin >= 0) {
             pinMode(Config.notification.ledFlashlightPin, OUTPUT);
@@ -262,6 +272,10 @@ namespace POWER_Utils {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "PINOUT", "PTT Pin not defined");
             while (1);
         }
+        #ifdef RPC_MicroTracker
+            pinMode(LED_BT, OUTPUT);        // Led BT/BLE
+            pinMode(LED_WIFI, OUTPUT);      // Led WiFI
+        #endif
     }
 
     bool begin(TwoWire &port) {

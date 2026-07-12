@@ -67,9 +67,15 @@ namespace BLUETOOTH_Utils {
         if (event == ESP_SPP_SRV_OPEN_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client connected !");
             bluetoothConnected = true;
+            #ifdef RPC_MicroTracker
+                digitalWrite(13, LOW);    // Led BT/BLE
+            #endif
         } else if (event == ESP_SPP_CLOSE_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Bluetooth", "Client disconnected !");
             bluetoothConnected = false;
+            #ifdef RPC_MicroTracker
+                digitalWrite(13, HIGH);    // Led BT/BLE
+            #endif
         } else {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Bluetooth", "Status: %d", event);
         }

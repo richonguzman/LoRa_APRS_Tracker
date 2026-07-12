@@ -34,6 +34,9 @@ namespace WIFI_Utils {
         WiFi.mode(WIFI_MODE_NULL);
         WiFi.mode(WIFI_AP);
         WiFi.softAP("LoRaTracker-AP", Config.wifiAP.password);
+        #ifdef RPC_MicroTracker
+            digitalWrite(15, LOW);    // Led WiFI
+        #endif
     }
 
     void checkIfWiFiAP() {
@@ -51,6 +54,9 @@ namespace WIFI_Utils {
                     } else if ((millis() - noClientsTime) > 2 * 60 * 1000) {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
                         displayShow("", "", "  STOPPING WiFi AP", 2000);
+                        #ifdef RPC_MicroTracker
+                            digitalWrite(15, HIGH);    // Led WiFI
+                        #endif
                         Config.wifiAP.active = false;
                         Config.writeFile();
                         WiFi.softAPdisconnect(true);

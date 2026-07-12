@@ -56,12 +56,18 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
         bluetoothConnected = true;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
+        #ifdef RPC_MicroTracker
+            digitalWrite(13, LOW);    // Led BT/BLE
+        #endif
         delay(100);
     }
 
     void onDisconnect(NimBLEServer* pServer) {
         bluetoothConnected = false;
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
+        #ifdef RPC_MicroTracker
+            digitalWrite(13, HIGH);    // Led BT/BLE
+        #endif
         delay(100);
         pServer->startAdvertising();
     }
