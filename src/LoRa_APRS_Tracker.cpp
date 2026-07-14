@@ -69,7 +69,7 @@ ____________________________________________________________________*/
 #endif
 
 
-String      versionDate             = "2026-07-13";
+String      versionDate             = "2026-07-14";
 String      versionNumber           = "2.5";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
@@ -179,6 +179,14 @@ void setup() {
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "Main", "Smart Beacon is: %s", Utils::getSmartBeaconState());
     logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Setup Done!");
     menuDisplay = 0;
+    #ifdef RPC_MicroTracker
+        pinMode(BUTTON_AP_PIN, INPUT);
+        if (digitalRead(BUTTON_AP_PIN) == LOW) {
+            Config.wifiAP.active = true;
+            Config.writeFile();
+            ESP.restart();
+        }
+    #endif
 }
 
 void loop() {

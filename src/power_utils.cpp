@@ -278,6 +278,7 @@ namespace POWER_Utils {
             pinMode(LED_BT, OUTPUT);        // Led BT/BLE
             digitalWrite(LED_BT, HIGH);
             pinMode(LED_WIFI, OUTPUT);      // Led WiFI
+            digitalWrite(LED_WIFI, HIGH);
         #endif
     }
 

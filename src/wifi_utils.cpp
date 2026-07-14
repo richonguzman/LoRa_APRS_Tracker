@@ -35,7 +35,7 @@ namespace WIFI_Utils {
         WiFi.mode(WIFI_AP);
         WiFi.softAP("LoRaTracker-AP", Config.wifiAP.password);
         #ifdef RPC_MicroTracker
-            digitalWrite(15, HIGH);    // Led WiFI
+            digitalWrite(15, LOW);    // Led WiFI
         #endif
     }
 
@@ -55,7 +55,7 @@ namespace WIFI_Utils {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "WebConfiguration Stopped!");
                         displayShow("", "", "  STOPPING WiFi AP", 2000);
                         #ifdef RPC_MicroTracker
-                            digitalWrite(15, LOW);    // Led WiFI
+                            digitalWrite(15, HIGH);    // Led WiFI
                         #endif
                         Config.wifiAP.active = false;
                         Config.writeFile();
