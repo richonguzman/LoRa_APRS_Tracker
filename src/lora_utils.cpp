@@ -196,7 +196,13 @@ namespace LoRa_Utils {
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? LOW : HIGH);
             delay(Config.ptt.preDelay);
         }
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, HIGH);
+        if (Config.notification.ledTx) {
+            #ifdef RPC_MicroTracker
+                digitalWrite(Config.notification.ledTxPin, LOW);
+            #else
+                digitalWrite(Config.notification.ledTxPin, HIGH);
+            #endif
+        }
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
         #if defined(TTGO_T_BEAM_1W)
@@ -211,7 +217,13 @@ namespace LoRa_Utils {
             Serial.println(state);
         }
 
-        if (Config.notification.ledTx) digitalWrite(Config.notification.ledTxPin, LOW);
+        if (Config.notification.ledTx) {
+            #ifdef RPC_MicroTracker
+                digitalWrite(Config.notification.ledTxPin, HIGH);
+            #else
+                digitalWrite(Config.notification.ledTxPin, LOW);
+            #endif
+        }
         if (Config.ptt.active) {
             delay(Config.ptt.postDelay);
             digitalWrite(Config.ptt.io_pin, Config.ptt.reverse ? HIGH : LOW);

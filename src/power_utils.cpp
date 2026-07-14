@@ -237,6 +237,7 @@ namespace POWER_Utils {
         #ifdef RPC_MicroTracker
             Config.notification.ledTxPin = LED_TX;
             pinMode(Config.notification.ledTxPin, OUTPUT);
+            digitalWrite(Config.notification.ledTxPin, HIGH);
         #else
             if (Config.notification.ledTx && Config.notification.ledTxPin >= 0) {
                 pinMode(Config.notification.ledTxPin, OUTPUT);
@@ -249,6 +250,7 @@ namespace POWER_Utils {
         #ifdef RPC_MicroTracker
             Config.notification.ledMessagePin = LED_RX;
             pinMode(Config.notification.ledMessagePin, OUTPUT);
+            digitalWrite(Config.notification.ledMessagePin, HIGH);
         #else
             if (Config.notification.ledMessage && Config.notification.ledMessagePin >= 0) {
                 pinMode(Config.notification.ledMessagePin, OUTPUT);
@@ -274,6 +276,7 @@ namespace POWER_Utils {
         }
         #ifdef RPC_MicroTracker
             pinMode(LED_BT, OUTPUT);        // Led BT/BLE
+            digitalWrite(LED_BT, HIGH);
             pinMode(LED_WIFI, OUTPUT);      // Led WiFI
         #endif
     }
