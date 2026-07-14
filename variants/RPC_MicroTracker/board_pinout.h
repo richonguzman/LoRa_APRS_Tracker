@@ -20,7 +20,7 @@
 #define BOARD_PINOUT_H_
 
     //  LoRa Radio
-    #define HAS_SX1262
+    #define HAS_SX1268
     #define RADIO_SCLK_PIN      18
     #define RADIO_MISO_PIN      19
     #define RADIO_MOSI_PIN      23
