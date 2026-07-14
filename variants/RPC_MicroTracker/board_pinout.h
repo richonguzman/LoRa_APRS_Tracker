@@ -50,7 +50,10 @@
     #define LED_BT              13
     #define LED_WIFI            15
 
-    #define BUTTON_AP_PIN       2
+    //#define BUTTON_AP_PIN       2
+    //
+    #define BUTTON_PIN          2
+    //
 
     #define HAS_BT_CLASSIC
 
