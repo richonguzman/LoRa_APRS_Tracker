@@ -181,6 +181,7 @@ void setup() {
     menuDisplay = 0;
     #ifdef RPC_MicroTracker
         pinMode(BUTTON_AP_PIN, INPUT);
+        delay(50);
         if (digitalRead(BUTTON_AP_PIN) == LOW) {
             Config.wifiAP.active = true;
             Config.writeFile();
