@@ -36,8 +36,9 @@ bool transmitFlag    = true;
 
 #define DIFS_SLOTS      2       // Number of secuential CAD slots to consider a free channel to Tx
 int     backoffMax      = 4;    // Max Backoff value (number of CAD slots to wait before Tx)
-#define CAD_MAX_WAIT_MS 5000    // Max total time waiting for a free channel before Tx anyway
+#define CAD_MAX_WAIT_MS 10000   // Max total time waiting for a free channel before Tx anyway
 unsigned long cadStartTime = 0;
+bool cadNoticeShown = false;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -206,9 +207,16 @@ namespace LoRa_Utils {
         return millis() - cadStartTime > CAD_MAX_WAIT_MS;
     }
 
+    void showCadNotice() {
+        if (cadNoticeShown) return;
+        cadNoticeShown = true;
+        displayShow("<<< CAD >>>", "Waiting for", "free channel...", 0);
+    }
+
     void waitForDIFS() {
         while (!doDIFS()) {
             if (cadTimedOut()) return;
+            showCadNotice();
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa Tx", "CAD/DIFS failed, retry...");
         }
     }
@@ -218,6 +226,7 @@ namespace LoRa_Utils {
         while (backoffCounter > 0) {
             if (cadTimedOut()) return;
             if (doCAD()) {
+                showCadNotice();
                 waitForDIFS();  // busy channel: freeze backoff and restart DIFS
             } else {
                 backoffCounter--;
@@ -228,11 +237,13 @@ namespace LoRa_Utils {
     void sendNewPacket(const String& newPacket) {
         if (Config.cadActive) {
             cadStartTime = millis();
+            cadNoticeShown = false;
             waitForDIFS();  // DIFS (Distributed Inter-Frame Space)
             doBEB();        // BEB  (Binary Exponential Backoff)
             if (cadTimedOut()) {
                 logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa Tx", "CAD timeout, transmitting anyway");
             }
+            if (cadNoticeShown) displayShow("<<< TX >>>", "", newPacket, 0);
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
