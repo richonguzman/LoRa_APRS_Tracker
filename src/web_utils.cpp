@@ -173,6 +173,7 @@ namespace WEB_Utils {
         Config.rememberStationTime              = getParamIntSafe("rememberStationTime", Config.rememberStationTime);
         Config.sendAltitude                     = request->hasParam("sendAltitude", true);
         Config.disableGPS                       = request->hasParam("disableGPS", true);
+        Config.cadActive                        = request->hasParam("cadActive", true);
         Config.simplifiedTrackerMode            = request->hasParam("simplifiedTrackerMode", true);
 
         //  Display

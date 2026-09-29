@@ -174,6 +174,7 @@ function loadSettings(settings) {
     document.getElementById("standingUpdateTime").value                 = settings.other.standingUpdateTime;
     document.getElementById("sendAltitude").checked                     = settings.other.sendAltitude ;
     document.getElementById("disableGPS").checked                       = settings.other.disableGPS;
+    document.getElementById("cadActive").checked                        = settings.other.cadActive;
     document.getElementById("email").value                              = settings.other.email;
 
     // DISPLAY

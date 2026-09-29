@@ -498,9 +498,24 @@
                                 </h5>
                                 <small>Remember to match your boards posible Frequencies, SF, CR4.</small>
                             </div>
-                            <div 
-                                id="lora-settings" 
-                                class="list-lora col-9">
+                            <div class="col-9">
+                                <div
+                                    id="lora-settings"
+                                    class="list-lora">
+                                </div>
+                                <div class="form-check form-switch mt-3">
+                                    <input
+                                        type="checkbox"
+                                        name="cadActive"
+                                        id="cadActive"
+                                        class="form-check-input"
+                                    />
+                                    <label
+                                        for="cadActive"
+                                        class="form-label"
+                                        >Channel Activity Detection (CAD)<small> (Listen before transmitting to avoid collisions)</small></label
+                                    >
+                                </div>
                             </div>
                         </div>
                         <hr>

@@ -120,6 +120,7 @@ bool Configuration::writeFile() {
         data["other"]["standingUpdateTime"]         = standingUpdateTime;
         data["other"]["sendAltitude"]               = sendAltitude;
         data["other"]["disableGPS"]                 = disableGPS;
+        data["other"]["cadActive"]                  = cadActive;
         data["other"]["email"]                      = email;
 
         serializeJson(data, configFile);
@@ -273,6 +274,7 @@ bool Configuration::readFile() {
             data["other"]["standingUpdateTime"].isNull() ||
             data["other"]["sendAltitude"].isNull() ||
             data["other"]["disableGPS"].isNull() ||
+            data["other"]["cadActive"].isNull() ||
             data["other"]["email"].isNull()) needsRewrite = true;
         simplifiedTrackerMode           = data["other"]["simplifiedTrackerMode"] | false;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
@@ -282,6 +284,7 @@ bool Configuration::readFile() {
         standingUpdateTime              = data["other"]["standingUpdateTime"] | 15;
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         disableGPS                      = data["other"]["disableGPS"] | false;
+        cadActive                       = data["other"]["cadActive"] | true;
         email                           = data["other"]["email"] | "";
 
         configFile.close();
@@ -405,6 +408,7 @@ void Configuration::setDefaultValues() {
     standingUpdateTime              = 15;
     sendAltitude                    = true;
     disableGPS                      = false;
+    cadActive                       = true;
     email                           = "";
 
     Serial.println("New Data Created... All is Written!");

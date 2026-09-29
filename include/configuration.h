@@ -142,6 +142,7 @@ public:
     int     standingUpdateTime;
     bool    sendAltitude;
     bool    disableGPS;
+    bool    cadActive;
 
     void setDefaultValues();
     bool writeFile();

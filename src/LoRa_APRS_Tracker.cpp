@@ -69,8 +69,8 @@ ____________________________________________________________________*/
 #endif
 
 
-String      versionDate             = "2026-07-14";
-String      versionNumber           = "2.5";
+String      versionDate             = "2026-09-29";
+String      versionNumber           = "4.0";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);
 TinyGPSPlus                         gps;

@@ -59,6 +59,7 @@
 		"standingUpdateTime": 15,
 		"sendAltitude": true,
 		"disableGPS": false,
+		"cadActive": true,
 		"email": ""
 	},
 	"winlink": {
