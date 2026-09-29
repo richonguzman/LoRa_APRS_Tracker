@@ -18,6 +18,7 @@
 
 #include <ArduinoJson.h>
 #include "configuration.h"
+#include "board_pinout.h"
 #include "web_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -188,8 +189,12 @@ namespace WEB_Utils {
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
         if (Config.bluetooth.active) {
             Config.bluetooth.deviceName         = getParamStringSafe("bluetooth.deviceName", Config.bluetooth.deviceName);
-            Config.bluetooth.useBLE             = request->hasParam("bluetooth.useBLE", true);
-            Config.bluetooth.useKISS            = request->hasParam("bluetooth.useKISS", true);
+            #ifdef HAS_BT_CLASSIC
+                Config.bluetooth.useBLE         = getParamIntSafe("bluetooth.useBLE", Config.bluetooth.useBLE) == 1;
+            #else
+                Config.bluetooth.useBLE         = true;    // fixed as BLE
+            #endif
+            Config.bluetooth.useKISS            = getParamIntSafe("bluetooth.useKISS", Config.bluetooth.useKISS) == 1;
         }
 
         // LORA

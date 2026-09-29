@@ -36,6 +36,8 @@ bool transmitFlag    = true;
 
 #define DIFS_SLOTS      2       // Number of secuential CAD slots to consider a free channel to Tx
 int     backoffMax      = 4;    // Max Backoff value (number of CAD slots to wait before Tx)
+#define CAD_MAX_WAIT_MS 5000    // Max total time waiting for a free channel before Tx anyway
+unsigned long cadStartTime = 0;
 
 #if defined(HAS_SX1262)
     SX1262 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
@@ -200,8 +202,13 @@ namespace LoRa_Utils {
         return true;
     }
 
+    bool cadTimedOut() {
+        return millis() - cadStartTime > CAD_MAX_WAIT_MS;
+    }
+
     void waitForDIFS() {
         while (!doDIFS()) {
+            if (cadTimedOut()) return;
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa Tx", "CAD/DIFS failed, retry...");
         }
     }
@@ -209,6 +216,7 @@ namespace LoRa_Utils {
     void doBEB() {
         int backoffCounter = random(1, backoffMax + 1);
         while (backoffCounter > 0) {
+            if (cadTimedOut()) return;
             if (doCAD()) {
                 waitForDIFS();  // busy channel: freeze backoff and restart DIFS
             } else {
@@ -219,8 +227,12 @@ namespace LoRa_Utils {
 
     void sendNewPacket(const String& newPacket) {
         if (Config.cadActive) {
+            cadStartTime = millis();
             waitForDIFS();  // DIFS (Distributed Inter-Frame Space)
             doBEB();        // BEB  (Binary Exponential Backoff)
+            if (cadTimedOut()) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa Tx", "CAD timeout, transmitting anyway");
+            }
         }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
