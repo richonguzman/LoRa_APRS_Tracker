@@ -414,14 +414,13 @@ namespace MSG_Utils {
             lastReceivedPacket = APRSPacketLib::processReceivedPacket(packet.text.substring(3),packet.rssi, packet.snr, packet.freqError);
             if (lastReceivedPacket.sender != currentBeacon->callsign) {
 
-                if (lastReceivedPacket.payload.indexOf("\x3c\xff\x01") != -1) {
-                    lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("\x3c\xff\x01"));
-                }
+                lastReceivedPacket.payload = APRSPacketLib::checkForStartingBytes(lastReceivedPacket.payload);
 
-                if (check15SegBuffer(lastReceivedPacket.sender, lastReceivedPacket.payload)) {
+                const String& infoField = APRSPacketLib::checkForStartingBytes(packet.text.substring(packet.text.indexOf(":") + 1));   // full info field (after path): payload is only the comment on gps/Mic-E since APRSPacketLib 1.0.7
+                if (check15SegBuffer(lastReceivedPacket.sender, infoField)) {
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
-                        String digipeatedPacket = APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path);
+                        String digipeatedPacket = APRSPacketLib::checkForStartingBytes(APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path));
                         if (digipeatedPacket == "X") {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDEn-N)");
                         } else {
