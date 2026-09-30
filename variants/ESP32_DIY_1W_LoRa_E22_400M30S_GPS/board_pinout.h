@@ -1,17 +1,17 @@
 /* Copyright (C) 2025 Ricardo Guzman - CA2RXU
- *
+ * 
  * This file is part of LoRa APRS Tracker.
- *
+ * 
  * LoRa APRS Tracker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or 
  * (at your option) any later version.
- *
+ * 
  * LoRa APRS Tracker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
@@ -21,6 +21,7 @@
 
     //  LoRa Radio
     #define HAS_SX1268
+    #define HAS_1W_LORA
     #define HAS_TCXO
     #define RADIO_SCLK_PIN      18
     #define RADIO_MISO_PIN      19
@@ -45,16 +46,9 @@
     #define GPS_RX              17
     #define GPS_TX              16
 
-    //  Leds
-    #define LED_TX              33  // all leds active low
-    #define LED_RX              26
-    #define LED_BT              13
-    #define LED_WIFI            15
-
-    #define BUTTON_AP_PIN       2
-    //
-    //#define BUTTON_PIN          2
-    //
+    //  OTHER
+    #define BUTTON_PIN          15
+    #define BATTERY_PIN         35
 
     #define HAS_BT_CLASSIC
 

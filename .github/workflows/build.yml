@@ -50,75 +50,75 @@ jobs:
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: heltec_wifi_lora_32_v3_GPS
+                    - name: heltec_wifi_lora_32_V3_GPS
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: heltec_wifi_lora_32_v3_TNC
+                    - name: heltec_wifi_lora_32_V3_TNC
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: heltec_wifi_lora_32_v3_2_GPS
+                    - name: heltec_wifi_lora_32_V3_2_GPS
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: heltec_wifi_lora_32_v3_2_TNC
+                    - name: heltec_wifi_lora_32_V3_2_TNC
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: heltec_wireless_stick_lite_v3_GPS_display
+                    - name: heltec_wireless_stick_lite_v3_display_GPS
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
                     - name: heltec-lora32-v2_GPS
                       chip: esp32
-                    - name: heltec-lora32-v2_GPS_915
+                    - name: heltec-lora32-v2_915_GPS
                       chip: esp32
-                    - name: ttgo-t-lora32-v2_1_GPS
+                    - name: ttgo-lora32-v21_GPS
                       chip: esp32
-                    - name: ttgo-t-lora32-v2_1_GPS_915
+                    - name: ttgo-lora32-v21_915_GPS
                       chip: esp32
-                    - name: ttgo-t-lora32-v2_1_TNC
+                    - name: ttgo-lora32-v21_TNC
                       chip: esp32
-                    - name: ttgo-t-lora32-v2_1_TNC_915
+                    - name: ttgo-lora32-v21_915_TNC
                       chip: esp32
                     - name: ttgo_lora32_t3s3_v1_2_GPS
                       chip: esp32s3
                       flash_size: 4MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: ESP32_DIY_LoRa_GPS
+                    - name: ESP32_DIY_LoRa_SX1278_GPS
                       chip: esp32
-                    - name: ESP32_DIY_LoRa_GPS_915
+                    - name: ESP32_DIY_LoRa_915_SX1276_GPS
                       chip: esp32
-                    - name: ESP32S3_DIY_LoRa_GPS
+                    - name: ESP32S3_DIY_LoRa_SX1278_GPS
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: ESP32S3_DIY_LoRa_GPS_915
+                    - name: ESP32S3_DIY_LoRa_915_SX1276_GPS
                       chip: esp32s3
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
-                    - name: ESP32_DIY_1W_LoRa_GPS
+                    - name: ESP32_DIY_1W_LoRa_E22_400M30S_GPS
                       chip: esp32
-                    - name: ESP32_DIY_1W_LoRa_GPS_915
+                    - name: ESP32_DIY_1W_LoRa_915_E22_900M30S_GPS
                       chip: esp32
-                    - name: ESP32_DIY_1W_LoRa_GPS_LLCC68
+                    - name: ESP32_DIY_1W_LoRa_E220_400M30S_GPS
                       chip: esp32
                     - name: OE5HWN_MeshCom
                       chip: esp32
-                    - name: Wemos_ESP32_Bat_LoRa_GPS
+                    - name: WEMOS_ESP32_Bat_DIY_LoRa_SX1278_GPS
                       chip: esp32
-                    - name: esp32_c3_DIY_LoRa_GPS
+                    - name: ESP32C3_SuperMini_DIY_LoRa_SX1278_GPS
                       chip: esp32c3
-                    - name: esp32_c3_DIY_LoRa_GPS_915
+                    - name: ESP32C3_SuperMini_DIY_LoRa_915_SX1276_GPS
                       chip: esp32c3
                     - name: heltec_ht-ct62_GPS
                       chip: esp32c3
@@ -129,11 +129,13 @@ jobs:
                       spiffs_offset: "0x310000"
                     - name: TROY_LoRa_APRS
                       chip: esp32
-                    - name: F4GOH_1W_LoRa_Tracker
+                    - name: F4GOH_1W_LoRa_Tracker_E22_400M30S
                       chip: esp32
-                    - name: F4GOH_1W_LoRa_Tracker_LLCC68
+                    - name: F4GOH_1W_LoRa_Tracker_E220_400M30S
                       chip: esp32
                     - name: RPC_Electronics_1W_LoRa_GPS
+                      chip: esp32
+                    - name: RPC_MicroTracker
                       chip: esp32
         steps:
             - uses: actions/checkout@v4
