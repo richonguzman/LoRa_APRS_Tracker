@@ -10,7 +10,11 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
-			"profileLabel": ""
+			"profileLabel": "",
+			"geofence_latitude": 50.000,
+    		"geofence_longitude": 10.000,
+    		"geofence_radius": 1000,
+    		"geofence_mode": "inactive"
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -22,7 +26,11 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
-			"profileLabel": ""
+			"profileLabel": "",
+			"geofence_latitude": 50.000,
+    		"geofence_longitude": 10.000,
+    		"geofence_radius": 1000,
+    		"geofence_mode": "pause"
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -34,7 +42,11 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
-			"profileLabel": ""
+			"profileLabel": "",
+			"geofence_latitude": 50.000,
+    		"geofence_longitude": 10.000,
+    		"geofence_radius": 1000,
+    		"geofence_mode": "poweroff"
 		}
 	],
 	"display": {

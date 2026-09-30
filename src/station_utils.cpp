@@ -31,6 +31,7 @@
 #include "wx_utils.h"
 #include "display.h"
 #include "logger.h"
+#include "geofence.h"
 
 extern Configuration        Config;
 extern Beacon               *currentBeacon;
@@ -250,7 +251,11 @@ namespace STATION_Utils {
             packet += "**LowVoltagePowerOff**";
         }
 
-        displayShow("<<< TX >>>", "", packet, 100);
+        applyGeofence(gps, currentBeacon);
+        if (!geofence_pause)
+            {
+                displayShow("<<< TX >>>", "", packet, 100);
+            }
         LoRa_Utils::sendNewPacket(packet);
 
         if (Config.bluetooth.useBLE) BLE_Utils::sendToPhone(packet);   // send Tx packets to Phone too
