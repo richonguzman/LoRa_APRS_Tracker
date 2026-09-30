@@ -16,24 +16,25 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BATTERY_UTILS_H_
-#define BATTERY_UTILS_H_
+// Fan / thermal control adapted from KJ7NYE's LoRa_FieldOps_APRS_Tracker (GPLv3)
 
-#include <Arduino.h>
+#ifndef THERMAL_UTILS_H_
+#define THERMAL_UTILS_H_
+
 #include "board_pinout.h"
 
-#ifndef BATTERY_CELLS
-    #define BATTERY_CELLS   1   // cells in series: percentage and sleepVoltage (per cell) scale with it
-#endif
+#ifdef FAN_CTRL_PIN
 
+namespace THERMAL_Utils {
 
-namespace BATTERY_Utils {
-
-    String  getPercentVoltageBattery(float voltage);
-    String  getBatteryInfoVoltage();
-    float   readBatteryVoltage();
+    void    setup();
     void    monitor();
+    void    onTxStart();
+    void    onTxEnd();
+    float   getTemperature();
 
 }
+
+#endif
 
 #endif

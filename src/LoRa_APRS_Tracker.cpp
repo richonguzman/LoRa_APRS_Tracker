@@ -62,6 +62,7 @@ ____________________________________________________________________*/
 #include "web_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
+#include "thermal_utils.h"
 #include "display.h"
 #include "utils.h"
 #ifdef HAS_TOUCHSCREEN
@@ -133,6 +134,9 @@ void setup() {
     POWER_Utils::setup();
     displaySetup();
     POWER_Utils::externalPinSetup();
+    #ifdef FAN_CTRL_PIN
+        THERMAL_Utils::setup();
+    #endif
 
     STATION_Utils::loadIndex(0);    // callsign Index
     STATION_Utils::loadIndex(1);    // lora freq settins Index
@@ -206,6 +210,9 @@ void loop() {
     SMARTBEACON_Utils::checkState();
 
     BATTERY_Utils::monitor();
+    #ifdef FAN_CTRL_PIN
+        THERMAL_Utils::monitor();
+    #endif
     Utils::checkDisplayEcoMode();
 
     #ifdef BUTTON_PIN

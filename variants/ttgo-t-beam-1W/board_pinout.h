@@ -21,6 +21,7 @@
 
     //  LoRa Radio
     #define HAS_SX1262
+    #define HAS_1W_LORA
     #define HAS_TCXO
     #define RADIO_VCC_PIN       40  // (RADIO_LDO_EN_PIN) // HIGH = turn on the radio, LOW = turns off the radio
     #define RADIO_SCLK_PIN      13
@@ -52,6 +53,7 @@
     #define BUTTON2_PIN         17 // ???? botton customizable? para que?
 
     #define BATTERY_PIN         4
+    #define BATTERY_CELLS       2   // 7.4V 2S battery
 
     //ON_BOARD_LED 18
 

@@ -51,7 +51,8 @@ float       lora32BatReadingCorr    = 6.5; // % of correction to higher value to
 namespace BATTERY_Utils {
 
     String getPercentVoltageBattery(float voltage) {
-        int percent = ((voltage - 3.0) / (4.2 - 3.0)) * 100;
+        int percent = (((voltage / BATTERY_CELLS) - 3.0) / (4.2 - 3.0)) * 100;
+        if (percent < 0) percent = 0;
         return (percent < 100) ? (((percent < 10) ? "  ": " ") + String(percent)) : "100";
     }
 
@@ -64,6 +65,16 @@ namespace BATTERY_Utils {
             return (PMU.getBattVoltage() / 1000.0);
         #else
             #ifdef BATTERY_PIN
+                #if defined(TTGO_T_BEAM_1W)     // calibrated ADC reading: raw analogRead() is too inaccurate at this divider ratio
+                uint32_t milliVoltsSum = 0;
+                analogReadMilliVolts(BATTERY_PIN);  // Dummy Read
+                delay(1);
+                for (int i = 0; i < averageReadings; i++) {
+                    milliVoltsSum += analogReadMilliVolts(BATTERY_PIN);
+                    delay(3);
+                }
+                return (milliVoltsSum / averageReadings) / 1000.0 * 3.0;   // 300k + 150k divider (150k on the low side)
+                #else
                 int sampleSum = 0;
                 analogRead(BATTERY_PIN);    // Dummy Read
                 delay(1);
@@ -81,10 +92,6 @@ namespace BATTERY_Utils {
                 #if defined(TTGO_T_Beam_V0_7) || defined(TTGO_LORA32_V2_1_GPS) || defined(TTGO_LORA32_V2_1_915_GPS) || defined(TTGO_LORA32_V2_1_TNC) || defined(TTGO_LORA32_V2_1_915_TNC) || defined(ESP32_DIY_LoRa_SX1278_GPS) || defined(ESP32_DIY_LoRa_915_SX1276_GPS) || defined(ESP32_DIY_1W_LoRa_E22_400M30S_GPS) || defined(ESP32_DIY_1W_LoRa_915_E22_900M30S_GPS) || defined(ESP32_DIY_1W_LoRa_E220_400M30S_GPS) || defined(OE5HWN_MeshCom) || defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS) || defined(ESP32S3_DIY_LoRa_SX1278_GPS) || defined(ESP32S3_DIY_LoRa_915_SX1276_GPS) || defined(TROY_LoRa_APRS) || defined(RPC_Electronics_1W_LoRa_GPS) || defined(TTGO_LORA32_T3S3_V1_2_GPS)
                     return (2 * (voltage + 0.1)) * (1 + (lora32BatReadingCorr/100)); // (2 x 100k voltage divider) 2 x voltage divider/+0.1 because ESP32 nonlinearity ~100mV ADC offset/extra correction
                 #endif
-                #if defined(TTGO_T_BEAM_1W)
-                    double inputDivider = (1.0 / (300.0 + 150.0)) * 150.0;  // The voltage divider is a 300k + 150k resistor in series, 150k on the low side.
-                    return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
-                #endif
                 #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(ESP32C3_SuperMini_DIY_LoRa_SX1278_GPS) || defined(ESP32C3_SuperMini_DIY_LoRa_915_SX1276_GPS) || defined(WEMOS_ESP32_Bat_DIY_LoRa_SX1278_GPS)
                     double inputDivider = (1.0 / (390.0 + 100.0)) * 100.0;  // The voltage divider is a 390k + 100k resistor in series, 100k on the low side.
                     return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32s3 is quite inaccurate and noisy. Adjust to own measurements.
@@ -93,6 +100,7 @@ namespace BATTERY_Utils {
                     double inputDivider = (1.0 / (220.0 + 100.0)) * 100.0;  // The voltage divider is a 220k + 100k resistor in series, 100k on the low side.
                     return (voltage / inputDivider) + 0.285; // Yes, this offset is excessive, but the ADC on the ESP32 is quite inaccurate and noisy. Adjust to own measurements.
                 #endif
+                #endif  // TTGO_T_BEAM_1W
             #else
                 return 0.0;
             #endif
@@ -142,7 +150,7 @@ namespace BATTERY_Utils {
                                 POWER_Utils::adc_ctrl_OFF();
                                 measuringState = 1;
 
-                                if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1)) {
+                                if (batteryVoltage.toFloat() < (Config.battery.sleepVoltage - 0.1) * BATTERY_CELLS) {
                                     displayShow("!BATTERY!", "", "LOW BATTERY VOLTAGE!",5000);
                                     POWER_Utils::shutdown();
                                 }

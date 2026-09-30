@@ -23,6 +23,7 @@
 #include "configuration.h"
 #include "board_pinout.h"
 #include "lora_utils.h"
+#include "thermal_utils.h"
 #include "display.h"
 
 extern logging::Logger  logger;
@@ -86,6 +87,9 @@ namespace LoRa_Utils {
         #endif
         #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
             radio.setOutputPower(currentLoRaType->power);
+        #endif
+        #if defined(TTGO_T_BEAM_1W)
+            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);
         #endif
 
         String loraCountryFreq;
@@ -180,6 +184,10 @@ namespace LoRa_Utils {
         #if defined(HAS_TCXO) && !defined(HAS_1W_LORA)
             radio.setDio2AsRfSwitch();
         #endif
+        #if defined(TTGO_T_BEAM_1W)
+            radio.setDio2AsRfSwitch(true);                          // DIO2 drives the 1W PA
+            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);      // PA needs >800us to settle (default 200us)
+        #endif
         #ifdef HAS_TCXO
             radio.setTCXO(1.8);
         #endif
@@ -266,7 +274,13 @@ namespace LoRa_Utils {
         #if defined(TTGO_T_BEAM_1W)
             digitalWrite(RADIO_RXEN, LOW);
         #endif
+        #ifdef FAN_CTRL_PIN
+            THERMAL_Utils::onTxStart();
+        #endif
         int state = radio.transmit("\x3c\xff\x01" + newPacket);
+        #ifdef FAN_CTRL_PIN
+            THERMAL_Utils::onTxEnd();
+        #endif
         transmitFlag = true;
         if (state == RADIOLIB_ERR_NONE) {
             //Serial.println(F("success!"));

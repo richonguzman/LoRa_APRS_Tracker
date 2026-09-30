@@ -429,11 +429,6 @@ namespace POWER_Utils {
             delay(500);
             Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
-
-        #if defined(TTGO_T_BEAM_1W)
-            pinMode(FAN_CTRL_PIN, OUTPUT);
-            digitalWrite(FAN_CTRL_PIN, HIGH);
-        #endif
     }
 
     void lowerCpuFrequency() {

@@ -31,7 +31,7 @@ jobs:
                     - name: ttgo-t-beam-1W
                       chip: esp32s3
                       flash_size: 16MB
-                      flash_mode: qio
+                      flash_mode: dio
                       spiffs_offset: "0xc90000"
                     - name: ttgo_t_deck_GPS
                       chip: esp32s3

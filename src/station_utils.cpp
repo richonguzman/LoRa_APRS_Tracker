@@ -206,7 +206,7 @@ namespace STATION_Utils {
         String batteryVoltage = BATTERY_Utils::getBatteryInfoVoltage();
         bool shouldSleepLowVoltage = false;
         #if defined(BATTERY_PIN) || defined(HAS_AXP192) || defined(HAS_AXP2101)
-            if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage) shouldSleepLowVoltage = true;
+            if (Config.battery.monitorVoltage && batteryVoltage.toFloat() < Config.battery.sleepVoltage * BATTERY_CELLS) shouldSleepLowVoltage = true;
         #endif
 
         if (!shouldSleepLowVoltage) {
