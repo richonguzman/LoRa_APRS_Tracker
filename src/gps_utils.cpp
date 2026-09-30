@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -16,10 +16,10 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <APRSPacketLib.h>
 #include <TinyGPS++.h>
 #include <SPIFFS.h>
 #include "TimeLib.h"
-#include <APRSPacketLib.h>
 #include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"

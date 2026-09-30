@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -50,6 +50,7 @@ ____________________________________________________________________*/
 #include "configuration.h"
 #include "battery_utils.h"
 #include "station_utils.h"
+#include "thermal_utils.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 #include "power_utils.h"
@@ -62,7 +63,6 @@ ____________________________________________________________________*/
 #include "web_utils.h"
 #include "ble_utils.h"
 #include "wx_utils.h"
-#include "thermal_utils.h"
 #include "display.h"
 #include "utils.h"
 #ifdef HAS_TOUCHSCREEN

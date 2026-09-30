@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -21,9 +21,9 @@
 #include <SPI.h>
 #include "notification_utils.h"
 #include "configuration.h"
+#include "thermal_utils.h"
 #include "board_pinout.h"
 #include "lora_utils.h"
-#include "thermal_utils.h"
 #include "display.h"
 
 extern logging::Logger  logger;

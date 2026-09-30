@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -17,8 +17,8 @@
  */
 
 #include "joystick_utils.h"
-#include "configuration.h"
 #include "keyboard_utils.h"
+#include "configuration.h"
 #include "board_pinout.h"
 #include "button_utils.h"
 
