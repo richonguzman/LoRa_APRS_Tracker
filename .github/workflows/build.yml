@@ -133,6 +133,8 @@ jobs:
                       chip: esp32
                     - name: F4GOH_1W_LoRa_Tracker_E220_400M30S
                       chip: esp32
+                    - name: Hydra_1W_LoRa_E22_400M30S_GPS
+                      chip: esp32
                     - name: RPC_Electronics_1W_LoRa_GPS
                       chip: esp32
                     - name: RPC_MicroTracker
