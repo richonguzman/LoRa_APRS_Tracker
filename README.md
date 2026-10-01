@@ -53,7 +53,7 @@ ____________________________________________________
 ____________________________________________________
 ## Timeline (Versions):
 
-- 2026-10-01 Hydra DIY board (ESP32 + GPS + 1W E22-400M30S) added. T-Beam V1.x (AXP192) with SX1262 added.
+- 2026-10-01 Hydra DIY board (ESP32 + GPS + 1W E22-400M30S) added. T-Beam V1.x (AXP192) with SX1262 added. Heltec Wireless Stick Lite V3 as TNC (no display) added.
 - 2026-09-30 CAD (Channel Activity Detection) added, GPS baud rate auto-detection, new Web UI, T-Beam 1W fan control and PA update, RPC Electronics MicroTracker added.
 - 2026-09-23 APRSPacketLib 1.0.7 update
 - 2026-04-22 BT Classic packet fix.

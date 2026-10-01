@@ -65,7 +65,7 @@ namespace POWER_Utils {
 
     #ifdef VEXT_CTRL
         void vext_ctrl_ON() {
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(HELTEC_WSL_V3_TNC)
                 digitalWrite(VEXT_CTRL, HIGH);
             #endif
             #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
@@ -74,7 +74,7 @@ namespace POWER_Utils {
         }
 
         void vext_ctrl_OFF() {
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(HELTEC_WSL_V3_TNC)
                 digitalWrite(VEXT_CTRL, LOW);
             #endif
             #if defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
@@ -89,7 +89,7 @@ namespace POWER_Utils {
             #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
                 digitalWrite(ADC_CTRL, HIGH);
             #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(HELTEC_WSL_V3_TNC)
                 digitalWrite(ADC_CTRL, LOW);
             #endif
         }
@@ -98,7 +98,7 @@ namespace POWER_Utils {
             #if defined(HELTEC_WIRELESS_TRACKER) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC)
                 digitalWrite(ADC_CTRL, LOW);
             #endif
-            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+            #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V2_GPS) || defined(HELTEC_V2_GPS_915) || defined(HELTEC_V2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(HELTEC_WSL_V3_TNC)
                 digitalWrite(ADC_CTRL, HIGH);
             #endif
         }
@@ -410,7 +410,7 @@ namespace POWER_Utils {
             Wire.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 
-        #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY)
+        #if defined(HELTEC_V3_GPS) || defined(HELTEC_V3_TNC) || defined(HELTEC_V3_2_GPS) || defined(HELTEC_V3_2_TNC) || defined(HELTEC_WSL_V3_GPS_DISPLAY) || defined(HELTEC_WSL_V3_TNC)
             Wire1.begin(BOARD_I2C_SDA, BOARD_I2C_SCL);
         #endif
 

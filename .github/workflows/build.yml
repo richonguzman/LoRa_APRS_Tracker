@@ -77,6 +77,11 @@ jobs:
                       flash_size: 8MB
                       flash_mode: dio
                       spiffs_offset: "0x310000"
+                    - name: heltec_wireless_stick_lite_v3_TNC
+                      chip: esp32s3
+                      flash_size: 8MB
+                      flash_mode: dio
+                      spiffs_offset: "0x310000"
                     - name: heltec-lora32-v2_GPS
                       chip: esp32
                     - name: heltec-lora32-v2_915_GPS

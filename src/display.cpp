@@ -68,12 +68,14 @@
         #define OLED_DISPLAY_HAS_RST_PIN
     #endif
 
-    #ifdef ssd1306
-        #include <Adafruit_SSD1306.h>
-        Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
-    #else
-        #include <Adafruit_SH110X.h>
-        Adafruit_SH1106G display(128, 64, &Wire, OLED_RST);
+    #ifndef HELTEC_WSL_V3_TNC
+        #ifdef ssd1306
+            #include <Adafruit_SSD1306.h>
+            Adafruit_SSD1306 display(128, 64, &Wire, OLED_RST);
+        #else
+            #include <Adafruit_SH110X.h>
+            Adafruit_SH1106G display(128, 64, &Wire, OLED_RST);
+        #endif
     #endif
 #endif
 
@@ -258,34 +260,36 @@ void displaySetup() {
             digitalWrite(OLED_RST, HIGH);
         #endif
 
-        Wire.begin(OLED_SDA, OLED_SCL);
-        #ifdef ssd1306
-            if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306", "allocation failed!");
-                while (true) {}
-            }
-        #else
-            if (!display.begin(0x3c, false)) {
-                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
-                while (true) {}
-            }
+        Wire.begin(OLED_SDA, OLED_SCL);     // also used by I2C peripherals scanner
+        #ifndef HELTEC_WSL_V3_TNC
+            #ifdef ssd1306
+                if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SSD1306", "allocation failed!");
+                    while (true) {}
+                }
+            #else
+                if (!display.begin(0x3c, false)) {
+                    logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "SH1106", "allocation failed!");
+                    while (true) {}
+                }
+            #endif
+            if (Config.display.turn180) display.setRotation(2);
+            display.clearDisplay();
+            #ifdef ssd1306
+                display.setTextColor(WHITE);
+            #else
+                display.setTextColor(SH110X_WHITE);
+            #endif
+            display.setTextSize(1);
+            display.setCursor(0, 0);
+            #ifdef ssd1306
+                display.ssd1306_command(SSD1306_SETCONTRAST);
+                display.ssd1306_command(screenBrightness);
+            #else
+                display.setContrast(screenBrightness);
+            #endif
+            display.display();
         #endif
-        if (Config.display.turn180) display.setRotation(2);
-        display.clearDisplay();
-        #ifdef ssd1306
-            display.setTextColor(WHITE);
-        #else
-            display.setTextColor(SH110X_WHITE);
-        #endif
-        display.setTextSize(1);
-        display.setCursor(0, 0);
-        #ifdef ssd1306
-            display.ssd1306_command(SSD1306_SETCONTRAST);
-            display.ssd1306_command(screenBrightness);
-        #else
-            display.setContrast(screenBrightness);
-        #endif
-        display.display();
     #endif
 }
 
@@ -293,7 +297,7 @@ void displayToggle(bool toggle) {
     if (toggle) {
         #ifdef HAS_TFT
             analogWrite(TFT_BL, screenBrightness);
-        #else
+        #elif !defined(HELTEC_WSL_V3_TNC)
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYON);
             #else
@@ -303,7 +307,7 @@ void displayToggle(bool toggle) {
     } else {
         #ifdef HAS_TFT
             analogWrite(TFT_BL, 0);
-        #else
+        #elif !defined(HELTEC_WSL_V3_TNC)
             #ifdef ssd1306
                 display.ssd1306_command(SSD1306_DISPLAYOFF);
             #else
@@ -370,7 +374,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
             }
         #endif
         sprite.pushSprite(0,0);
-    #else
+    #elif !defined(HELTEC_WSL_V3_TNC)
         const String* const lines[] = {&line1, &line2};
 
         display.clearDisplay();
@@ -395,9 +399,12 @@ void displayShow(const String& header, const String& line1, const String& line2,
         #endif
         display.display();
     #endif
-    delay(wait);
+    #ifndef HELTEC_WSL_V3_TNC
+        delay(wait);
+    #endif
 }
 
+#ifndef HELTEC_WSL_V3_TNC
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
     const uint8_t *bitMap = symbolsAPRS[symbolIndex];
     #ifdef HAS_TFT
@@ -412,6 +419,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
         display.drawBitmap((display.width() - SYMBOL_WIDTH), 0, bitMap, SYMBOL_WIDTH, SYMBOL_HEIGHT, 1);
     #endif
 }
+#endif
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
     #ifdef HAS_TFT
@@ -495,7 +503,7 @@ void displayShow(const String& header, const String& line1, const String& line2,
                 }
             }
         sprite.pushSprite(0,0);
-    #else
+    #elif !defined(HELTEC_WSL_V3_TNC)
         const String* const lines[] = {&line1, &line2, &line3, &line4, &line5};
 
         display.clearDisplay();
@@ -548,7 +556,9 @@ void displayShow(const String& header, const String& line1, const String& line2,
         }
         display.display();
     #endif
-    delay(wait);
+    #ifndef HELTEC_WSL_V3_TNC
+        delay(wait);
+    #endif
 }
 
 void startupScreen(uint8_t index, const String& version) {
