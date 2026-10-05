@@ -358,7 +358,7 @@ namespace MSG_Utils {
                     break;
                 case 0:
                     if (millis() - lastRetryTime > 30 * 1000) {
-                        ackRequestNumber = false;
+                        ackRequestState = false;
                         outputAckRequestBuffer.erase(outputAckRequestBuffer.begin());
                         if (winlinkStatus > 0 && winlinkStatus < 5) {   // if not complete Winlink Challenge Process it will reset Login process
                             winlinkStatus = 0;
@@ -439,7 +439,8 @@ namespace MSG_Utils {
                             }
                         }
                         if (lastReceivedPacket.payload.indexOf("{") >= 0) {
-                            MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, "ack" + lastReceivedPacket.payload.substring(lastReceivedPacket.payload.indexOf("{") + 1));
+                            String ackMessage = APRSPacketLib::generateAckMessage(lastReceivedPacket.payload);
+                            if (ackMessage != "") MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);     // "" if '{' carries no ID
                             lastMsgRxTime = millis();
                             lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("{"));
                         }

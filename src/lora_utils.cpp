@@ -174,7 +174,7 @@ namespace LoRa_Utils {
 
         #if defined(HAS_SX1278) || defined(HAS_SX1276)
             state = radio.setOutputPower(currentLoRaType->power);
-            radio.setCurrentLimit(100); // to be validated (80 , 100)?
+            radio.setCurrentLimit(120); // OCP ceiling for SX127x: ~120mA needed at +20dBm (not a fixed consumption)
         #endif
 
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
