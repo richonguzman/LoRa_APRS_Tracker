@@ -272,6 +272,18 @@ function loadSettings(settings) {
                     required>
                 <label for="lora.${index}.signalBandwidth">BW</label>
             </div>
+            <div class="form-floating col-4 col-md-2 px-1 mb-2">
+                <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    name="lora.${index}.power"
+                    id="lora.${index}.power"
+                    value="${lora.power}"
+                    min="2"
+                    max="22"
+                    required>
+                <label for="lora.${index}.power">Power (dBm)</label>
+            </div>
         `;
         loraContainer.appendChild(loraElement);
     });

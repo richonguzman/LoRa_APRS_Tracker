@@ -32,6 +32,7 @@ struct ReceivedLoRaPacket {
 namespace LoRa_Utils {
 
     void setFlag();
+    int  validPower(int requested);
     void changeFreq();
     void setup();
     void sendNewPacket(const String& newPacket);

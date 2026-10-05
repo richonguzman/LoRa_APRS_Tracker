@@ -19,6 +19,7 @@
 #include <ArduinoJson.h>
 #include "configuration.h"
 #include "board_pinout.h"
+#include "lora_utils.h"
 #include "web_utils.h"
 #include "display.h"
 #include "utils.h"
@@ -203,6 +204,7 @@ namespace WEB_Utils {
             Config.loraTypes[i].spreadingFactor = getParamIntSafe("lora." + String(i) + ".spreadingFactor", Config.loraTypes[i].spreadingFactor);
             Config.loraTypes[i].codingRate4     = getParamIntSafe("lora." + String(i) + ".codingRate4", Config.loraTypes[i].codingRate4);
             Config.loraTypes[i].signalBandwidth = getParamIntSafe("lora." + String(i) + ".signalBandwidth", Config.loraTypes[i].signalBandwidth);
+            Config.loraTypes[i].power           = LoRa_Utils::validPower(getParamIntSafe("lora." + String(i) + ".power", Config.loraTypes[i].power));  // saved as the power the radio chip really uses
         }
 
         //  Battery

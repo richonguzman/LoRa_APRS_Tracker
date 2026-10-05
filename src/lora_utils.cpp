@@ -62,10 +62,42 @@ bool cadNoticeShown = false;
     LLCC68 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
 #endif
 
+#if defined(HAS_SX1278) || defined(HAS_SX1276)
+    #define CHIP_MIN_POWER  2       // PA_BOOST (below 2 RadioLib switches to RFO, not wired on most modules)
+    #define CHIP_MAX_POWER  20
+#else                               // SX1262 / SX1268 / LLCC68
+    #define CHIP_MIN_POWER  -9
+    #define CHIP_MAX_POWER  22
+#endif
+
+#ifndef RADIO_MAX_POWER             // optional per board in board_pinout.h (e.g. 1W PA modules)
+    #define RADIO_MAX_POWER CHIP_MAX_POWER
+#endif
+
 namespace LoRa_Utils {
 
     void setFlag(void) {
         operationDone = true;
+    }
+
+    int validPower(int requested) {
+        const int maxPower = (RADIO_MAX_POWER < CHIP_MAX_POWER) ? RADIO_MAX_POWER : CHIP_MAX_POWER;
+        int power = constrain(requested, CHIP_MIN_POWER, maxPower);
+        #if defined(HAS_SX1278) || defined(HAS_SX1276)
+            if (power > 17 && power < 20) power = 17;   // SX127x PA_BOOST: only 2-17 or 20
+        #endif
+        return power;
+    }
+
+    void setPower(int requested) {      // each LoRa type (EU/WORLD, POLAND, UK, US) has its own power
+        int power = validPower(requested);
+        if (power != requested) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa", "Power adjusted: %d -> %d", requested, power);
+        }
+        int state = radio.setOutputPower(power);
+        if (state != RADIOLIB_ERR_NONE) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "setOutputPower failed! State: %d", state);    // log and keep going
+        }
     }
 
     void changeFreq() {
@@ -82,14 +114,9 @@ namespace LoRa_Utils {
         float signalBandwidth = currentLoRaType->signalBandwidth/1000;
         radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
-        #if (defined(HAS_SX1268) || defined(HAS_SX1262)) && !defined(HAS_1W_LORA)
-            radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
-        #endif
-        #if defined(HAS_SX1278) || defined(HAS_SX1276) || defined(HAS_1W_LORA)
-            radio.setOutputPower(currentLoRaType->power);
-        #endif
+        setPower(currentLoRaType->power);
         #if defined(TTGO_T_BEAM_1W)
-            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);
+            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);  // after setPower(): setOutputPower() resets the PA ramp time
         #endif
 
         String loraCountryFreq;
@@ -162,19 +189,11 @@ namespace LoRa_Utils {
             radio.setRfSwitchPins(RADIO_RXEN, RADIOLIB_NC);
         #endif
 
-        #ifdef HAS_1W_LORA  // Ebyte E22 400M30S (SX1268) / 900M30S (SX1262) / Ebyte E220 400M30S (LLCC68)
-            state = radio.setOutputPower(currentLoRaType->power); // max value 20 (when 20dB in setup 30dB in output as 400M30S has Low Noise Amp)
-            radio.setCurrentLimit(140); // to be validated (100 , 120, 140)?
-        #endif
-
-        #if (defined(HAS_SX1268) || defined(HAS_SX1262)) && !defined(HAS_1W_LORA)
-            state = radio.setOutputPower(currentLoRaType->power + 2); // values available: 10, 17, 22 --> if 20 in tracker_conf.json it will be updated to 22.
-            radio.setCurrentLimit(140);
-        #endif
-
+        setPower(currentLoRaType->power);
         #if defined(HAS_SX1278) || defined(HAS_SX1276)
-            state = radio.setOutputPower(currentLoRaType->power);
             radio.setCurrentLimit(120); // OCP ceiling for SX127x: ~120mA needed at +20dBm (not a fixed consumption)
+        #else                           // SX1262 / SX1268 / LLCC68 (also 1W Ebyte E22 / E220 modules)
+            radio.setCurrentLimit(140);
         #endif
 
         #if defined(HAS_SX1262) || defined(HAS_SX1268) || defined(HAS_LLCC68)
@@ -192,12 +211,7 @@ namespace LoRa_Utils {
             radio.setTCXO(1.8);
         #endif
 
-        if (state == RADIOLIB_ERR_NONE) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-        } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed! State: %d", state);
-            while (true);
-        }
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
     }
 
     bool doCAD() {      // CAD (Channel Activity Detection)
