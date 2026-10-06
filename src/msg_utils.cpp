@@ -420,7 +420,7 @@ namespace MSG_Utils {
                 if (check15SegBuffer(lastReceivedPacket.sender, infoField)) {
 
                     if (digipeaterActive && lastReceivedPacket.addressee != currentBeacon->callsign) {
-                        String digipeatedPacket = APRSPacketLib::checkForStartingBytes(APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, Config.path));
+                        String digipeatedPacket = APRSPacketLib::checkForStartingBytes(APRSPacketLib::generateDigipeatedPacket(packet.text, currentBeacon->callsign, "WIDE1-1"));    // tracker digi = WIDE1-1 fill-in only (not the beacon path)
                         if (digipeatedPacket == "X") {
                             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "Main", "%s", "Packet won't be Repeated (Missing WIDEn-N)");
                         } else {
