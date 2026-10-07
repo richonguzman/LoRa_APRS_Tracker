@@ -250,7 +250,7 @@ namespace GPS_Utils {
         if (gps.speed.kmph() > 0.5) bearing = course;
 
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
-        if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";
+        if (bearing >= 5.625 && bearing < 16.875)     return ">.......N.|.....NE..<";
         if (bearing >= 16.875 && bearing < 28.125)    return ">.....N...|...NE....<"; // NEN
         if (bearing >= 28.125 && bearing < 39.375)    return ">...N.....|.NE......<";
         if (bearing >= 39.375 && bearing < 50.625)    return ">.N......(NE).....E.<"; // NE
