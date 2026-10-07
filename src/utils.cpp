@@ -92,6 +92,7 @@ namespace Utils {
     }
 
     String createDateString(time_t t) {
+        if (year(t) < 2026) return "???\?-?\?-?\?";     // "????-??-??": date not received from GPS yet (\? avoids the ??- trigraph)
         String dateString = padding(year(t), 4);
         dateString += "-";
         dateString += padding(month(t), 2);
@@ -101,6 +102,7 @@ namespace Utils {
     }
 
     String createTimeString(time_t t) {
+        if (timeStatus() == timeNotSet) return "??:??:??";     // time not received from GPS yet
         String timeString = padding(hour(t), 2);
         timeString += ":";
         timeString += padding(minute(t), 2);
