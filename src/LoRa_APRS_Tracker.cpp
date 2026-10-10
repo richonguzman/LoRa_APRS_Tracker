@@ -83,7 +83,6 @@ uint8_t     myBeaconsIndex          = 0;
 int         myBeaconsSize           = Config.beacons.size();
 Beacon      *currentBeacon          = &Config.beacons[myBeaconsIndex];
 uint8_t     loraIndex               = 0;
-int         loraIndexSize           = Config.loraTypes.size();
 LoraType    *currentLoRaType        = &Config.loraTypes[loraIndex];
 
 int         menuDisplay             = 100;
