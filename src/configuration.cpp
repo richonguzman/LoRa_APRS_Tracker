@@ -22,12 +22,106 @@
 #include "board_pinout.h"
 #include "display.h"
 #include "logger.h"
+#include "lora_utils.h"
 
 extern logging::Logger logger;
+
+namespace {
+
+    const size_t NAME_MAX_LENGTH = 8;
+
+    bool nameTaken(const String& name, const std::vector<String>& taken) {
+        for (size_t i = 0; i < taken.size(); i++) {
+            if (taken[i].equalsIgnoreCase(name)) return true;
+        }
+        return false;
+    }
+
+    // A usable name is trimmed, at most 8 characters, not empty and not used before in the same list.
+    // Otherwise it falls back to PREFIX1, PREFIX2, ... so every entry always has a distinct name.
+    String cleanName(String name, const char* prefix, size_t index, const std::vector<String>& taken) {
+        name.trim();
+        if (name.length() > NAME_MAX_LENGTH) {
+            name = name.substring(0, NAME_MAX_LENGTH);
+            name.trim();
+        }
+        if (name.length() > 0 && !nameTaken(name, taken)) return name;
+
+        for (size_t n = index + 1; ; n++) {
+            String candidate = String(prefix) + String((unsigned long)n);
+            if (candidate.length() > NAME_MAX_LENGTH) candidate = String("N") + String((unsigned long)n);
+            if (!nameTaken(candidate, taken)) return candidate;
+        }
+    }
+
+    void addDefaultBeacons(std::vector<Beacon>& list) {
+        for (int i = 0; i < 3; i++) {
+            Beacon beacon;
+            beacon.callsign             = "NOCALL-7";
+            beacon.symbol               = "[";
+            beacon.overlay              = "/";
+            beacon.micE                 = "";
+            beacon.comment              = "";
+            beacon.smartBeaconActive    = true;
+            beacon.smartBeaconSetting   = 0;
+            beacon.gpsEcoMode           = false;
+            beacon.profileLabel         = String("PROFILE") + String(i + 1);
+            beacon.status               = "";
+            list.push_back(beacon);
+        }
+    }
+
+    // Default entries for a device with no config file. The first entry is the one a new device starts on.
+    // Default entries for a device with no config file: the usual LoRa APRS settings of the regions.
+    // The first entry is the one a new device starts on. Power is the most the board can do.
+    void addDefaultLoraTypes(std::vector<LoraType>& list) {
+        struct Preset { const char* name; long frequency; int spreadingFactor; int codingRate4; };
+        const Preset presets[4] = {
+            { "EU/WORLD", 433775000, 12, 5 },
+            { "POLAND",   434855000,  9, 7 },
+            { "UK",       439912500, 12, 5 },
+            { "US",       433775000,  7, 6 }
+        };
+        for (int j = 0; j < 4; j++) {
+            LoraType loraType;
+            loraType.name               = presets[j].name;
+            loraType.frequency          = presets[j].frequency;
+            loraType.spreadingFactor    = presets[j].spreadingFactor;
+            loraType.codingRate4        = presets[j].codingRate4;
+            loraType.signalBandwidth    = 125000;
+            loraType.power              = LoRa_Utils::boardMaxPower();
+            list.push_back(loraType);
+        }
+    }
+}
+
+// Trims, shortens to 8 characters and de-duplicates the names shown on screen and in the web page.
+// Returns true when anything had to change.
+bool Configuration::normalizeNames() {
+    bool changed = false;
+
+    std::vector<String> taken;
+    for (size_t i = 0; i < beacons.size(); i++) {
+        String clean = cleanName(beacons[i].profileLabel, "PROFILE", i, taken);
+        if (clean != beacons[i].profileLabel) changed = true;
+        beacons[i].profileLabel = clean;
+        taken.push_back(clean);
+    }
+
+    taken.clear();
+    for (size_t j = 0; j < loraTypes.size(); j++) {
+        String clean = cleanName(loraTypes[j].name, "LORA", j, taken);
+        if (clean != loraTypes[j].name) changed = true;
+        loraTypes[j].name = clean;
+        taken.push_back(clean);
+    }
+    return changed;
+}
 
 bool Configuration::writeFile() {
 
     Serial.println("Saving config..");
+    normalizeNames();
 
     JsonDocument data;
     File configFile = SPIFFS.open("/tracker_conf.json", "w");
@@ -71,6 +165,7 @@ bool Configuration::writeFile() {
         data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
 
         for (int i = 0; i < loraTypes.size(); i++) {
+            data["lora"][i]["name"]                     = loraTypes[i].name;
             data["lora"][i]["frequency"]                = loraTypes[i].frequency;
             data["lora"][i]["spreadingFactor"]          = loraTypes[i].spreadingFactor;
             data["lora"][i]["signalBandwidth"]          = loraTypes[i].signalBandwidth;
@@ -195,6 +290,7 @@ bool Configuration::readFile() {
         for (int j = 0; j < LoraTypesArray.size(); j++) {
             LoraType loraType;
 
+            loraType.name               = LoraTypesArray[j]["name"] | "";
             loraType.frequency          = LoraTypesArray[j]["frequency"] | 433775000;
             loraType.spreadingFactor    = LoraTypesArray[j]["spreadingFactor"] | 12;
             loraType.signalBandwidth    = LoraTypesArray[j]["signalBandwidth"] | 125000;
@@ -202,6 +298,16 @@ bool Configuration::readFile() {
             loraType.power              = LoraTypesArray[j]["power"] | 20;
             loraTypes.push_back(loraType);
         }
+
+        if (beacons.empty()) {      // damaged or incomplete file: the profile list must never be empty
+            addDefaultBeacons(beacons);
+            needsRewrite = true;
+        }
+        if (loraTypes.empty()) {    // same for LoRa entries
+            addDefaultLoraTypes(loraTypes);
+            needsRewrite = true;
+        }
+        if (normalizeNames()) needsRewrite = true;
 
         if (data["battery"]["sendVoltage"].isNull() ||
             data["battery"]["voltageAsTelemetry"].isNull() ||
@@ -291,11 +397,13 @@ bool Configuration::readFile() {
 
         if (needsRewrite) {
             Serial.println("Config JSON incomplete, rewriting...");
-            writeFile();
-            delay(1000);
-            ESP.restart();
-        }
-        Serial.println("Config read successfuly");
+            if (writeFile()) {
+                delay(1000);
+                ESP.restart();
+            } else {
+                Serial.println("Could not save the rewritten config, continuing with the values in memory");
+            }
+        }        Serial.println("Config read successfully");
         return true;
     } else {
         Serial.println("Config file not found");
@@ -307,20 +415,7 @@ void Configuration::setDefaultValues() {
     wifiAP.active                   = true;
     wifiAP.password                 = "1234567890";
 
-    for (int i = 0; i < 3; i++) {
-        Beacon beacon;
-        beacon.callsign             = "NOCALL-7";
-        beacon.symbol               = "[";
-        beacon.overlay              = "/";
-        beacon.micE                 = "";
-        beacon.comment              = "";
-        beacon.smartBeaconActive    = true;
-        beacon.smartBeaconSetting   = 0;
-        beacon.gpsEcoMode           = false;
-        beacon.profileLabel         = "";
-        beacon.status               = "";
-        beacons.push_back(beacon);
-    }
+    addDefaultBeacons(beacons);
 
     display.ecoMode                 = false;
     display.timeout                 = 4;
@@ -337,34 +432,7 @@ void Configuration::setDefaultValues() {
         bluetooth.useKISS           = true;
     #endif
 
-    for (int j = 0; j < 4; j++) {
-        LoraType loraType;
-        switch (j) {
-            case 0:
-                loraType.frequency           = 433775000;
-                loraType.spreadingFactor     = 12;
-                loraType.codingRate4         = 5;
-                break;
-            case 1:
-                loraType.frequency           = 434855000;
-                loraType.spreadingFactor     = 9;
-                loraType.codingRate4         = 7;
-                break;
-            case 2:
-                loraType.frequency           = 439912500;
-                loraType.spreadingFactor     = 12;
-                loraType.codingRate4         = 5;
-                break;
-            case 3:
-                loraType.frequency           = 915000000;
-                loraType.spreadingFactor     = 12;
-                loraType.codingRate4         = 5;
-                break;
-        }
-        loraType.signalBandwidth    = 125000;
-        loraType.power              = 20;
-        loraTypes.push_back(loraType);
-    }
+    addDefaultLoraTypes(loraTypes);
 
     battery.sendVoltage             = false;
     battery.voltageAsTelemetry      = false;

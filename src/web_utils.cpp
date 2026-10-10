@@ -100,6 +100,17 @@ namespace WEB_Utils {
         request->send(200, "application/json", buffer);
     }
 
+        // Returns "" when the radio can use these values, otherwise a short message for the web page.
+    String loraSettingsProblem(const String& name, double frequency, int spreadingFactor, int codingRate4, int bandwidth) {
+        const String where = "LoRa " + name + ": ";
+        if (frequency < 137000000.0 || frequency > 1020000000.0) return where + "frequency must be between 137 and 1020 MHz";
+        if (fmod(frequency, 100.0) != 0.0) return where + "frequency must be a multiple of 0.0001 MHz";
+        if (spreadingFactor < 7 || spreadingFactor > 12) return where + "SF must be 7 to 12";
+        if (codingRate4 < 5 || codingRate4 > 8) return where + "CR4 must be 5 to 8";
+        if (bandwidth != 62500 && bandwidth != 125000 && bandwidth != 250000 && bandwidth != 500000) return where + "BW must be 62500, 125000, 250000 or 500000";
+        return "";
+    }
+
     void handleWriteConfiguration(AsyncWebServerRequest *request) {
         Serial.println("Got new config from www");
 
@@ -131,39 +142,36 @@ namespace WEB_Utils {
             return defaultValue;
         };
 
-        //  Beacons
-        for (int i = 0; i < 3; i++) {
-            Config.beacons[i].callsign      = request->getParam("beacons." + String(i) + ".callsign", true)->value();
-            Config.beacons[i].symbol        = request->getParam("beacons." + String(i) + ".symbol", true)->value();
-            Config.beacons[i].overlay       = request->getParam("beacons." + String(i) + ".overlay", true)->value();
-            Config.beacons[i].micE          = request->getParam("beacons." + String(i) + ".micE", true)->value();
-            Config.beacons[i].comment       = request->getParam("beacons." + String(i) + ".comment", true)->value();
-            Config.beacons[i].status        = request->getParam("beacons." + String(i) + ".status", true)->value();
-            Config.beacons[i].profileLabel  = request->getParam("beacons." + String(i) + ".profileLabel", true)->value();
+        // Refuse impossible LoRa settings before anything is changed or saved
+        for (size_t i = 0; i < Config.loraTypes.size(); i++) {
+            const String prefix = "lora." + String(i) + ".";
+            const String problem = loraSettingsProblem(
+                getParamStringSafe(prefix + "name", Config.loraTypes[i].name),
+                getParamDoubleSafe(prefix + "frequency", Config.loraTypes[i].frequency),
+                getParamIntSafe(prefix + "spreadingFactor", Config.loraTypes[i].spreadingFactor),
+                getParamIntSafe(prefix + "codingRate4", Config.loraTypes[i].codingRate4),
+                getParamIntSafe(prefix + "signalBandwidth", Config.loraTypes[i].signalBandwidth));
+            if (problem.length() > 0) {
+                request->send(400, "text/plain", problem);
+                return;
+            }
+        }
 
-            String paramGpsEcoMode = "beacons." + String(i) + ".gpsEcoMode";
-            if (request->hasParam(paramGpsEcoMode, true)) {
-                String paramGpsEcoModeValue = request->getParam(paramGpsEcoMode, true)->value();
-                if (paramGpsEcoModeValue == "1") {
-                    Config.beacons[i].gpsEcoMode = true;
-                } else {
-                    Config.beacons[i].gpsEcoMode = false;
-                }
-            } else {
-                Config.beacons[i].gpsEcoMode = false;
-            }
-            String paramSmartBeaconActive = "beacons." + String(i) + ".smartBeaconActive";
-            if (request->hasParam(paramSmartBeaconActive, true)) {
-                String paramSmartBeaconActiveValue = request->getParam(paramSmartBeaconActive, true)->value();
-                if (paramSmartBeaconActiveValue == "1") {
-                    Config.beacons[i].smartBeaconActive = true;
-                } else {
-                    Config.beacons[i].smartBeaconActive = false;
-                }
-            } else {
-                Config.beacons[i].smartBeaconActive = false;
-            }
-            Config.beacons[i].smartBeaconSetting    = request->getParam("beacons." + String(i) + ".smartBeaconSetting", true)->value().toInt();
+        //  Beacons
+        for (size_t i = 0; i < Config.beacons.size(); i++) {
+            const String prefix = "beacons." + String(i) + ".";
+            Config.beacons[i].callsign      = getParamStringSafe(prefix + "callsign", Config.beacons[i].callsign);
+            Config.beacons[i].symbol        = getParamStringSafe(prefix + "symbol", Config.beacons[i].symbol);
+            Config.beacons[i].overlay       = getParamStringSafe(prefix + "overlay", Config.beacons[i].overlay);
+            Config.beacons[i].micE          = getParamStringSafe(prefix + "micE", Config.beacons[i].micE);
+            Config.beacons[i].comment       = getParamStringSafe(prefix + "comment", Config.beacons[i].comment);
+            Config.beacons[i].status        = getParamStringSafe(prefix + "status", Config.beacons[i].status);
+            Config.beacons[i].profileLabel  = getParamStringSafe(prefix + "profileLabel", Config.beacons[i].profileLabel);
+
+            // checkboxes are only sent when ticked
+            Config.beacons[i].gpsEcoMode        = request->hasParam(prefix + "gpsEcoMode", true) && request->getParam(prefix + "gpsEcoMode", true)->value() == "1";
+            Config.beacons[i].smartBeaconActive = request->hasParam(prefix + "smartBeaconActive", true) && request->getParam(prefix + "smartBeaconActive", true)->value() == "1";
+            Config.beacons[i].smartBeaconSetting = getParamIntSafe(prefix + "smartBeaconSetting", Config.beacons[i].smartBeaconSetting);
         }
 
         //  Station Config
@@ -199,11 +207,12 @@ namespace WEB_Utils {
         }
 
         // LORA
-        for (int i = 0; i < 4; i++) {
+        for (size_t i = 0; i < Config.loraTypes.size(); i++) {
             Config.loraTypes[i].frequency       = getParamDoubleSafe("lora." + String(i) + ".frequency", Config.loraTypes[i].frequency);
             Config.loraTypes[i].spreadingFactor = getParamIntSafe("lora." + String(i) + ".spreadingFactor", Config.loraTypes[i].spreadingFactor);
             Config.loraTypes[i].codingRate4     = getParamIntSafe("lora." + String(i) + ".codingRate4", Config.loraTypes[i].codingRate4);
             Config.loraTypes[i].signalBandwidth = getParamIntSafe("lora." + String(i) + ".signalBandwidth", Config.loraTypes[i].signalBandwidth);
+            Config.loraTypes[i].name            = getParamStringSafe("lora." + String(i) + ".name", Config.loraTypes[i].name);
             Config.loraTypes[i].power           = LoRa_Utils::validPower(getParamIntSafe("lora." + String(i) + ".power", Config.loraTypes[i].power));  // saved as the power the radio chip really uses
         }
 

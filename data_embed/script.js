@@ -2,6 +2,80 @@
 
 let currentSettings = null;
 
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+const BANDWIDTHS = [[62500, "62.5 kHz"], [125000, "125 kHz"], [250000, "250 kHz"], [500000, "500 kHz"]];
+const SPREADING_FACTORS = [7, 8, 9, 10, 11, 12].map((sf) => [sf, "SF" + sf]);
+const CODING_RATES = [5, 6, 7, 8].map((cr) => [cr, "4/" + cr]);
+
+// A dropdown from [value, label] pairs. A stored value that is not in the list (for example 7800 from an
+// old file) is shown as "choose" and blocks saving until the operator picks one.
+function selectHtml(id, value, options) {
+    const known = options.some(([v]) => v === Number(value));
+    let html = `<select class="form-select form-select-sm" name="${id}" id="${id}" required>`;
+    if (!known) html += `<option value="" selected disabled>${escapeHtml(value)}: choose</option>`;
+    options.forEach(([v, label]) => {
+        html += `<option value="${v}"${Number(value) === v ? " selected" : ""}>${label}</option>`;
+    });
+    return html + "</select>";
+}
+
+// The firmware gives unnamed entries these names, so an old backup file shows the same ones.
+function defaultName(prefix, index) {
+    return prefix + (index + 1);
+}
+
+// Frequency shown as MHz with at least 3 and at most 6 decimals, from integer hertz so nothing is rounded.
+function formatMHz(hz) {
+    if (!Number.isFinite(hz)) return "";
+    const whole = Math.floor(hz / 1e6);
+    let fraction = String(hz % 1e6).padStart(6, "0");
+    while (fraction.length > 3 && fraction.endsWith("0")) fraction = fraction.slice(0, -1);
+    return whole + "." + fraction;
+}
+
+// Text typed in the MHz box -> integer hertz, or NaN. Exact for up to 6 decimals.
+function mhzToHz(text) {
+    const match = /^\s*(\d+)(?:[.,](\d{0,6}))?\s*$/.exec(String(text));
+    if (match) return Number(match[1]) * 1e6 + Number((match[2] || "").padEnd(6, "0"));
+    const approx = Math.round(Number(text) * 1e6);
+    return Number.isFinite(approx) && String(text).trim() !== "" ? approx : NaN;
+}
+
+// The tracker still receives hertz: every MHz box also sends its value as ".frequency".
+function addFrequenciesInHz(formData) {
+    document.querySelectorAll('input[name$=".frequencyMHz"]').forEach((el) => {
+        formData.set(el.name.replace(".frequencyMHz", ".frequency"), String(mhzToHz(el.value)));
+    });
+}
+
+// One message per entry, or "" when the name is fine. Names must be filled in and different (case ignored).
+function nameProblems(values) {
+    const seen = new Map();
+    return values.map((value, index) => {
+        const key = String(value).trim().toLowerCase();
+        if (key === "") return "Name cannot be empty";
+        if (seen.has(key)) return "Name already used by entry " + seen.get(key);
+        seen.set(key, index + 1);
+        return "";
+    });
+}
+
+function validateNames() {
+    ['input[name$=".profileLabel"]', 'input[name^="lora."][name$=".name"]'].forEach((selector) => {
+        const inputs = Array.from(document.querySelectorAll(selector));
+        const problems = nameProblems(inputs.map((el) => el.value));
+        inputs.forEach((el, i) => el.setCustomValidity(problems[i]));
+    });
+}
+
 function backupSettings() {
     const data =
         "data:text/json;charset=utf-8," +
@@ -10,6 +84,32 @@ function backupSettings() {
     a.setAttribute("href", data);
     a.setAttribute("download", "TrackerConfigurationBackup.json");
     a.click();
+}
+
+// Mic-E status codes. The three digits are what the firmware's APRSPacketLib accepts: "000" to "111".
+// An empty value (None) sends normal position packets.
+const MICE_CODES = [
+    ["", "None"],
+    ["111", "Off Duty"],
+    ["110", "En Route"],
+    ["101", "In Service"],
+    ["100", "Returning"],
+    ["011", "Committed"],
+    ["010", "Special"],
+    ["001", "Priority"],
+    ["000", "Emergency"],
+];
+
+// Anything the firmware would not accept (for example "Y" typed into the old text box) shows as None,
+// which is what the firmware does with it. No placeholder: the field must always be sent with the form.
+function miceSelectHtml(id, value) {
+    const known = typeof value === "string" && MICE_CODES.some(([code]) => code === value);
+    let html = `<select class="form-select form-select-sm" name="${id}" id="${id}">`;
+    MICE_CODES.forEach(([code, label]) => {
+        const chosen = known ? code === value : code === "";
+        html += `<option value="${code}"${chosen ? " selected" : ""}>${label}</option>`;
+    });
+    return html + "</select>";
 }
 
 document.getElementById("backup").onclick = backupSettings;
@@ -66,6 +166,20 @@ function loadSettings(settings) {
                 <strong>${index + 1})</strong>
             </div>
             <div class="col">
+                            <div class="row g-2 mb-2">
+                    <div class="form-floating col-12 col-md-6">
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            name="beacons.${index}.profileLabel"
+                            id="beacons.${index}.profileLabel"
+                            value="${escapeHtml(beacons.profileLabel || defaultName("PROFILE", index))}"
+                            maxlength="8"
+                            pattern="[ -~]+"
+                            required>
+                        <label for="beacons.${index}.profileLabel">Profile Label (8 max)</label>
+                    </div>
+                </div>
                 <div class="row g-2 mb-2">
                     <div class="form-floating col-12 col-md-6">
                         <input 
@@ -78,7 +192,7 @@ function loadSettings(settings) {
                             oninput="this.value = this.value.toUpperCase();">
                         <label for="beacons.${index}.callsign">Callsign</label>
                     </div>
-                    <div class="form-floating col-4 col-md-2">
+                    <div class="form-floating col-6 col-sm-4 col-md-2">
                         <input 
                             type="text" 
                             class="form-control form-control-sm" 
@@ -87,7 +201,7 @@ function loadSettings(settings) {
                             value="${beacons.symbol}">
                         <label for="beacons.${index}.symbol">Symbol</label>
                     </div>
-                    <div class="form-floating col-4 col-md-2">
+                    <div class="form-floating col-6 col-sm-4 col-md-2">
                         <input 
                             type="text" 
                             class="form-control form-control-sm" 
@@ -96,13 +210,8 @@ function loadSettings(settings) {
                             value="${beacons.overlay}">
                         <label for="beacons.${index}.overlay">Overlay</label>
                     </div>
-                    <div class="form-floating col-4 col-md-2">
-                        <input 
-                            type="text" 
-                            class="form-control form-control-sm" 
-                            name="beacons.${index}.micE" 
-                            id="beacons.${index}.micE" 
-                            value="${beacons.micE}">
+                     <div class="form-floating col-12 col-sm-4 col-md-2">
+                        ${miceSelectHtml(`beacons.${index}.micE`, beacons.micE)}
                         <label for="beacons.${index}.micE">Mic-E</label>
                     </div>
                 </div>
@@ -151,14 +260,14 @@ function loadSettings(settings) {
                     <div class="col-12 col-md-6">
                         <label for="beacons.${index}.smartBeaconSetting" class="form-label"><small>Smart Beacon Setting</small></label>
                         <select name="beacons.${index}.smartBeaconSetting" id="beacons.${index}.smartBeaconSetting" class="form-control">
-                            <option value="0" ${beacons.smartBeaconSetting == 0 ? 'selected' : ''}>Human/Runner (Slow Speed)</option>
-                            <option value="1" ${beacons.smartBeaconSetting == 1 ? 'selected' : ''}>Bicycle (Mid Speed)</option>
-                            <option value="2" ${beacons.smartBeaconSetting == 2 ? 'selected' : ''}>Car/Motorcycle (Fast Speed)</option>
+                            <option value="0" ${beacons.smartBeaconSetting == 0 ? 'selected' : ''}>SLOW</option>
+                            <option value="1" ${beacons.smartBeaconSetting == 1 ? 'selected' : ''}>MEDIUM</option>
+                            <option value="2" ${beacons.smartBeaconSetting == 2 ? 'selected' : ''}>FAST</option>
                         </select>
                     </div>
                 </div>
                 <div class="row g-2">
-                    <div class="form-floating col-12 col-sm-6">
+                    <div class="form-floating col-12 col-sm-12">
                         <input 
                             type="text" 
                             class="form-control form-control-sm" 
@@ -166,15 +275,6 @@ function loadSettings(settings) {
                             id="beacons.${index}.status" 
                             value="${beacons.status}">
                         <label for="beacons.${index}.status">Status</label>
-                    </div>
-                    <div class="form-floating col-12 col-sm-6">
-                        <input 
-                            type="text" 
-                            class="form-control form-control-sm" 
-                            name="beacons.${index}.profileLabel" 
-                            id="beacons.${index}.profileLabel" 
-                            value="${beacons.profileLabel}">
-                        <label for="beacons.${index}.profileLabel">Profile Label</label>
                     </div>
                 </div>
             </div>
@@ -222,57 +322,47 @@ function loadSettings(settings) {
 
         loraElement.innerHTML = `
             <div class="col-1 px-1 mb-2 d-flex align-items-center">
-                <strong>${index + 1})</strong> <!-- Adding numbering here -->
+                <strong>${index + 1})</strong>
+            </div>
+            <div class="form-floating col-6 col-md-2 px-1 mb-2">
+                <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    name="lora.${index}.name"
+                    id="lora.${index}.name"
+                    maxlength="8"
+                    pattern="[ -~]+"
+                    title="Up to 8 letters, digits or symbols"
+                    required
+                    value="${escapeHtml(lora.name || defaultName("LORA", index))}">
+                <label for="lora.${index}.name">Name</label>
             </div>
             <div class="form-floating col-6 col-md-3 px-1 mb-2">
-                <input 
-                    type="number" 
-                    class="form-control form-control-sm" 
-                    name="lora.${index}.frequency" 
-                    id="lora.${index}.frequency" 
-                    min="137000000"
-                    max="1020000000"
+                <input
+                    type="number"
+                    step="0.0001"
+                    class="form-control form-control-sm"
+                    name="lora.${index}.frequencyMHz"
+                    id="lora.${index}.frequencyMHz"
+                    min="137"
+                    max="1020"
                     required
-                    value="${lora.frequency}">
-                <label for="lora.${index}.frequency">Frequency</label>
+                    value="${formatMHz(lora.frequency)}">
+                <label for="lora.${index}.frequencyMHz">Frequency (MHz)</label>
             </div>
-            <div class="form-floating col-4 col-md-2 px-1 mb-2">
-                <input 
-                    type="number" 
-                    class="form-control form-control-sm" 
-                    name="lora.${index}.spreadingFactor" 
-                    id="lora.${index}.spreadingFactor" 
-                    value="${lora.spreadingFactor}"
-                    min="7"
-                    max="12"
-                    required>
+            <div class="form-floating col-6 col-sm-4 col-md-2 px-1 mb-2">
+                ${selectHtml(`lora.${index}.spreadingFactor`, lora.spreadingFactor, SPREADING_FACTORS)}
                 <label for="lora.${index}.spreadingFactor">SF</label>
             </div>
-            <div class="form-floating col-4 col-md-2 px-1 mb-2">
-                <input 
-                    type="number" 
-                    class="form-control form-control-sm" 
-                    name="lora.${index}.codingRate4" 
-                    id="lora.${index}.codingRate4" 
-                    value="${lora.codingRate4}"
-                    min="5"
-                    max="8"
-                    required>
-                <label for="lora.${index}.codingRate4">CR4</label>
+            <div class="form-floating col-6 col-sm-4 col-md-2 px-1 mb-2">
+                ${selectHtml(`lora.${index}.codingRate4`, lora.codingRate4, CODING_RATES)}
+                <label for="lora.${index}.codingRate4">CR</label>
             </div>
-            <div class="form-floating col-4 col-md-2 px-1 mb-2">
-                <input 
-                    type="number" 
-                    class="form-control form-control-sm" 
-                    name="lora.${index}.signalBandwidth" 
-                    id="lora.${index}.signalBandwidth" 
-                    value="${lora.signalBandwidth}"
-                    min="62500"
-                    max="500000"
-                    required>
+            <div class="form-floating col-12 col-sm-4 col-md-2 px-1 mb-2">
+                ${selectHtml(`lora.${index}.signalBandwidth`, lora.signalBandwidth, BANDWIDTHS)}
                 <label for="lora.${index}.signalBandwidth">BW</label>
             </div>
-            <div class="form-floating col-4 col-md-2 px-1 mb-2">
+            <div class="form-floating col-6 col-md-2 offset-md-1 px-1 mb-2">
                 <input
                     type="number"
                     class="form-control form-control-sm"
@@ -362,6 +452,7 @@ function loadSettings(settings) {
     pttPostDelayInput.disabled  = !pttTriggerCheckbox.checked;
     pttPinInput.disabled        = !pttTriggerCheckbox.checked;
 
+    validateNames();
     clampOutOfRangeInputs();
 }
 
@@ -544,11 +635,22 @@ function checkConnection() {
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    fetch(form.action, {
-        method: form.method,
-        body: new FormData(form),
-    });
     saveModal.show();
+    try {
+        const data = new FormData(form);
+        addFrequenciesInHz(data);
+        const response = await fetch(form.action, {
+            method: form.method,
+            body: data,
+        });
+        if (response.status === 400) {           // the tracker refused the values and saved nothing
+            saveModal.hide();
+            showToast("<b>Not saved:</b> " + escapeHtml(await response.text()));
+            return;
+        }
+    } catch (err) {
+        // the tracker restarts while its answer is on the way: that is how a normal save ends
+    }
     setTimeout(checkConnection, 2000);
 });
 
@@ -575,5 +677,9 @@ form.addEventListener("invalid", function (event) {
         }, 0);
     }
 }, true);
+
+document.getElementById("configuration").addEventListener("input", (event) => {
+    if (event.target.matches('input[name$=".profileLabel"], input[name$=".name"]')) validateNames();
+});
 
 fetchSettings();

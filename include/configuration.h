@@ -94,6 +94,7 @@ public:
 
 class LoraType {
 public:
+    String  name;
     long    frequency;
     int     spreadingFactor;
     long    signalBandwidth;
@@ -146,6 +147,7 @@ public:
 
     void setDefaultValues();
     bool writeFile();
+    bool normalizeNames();
     Configuration();
 
 private:

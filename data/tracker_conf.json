@@ -10,7 +10,7 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 0,
-			"profileLabel": ""
+			"profileLabel": "PROFILE1"
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -22,7 +22,7 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 2,
-			"profileLabel": ""
+			"profileLabel": "PROFILE2"
 		},
 		{
 			"callsign": "NOCALL-7",
@@ -34,7 +34,7 @@
 			"status": "",
 			"smartBeaconActive": true,
 			"smartBeaconSetting": 1,
-			"profileLabel": ""
+			"profileLabel": "PROFILE3"
 		}
 	],
 	"display": {
@@ -89,32 +89,36 @@
 	},
 	"lora": [
 		{
+			"name": "EU/WORLD",
 			"frequency": 433775000,
 			"spreadingFactor": 12,
 			"signalBandwidth": 125000,
 			"codingRate4": 5,
-			"power": 20
+			"power": 22
 		},
 		{
+			"name": "POLAND",
 			"frequency": 434855000,
 			"spreadingFactor": 9,
 			"signalBandwidth": 125000,
 			"codingRate4": 7,
-			"power": 20
+			"power": 22
 		},
 		{
+			"name": "UK",
 			"frequency": 439912500,
 			"spreadingFactor": 12,
 			"signalBandwidth": 125000,
 			"codingRate4": 5,
-			"power": 20
+			"power": 22
 		},
 		{
-			"frequency": 915000000,
-			"spreadingFactor": 12,
+			"name": "USA",
+			"frequency": 433775000,
+			"spreadingFactor": 7,
 			"signalBandwidth": 125000,
-			"codingRate4": 5,
-			"power": 20
+			"codingRate4": 6,
+			"power": 22
 		}
 	],
 	"bluetooth": {

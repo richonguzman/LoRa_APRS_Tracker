@@ -26,6 +26,7 @@ namespace BUTTON_Utils {
 
     void longPress1();
     void doublePress1();
+    void toggleMenu();
 
     void loop();
     void setup();

@@ -31,8 +31,13 @@ namespace KEYBOARD_Utils {
 
     void processPressedKey(char key);
     void read();
-
-    void setup();
+    bool    switchProfile(uint8_t newIndex);
+    bool    profileUsable(uint8_t index);
+    uint8_t usableProfileCount();
+    int     firstUsableProfile();
+    uint8_t stepUsableProfile(uint8_t from, int direction);
+    uint8_t nextUsableProfile(uint8_t from);
+   void setup();
 
 }
 

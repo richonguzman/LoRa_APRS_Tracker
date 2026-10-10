@@ -28,7 +28,9 @@ namespace MENU_Utils {
     const String checkProcessActive(const bool process);
     const String screenBrightnessAsString(const uint8_t bright);
     void  showOnScreen();
-
+    void  showOnScreen();
+    void  showLoRaChanged();
+    void  showLoRaRefused(uint8_t wantedIndex, const char* failedStep);
 }
 
 #endif
