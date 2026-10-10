@@ -65,7 +65,7 @@
             KEYBOARD_Utils::rightArrow();
         }
 
-        void doublePress1() {
+        void toggleMenu() {             // main screen <-> menu (the old double press; the touch Menu button uses it)
             displayToggle(true);
             menuTime = millis();
             if (menuDisplay == 0) {
@@ -76,10 +76,30 @@
             }
         }
 
-        void multiPress1() {
+        void doublePress1() {           // main screen: open the menu. Inside a menu: one level back
+            if (menuDisplay == 0) {
+                toggleMenu();
+                return;
+            }
             displayToggle(true);
             menuTime = millis();
-            menuDisplay = 9000;
+            const int before = menuDisplay;
+            KEYBOARD_Utils::leftArrow();
+            if (menuDisplay == before) {    // a screen with no "back" step keeps the old behaviour: main screen
+                menuDisplay = 0;
+                displayTime = millis();
+            }
+        }
+
+        void multiPress1() {            // 3 or more presses
+            displayToggle(true);
+            menuTime = millis();
+            if (menuDisplay == 0) {
+                menuDisplay = 9000;     // main screen: power off / hotspot menu (unchanged)
+            } else {
+                menuDisplay = 0;        // anywhere else: main screen
+                displayTime = millis();
+            }
         }
 
         void loop() {

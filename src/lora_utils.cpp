@@ -25,6 +25,7 @@
 #include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
+#include <APRSPacketLib.h>
 
 extern logging::Logger  logger;
 extern Configuration    Config;
@@ -89,7 +90,7 @@ namespace LoRa_Utils {
         return power;
     }
 
-    void setPower(int requested) {      // each LoRa type (EU/WORLD, POLAND, UK, US) has its own power
+    void setPower(int requested) {      // clamps to what the chip and board allow
         int power = validPower(requested);
         if (power != requested) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa", "Power adjusted: %d -> %d", requested, power);
@@ -100,43 +101,81 @@ namespace LoRa_Utils {
         }
     }
 
-    void changeFreq() {
-        if(loraIndex >= (loraIndexSize - 1)) {
-            loraIndex = 0;
-        } else {
-            loraIndex++;
-        }
-        currentLoRaType = &Config.loraTypes[loraIndex];
+    int boardMaxPower() {               // the highest output setting this chip/board allows
+        return validPower(CHIP_MAX_POWER);
+    }
 
-        float freq = (float)currentLoRaType->frequency/1000000;
-        radio.setFrequency(freq);
-        radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
-        float signalBandwidth = currentLoRaType->signalBandwidth/1000;
-        radio.setBandwidth(signalBandwidth);
-        radio.setCodingRate(currentLoRaType->codingRate4);
-        setPower(currentLoRaType->power);
+    // Applies frequency, spreading factor, bandwidth and coding rate, one at a time.
+    // Stops at the first setting the radio refuses and names it in 'step'. No screen text here.
+    int applyModem(const LoraType& type, const char*& step) {
+        int state;
+
+        step = "FREQ";
+        state = radio.setFrequency((float)type.frequency / 1000000.0f);
+        if (state != RADIOLIB_ERR_NONE) return state;
+
+        step = "SF";
+        state = radio.setSpreadingFactor(type.spreadingFactor);
+        if (state != RADIOLIB_ERR_NONE) return state;
+
+        step = "BW";
+        state = radio.setBandwidth((float)type.signalBandwidth / 1000.0f);   // float division: 62500 -> 62.5
+        if (state != RADIOLIB_ERR_NONE) return state;
+
+        step = "CR";
+        state = radio.setCodingRate(type.codingRate4);
+        if (state != RADIOLIB_ERR_NONE) return state;
+
+        step = "";
+        return RADIOLIB_ERR_NONE;
+    }
+
+    int applyType(const LoraType& type, const char*& step) {
+        int state = applyModem(type, step);
+        if (state != RADIOLIB_ERR_NONE) return state;
+
+        step = "POWER";
+        state = radio.setOutputPower(validPower(type.power));
+        if (state != RADIOLIB_ERR_NONE) return state;
         #if defined(TTGO_T_BEAM_1W)
-            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);  // after setPower(): setOutputPower() resets the PA ramp time
+            state = radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);  // after setOutputPower(): it resets the PA ramp time
+            if (state != RADIOLIB_ERR_NONE) return state;
         #endif
 
-        String loraCountryFreq;
-        switch (loraIndex) {
-            case 0: loraCountryFreq = "EU/WORLD"; break;
-            case 1: loraCountryFreq = "POLAND"; break;
-            case 2: loraCountryFreq = "UK"; break;
-            case 3: loraCountryFreq = "US"; break;
-        }
-        String currentLoRainfo = "LoRa ";
-        currentLoRainfo += loraCountryFreq;
-        currentLoRainfo += " / Freq: ";
-        currentLoRainfo += String(currentLoRaType->frequency);
-        currentLoRainfo += " / SF:";
-        currentLoRainfo += String(currentLoRaType->spreadingFactor);
-        currentLoRainfo += " / CR: ";
-        currentLoRainfo += String(currentLoRaType->codingRate4);
+        step = "";
+        return RADIOLIB_ERR_NONE;
+    }
 
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
-        displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+    // Switches to another LoRa entry. If the radio refuses any step, the previous entry is
+    // restored and false is returned; 'failedStep' names the setting that was refused.
+    bool selectLoRaType(uint8_t newIndex, const char*& failedStep) {
+        failedStep = "INDEX";
+        if (newIndex >= Config.loraTypes.size()) return false;
+        if (newIndex == loraIndex) { failedStep = ""; return true; }
+
+        const LoraType* previous = currentLoRaType;
+        int state = applyType(Config.loraTypes[newIndex], failedStep);
+        bool changed = (state == RADIOLIB_ERR_NONE);
+
+        if (changed) {
+            loraIndex       = newIndex;
+            currentLoRaType = &Config.loraTypes[newIndex];
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "Now using %s: %ld Hz, BW %ld, SF%d, CR4/%d",
+                currentLoRaType->name.c_str(), currentLoRaType->frequency, currentLoRaType->signalBandwidth,
+                currentLoRaType->spreadingFactor, currentLoRaType->codingRate4);
+        } else {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "%s refused %s (code %d), restoring %s",
+                       Config.loraTypes[newIndex].name.c_str(), failedStep, state, previous->name.c_str());
+            const char* restoreStep = "";
+            if (applyType(*previous, restoreStep) != RADIOLIB_ERR_NONE) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Restoring %s failed at %s",
+                           previous->name.c_str(), restoreStep);
+            }
+        }
+
+        operationDone = true;   // after any change the chip must go back to receive mode;
+        transmitFlag  = true;   // receivePacket() does that on its next pass
+        return changed;
     }
 
     void setup() {
@@ -176,10 +215,16 @@ namespace LoRa_Utils {
         #if defined(HAS_SX1278) || defined(HAS_SX1276)
             radio.setDio0Action(setFlag, RISING);
         #endif
-        radio.setSpreadingFactor(currentLoRaType->spreadingFactor);
-        float signalBandwidth = currentLoRaType->signalBandwidth/1000;
-        radio.setBandwidth(signalBandwidth);
-        radio.setCodingRate(currentLoRaType->codingRate4);
+        const char* failedStep = nullptr;
+        if (applyModem(*currentLoRaType, failedStep) != RADIOLIB_ERR_NONE) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "%s refused %s, falling back to the first entry",
+                       currentLoRaType->name.c_str(), failedStep);
+            loraIndex       = 0;
+            currentLoRaType = &Config.loraTypes[0];
+            if (applyModem(*currentLoRaType, failedStep) != RADIOLIB_ERR_NONE) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "First entry refused %s too, radio keeps its defaults", failedStep);
+            }
+        }
         radio.setCRC(true);
 
         #if defined(RADIO_RXEN) && defined(RADIO_TXEN)
@@ -257,6 +302,13 @@ namespace LoRa_Utils {
     }
 
     void sendNewPacket(const String& newPacket) {
+        const int sourceEnd = newPacket.indexOf('>');
+        if (sourceEnd > 0 && APRSPacketLib::checkNocall(newPacket.substring(0, sourceEnd))) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa Tx", "Not sending: source callsign is NOCALL (%s)",
+                       newPacket.substring(0, sourceEnd).c_str());
+                displayShow("<<< TX >>>", "", "NOT SENT", "Callsign not set", "", "", 2000);
+            return;
+        }
         if (Config.cadActive) {
             cadStartTime = millis();
             cadNoticeShown = false;

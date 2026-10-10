@@ -32,7 +32,7 @@
 #include "wx_utils.h"
 #include "display.h"
 #include "utils.h"
-
+#include "keyboard_utils.h"
 
 extern int                  menuDisplay;
 extern Beacon               *currentBeacon;
@@ -42,6 +42,8 @@ extern std::vector<String>  loadedAPRSMessages;
 extern std::vector<String>  loadedWLNKMails;
 extern int                  messagesIterator;
 extern uint8_t              loraIndex;
+extern uint8_t              myBeaconsIndex;
+extern uint8_t              pickerIndex;
 extern uint32_t             menuTime;
 extern bool                 symbolAvailable;
 extern bool                 keyDetected;
@@ -71,7 +73,6 @@ extern bool                 batteryConnected;
 extern int                  wxModuleType;
 extern bool                 gpsIsActive;
 
-String      freqChangeWarning;
 uint8_t     lowBatteryPercent       = 21;
 
 #if defined(TTGO_T_DECK_PLUS) || defined(TTGO_T_DECK_GPS)
@@ -125,6 +126,55 @@ namespace MENU_Utils {
         char buffer[10];
         snprintf(buffer, sizeof(buffer), "%-9s", text.c_str());
         return String(buffer);
+    }
+
+    // Frequency as MHz with at least 3 and at most 6 decimals, from integer hertz so nothing is rounded.
+    String formatFrequencyMHz(long hz) {
+        char buffer[24];
+        snprintf(buffer, sizeof(buffer), "%ld.%06ld", hz / 1000000, hz % 1000000);
+        String text(buffer);
+        while (text.endsWith("0") && (text.length() - text.indexOf('.') - 1) > 3) text.remove(text.length() - 1);
+        return text;
+    }
+
+    // Bandwidth in kHz: 125000 -> "125", 62500 -> "62.5"
+    String formatBandwidthKHz(long hz) {
+        if (hz % 1000 == 0) return String(hz / 1000);
+        return String(hz / 1000.0, 1);
+    }
+
+    void showLoRaChanged() {
+        const LoraType& type = Config.loraTypes[loraIndex];
+        displayShow("LoRa", "", "CHANGED TO: " + type.name,
+                    formatFrequencyMHz(type.frequency) + " BW" + formatBandwidthKHz(type.signalBandwidth),
+                    "SF" + String(type.spreadingFactor) + " 4/" + String(type.codingRate4), "", 2000);
+    }
+
+    void showLoRaRefused(uint8_t wantedIndex, const char* failedStep) {
+        String wanted = (wantedIndex < Config.loraTypes.size()) ? Config.loraTypes[wantedIndex].name : String("?");
+        displayShow("LoRa", "", "REFUSED: " + wanted, String(failedStep) + " not accepted",
+                    "Kept: " + Config.loraTypes[loraIndex].name, "", 3000);
+    }
+
+    String padName(const String& text) {            // left-aligned, 8 characters wide
+        char buffer[10];
+        snprintf(buffer, sizeof(buffer), "%-8.8s", text.c_str());
+        return String(buffer);
+    }
+
+    // First visible row of a list, so that the selected item is always on screen.
+    uint8_t listWindowStart(uint8_t selected, uint8_t count, uint8_t rows) {
+        if (count <= rows) return 0;
+        uint8_t start = (selected + 1 > rows) ? selected + 1 - rows : 0;
+        if (start > count - rows) start = count - rows;
+        return start;
+    }
+
+    // One list row: [selected marker][active marker] name, then a detail text. Never wider than 21 characters.
+    String listRow(bool selected, bool active, const String& name, const String& detail) {
+        String row = String(selected ? ">" : " ") + String(active ? "*" : " ") + padName(name) + " " + detail;
+        if (row.length() > 21) row = row.substring(0, 21);
+        return row;
     }
 
     void showOnScreen() {
@@ -353,13 +403,13 @@ namespace MENU_Utils {
 
 //////////
             case 20:    // 2.Configuration ---> Callsign
-                displayShow(" CONFIG>", "  Power Off", "> Change Callsign ", "  Change Frequency", "  Display",lastLine);
+                displayShow(" CONFIG>", "  Power Off", "> Change Profile ", "  Change LoRa", "  Display",lastLine);
                 break;
             case 21:    // 2.Configuration ---> Change Freq
-                displayShow(" CONFIG>", "  Change Callsign ", "> Change Frequency", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
+                displayShow(" CONFIG>", "  Change Profile ", "> Change LoRa", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
-                displayShow(" CONFIG>", "  Change Frequency", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
+                displayShow(" CONFIG>", "  Change LoRa", "> Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status",lastLine);
                 break;
             case 23:    // 2.Configuration ---> Bluetooth
                 displayShow(" CONFIG>", "  Display",  "> " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")", "  Status", "  Notifications", lastLine);
@@ -371,25 +421,73 @@ namespace MENU_Utils {
                 displayShow(" CONFIG>", "  Status", "> Notifications", "  Reboot", "  Power Off",lastLine);
                 break;
             case 26:    // 2.Configuration ---> Reboot
-                displayShow(" CONFIG>", "  Notifications", "> Reboot", "  Power Off", "  Change Callsign",lastLine);
+                displayShow(" CONFIG>", "  Notifications", "> Reboot", "  Power Off", "  Change Profile",lastLine);
                 break;
             case 27:    // 2.Configuration ---> Power Off
-                displayShow(" CONFIG>", "  Reboot", "> Power Off", "  Change Callsign", "  Change Frequency",lastLine);
+                displayShow(" CONFIG>", "  Reboot", "> Power Off", "  Change Profile", "  Change LoRa",lastLine);
                 break;
 
 
-            case 200:   // 2.Configuration ---> Change Callsign
-                displayShow(" CALLSIGN>", "","  Confirm Change?","","","<Back         Select>");
-                break;
-
-            case 210:   // 2.Configuration ---> Change Frequency
-                switch (loraIndex) {
-                    case 0: freqChangeWarning = "      EU --> PL"; break;
-                    case 1: freqChangeWarning = "      PL --> UK"; break;
-                    case 2: freqChangeWarning = "      UK --> US"; break;
-                    case 3: freqChangeWarning = "      US --> EU"; break;
+            case 200:   // 2.Configuration ---> Change Profile (list): profiles without a real callsign are not shown
+                {
+                    std::vector<uint8_t> usable;
+                    for (uint8_t i = 0; i < Config.beacons.size(); i++) {
+                        if (KEYBOARD_Utils::profileUsable(i)) usable.push_back(i);
+                    }
+                    if (usable.empty()) {
+                        displayShow("PROFILE>", "", "No profile has a", "real callsign.", "Set them in WebConfig", lastLine);
+                    } else {
+                        uint8_t selectedPosition = 0;
+                        for (uint8_t p = 0; p < usable.size(); p++) {
+                            if (usable[p] == pickerIndex) selectedPosition = p;
+                        }
+                        const uint8_t first = listWindowStart(selectedPosition, usable.size(), 4);
+                        String row[4];
+                        for (uint8_t r = 0; r < 4 && (first + r) < usable.size(); r++) {
+                            const uint8_t item = usable[first + r];
+                            row[r] = listRow(item == pickerIndex, item == myBeaconsIndex, Config.beacons[item].profileLabel, Config.beacons[item].callsign);
+                        }
+                        displayShow("PROFILE>", row[0], row[1], row[2], row[3], lastLine);
+                    }
                 }
-                displayShow("LORA FREQ>", "","   Confirm Change?", freqChangeWarning, "", "<Back         Select>");
+                break;
+
+            case 2000:  // Change Profile (confirm)
+                {
+                    const Beacon& target = Config.beacons[pickerIndex];
+                    displayShow("PROFILE",
+                                "Change Profile?",
+                                currentBeacon->profileLabel + " -> " + target.profileLabel,
+                                target.callsign,
+                                "Icon: " + target.overlay + target.symbol,
+                                lastLine);
+                }
+                break;
+
+            case 210:   // 2.Configuration ---> Change LoRa (list)
+                {
+                    const uint8_t count = Config.loraTypes.size();
+                    const uint8_t first = listWindowStart(pickerIndex, count, 4);
+                    String row[4];
+                    for (uint8_t r = 0; r < 4 && (first + r) < count; r++) {
+                        const uint8_t item = first + r;
+                        row[r] = listRow(item == pickerIndex, item == loraIndex, Config.loraTypes[item].name, formatFrequencyMHz(Config.loraTypes[item].frequency));
+                    }
+                    displayShow("LoRa>", row[0], row[1], row[2], row[3], lastLine);
+                }
+                break;
+
+            case 2100:  // Change LoRa (confirm)
+                {
+                    const LoraType& current = Config.loraTypes[loraIndex];
+                    const LoraType& target  = Config.loraTypes[pickerIndex];
+                    displayShow("LoRa",
+                                "Change LoRa?",
+                                current.name + " -> " + target.name,
+                                formatFrequencyMHz(target.frequency) + " BW" + formatBandwidthKHz(target.signalBandwidth),
+                                "SF" + String(target.spreadingFactor) + " 4/" + String(target.codingRate4),
+                                lastLine);
+                }
                 break;
 
             case 220:   // 2.Configuration ---> Display ---> ECO Mode
@@ -745,13 +843,8 @@ namespace MENU_Utils {
                         }
                     } else {
                         thirdRowMainMenu = String(Utils::getMaidenheadLocator(gps.location.lat(), gps.location.lng(), 8));
-                        thirdRowMainMenu += " LoRa[";
-                        switch (loraIndex) {
-                            case 0: thirdRowMainMenu += "Eu]"; break;
-                            case 1: thirdRowMainMenu += "PL]"; break;
-                            case 2: thirdRowMainMenu += "UK]"; break;
-                            case 3: thirdRowMainMenu += "US]"; break;
-                        }
+                        thirdRowMainMenu += " ";
+                        if (loraIndex < Config.loraTypes.size()) thirdRowMainMenu += Config.loraTypes[loraIndex].name;
                     }
 
                     for (int i = thirdRowMainMenu.length(); i < 18; i++) {

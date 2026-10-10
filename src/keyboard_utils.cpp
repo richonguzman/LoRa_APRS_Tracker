@@ -81,6 +81,7 @@ String      messageText             = "";
 int         messagesIterator        = 0;
 
 bool        showHumanHeading        = false;
+uint8_t     pickerIndex             = 0;    // highlighted entry in the profile / LoRa lists
 
 
 namespace KEYBOARD_Utils {
@@ -146,6 +147,12 @@ namespace KEYBOARD_Utils {
         else if (menuDisplay >= 9000 && menuDisplay <= 9001) {
             menuDisplay--;
             if (menuDisplay < 9000) menuDisplay = 9001;
+        }
+
+        else if (menuDisplay == 200) {
+            pickerIndex = stepUsableProfile(pickerIndex, -1);
+        } else if (menuDisplay == 210) {
+            pickerIndex = (pickerIndex == 0) ? Config.loraTypes.size() - 1 : pickerIndex - 1;
         }
     }
 
@@ -246,6 +253,12 @@ namespace KEYBOARD_Utils {
             menuDisplay++;
             if (menuDisplay > 9001) menuDisplay = 9000;
         }
+
+        else if (menuDisplay == 200) {
+            pickerIndex = stepUsableProfile(pickerIndex, +1);
+        } else if (menuDisplay == 210) {
+            pickerIndex = (pickerIndex + 1) % Config.loraTypes.size();
+        }
     }
 
     void leftArrow() {
@@ -263,7 +276,7 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 1300 ||  menuDisplay == 1310) {
             messageText = "";
             menuDisplay = menuDisplay/10;
-        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410)) {
+        } else if ((menuDisplay>=10 && menuDisplay<=13) || (menuDisplay>=20 && menuDisplay<=29) || (menuDisplay == 120) || (menuDisplay>=130 && menuDisplay<=133) || (menuDisplay>=50 && menuDisplay<=53) || (menuDisplay>=200 && menuDisplay<=290) || (menuDisplay>=2210 && menuDisplay<=2212) || (menuDisplay>=60 && menuDisplay<=64) || (menuDisplay>=30 && menuDisplay<=33) || (menuDisplay>=40 && menuDisplay<=41) || (menuDisplay>=400 && menuDisplay<=410) || menuDisplay == 2000 || menuDisplay == 2100) {
             menuDisplay = int(menuDisplay/10);
         } else if (menuDisplay == 5000 || menuDisplay == 5010 || menuDisplay == 5020 || menuDisplay == 5030 || menuDisplay == 5040 || menuDisplay == 5050 || menuDisplay == 5060 || menuDisplay == 5070 || menuDisplay == 5080) {
             menuDisplay = 5;
@@ -290,40 +303,98 @@ namespace KEYBOARD_Utils {
         } else if (menuDisplay == 630) {
             messageText = "";
             menuDisplay = 63;
+        } else if (menuDisplay == 9000 || menuDisplay == 9001) {
+            menuDisplay = 0;
         }
     }
 
-    void rightArrow() {
-        if (menuDisplay == 0 || menuDisplay == 200) {
-            if (myBeaconsIndex >= (myBeaconsSize - 1)) {
-                myBeaconsIndex = 0;
-            } else {
-                myBeaconsIndex++;
-            }
+    // Returns false and changes nothing when the profile has no real callsign: nothing may transmit as NOCALL.
+    bool switchProfile(uint8_t newIndex) {
+        if (APRSPacketLib::checkNocall(Config.beacons[newIndex].callsign)) {
             displayToggle(true);
             displayTime = millis();
-            statusUpdate  = true;
-            statusTime = millis();
-            winlinkCommentState = false;
+            displayShow("   INFO", "", " CALLSIGN NOT SET!", Config.beacons[newIndex].callsign, "Change in WebConfig", "", 2000);
+            return false;
+        }
 
-            String newCallsign = "-----> ";
-            newCallsign += Config.beacons[myBeaconsIndex].callsign;
-            String profileLabel = "";
-            int labelLength = Config.beacons[myBeaconsIndex].profileLabel.length();
-            if (labelLength > 0 ) {
-                int extraSpaces = (max(0, (22 - (labelLength + 2)))) / 2;
-                for (int i = 0; i < extraSpaces; i++) {
-                    profileLabel += " ";
-                }
-                profileLabel += "(";
-                profileLabel += Config.beacons[myBeaconsIndex].profileLabel;
-                profileLabel += ")";
+        myBeaconsIndex = newIndex;
+        displayToggle(true);
+        displayTime = millis();
+        statusUpdate  = true;
+        statusTime = millis();
+        winlinkCommentState = false;
+
+        String newCallsign = "-----> ";
+        newCallsign += Config.beacons[myBeaconsIndex].callsign;
+        String profileLabel = "";
+        int labelLength = Config.beacons[myBeaconsIndex].profileLabel.length();
+        if (labelLength > 0 ) {
+            int extraSpaces = (max(0, (22 - (labelLength + 2)))) / 2;
+            for (int i = 0; i < extraSpaces; i++) {
+                profileLabel += " ";
             }
-            displayShow("   INFO", "", "  CHANGING CALLSIGN!", newCallsign, profileLabel, "", 2000);
+            profileLabel += "(";
+            profileLabel += Config.beacons[myBeaconsIndex].profileLabel;
+            profileLabel += ")";
+        }
+        displayShow("   INFO", "", "  CHANGING PROFILE!", newCallsign, profileLabel, "", 2000);
 
-            STATION_Utils::saveIndex(0, myBeaconsIndex);
-            sendStartTelemetry = true;
-            if (menuDisplay == 200) menuDisplay = 20;
+        STATION_Utils::saveIndex(0, myBeaconsIndex);
+        sendStartTelemetry = true;
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "Main", "Profile %s (%s) selected",
+                   Config.beacons[myBeaconsIndex].profileLabel.c_str(), Config.beacons[myBeaconsIndex].callsign.c_str());
+        return true;
+    }
+
+    // A profile can be used only when it has a real callsign (not NOCALL / N0CALL).
+    bool profileUsable(uint8_t index) {
+        return !APRSPacketLib::checkNocall(Config.beacons[index].callsign);
+    }
+
+    uint8_t usableProfileCount() {
+        uint8_t count = 0;
+        for (uint8_t i = 0; i < Config.beacons.size(); i++) if (profileUsable(i)) count++;
+        return count;
+    }
+
+    // Index of the first usable profile, or -1 when there is none.
+    int firstUsableProfile() {
+        for (uint8_t i = 0; i < Config.beacons.size(); i++) if (profileUsable(i)) return i;
+        return -1;
+    }
+
+    // The next usable profile from 'from' in the given direction (+1 or -1), wrapping around.
+    // 'from' itself when there is no other one.
+    uint8_t stepUsableProfile(uint8_t from, int direction) {
+        const int size = Config.beacons.size();
+        for (int step = 1; step < size; step++) {
+            const int candidate = ((from + direction * step) % size + size) % size;
+            if (profileUsable(candidate)) return candidate;
+        }
+        return from;
+    }
+
+    // The next profile with a real callsign after 'from'. When there is no other one, the plain next profile,
+    // so that switching to it is refused with an explanation.
+    uint8_t nextUsableProfile(uint8_t from) {
+        const uint8_t candidate = stepUsableProfile(from, +1);
+        return (candidate != from) ? candidate : (from + 1) % myBeaconsSize;
+    }
+
+    void rightArrow() {
+        if (menuDisplay == 0) {
+            switchProfile(nextUsableProfile(myBeaconsIndex));       // main-screen shortcut: next profile with a real callsign
+        } else if (menuDisplay == 20) {
+            const int firstUsable = firstUsableProfile();
+            pickerIndex = profileUsable(myBeaconsIndex) ? myBeaconsIndex : (firstUsable >= 0 ? firstUsable : 0);
+            menuDisplay = 200;                                      // the list opens on the current profile
+        } else if (menuDisplay == 21) {
+            pickerIndex = loraIndex;                                // open the LoRa list on the current entry
+            menuDisplay = 210;
+        } else if (menuDisplay == 200) {
+            if (usableProfileCount() > 0) menuDisplay = 2000;       // nothing to pick when no profile has a real callsign
+        } else if (menuDisplay == 2000) {
+            menuDisplay = switchProfile(pickerIndex) ? 20 : 200;    // refused: back to the list
         } else if ((menuDisplay >= 1 && menuDisplay <= 6) || (menuDisplay >= 11 &&menuDisplay <= 13) || (menuDisplay >= 20 && menuDisplay <= 27) || (menuDisplay >= 40 && menuDisplay <= 41)) {
             menuDisplay = menuDisplay * 10;
         } else if (menuDisplay == 10) {
@@ -361,8 +432,15 @@ namespace KEYBOARD_Utils {
         }
 
         else if (menuDisplay == 210) {
-            LoRa_Utils::changeFreq();
-            STATION_Utils::saveIndex(1, loraIndex);
+            menuDisplay = 2100;                                     // picked: ask for confirmation
+        } else if (menuDisplay == 2100) {
+            const char* failedStep = nullptr;
+            if (LoRa_Utils::selectLoRaType(pickerIndex, failedStep)) {
+                STATION_Utils::saveIndex(1, loraIndex);
+                MENU_Utils::showLoRaChanged();
+            } else {
+                MENU_Utils::showLoRaRefused(pickerIndex, failedStep);
+            }
             menuDisplay = 21;
         } else if (menuDisplay == 220) {
             displayEcoMode = !displayEcoMode;

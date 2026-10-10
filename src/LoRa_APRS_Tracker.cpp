@@ -200,7 +200,7 @@ void loop() {
         if (APRSPacketLib::checkNocall(currentBeacon->callsign)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your callsigns in WebConfig");
             displayShow("ERROR", "Callsigns = NOCALL!", "---> change it !!!", 2000);
-            KEYBOARD_Utils::rightArrow();
+            KEYBOARD_Utils::switchProfile(KEYBOARD_Utils::nextUsableProfile(myBeaconsIndex));
             currentBeacon = &Config.beacons[myBeaconsIndex];
         }
         miceActive = APRSPacketLib::validateMicE(currentBeacon->micE);

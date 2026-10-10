@@ -33,10 +33,11 @@ namespace LoRa_Utils {
 
     void setFlag();
     int  validPower(int requested);
-    void changeFreq();
+    bool selectLoRaType(uint8_t newIndex, const char*& failedStep);
     void setup();
     void sendNewPacket(const String& newPacket);
     void wakeRadio();
+    int  boardMaxPower();
     ReceivedLoRaPacket receiveFromSleep();
     ReceivedLoRaPacket receivePacket();
     void sleepRadio();
