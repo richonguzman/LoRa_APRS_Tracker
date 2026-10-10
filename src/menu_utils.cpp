@@ -402,10 +402,10 @@ namespace MENU_Utils {
                 break;
 
 //////////
-            case 20:    // 2.Configuration ---> Callsign
+            case 20:    // 2.Configuration ---> Change Profile
                 displayShow(" CONFIG>", "  Power Off", "> Change Profile ", "  Change LoRa", "  Display",lastLine);
                 break;
-            case 21:    // 2.Configuration ---> Change Freq
+            case 21:    // 2.Configuration ---> Change LoRa
                 displayShow(" CONFIG>", "  Change Profile ", "> Change LoRa", "  Display", "  " + checkBTType() + " (" + checkProcessActive(bluetoothActive) + ")",lastLine);
                 break;
             case 22:    // 2.Configuration ---> Display
