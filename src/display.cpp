@@ -86,6 +86,8 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             bluetoothConnected;
+extern bool             displayState;
+extern uint32_t         displayTime;
 
 const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                 "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
@@ -293,7 +295,14 @@ void displaySetup() {
     #endif
 }
 
+void displayWake() {
+    if (!displayState) displayToggle(true);
+    displayTime = millis();
+}
+
 void displayToggle(bool toggle) {
+    displayState = toggle;
+    if (toggle) displayTime = millis();
     if (toggle) {
         #ifdef HAS_TFT
             analogWrite(TFT_BL, screenBrightness);

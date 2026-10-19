@@ -17,6 +17,9 @@
  */
 
 #include <NimBLEDevice.h>
+#include <atomic>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include "configuration.h"
 #include "lora_utils.h"
 #include "kiss_utils.h"
@@ -52,31 +55,104 @@ String  BLEToLoRaPacket         = "";
 String  kissSerialBuffer        = "";
 
 
+// Pairing approach adapted from Antonio Megia (EA4HXZ), armegia/LoRa_APRS_Tracker,
+// pr/diagnostics-ble-bonding. Keep display, logger and packet parsing out of
+// NimBLE's host task. Only authenticated peers may enqueue data or receive it.
+static std::atomic<uint16_t> activeHandle {BLE_HS_CONN_HANDLE_NONE};
+static std::atomic<bool> authenticated {false};
+static std::atomic<uint32_t> sessionId {0};
+static std::atomic<uint32_t> connectionStarted {0};
+static uint32_t parsingSession = 0;
+static std::atomic<uint32_t> pairingPin {0};
+static std::atomic<bool> showPin {false};
+static std::atomic<bool> rxOverflow {false};
+static uint32_t pinStartedAt = 0;
+static uint32_t shownPin = 0;
+struct RxChunk {
+    uint16_t handle;
+    uint32_t session;
+    uint16_t size;
+    uint8_t data[512];
+};
+static QueueHandle_t rxQueue = nullptr;
+
+static bool peerIsAuthorized(uint16_t handle) {
+    ble_gap_conn_desc desc;
+    return handle != BLE_HS_CONN_HANDLE_NONE &&
+           ble_gap_conn_find(handle, &desc) == 0 &&
+           desc.sec_state.encrypted && desc.sec_state.authenticated;
+}
+
 class MyServerCallbacks : public NimBLEServerCallbacks {
-    void onConnect(NimBLEServer* pServer) {
-        bluetoothConnected = true;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE Client Connected");
-        #ifdef RPC_MicroTracker
-            digitalWrite(13, LOW);    // Led BT/BLE
-        #endif
-        delay(100);
+    uint32_t onPassKeyRequest() override {
+        showPin.store(true);
+        return pairingPin.load();
     }
 
-    void onDisconnect(NimBLEServer* pServer) {
-        bluetoothConnected = false;
-        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BLE", "%s", "BLE client Disconnected, Started Advertising");
-        #ifdef RPC_MicroTracker
-            digitalWrite(13, HIGH);    // Led BT/BLE
-        #endif
-        delay(100);
-        pServer->startAdvertising();
+    void onConnect(NimBLEServer* server, ble_gap_conn_desc* desc) override {
+        uint16_t empty = BLE_HS_CONN_HANDLE_NONE;
+        if (!activeHandle.compare_exchange_strong(empty, desc->conn_handle)) {
+            server->disconnect(desc->conn_handle);
+            return;
+        }
+        authenticated.store(false);
+        sessionId.fetch_add(1);
+        connectionStarted.store(millis());
+        showPin.store(false);
+        // A fresh PIN for each connection; known peers reuse their saved keys.
+        pairingPin.store(100000UL + esp_random() % 900000UL);
+        // NimBLE 1.4.1 only calls onPassKeyRequest for DISPLAY_ONLY with this
+        // sentinel configured. The callback supplies the actual random PIN.
+        NimBLEDevice::setSecurityPasskey(123456);
+        if (NimBLEDevice::startSecurity(desc->conn_handle) != 0) {
+            server->disconnect(desc->conn_handle);
+        }
+    }
+
+    void onAuthenticationComplete(ble_gap_conn_desc* desc) override {
+        if (desc->conn_handle != activeHandle.load()) return;
+        showPin.store(false);
+        const bool ok = desc->sec_state.encrypted && desc->sec_state.authenticated;
+        authenticated.store(ok);
+        if (!ok) pServer->disconnect(desc->conn_handle);
+    }
+
+    void onDisconnect(NimBLEServer* server, ble_gap_conn_desc* desc) override {
+        if (desc->conn_handle == activeHandle.load()) {
+            authenticated.store(false);
+            sessionId.fetch_add(1);
+            showPin.store(false);
+            activeHandle.store(BLE_HS_CONN_HANDLE_NONE);
+            // Queue entries from a previous connection must never be transmitted.
+            if (rxQueue) xQueueReset(rxQueue);
+            rxOverflow.store(true);  // clears partial KISS frame in loop task
+            server->startAdvertising();
+        }
     }
 };
 
 class MyCallbacks : public NimBLECharacteristicCallbacks {
-    void onWrite(NimBLECharacteristic *pCharacteristic) {
+    void onWrite(NimBLECharacteristic* characteristic, ble_gap_conn_desc* desc) override {
+        if (!desc || desc->conn_handle != activeHandle.load() ||
+            !authenticated.load() || !peerIsAuthorized(desc->conn_handle)) return;
+        const std::string value = characteristic->getValue();
+        if (value.empty()) return;
+        if (value.size() > sizeof(RxChunk::data)) {
+            rxOverflow.store(true);
+            return;
+        }
+        RxChunk chunk;
+        chunk.handle = desc->conn_handle;
+        chunk.session = sessionId.load();
+        chunk.size = value.size();
+        memcpy(chunk.data, value.data(), value.size());
+        if (xQueueSend(rxQueue, &chunk, 0) != pdTRUE) rxOverflow.store(true);
+    }
+};
+
+static void parseReceivedData(const std::string& receivedData) {
         if (Config.bluetooth.useKISS) {   // KISS (AX.25)
-            std::string receivedData = pCharacteristic->getValue();
+
 
             for (uint8_t c : receivedData) {                                                // save all received data from buffer
                 kissSerialBuffer += (char)c;
@@ -120,28 +196,53 @@ class MyCallbacks : public NimBLECharacteristicCallbacks {
                 if (frame.length() >= 4) {                                                  // FEND | CMD | DATA | FEND
                     bool isDataFrame    = false;
                     BLEToLoRaPacket     = KISS_Utils::decodeKISS(frame, isDataFrame);
-                    if (isDataFrame) shouldSendBLEtoLoRa = true;
+                    if (isDataFrame) {
+                        shouldSendBLEtoLoRa = true;
+                        BLE_Utils::sendToLoRa();
+                    }
                 }
             }
         } else {                            // TNC2
-            std::string receivedData = pCharacteristic->getValue();
+
             String receivedString = "";
             for (int i = 0; i < receivedData.length(); i++) receivedString += receivedData[i];
             BLEToLoRaPacket = receivedString;
             shouldSendBLEtoLoRa = true;
         }
-    }
-};
+}
 
 namespace BLE_Utils {
 
     void stop() {
+        authenticated.store(false);
+        showPin.store(false);
+        bluetoothConnected = false;
         BLEDevice::deinit();
     }
 
     void setup() {
         String BLEid = Config.bluetooth.deviceName;
         BLEDevice::init(BLEid.c_str());
+        NimBLEDevice::setMTU(517);
+        // Authenticated legacy pairing is compatible with NimBLE 1.4.1 and
+        // Android clients tested by EA4HXZ. LE Secure Connections needs separate
+        // compatibility testing; do not silently fall back to Just Works.
+        NimBLEDevice::setSecurityAuth(true, true, false);
+        NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
+        NimBLEDevice::setSecurityPasskey(123456);
+        NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
+        NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
+        if (Config.bluetooth.bondResetPending) {
+            NimBLEDevice::deleteAllBonds();
+            Config.bluetooth.bondResetPending = false;
+            Config.writeFile();
+        }
+        rxQueue = xQueueCreate(8, sizeof(RxChunk));
+        if (!rxQueue) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "BLE", "RX queue allocation failed; BLE disabled");
+            BLEDevice::deinit();
+            return;
+        }
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
 
@@ -150,8 +251,8 @@ namespace BLE_Utils {
         //  KISS (AX.25) or TNC2
         bool useKISS = Config.bluetooth.useKISS;
         pService = pServer->createService(useKISS ? SERVICE_UUID_0 : SERVICE_UUID_1);
-        pCharacteristicTx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-        pCharacteristicRx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+        pCharacteristicTx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_TX_0 : CHARACTERISTIC_UUID_TX_1, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+        pCharacteristicRx = pService->createCharacteristic(useKISS ? CHARACTERISTIC_UUID_RX_0 : CHARACTERISTIC_UUID_RX_1, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
 
         if (pService != nullptr) {
             pCharacteristicRx->setCallbacks(new MyCallbacks());
@@ -170,17 +271,75 @@ namespace BLE_Utils {
         }
     }
 
+    void loop() {
+        const uint16_t handle = activeHandle.load();
+        if (handle != BLE_HS_CONN_HANDLE_NONE && !authenticated.load() &&
+            millis() - connectionStarted.load() >= 60000UL) {
+            pServer->disconnect(handle);
+        }
+        bluetoothConnected = authenticated.load() && peerIsAuthorized(activeHandle.load());
+        if (rxOverflow.exchange(false) || !bluetoothConnected) {
+            kissSerialBuffer = "";
+            BLEToLoRaPacket = "";
+            shouldSendBLEtoLoRa = false;
+            if (rxQueue) xQueueReset(rxQueue);
+        }
+        if (!bluetoothConnected || !rxQueue) return;
+        RxChunk chunk;
+        // Bounded work per iteration to keep radio/UI processing responsive.
+        for (unsigned i = 0; i < 8 && xQueueReceive(rxQueue, &chunk, 0) == pdTRUE; ++i) {
+            if (chunk.handle == activeHandle.load() && chunk.session == sessionId.load() && peerIsAuthorized(chunk.handle)) {
+                parsingSession = chunk.session;
+                parseReceivedData(std::string(reinterpret_cast<char*>(chunk.data), chunk.size));
+                sendToLoRa();
+            }
+        }
+    }
+
+    void showPairing() {
+        if (!showPin.load()) {
+            shownPin = 0;
+            return;
+        }
+        const uint32_t pin = pairingPin.load();
+        if (shownPin != pin) {
+            shownPin = pin;
+            pinStartedAt = millis();
+        }
+        if (millis() - pinStartedAt >= 60000UL) {
+            showPin.store(false);
+            const uint16_t handle = activeHandle.load();
+            if (handle != BLE_HS_CONN_HANDLE_NONE && !authenticated.load()) pServer->disconnect(handle);
+            return;
+        }
+        displayWake();
+        char digits[11];
+        snprintf(digits, sizeof(digits), "%06lu", static_cast<unsigned long>(pin));
+        displayShow("BLE PAIR", "Enter PIN on phone", "PIN: " + String(digits));
+    }
+
     void sendToLoRa() {
         if (!shouldSendBLEtoLoRa) return;
+        if (!authenticated.load() || parsingSession != sessionId.load() || !peerIsAuthorized(activeHandle.load())) {
+            shouldSendBLEtoLoRa = false;
+            BLEToLoRaPacket = "";
+            return;
+        }
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Tx", "%s", BLEToLoRaPacket.c_str());
+        displayWake();
         displayShow("BLE Tx >>", "", BLEToLoRaPacket, 1000);
-        LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
+        // A disconnect can occur while the OLED message is being displayed.
+        if (authenticated.load() && parsingSession == sessionId.load() &&
+            peerIsAuthorized(activeHandle.load())) {
+            LoRa_Utils::sendNewPacket(BLEToLoRaPacket);
+        }
         BLEToLoRaPacket = "";
         shouldSendBLEtoLoRa = false;
     }
 
     void txBLE(uint8_t p) {
+        if (!authenticated.load() || !peerIsAuthorized(activeHandle.load())) return;
         pCharacteristicTx->setValue(&p,1);
         pCharacteristicTx->notify();
         delay(3);
@@ -192,12 +351,19 @@ namespace BLE_Utils {
 
             const char* t   = kissEncodedFrame.c_str();
             int length      = kissEncodedFrame.length();
-            for (int i = 0; i < length; i += BLE_CHUNK_SIZE) {
-                int chunkSize = (length - i < BLE_CHUNK_SIZE) ? (length - i) : BLE_CHUNK_SIZE;
+            const uint16_t mtu = pServer->getPeerMTU(activeHandle.load());
+            if (mtu <= 3) return;
+            const int payloadSize = (mtu - 3 < BLE_CHUNK_SIZE) ? mtu - 3 : BLE_CHUNK_SIZE;
+            for (int i = 0; i < length; i += payloadSize) {
+                int chunkSize = (length - i < payloadSize) ? (length - i) : payloadSize;
 
                 uint8_t* chunk = new uint8_t[chunkSize];
                 memcpy(chunk, t + i, chunkSize);
 
+                if (!authenticated.load() || !peerIsAuthorized(activeHandle.load())) {
+                    delete[] chunk;
+                    return;
+                }
                 pCharacteristicTx->setValue(chunk, chunkSize);
                 pCharacteristicTx->notify();
                 delete[] chunk;
@@ -210,7 +376,7 @@ namespace BLE_Utils {
     }
 
     void sendToPhone(const String& packet) {
-        if (!packet.isEmpty() && bluetoothConnected) {
+        if (!packet.isEmpty() && bluetoothConnected && authenticated.load() && peerIsAuthorized(activeHandle.load())) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BLE Rx", "%s", packet.c_str());
             String receivedPacketString = "";
             for (int i = 0; i < packet.length(); i++) receivedPacketString += packet[i];

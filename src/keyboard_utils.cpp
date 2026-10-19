@@ -558,13 +558,9 @@ namespace KEYBOARD_Utils {
 
     void processPressedKey(char key) {
         keyDetected = true;
+        displayWake();
         menuTime = millis();
         /*  181 -> up / 182 -> down / 180 <- back / 183 -> forward / 8 Delete / 13 Enter / 32 Space  / 27 Esc */
-        if (!displayState) {
-            displayToggle(true);
-            displayTime = millis();
-            displayState = true;
-        }
         if (menuDisplay == 0 && key == 13) {       // Main Menu
             menuDisplay = 1;
         } else if (menuDisplay == 0 && key == 8) {
