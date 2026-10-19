@@ -1,6 +1,6 @@
 # T-Beam 1W – BLE-PIN und OLED-Aufwecken
 
-Basis: LoRa_APRS_Tracker **V4.0.1**, eigene Variante **4.0.1-sec-oled.1**.
+Basis: LoRa_APRS_Tracker **V4.0.1**, eigene Variante **4.0.1-sec-oled.2**.
 Nur für **LilyGO T-Beam 1W / ESP32-S3**.
 
 ## Änderungen
@@ -69,3 +69,8 @@ Die Host-Tests prüfen BLE-Zugriffssperren, PIN-Anzeige, Datenverarbeitung bei
 Verbindungsabbruch und Wiederverbindung, Pufferüberlauf sowie OLED-Aufwecken
 und Timeout anhand des Produktionscodes mit simulierten Geräten.
 Ein echter Hardwaretest mit T-Beam 1W und Graywolf steht noch aus.
+
+## Revision .2
+
+Während der PIN-Kopplung hat BLE PAIR Vorrang vor Hauptbildschirm und Meldungen.
+Nach Kopplung, Abbruch oder Timeout wird die normale Anzeige wieder freigegeben.

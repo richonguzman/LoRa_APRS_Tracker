@@ -60,3 +60,60 @@ int main(){
     executable = str(Path(temp) / 'display-test')
     subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', str(source), '-o', executable], check=True)
     subprocess.run([executable], check=True)
+
+    # Exercise the actual OLED render paths while BLE owns the display.
+    code = r'''
+#include <cassert>
+#include <string>
+#include <cstdio>
+using String=std::string;
+namespace BLE_Utils { bool pairing=false; bool isPairing(){return pairing;} }
+#define SH110X_WHITE 1
+struct {
+ int frames=0; String header; bool first=true;
+ void clearDisplay(){first=true;}
+ void setTextColor(int){} void setTextSize(int){} void setCursor(int,int){}
+ void println(const String& s){if(first){header=s;first=false;}}
+ void setContrast(int){} void drawLine(int,int,int,int,int){}
+ void display(){frames++;}
+} display;
+int screenBrightness=80,menuDisplay=0,symbolArraySize=0;
+bool symbolAvailable=false,bluetoothConnected=false;
+String symbolArray[1];
+struct { String symbol; } beacon, *currentBeacon=&beacon;
+struct { struct {bool showSymbol=false;} display; } Config;
+int delays=0;
+void delay(int ms){delays+=ms;}
+int now(){return 0;}
+void drawSymbol(int,bool){}
+'''
+    for signature in [
+        'static void displayShowShort(',
+        'void displayShow(const String& header, const String& line1, const String& line2, int wait)',
+        'void displayShowPairing(',
+        'void displayShow(const String& header, const String& line1, const String& line2, const String& line3',
+    ]:
+        code += function('src/display.cpp', signature) + '\n'
+    code += r'''
+int main(){
+ displayShow("MAIN","","","","","",0);assert(display.frames==1);
+ BLE_Utils::pairing=true;
+ displayShowPairing("BLE PAIR","Enter PIN","123456");
+ assert(display.frames==2 && display.header=="BLE PAIR");
+ for(int i=0;i<10;i++){
+   displayShow("MAIN","","","","","",0);
+   displayShow("RX","","packet",1000);
+ }
+ assert(display.frames==2 && display.header=="BLE PAIR" && delays==0);
+ BLE_Utils::pairing=false;
+ displayShowPairing("BLE PAIR","","");assert(display.frames==2);
+ displayShow("MAIN","","","","","",0);assert(display.frames==3 && display.header=="MAIN");
+ displayShow("TX","","packet",1000);assert(display.frames==4 && delays==1000);
+ puts("PASS: PIN owns OLED across repeated main/message redraws; rendering resumes after pairing");
+}
+'''
+    source = Path(temp) / 'pairing-display-test.cpp'
+    source.write_text(code)
+    executable = str(Path(temp) / 'pairing-display-test')
+    subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', str(source), '-o', executable], check=True)
+    subprocess.run([executable], check=True)

@@ -24,6 +24,7 @@
 #include "station_utils.h"
 #include "board_pinout.h"
 #include "display.h"
+#include "ble_utils.h"
 #include "TimeLib.h"
 
 
@@ -326,7 +327,7 @@ void displayToggle(bool toggle) {
     }
 }
 
-void displayShow(const String& header, const String& line1, const String& line2, int wait) {
+static void displayShowShort(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
@@ -413,6 +414,16 @@ void displayShow(const String& header, const String& line1, const String& line2,
     #endif
 }
 
+void displayShow(const String& header, const String& line1, const String& line2, int wait) {
+    if (BLE_Utils::isPairing()) return;
+    displayShowShort(header, line1, line2, wait);
+}
+
+void displayShowPairing(const String& header, const String& line1, const String& line2) {
+    if (!BLE_Utils::isPairing()) return;
+    displayShowShort(header, line1, line2, 0);
+}
+
 #ifndef HELTEC_WSL_V3_TNC
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
     const uint8_t *bitMap = symbolsAPRS[symbolIndex];
@@ -431,6 +442,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 #endif
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
+    if (BLE_Utils::isPairing()) return;
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();

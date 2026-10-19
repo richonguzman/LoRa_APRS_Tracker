@@ -296,6 +296,10 @@ namespace BLE_Utils {
         }
     }
 
+    bool isPairing() {
+        return showPin.load();
+    }
+
     void showPairing() {
         if (!showPin.load()) {
             shownPin = 0;
@@ -315,7 +319,7 @@ namespace BLE_Utils {
         displayWake();
         char digits[11];
         snprintf(digits, sizeof(digits), "%06lu", static_cast<unsigned long>(pin));
-        displayShow("BLE PAIR", "Enter PIN on phone", "PIN: " + String(digits));
+        displayShowPairing("BLE PAIR", "Enter PIN on phone", "PIN: " + String(digits));
     }
 
     void sendToLoRa() {

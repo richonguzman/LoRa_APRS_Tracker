@@ -25,6 +25,8 @@
 void displaySetup();
 void displayToggle(bool toggle);
 void displayWake();
+// Reserved for the BLE prompt; normal displayShow calls yield during pairing.
+void displayShowPairing(const String& header, const String& line1, const String& line2);
 
 void displayShow(const String& header, const String& line1, const String& line2, int wait = 0);
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait = 0);

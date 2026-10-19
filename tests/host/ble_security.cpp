@@ -15,10 +15,12 @@ int main(){
  write(1,"unauthenticated"); BLE_Utils::loop(); assert(radioPackets.empty());
  BLE_Utils::sendToPhone("secret");assert(pCharacteristicTx->notifications==0);
  auto pin=pServer->cb->onPassKeyRequest();assert(pin>=100000 && pin<=999999);
+ assert(BLE_Utils::isPairing());
  BLE_Utils::showPairing();assert(wakes>0 && displayText.find(std::to_string(pin))!=std::string::npos);
  peers[1].sec_state={true,false};pServer->cb->onAuthenticationComplete(&peers[1]);
  write(1,"encrypted but no MITM");BLE_Utils::loop();assert(radioPackets.empty());
  assert(!pServer->disconnected.empty());
+ assert(!BLE_Utils::isPairing());
  authorize(1);write(1,"authorized");BLE_Utils::loop();assert(radioPackets.size()==1);
  BLE_Utils::sendToPhone("reply");assert(pCharacteristicTx->notifications>0);
  connect(2);assert(activeHandle==1 && pServer->disconnected.back()==2);

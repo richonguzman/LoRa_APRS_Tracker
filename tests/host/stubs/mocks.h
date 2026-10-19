@@ -101,4 +101,5 @@ namespace KISS_Utils {inline String decodeKISS(const String& s,bool& ok){ok=true
 static unsigned wakes=0;static std::string displayText;
 inline void displayWake(){++wakes;}
 static void (*displayHook)() = nullptr;
+inline void displayShowPairing(const String&,const String&,const String& text){displayText=text.s;}
 inline void displayShow(const String&,const String&,const String& text,int=0){displayText=text.s;if(displayHook)displayHook();}

@@ -1,6 +1,6 @@
 # T-Beam 1W: BLE security and OLED activity wake
 
-Base: upstream tag V4.0.1. Build label: 4.0.1-sec-oled.1.
+Base: upstream tag V4.0.1. Build label: 4.0.1-sec-oled.2.
 
 ## Behavior
 
@@ -71,3 +71,9 @@ Hardware acceptance checks still required on T-Beam 1W + Graywolf:
 6. First short button press wakes; double/triple press menus still work.
 
 No physical-device tests have been performed in this environment.
+
+## Revision .2
+
+During PIN pairing, both normal display render paths yield to the BLE prompt.
+This prevents the periodic main screen and TX/RX messages from overwriting it.
+Normal rendering resumes after authentication, disconnect or timeout.
