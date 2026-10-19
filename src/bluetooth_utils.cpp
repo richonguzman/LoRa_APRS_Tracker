@@ -139,4 +139,8 @@ namespace BLUETOOTH_Utils {
         }
     }
 
+    void sendNMEAToPhone(const String& sentence) {
+        if (!sentence.isEmpty()) SerialBT.println(sentence);
+    }
+
 }

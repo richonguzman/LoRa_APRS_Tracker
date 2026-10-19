@@ -218,4 +218,28 @@ namespace BLE_Utils {
         }
     }
 
+    uint16_t getNotifyChunkSize() {
+        uint16_t mtu = 0;
+        for (uint16_t connId : pServer->getPeerDevices()) {                                 // smallest MTU of connected peers
+            uint16_t peerMTU = pServer->getPeerMTU(connId);
+            if (peerMTU > 3 && (mtu == 0 || peerMTU < mtu)) mtu = peerMTU;
+        }
+        if (mtu == 0) mtu = 23;                                                             // BLE default MTU
+        return mtu - 3;                                                                     // notify payload = MTU - 3
+    }
+
+    void sendNMEAToPhone(const String& sentence) {
+        if (sentence.isEmpty() || !bluetoothConnected) return;
+        const String line   = sentence + "\r\n";
+        const uint8_t* data = (const uint8_t*)line.c_str();
+        int length          = line.length();
+        int chunkSize       = getNotifyChunkSize();
+        for (int i = 0; i < length; i += chunkSize) {
+            int size = (length - i < chunkSize) ? (length - i) : chunkSize;
+            pCharacteristicTx->setValue(data + i, size);
+            pCharacteristicTx->notify();
+            delay(3);
+        }
+    }
+
 }

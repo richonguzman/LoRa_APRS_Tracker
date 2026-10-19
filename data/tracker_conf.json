@@ -121,7 +121,8 @@
 		"active": false,
 		"deviceName": "LoRaTracker",
 		"useBLE": false,
-		"useKISS": false
+		"useKISS": false,
+		"sendNMEA": false
 	},
 	"pttTrigger": {
 		"active": false,

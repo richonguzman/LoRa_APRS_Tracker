@@ -69,6 +69,7 @@ bool Configuration::writeFile() {
             data["bluetooth"]["useBLE"]             = true; // fixed as BLE
         #endif
         data["bluetooth"]["useKISS"]                = bluetooth.useKISS;
+        data["bluetooth"]["sendNMEA"]               = bluetooth.sendNMEA;
 
         for (int i = 0; i < loraTypes.size(); i++) {
             data["lora"][i]["frequency"]                = loraTypes[i].frequency;
@@ -180,9 +181,11 @@ bool Configuration::readFile() {
         if (data["bluetooth"]["active"].isNull() ||
             data["bluetooth"]["deviceName"].isNull() ||
             data["bluetooth"]["useBLE"].isNull() ||
-            data["bluetooth"]["useKISS"].isNull()) needsRewrite = true;
+            data["bluetooth"]["useKISS"].isNull() ||
+            data["bluetooth"]["sendNMEA"].isNull()) needsRewrite = true;
         bluetooth.active                = data["bluetooth"]["active"] | false;
         bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
+        bluetooth.sendNMEA              = data["bluetooth"]["sendNMEA"] | false;
         #ifdef HAS_BT_CLASSIC
             bluetooth.useBLE            = data["bluetooth"]["useBLE"] | false;
             bluetooth.useKISS           = data["bluetooth"]["useKISS"] | false;
@@ -329,6 +332,7 @@ void Configuration::setDefaultValues() {
 
     bluetooth.active                = false;
     bluetooth.deviceName            = "LoRaTracker";
+    bluetooth.sendNMEA              = false;
     #ifdef HAS_BT_CLASSIC
         bluetooth.useBLE            = false;
         bluetooth.useKISS           = false;

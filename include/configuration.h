@@ -116,6 +116,7 @@ public:
     String  deviceName;
     bool    useBLE;
     bool    useKISS;
+    bool    sendNMEA;
 };
 
 

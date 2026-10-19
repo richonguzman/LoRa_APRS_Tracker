@@ -484,6 +484,24 @@ body{background:var(--msh-bg);color:var(--msh-text);font-family:"Inter",system-u
                                         </select>
                                     </div>
                                 </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                type="checkbox"
+                                                name="bluetooth.sendNMEA"
+                                                id="bluetooth.sendNMEA"
+                                                class="form-check-input"
+                                            />
+                                            <label
+                                                for="bluetooth.sendNMEA"
+                                                class="form-label"
+                                                >Send GPS NMEA sentences</label
+                                            >
+                                        </div>
+                                        <small>Forwards the raw NMEA sentences from the GPS to the phone as they arrive, in the same Bluetooth stream as the APRS packets. Enable only if the app on the phone uses (or ignores) NMEA data.</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

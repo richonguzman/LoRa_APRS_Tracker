@@ -24,8 +24,10 @@
 #include "configuration.h"
 #include "station_utils.h"
 #include "board_pinout.h"
+#include "bluetooth_utils.h"
 #include "power_utils.h"
 #include "sleep_utils.h"
+#include "ble_utils.h"
 #include "gps_utils.h"
 #include "display.h"
 #include "logger.h"
@@ -39,6 +41,7 @@
 
 #define GPS_BAUD_FILE           "/gps_baud.dat"
 #define GPS_BAUD_PROBE_TIME_MS  1500
+#define NMEA_MAX_LENGTH         120     // NMEA standard is 82, some proprietary sentences are longer
 const uint32_t gpsBaudRates[] = {9600, 115200, 38400, 4800, 57600};     // most common first
 
 
@@ -59,12 +62,16 @@ extern uint32_t             lastTx;
 extern bool                 disableGPS;
 extern bool                 gpsShouldSleep;
 extern SmartBeaconValues    currentSmartBeaconValues;
+extern bool                 bluetoothActive;
+extern bool                 bluetoothConnected;
 
 double      currentHeading  = 0;
 double      previousHeading = 0;
 float       bearing         = 0;
 
 bool        gpsIsActive     = true;
+
+String      nmeaSentence    = "";
 
 
 namespace GPS_Utils {
@@ -171,9 +178,43 @@ namespace GPS_Utils {
         STATION_Utils::orderListenedStationsByDistance(callsign, distanceKm, courseTo);
     }
 
+    void sendNMEAToPhone(const String& sentence) {
+        if (Config.bluetooth.useBLE) {
+            BLE_Utils::sendNMEAToPhone(sentence);
+        } else {
+            #ifdef HAS_BT_CLASSIC
+                BLUETOOTH_Utils::sendNMEAToPhone(sentence);
+            #endif
+        }
+    }
+
+    void forwardNMEAChar(char c) {
+        if (c == '$') {                                                 // start of a new sentence
+            nmeaSentence = "$";
+            return;
+        }
+        if (nmeaSentence.isEmpty() || c == '\r') return;               // wait for '$' / drop CR
+        if (c == '\n') {                                                // sentence complete
+            sendNMEAToPhone(nmeaSentence);
+            nmeaSentence = "";
+            return;
+        }
+        if (nmeaSentence.length() >= NMEA_MAX_LENGTH) {                 // garbage protection
+            nmeaSentence = "";
+            return;
+        }
+        nmeaSentence += c;
+    }
+
     void getData() {
         if (disableGPS) return;
-        while (gpsSerial.available() > 0) gps.encode(gpsSerial.read());
+        bool forwardNMEA = Config.bluetooth.sendNMEA && bluetoothActive && bluetoothConnected;
+        if (!forwardNMEA && !nmeaSentence.isEmpty()) nmeaSentence = "";   // avoid sending a partial sentence after reconnect
+        while (gpsSerial.available() > 0) {
+            char c = gpsSerial.read();
+            gps.encode(c);
+            if (forwardNMEA) forwardNMEAChar(c);
+        }
     }
 
     void setDateFromData() {

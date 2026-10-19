@@ -28,6 +28,7 @@ namespace BLE_Utils {
     void setup();
     void sendToLoRa();
     void sendToPhone(const String& packet);
+    void sendNMEAToPhone(const String& sentence);
 
 }
 

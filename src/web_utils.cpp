@@ -196,6 +196,7 @@ namespace WEB_Utils {
                 Config.bluetooth.useBLE         = true;    // fixed as BLE
             #endif
             Config.bluetooth.useKISS            = getParamIntSafe("bluetooth.useKISS", Config.bluetooth.useKISS) == 1;
+            Config.bluetooth.sendNMEA           = request->hasParam("bluetooth.sendNMEA", true);
         }
 
         // LORA

@@ -207,10 +207,12 @@ function loadSettings(settings) {
     document.getElementById("bluetooth.deviceName").value               = settings.bluetooth.deviceName;
     document.getElementById("bluetooth.useBLE").value                   = settings.bluetooth.useBLE ? "1" : "0";
     document.getElementById("bluetooth.useKISS").value                  = settings.bluetooth.useKISS ? "1" : "0";
+    document.getElementById("bluetooth.sendNMEA").checked               = settings.bluetooth.sendNMEA;
     BluetoothActiveCheckbox.checked = settings.bluetooth.active;
     BluetoothDeviceName.disabled    = !BluetoothActiveCheckbox.checked;
     BluetoothUseBle.disabled        = !BluetoothActiveCheckbox.checked;
     BluetoothUseKiss.disabled       = !BluetoothActiveCheckbox.checked;
+    BluetoothSendNmea.disabled      = !BluetoothActiveCheckbox.checked;
 
     // LORA
     const loraContainer = document.getElementById("lora-settings");
@@ -422,10 +424,12 @@ const BluetoothActiveCheckbox   = document.querySelector('input[name="bluetooth.
 const BluetoothDeviceName       = document.querySelector('input[name="bluetooth.deviceName"]');
 const BluetoothUseBle           = document.querySelector('select[name="bluetooth.useBLE"]');
 const BluetoothUseKiss          = document.querySelector('select[name="bluetooth.useKISS"]');
+const BluetoothSendNmea         = document.querySelector('input[name="bluetooth.sendNMEA"]');
 BluetoothActiveCheckbox.addEventListener("change", function () {
     BluetoothDeviceName.disabled    = !this.checked;
     BluetoothUseBle.disabled        = !this.checked;
     BluetoothUseKiss.disabled       = !this.checked;
+    BluetoothSendNmea.disabled      = !this.checked;
 });
 
 // Battery Switches

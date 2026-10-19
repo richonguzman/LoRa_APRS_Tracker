@@ -29,6 +29,7 @@ namespace BLUETOOTH_Utils {
     void getData(const uint8_t *buffer, size_t size);
     void sendToLoRa();
     void sendToPhone(const String& packet);
+    void sendNMEAToPhone(const String& sentence);
 
 }
 
