@@ -1,6 +1,6 @@
 # T-Beam 1W – BLE-PIN und OLED-Aufwecken
 
-Basis: LoRa_APRS_Tracker **V4.0.1**, eigene Variante **4.0.1-sec-oled.2**.
+Basis: LoRa_APRS_Tracker **V4.0.1**, eigene Variante **4.0.1-sec-oled.3**.
 Nur für **LilyGO T-Beam 1W / ESP32-S3**.
 
 ## Änderungen
@@ -74,3 +74,14 @@ Ein echter Hardwaretest mit T-Beam 1W und Graywolf steht noch aus.
 
 Während der PIN-Kopplung hat BLE PAIR Vorrang vor Hauptbildschirm und Meldungen.
 Nach Kopplung, Abbruch oder Timeout wird die normale Anzeige wieder freigegeben.
+
+## Revision .3
+
+Bei verbundenem Bluetooth-KISS-Client erzeugt die App die Nachrichten-ACKs.
+Der Tracker zeigt/speichert Nachrichten weiter und reicht das Originalpaket
+weiter, erzeugt dafür aber kein zusätzliches ACK. Ohne verbundenen KISS-Client
+bestätigt er wieder selbst. Das gilt für BLE (erst nach authentifizierter
+Kopplung) und Bluetooth Classic. Rufzeichen/SSID in Tracker und App gleich
+einstellen und ACKs in der App aktivieren. Eine verbundene App ohne ACK-Funktion
+hat keinen automatischen Tracker-Fallback. TNC2 und andere automatische
+Antworten bleiben unverändert.

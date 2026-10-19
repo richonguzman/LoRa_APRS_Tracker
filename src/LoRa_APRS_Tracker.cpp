@@ -70,7 +70,7 @@ ____________________________________________________________________*/
 #endif
 
 
-String      versionDate             = "4.0.1-sec-oled.2";
+String      versionDate             = "4.0.1-sec-oled.3";
 String      versionNumber           = "4.0.1";
 Configuration                       Config;
 HardwareSerial                      gpsSerial(1);

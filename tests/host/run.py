@@ -117,3 +117,51 @@ int main(){
     executable = str(Path(temp) / 'pairing-display-test')
     subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', str(source), '-o', executable], check=True)
     subprocess.run([executable], check=True)
+
+    code = r'''
+#include <cassert>
+#include <string>
+#include <vector>
+#include <cstdio>
+using String=std::string;
+bool bluetoothActive=false, bluetoothConnected=false;
+struct { struct {bool useKISS=false;} bluetooth;} Config;
+std::vector<String> queued;
+namespace APRSPacketLib {
+ String generateAckMessage(const String& payload) {
+   auto pos=payload.find('{');
+   return pos==String::npos || pos+1==payload.size() ? "" : "ack"+payload.substr(pos+1);
+ }
+}
+void addToOutputBuffer(int, const String& sender, const String& text) {
+ queued.push_back(sender+":"+text);
+}
+'''
+    code += function('src/msg_utils.cpp', 'static void acknowledgeReceivedMessage(')
+    code += r'''
+int main(){
+ for(int active=0;active<2;active++) for(int connected=0;connected<2;connected++)
+ for(int kiss=0;kiss<2;kiss++){
+   bluetoothActive=active;bluetoothConnected=connected;Config.bluetooth.useKISS=kiss;
+   queued.clear();
+   acknowledgeReceivedMessage("DA6PG-1","test{031");
+   if(active && connected && kiss) assert(queued.empty());
+   else assert(queued.size()==1 && queued[0]=="DA6PG-1:ack031");
+ }
+ bluetoothActive=true;Config.bluetooth.useKISS=true;
+ queued.clear();bluetoothConnected=true;
+ acknowledgeReceivedMessage("DA6PG-1","test{032");assert(queued.empty());
+ bluetoothConnected=false;
+ acknowledgeReceivedMessage("DA6PG-1","test{033");assert(queued.size()==1);
+ bluetoothConnected=true;
+ acknowledgeReceivedMessage("DA6PG-1","test{034");assert(queued.size()==1);
+ bluetoothConnected=false;
+ acknowledgeReceivedMessage("DA6PG-1","test{");assert(queued.size()==1);
+ puts("PASS: connected KISS owns ACKs; standalone/TNC2 and disconnect restore tracker ACKs");
+}
+'''
+    source = Path(temp) / 'ack-test.cpp'
+    source.write_text(code)
+    executable = str(Path(temp) / 'ack-test')
+    subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror', str(source), '-o', executable], check=True)
+    subprocess.run([executable], check=True)

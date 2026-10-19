@@ -1,6 +1,6 @@
 # T-Beam 1W: BLE security and OLED activity wake
 
-Base: upstream tag V4.0.1. Build label: 4.0.1-sec-oled.2.
+Base: upstream tag V4.0.1. Build label: 4.0.1-sec-oled.3.
 
 ## Behavior
 
@@ -77,3 +77,14 @@ No physical-device tests have been performed in this environment.
 During PIN pairing, both normal display render paths yield to the BLE prompt.
 This prevents the periodic main screen and TX/RX messages from overwriting it.
 Normal rendering resumes after authentication, disconnect or timeout.
+
+## Revision .3
+
+A connected Bluetooth KISS client owns APRS message ACK generation. The tracker
+continues displaying/storing messages and forwarding the original packet, but
+does not queue its own ACK for messages received while that client is connected.
+Without a connected KISS client, tracker ACKs retain their previous behavior.
+This applies to BLE (authenticated connection required) and Bluetooth Classic.
+Use the same callsign/SSID in the tracker and the messaging app, and enable ACKs
+in the app. A connected app that does not acknowledge messages has no automatic
+tracker fallback. TNC2 mode and other automatic replies are unchanged.
