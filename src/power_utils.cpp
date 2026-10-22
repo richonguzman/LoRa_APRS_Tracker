@@ -29,7 +29,7 @@
 #include "logger.h"
 
 
-#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_WIRELESS_TRACKER)
+#if !defined(TTGO_T_Beam_S3_SUPREME_V3) && !defined(HELTEC_WIRELESS_TRACKER) && !defined(TTGO_T_BEAM_BPF)
     #define I2C_SDA 21
     #define I2C_SCL 22
     #define IRQ_PIN 35
@@ -41,6 +41,12 @@
     #define I2C1_SDA 42
     #define I2C1_SCL 41
     #define IRQ_PIN  40
+#endif
+
+#ifdef TTGO_T_BEAM_BPF
+    #define I2C_SDA 8
+    #define I2C_SCL 9
+    #define IRQ_PIN 4
 #endif
 
 #ifdef HAS_AXP192
@@ -161,7 +167,7 @@ namespace POWER_Utils {
         #endif
 
         #ifdef HAS_AXP2101
-            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+            #if defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(TTGO_T_BEAM_BPF)
                 PMU.setALDO4Voltage(3300);
                 PMU.enableALDO4();
             #else
@@ -181,7 +187,7 @@ namespace POWER_Utils {
         #endif
 
         #ifdef HAS_AXP2101
-            #ifdef TTGO_T_Beam_S3_SUPREME_V3
+            #if defined(TTGO_T_Beam_S3_SUPREME_V3) || defined(TTGO_T_BEAM_BPF)
                 PMU.disableALDO4();
             #else
                 PMU.disableALDO3();
@@ -203,7 +209,7 @@ namespace POWER_Utils {
             #ifdef TTGO_T_Beam_S3_SUPREME_V3
                 PMU.setALDO3Voltage(3300);
                 PMU.enableALDO3();
-            #else
+            #elif !defined(TTGO_T_BEAM_BPF)     // BPF: LoRa powered from VBAT/VBUS and enabled with RADIO_VCC_PIN
                 PMU.setALDO2Voltage(3300);
                 PMU.enableALDO2();
             #endif
@@ -218,7 +224,7 @@ namespace POWER_Utils {
         #ifdef HAS_AXP2101
             #ifdef TTGO_T_Beam_S3_SUPREME_V3
                 PMU.disableALDO3();
-            #else
+            #elif !defined(TTGO_T_BEAM_BPF)
                 PMU.disableALDO2();
             #endif
         #endif
@@ -314,7 +320,9 @@ namespace POWER_Utils {
                 PMU.disableDC5();
                 #ifndef TTGO_T_Beam_S3_SUPREME_V3
                     PMU.disableALDO1();
-                    PMU.disableALDO4();
+                    #ifndef TTGO_T_BEAM_BPF
+                        PMU.disableALDO4();     // BPF: ALDO4 = GPS (handled by activateGPS/deactivateGPS)
+                    #endif
                 #endif
                 PMU.disableBLDO1();
                 PMU.disableBLDO2();

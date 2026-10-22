@@ -89,6 +89,18 @@ namespace LoRa_Utils {
         return power;
     }
 
+    #if defined(RADIO_MIN_FREQ) && defined(RADIO_MAX_FREQ)     // optional per board in board_pinout.h (e.g. band filtered PA boards)
+        bool isFreqOutOfRange() {
+            return currentLoRaType->frequency < RADIO_MIN_FREQ || currentLoRaType->frequency > RADIO_MAX_FREQ;
+        }
+
+        void showFreqOutOfRange() {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Freq %ld out of board range (%ld-%ld), Tx blocked!", currentLoRaType->frequency, (long)RADIO_MIN_FREQ, (long)RADIO_MAX_FREQ);
+            String freqRange = "only " + String(RADIO_MIN_FREQ / 1000000) + "-" + String(RADIO_MAX_FREQ / 1000000) + " MHz";
+            displayShow("ERROR", "Tx Freq out of range", freqRange, 2000);
+        }
+    #endif
+
     void setPower(int requested) {      // each LoRa type (EU/WORLD, POLAND, UK, US) has its own power
         int power = validPower(requested);
         if (power != requested) {
@@ -137,14 +149,17 @@ namespace LoRa_Utils {
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa", currentLoRainfo.c_str());
         displayShow("LORA FREQ>", "", "CHANGED TO: " + loraCountryFreq, "", "", "", 2000);
+        #if defined(RADIO_MIN_FREQ) && defined(RADIO_MAX_FREQ)
+            if (isFreqOutOfRange()) showFreqOutOfRange();
+        #endif
     }
 
     void setup() {
-        #if defined(LIGHTTRACKER_PLUS_1_0) || defined(TTGO_T_BEAM_1W)
+        #if defined(LIGHTTRACKER_PLUS_1_0) || defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
             pinMode(RADIO_VCC_PIN,OUTPUT);
             digitalWrite(RADIO_VCC_PIN,HIGH);
         #endif
-        #if defined(TTGO_T_BEAM_1W)
+        #if defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
             pinMode(RADIO_RXEN, OUTPUT);
             digitalWrite(RADIO_RXEN, LOW);  // start setup in Tx mode
         #endif
@@ -185,7 +200,7 @@ namespace LoRa_Utils {
         #if defined(RADIO_RXEN) && defined(RADIO_TXEN)
             radio.setRfSwitchPins(RADIO_RXEN, RADIO_TXEN);
         #endif
-        #if defined(TTGO_T_BEAM_1W)
+        #if defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
             radio.setRfSwitchPins(RADIO_RXEN, RADIOLIB_NC);
         #endif
 
@@ -212,6 +227,9 @@ namespace LoRa_Utils {
         #endif
 
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+        #if defined(RADIO_MIN_FREQ) && defined(RADIO_MAX_FREQ)
+            if (isFreqOutOfRange()) showFreqOutOfRange();
+        #endif
     }
 
     bool doCAD() {      // CAD (Channel Activity Detection)
@@ -257,6 +275,12 @@ namespace LoRa_Utils {
     }
 
     void sendNewPacket(const String& newPacket) {
+        #if defined(RADIO_MIN_FREQ) && defined(RADIO_MAX_FREQ)
+            if (isFreqOutOfRange()) {     // never Tx out of band: BPF/PA would be damaged
+                showFreqOutOfRange();
+                return;
+            }
+        #endif
         if (Config.cadActive) {
             cadStartTime = millis();
             cadNoticeShown = false;
@@ -285,7 +309,7 @@ namespace LoRa_Utils {
         }
         if (Config.notification.buzzerActive && Config.notification.txBeep) NOTIFICATION_Utils::beaconTxBeep();
 
-        #if defined(TTGO_T_BEAM_1W)
+        #if defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
             digitalWrite(RADIO_RXEN, LOW);
         #endif
         #ifdef FAN_CTRL_PIN
@@ -323,7 +347,7 @@ namespace LoRa_Utils {
     ReceivedLoRaPacket receiveFromSleep() {
         ReceivedLoRaPacket receivedLoraPacket;
         String packet = "";
-        #if defined(TTGO_T_BEAM_1W)
+        #if defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
             digitalWrite(RADIO_RXEN, HIGH);
         #endif
         int state = radio.readData(packet);
@@ -344,7 +368,7 @@ namespace LoRa_Utils {
         if (operationDone) {
             operationDone = false;
             if (transmitFlag) {
-                #if defined(TTGO_T_BEAM_1W)
+                #if defined(TTGO_T_BEAM_1W) || defined(TTGO_T_BEAM_BPF)
                     digitalWrite(RADIO_RXEN, HIGH);
                 #endif
                 radio.startReceive();
