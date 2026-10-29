@@ -841,7 +841,7 @@ namespace MENU_Utils {
                                 sixthRowMainMenu += batteryVoltage;
                                 sixthRowMainMenu += "V";
                             } else if (batteryCharge.toInt() > 0) {
-                                sixthRowMainMenu = "Bat: ";
+                                sixthRowMainMenu = "Batt ";
                                 sixthRowMainMenu += batteryVoltage;
                                 sixthRowMainMenu += "V (charging)";
                             } else {
@@ -864,7 +864,7 @@ namespace MENU_Utils {
                                 lowBatteryPercent = 21;
                             }
                             if (POWER_Utils::isCharging() && batteryCharge != "100") {
-                                sixthRowMainMenu = "Bat: ";
+                                sixthRowMainMenu = "Batt ";
                                 sixthRowMainMenu += String(batteryVoltage);
                                 sixthRowMainMenu += "V (charging)";
                             } else if (!POWER_Utils::isCharging() && batteryCharge == "100") {

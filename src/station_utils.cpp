@@ -217,23 +217,28 @@ namespace STATION_Utils {
                 #if defined(HAS_AXP192) || defined(HAS_AXP2101)
                     String batteryChargeCurrent = POWER_Utils::getBatteryInfoCurrent();
                     #if defined(HAS_AXP192)
-                        comment += " Bat=";
+                        if (comment != "") comment += " ";
+                        comment += "Batt=";
                         comment += batteryVoltage;
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "mA)";
                     #elif defined(HAS_AXP2101)
-                        comment += " Bat=";
+                        if (comment != "") comment += " ";
+                        comment += "Batt=";
                         comment += String(batteryVoltage.toFloat(),2);
                         comment += "V (";
                         comment += batteryChargeCurrent;
                         comment += "%)";
                     #endif
                 #elif defined(BATTERY_PIN)
-                    comment += " Bat=";
+                    String batteryPercent = BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
+                    batteryPercent.trim();
+                    if (comment != "") comment += " ";
+                    comment += "Batt=";
                     comment += String(batteryVoltage.toFloat(),2);
-                    comment += "V";
-                    comment += BATTERY_Utils::getPercentVoltageBattery(batteryVoltage.toFloat());
+                    comment += "V ";
+                    comment += batteryPercent;
                     comment += "%";
                 #endif
             }
