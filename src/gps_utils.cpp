@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -16,9 +16,10 @@
  * along with LoRa APRS Tracker. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <TinyGPS++.h>
-#include "TimeLib.h"
 #include <APRSPacketLib.h>
+#include <TinyGPS++.h>
+#include <SPIFFS.h>
+#include "TimeLib.h"
 #include "smartbeacon_utils.h"
 #include "configuration.h"
 #include "station_utils.h"
@@ -34,6 +35,10 @@
 #else
     #define GPS_BAUD    9600
 #endif
+
+#define GPS_BAUD_FILE           "/gps_baud.dat"
+#define GPS_BAUD_PROBE_TIME_MS  1500
+const uint32_t gpsBaudRates[] = {9600, 115200, 38400, 4800, 57600};     // most common first
 
 
 extern Configuration        Config;
@@ -143,6 +148,80 @@ namespace GPS_Utils {
         return false;
     }
 
+    // ---- GPS BAUD autodetect (adopted from upstream V4.0) ----
+    // ESP32-only: probeBaudRate() calls gpsSerial.begin(baud, SERIAL_8N1, GPS_TX, GPS_RX)
+    // which is a HardwareSerial-specific signature; Adafruit nRF52 BSP's Serial1 only
+    // supports .begin(baud). On nRF52 we fall back to a fixed GPS_BAUD in setup().
+    #ifndef ARDUINO_ARCH_NRF52
+    bool isKnownBaudRate(uint32_t baud) {
+        if (baud == GPS_BAUD) return true;
+        for (uint32_t knownBaud : gpsBaudRates) {
+            if (knownBaud == baud) return true;
+        }
+        return false;
+    }
+
+    uint32_t readSavedBaudRate() {
+        File file = SPIFFS.open(GPS_BAUD_FILE, "r");
+        if (!file) return 0;
+        uint32_t baud = file.readString().toInt();
+        file.close();
+        return isKnownBaudRate(baud) ? baud : 0;
+    }
+
+    void saveBaudRate(uint32_t baud) {
+        File file = SPIFFS.open(GPS_BAUD_FILE, "w");
+        if (!file) {
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "GPS", "Could not save baud rate");
+            return;
+        }
+        file.print(baud);
+        file.close();
+    }
+
+    bool probeBaudRate(uint32_t baud) {
+        gpsSerial.end();
+        delay(50);
+        gpsSerial.begin(baud, SERIAL_8N1, GPS_TX, GPS_RX);
+        uint32_t validSentences = gps.passedChecksum();
+        uint32_t probeStart     = millis();
+        while (millis() - probeStart < GPS_BAUD_PROBE_TIME_MS) {
+            while (gpsSerial.available() > 0) gps.encode(gpsSerial.read());
+            if (gps.passedChecksum() > validSentences) return true;   // NMEA with valid checksum
+            delay(10);
+        }
+        return false;
+    }
+
+    uint32_t detectBaudRate() {
+        uint32_t savedBaud = readSavedBaudRate();
+
+        uint32_t candidates[2 + sizeof(gpsBaudRates) / sizeof(gpsBaudRates[0])];
+        size_t   count = 0;
+        auto addCandidate = [&](uint32_t baud) {
+            if (baud == 0) return;
+            for (size_t i = 0; i < count; i++) {
+                if (candidates[i] == baud) return;
+            }
+            candidates[count++] = baud;
+        };
+        addCandidate(savedBaud);                                // saved first, then board default, then common ones
+        addCandidate(GPS_BAUD);
+        for (uint32_t baud : gpsBaudRates) addCandidate(baud);
+
+        for (size_t i = 0; i < count; i++) {
+            if (i == 1) bootStatus("Searching GPS baud rate...");
+            bool found = probeBaudRate(candidates[i]);
+            if (!found && i == 0) found = probeBaudRate(candidates[i]);    // retry first one: GPS may be slow to start
+            if (found) {
+                if (candidates[i] != savedBaud) saveBaudRate(candidates[i]);
+                return candidates[i];
+            }
+        }
+        return 0;
+    }
+    #endif  // !ARDUINO_ARCH_NRF52
+
     void setup() {
         // No hardware needed for fixed position or when GPS is explicitly disabled.
         if (Config.gpsSource == GPS_FIXED) {
@@ -175,7 +254,7 @@ namespace GPS_Utils {
             digitalWrite(GPS_VCC, LOW);
             delay(200);
         #endif
-        #if defined(F4GOH_1W_LoRa_Tracker) || defined(F4GOH_1W_LoRa_Tracker_LLCC68) || defined(HELTEC_T114)
+        #if defined(HELTEC_T114)
             // T114: VEXT_ENABLE (P0.21) gates the L76K GPS power rail; must be
             // HIGH before any UART activity or the GPS reports nothing.
             pinMode(GPS_VCC, OUTPUT);
@@ -184,9 +263,18 @@ namespace GPS_Utils {
         #endif
 
         #ifdef ARDUINO_ARCH_NRF52
+            // Adafruit nRF52 Serial1.begin() only takes baud; no autodetect.
             gpsSerial.begin(GPS_BAUD);
         #else
-            gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
+            uint32_t detectedBaud = detectBaudRate();
+            if (detectedBaud != 0) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "GPS", "Baud rate detected: %u", detectedBaud);
+            } else {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "GPS", "No NMEA data found, using default baud rate: %u", GPS_BAUD);
+                gpsSerial.end();
+                delay(50);
+                gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_TX, GPS_RX);
+            }
         #endif
 
         gpsIsActive = true;
@@ -204,7 +292,12 @@ namespace GPS_Utils {
     }
 
     void setDateFromData() {
-        if (gps.time.isValid()) setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+        if (!gps.time.isValid()) return;
+        if (gps.date.isValid() && gps.date.year() >= 2026 && gps.date.year() < 2080) {
+            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+        } else {
+            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), day(), month(), year());   // time only, date not received yet
+        }
     }
 
     void calculateDistanceTraveled() {
@@ -231,8 +324,8 @@ namespace GPS_Utils {
     }
 
     void calculateHeadingDelta(int speed) {
-        double headingDelta = abs(previousHeading - currentHeading);
-        if (headingDelta > 180.0) headingDelta = 360.0 - headingDelta;
+        double headingDelta = fabs(previousHeading - currentHeading);
+        if (headingDelta > 180.0) headingDelta = 360.0 - headingDelta;    // shortest angle: 355 -> 5 is 10 deg, not 350
         // Don't allow a heading-change beacon sooner than the current beacon interval.
         // When parked (speed==0) txInterval equals nonSmartBeaconRate, so GPS heading
         // noise cannot trigger a beacon during the stationary wait.
@@ -291,7 +384,7 @@ namespace GPS_Utils {
         if (gps.speed.kmph() > 0.5) bearing = course;
 
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
-        if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";
+        if (bearing >= 5.625 && bearing < 16.875)     return ">.......N.|.....NE..<";
         if (bearing >= 16.875 && bearing < 28.125)    return ">.....N...|...NE....<"; // NEN
         if (bearing >= 28.125 && bearing < 39.375)    return ">...N.....|.NE......<";
         if (bearing >= 39.375 && bearing < 50.625)    return ">.N......(NE).....E.<"; // NE

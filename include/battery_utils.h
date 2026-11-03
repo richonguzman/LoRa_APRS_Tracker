@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -20,6 +20,11 @@
 #define BATTERY_UTILS_H_
 
 #include <Arduino.h>
+#include "board_pinout.h"
+
+#ifndef BATTERY_CELLS
+    #define BATTERY_CELLS   1   // cells in series: percentage and sleepVoltage (per cell) scale with it
+#endif
 
 
 namespace BATTERY_Utils {

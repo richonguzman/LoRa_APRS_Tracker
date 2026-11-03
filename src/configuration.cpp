@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -107,6 +107,7 @@ bool Configuration::writeFile() {
         data["other"]["nonSmartBeaconRateSec"]      = nonSmartBeaconRate;
         data["other"]["sendAltitude"]               = sendAltitude;
         data["other"]["sendSpeedCourse"]            = sendSpeedCourse;
+        data["other"]["cadActive"]                  = cadActive;
         data["other"]["digiMode"]                   = (int)digiMode;
 
         data["customSmartBeacon"]["slowRate"]       = customSmartBeacon.slowRate;
@@ -288,7 +289,8 @@ bool Configuration::readFile() {
         if (data["other"]["sendCommentAfterXBeacons"].isNull() ||
             data["other"]["nonSmartBeaconRateSec"].isNull() ||
             data["other"]["sendAltitude"].isNull() ||
-            data["other"]["sendSpeedCourse"].isNull()) needsRewrite = true;
+            data["other"]["sendSpeedCourse"].isNull() ||
+            data["other"]["cadActive"].isNull()) needsRewrite = true;
         sendCommentAfterXBeacons        = data["other"]["sendCommentAfterXBeacons"] | 10;
         // Backward compat: accept old "path" key; new key is "beaconPath"
         if      (!data["other"]["beaconPath"].isNull()) beaconPath = data["other"]["beaconPath"].as<String>();
@@ -300,6 +302,7 @@ bool Configuration::readFile() {
         else                                                        { nonSmartBeaconRate = 900; needsRewrite = true; }
         sendAltitude                    = data["other"]["sendAltitude"] | true;
         sendSpeedCourse                 = data["other"]["sendSpeedCourse"] | true;
+        cadActive                       = data["other"]["cadActive"] | true;
         // Backward compat: accept old bool "digipeating"; new field is "digiMode" (int)
         if (!data["other"]["digiMode"].isNull()) {
             digiMode = (DigiMode)(data["other"]["digiMode"] | 0);
@@ -474,6 +477,7 @@ void Configuration::setDefaultValues() {
     nonSmartBeaconRate              = 900;
     sendAltitude                    = true;
     sendSpeedCourse                 = true;
+    cadActive                       = true;
     digiMode                        = DIGI_OFF;
 
     customSmartBeacon               = SmartBeaconValues{ 120, 5, 60, 40, 100, 12 };

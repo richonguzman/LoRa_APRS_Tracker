@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -22,6 +22,7 @@
 #include <SPI.h>
 
 #include "configuration.h"
+#include "thermal_utils.h"
 #include "board_pinout.h"
 #include "lora_utils.h"
 #include "display.h"
@@ -41,6 +42,12 @@ bool transmitFlag    = true;
 // (successful read or CRC/decode failure) — see STATION_Utils::processOutputPacketBuffer()
 // for why a queued TX waits for a short quiet window since this timestamp.
 uint32_t lastRxActivityMs = 0;
+
+#define DIFS_SLOTS      2       // Number of secuential CAD slots to consider a free channel to Tx
+int     backoffMax      = 4;    // Max Backoff value (number of CAD slots to wait before Tx)
+#define CAD_MAX_WAIT_MS 10000   // Max total time waiting for a free channel before Tx anyway
+unsigned long cadStartTime = 0;
+bool cadNoticeShown = false;
 
 #if defined(HAS_SX1262)
     // On HELTEC_T114, variants_bsp/heltec_t114/variant.h sets PIN_SPI_MISO/MOSI/SCK
@@ -71,6 +78,18 @@ uint32_t lastRxActivityMs = 0;
 #endif
 #if defined(HAS_LLCC68) //  LLCC68 supports spreading factor only in range of 5-11!
     LLCC68 radio = new Module(RADIO_CS_PIN, RADIO_DIO1_PIN, RADIO_RST_PIN, RADIO_BUSY_PIN);
+#endif
+
+#if defined(HAS_SX1278) || defined(HAS_SX1276)
+    #define CHIP_MIN_POWER  2       // PA_BOOST (below 2 RadioLib switches to RFO, not wired on most modules)
+    #define CHIP_MAX_POWER  20
+#else                               // SX1262 / SX1268 / LLCC68
+    #define CHIP_MIN_POWER  -9
+    #define CHIP_MAX_POWER  22
+#endif
+
+#ifndef RADIO_MAX_POWER             // optional per board in board_pinout.h (e.g. 1W PA modules)
+    #define RADIO_MAX_POWER CHIP_MAX_POWER
 #endif
 
 namespace LoRa_Utils {
@@ -122,6 +141,9 @@ namespace LoRa_Utils {
         radio.setBandwidth(signalBandwidth);
         radio.setCodingRate(currentLoRaType->codingRate4);
         applyOutputPower();
+        #if defined(TTGO_T_BEAM_1W)
+            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);  // setOutputPower() resets the PA ramp time; restore it
+        #endif
 
         String currentLoRainfo = "LoRa / Freq: ";
         currentLoRainfo += String(currentLoRaType->frequency);
@@ -197,19 +219,71 @@ namespace LoRa_Utils {
         #if defined(HAS_TCXO) && !defined(HAS_1W_LORA)
             radio.setDio2AsRfSwitch();
         #endif
+        #if defined(TTGO_T_BEAM_1W)
+            radio.setDio2AsRfSwitch(true);                          // DIO2 drives the 1W PA
+            radio.setPaRampTime(RADIOLIB_SX126X_PA_RAMP_800U);      // PA needs >800us to settle (default 200us)
+        #endif
         #ifdef HAS_TCXO
             radio.setTCXO(1.8);
         #endif
 
-        if (state == RADIOLIB_ERR_NONE) {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
-        } else {
-            logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa", "Starting LoRa failed! State: %d", state);
-            while (true);
+        logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa", "LoRa init done!");
+    }
+
+    bool doCAD() {      // CAD (Channel Activity Detection)
+        return radio.scanChannel() != RADIOLIB_CHANNEL_FREE;    // false=channel free | true=RADIOLIB_LORA_DETECTED or CAD failed
+    }
+
+    bool doDIFS() {
+        for (uint8_t i = DIFS_SLOTS; i > 0; i--) {
+            if (doCAD()) return false;
+        }
+        return true;
+    }
+
+    bool cadTimedOut() {
+        return millis() - cadStartTime > CAD_MAX_WAIT_MS;
+    }
+
+    void showCadNotice() {
+        if (cadNoticeShown) return;
+        cadNoticeShown = true;
+        bootStatus("CAD: waiting for free channel...");
+    }
+
+    void waitForDIFS() {
+        while (!doDIFS()) {
+            if (cadTimedOut()) return;
+            showCadNotice();
+            logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "LoRa Tx", "CAD/DIFS failed, retry...");
+        }
+    }
+
+    void doBEB() {
+        int backoffCounter = random(1, backoffMax + 1);
+        while (backoffCounter > 0) {
+            if (cadTimedOut()) return;
+            if (doCAD()) {
+                showCadNotice();
+                waitForDIFS();  // busy channel: freeze backoff and restart DIFS
+            } else {
+                backoffCounter--;
+            }
         }
     }
 
     void sendNewPacket(const String& newPacket) {
+        if (Config.cadActive) {
+            cadStartTime = millis();
+            cadNoticeShown = false;
+            waitForDIFS();  // DIFS (Distributed Inter-Frame Space)
+            doBEB();        // BEB  (Binary Exponential Backoff)
+            if (cadTimedOut()) {
+                logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa Tx", "CAD timeout, transmitting anyway");
+            }
+            // Note: our fork's displayTx(newPacket) below handles the TX overlay;
+            // upstream's redundant displayShow() here would double-render.
+        }
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Tx","---> %s", newPacket.c_str());
         /*logger.log(logging::LoggerLevel::LOGGER_LEVEL_WARN, "LoRa","Send data: %s", newPacket.c_str());
         logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "LoRa","Send data: %s", newPacket.c_str());

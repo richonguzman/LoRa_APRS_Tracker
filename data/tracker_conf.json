@@ -26,6 +26,7 @@
     "nonSmartBeaconRateSec": 900,
     "sendSpeedCourse": true,
     "sendAltitude": true,
+    "cadActive": true,
     "digiMode": 0
   },
   "bluetooth": { "active": false, "deviceName": "LoRaAPRS" },

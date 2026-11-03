@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Ricardo Guzman - CA2RXU
+/* Copyright (C) 2026 Ricardo Guzman - CA2RXU
  *
  * This file is part of LoRa APRS Tracker.
  *
@@ -69,9 +69,15 @@ namespace BLUETOOTH_Utils {
         if (event == ESP_SPP_SRV_OPEN_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT", "Client connected");
             bluetoothConnected = true;
+            #ifdef RPC_MicroTracker
+                digitalWrite(13, LOW);    // Led BT/BLE
+            #endif
         } else if (event == ESP_SPP_CLOSE_EVT) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "BT", "Client disconnected");
             bluetoothConnected = false;
+            #ifdef RPC_MicroTracker
+                digitalWrite(13, HIGH);    // Led BT/BLE
+            #endif
         } else {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_DEBUG, "BT", "Event: %d", event);
         }

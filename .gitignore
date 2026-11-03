@@ -11,3 +11,5 @@ installer/*.bin
 **/__pycache__/
 /rf_test_harness/reports/*.json
 /rf_test_harness/reports/*.md
+.claude/
+
