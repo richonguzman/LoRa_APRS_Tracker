@@ -9,6 +9,92 @@ Newest entries first. Format: `YYYY-MM-DD — short title (commit)` followed by 
 
 ---
 
+## 2026-11-02 — Sync with upstream `richonguzman/LoRa_APRS_Tracker` (V4.0.1 + 4 bugfixes)
+
+Merged ~6.5 months of upstream work (35 commits since merge-base `bfd531a`, 2026-04-23) into
+`loranger-v2`. Target was `upstream/main` (commit `5bb2adc`, one day past the `V4.0.1` tag) so we pick
+up two bugfixes — SmartBeacon shortest-angle heading-delta and the `gpsCardinalDirection` typo —
+beyond the tagged release.
+
+**Features and bugfixes adopted:**
+
+- **Channel Activity Detection** (CAD + DIFS + BEB) in `src/lora_utils.cpp` — listen-before-talk
+  reduces collisions on busy channels. New `Config.cadActive` field (default `true`) plumbed through
+  `configuration.cpp`/`.h`, the web POST handler, and the first-boot config. The CAD notice display
+  uses our `bootStatus()` API (upstream's `displayShow()` doesn't exist in our display header).
+  **Known gap:** no UI toggle for `cadActive` yet in `index.html` / `serial_config.html` / Android
+  app — queued as a sync-config-pathways follow-up.
+- **GPS baud-rate autodetect** (`detectBaudRate()` / `probeBaudRate()` / SPIFFS persistence).
+  Wrapped in `#ifndef ARDUINO_ARCH_NRF52` — the probe calls `gpsSerial.begin(baud, SERIAL_8N1, TX, RX)`
+  which the Adafruit nRF52 Serial class doesn't accept. nRF52 continues using fixed `GPS_BAUD`.
+- **`gpsCardinalDirection` typo fix** — `bearing >= 5.675` → `5.625` (one of the two upstream
+  commits past V4.0.1 that justified merging `upstream/main` instead of the tag).
+- **`setDateFromData` year validation** — rejects GPS dates outside 2026–2080 so a cold-boot GPS
+  can't stamp the clock with 1970.
+- **SmartBeacon shortest-angle heading-delta fix** — upstream used `fabs()` + `360 - delta` wraparound.
+  Our fork's `calculateHeadingDelta()` already had the shortest-angle math plus our stronger `speed > 1
+  && lastTx >= txInterval` gating; we merged in `fabs()` for symmetry.
+- **`BATTERY_CELLS` compile-time multi-cell define** — default `1`, so our current 1S variants are
+  unaffected. Groundwork for the Rev 2 LoRanger 2S pack (see `LORANGER_V2_PORT.md` / memory
+  `project_rev2_battery.md`). Adoption of the runtime scaling in `station_utils.cpp`
+  (`sleepVoltage * BATTERY_CELLS`) deferred — our restructured `sendBeacon()` uses a different code
+  path than upstream.
+- **`TTGO_T_BEAM_1W` radio setup** — DIO2-as-RF-switch + 800 µs PA ramp time, added to both `setup()`
+  and `changeFreq()` (since `setOutputPower()` resets the ramp time to default).
+- **`THERMAL_Utils` integration in TX path** — upstream calls `onTxStart()` / `onTxEnd()` around
+  `radio.transmit()`. Our `thermal_utils.cpp` (upstream credited our fork in their derivative) now
+  participates in TX cooldown timing.
+- **Library version bumps** — Adafruit BusIO 1.17.4, ArduinoJson 7.4.3, AsyncTCP 3.5.0,
+  ESPAsyncWebServer 3.12.1, TinyGPSPlus 1.1.0, Adafruit GFX 1.12.6, Adafruit SSD1306 2.5.17.
+- **CI version bumps** — `actions/checkout@v7`, `setup-python@v7`, Python 3.13.
+
+**Deliberately not adopted:**
+
+- `peterus/esp-logger` and `richonguzman/APRSPacketLib` registry pins — we vendor `lib/Logger/` and
+  `lib/APRSPacketLib/1.0.4-loranger` (which carries our `generateObjectPacket()` / PHG /
+  Base91 T-byte additions). Our object + PHG features are queued for upstream contribution to
+  `richonguzman/APRSPacketLib` in a separate PR session.
+- `disableGPS`, `email`, `simplifiedTrackerMode` config fields — removed in our fork pre-merge.
+- Menu / Winlink / WX / telemetry / notification / touch / keyboard / joystick / `custom_characters` /
+  `custom_colors` source files and headers — fork architectural decision; the features aren't in our
+  single-role firmware.
+- ~30 unsupported variants (`ESP32C3_SuperMini_*`, `ESP32S3_DIY_*`, `TTGO_T_Deck_*`, `heltec_wifi_lora_32_V3_*`,
+  `TTGO_T_BEAM_v*`, `OE5HWN_MeshCom`, `QRPLabs_LightTracker_Plus_1_0`, `RPC_MicroTracker`, `Hydra_*`, etc.) —
+  our matrix is `heltec_t114`, `heltec_v3_433_aprs`, `tbeam_433_aprs`, `tbeam_433_1w_aprs`,
+  `lilygo_t3_433_aprs`, `LoRanger_V1`, `heltec_wireless_tracker_433_aprs`.
+- Upstream V4.0 web UI rewrite in `data_embed/index.html` and `data_embed/script.js` — fork UI is an
+  intentional field-ops layout (roles, tactical callsigns, PHG, remote config, log viewer).
+- Upstream's `thermal_utils.cpp` — our fork's version is the superset (adds `isOverTemp()` warn flag
+  and an `85 °C` shutdown guard). Upstream's file header already credits our fork.
+- Fail-hard `while (true) {}` display init in `src/display.cpp` — we keep our fail-soft logger
+  error + retry.
+- RPC_MicroTracker LED tweaks and HELTEC_WSL_V3_TNC guards — targets we don't build.
+
+**Build validation (all 7 default envs on `loranger-v2`, 2026-11-03):**
+
+| Env | Status |
+|---|---|
+| `heltec_t114` | ✅ |
+| `heltec_v3_433_aprs` | ✅ |
+| `heltec_wireless_tracker_433_aprs` | ✅ |
+| `lilygo_t3_433_aprs` | ✅ |
+| `LoRanger_V1` | ✅ |
+| `tbeam_433_1w_aprs` | ✅ |
+| `tbeam_433_aprs` | ✅ |
+
+**Follow-ups queued:**
+
+- Add `cadActive` UI toggle to `index.html`, `serial_config.html`, Android app for config-pathway
+  parity (see CLAUDE.md "Synchronized configuration pathways" rule).
+- Push `generateObjectPacket()` + PHG uncompressed-beacon + Base91 T-byte fix back to upstream
+  `richonguzman/APRSPacketLib`.
+- Heltec V3 OLED contrast (0xFF for SSD1315 panels) + display init retry — upstream contribution
+  candidates to `richonguzman/LoRa_APRS_Tracker` (see memory `project_upstream_contribution_candidates.md`).
+
+Merge commit: [`c8bde5f`](https://github.com/KJ7NYE/LoRa_FieldOps_APRS_Tracker/commit/c8bde5f).
+
+---
+
 ## 2026-07-30 — Serial config tool: WiFi STA "Add network" modal + IP-on-connect
 
 The WiFi STA "Add network" flow in the serial config tool only asked for an SSID via a bare
