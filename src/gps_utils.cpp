@@ -177,7 +177,12 @@ namespace GPS_Utils {
     }
 
     void setDateFromData() {
-        if (gps.time.isValid()) setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+        if (!gps.time.isValid()) return;
+        if (gps.date.isValid() && gps.date.year() >= 2026 && gps.date.year() < 2080) {
+            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+        } else {
+            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), day(), month(), year());   // time only, date not received yet
+        }
     }
 
     void calculateDistanceTraveled() {
@@ -200,8 +205,9 @@ namespace GPS_Utils {
     }
 
     void calculateHeadingDelta(int speed) {
-        uint8_t TurnMinAngle;
-        double headingDelta = abs(previousHeading - currentHeading);
+        int TurnMinAngle;
+        double headingDelta = fabs(previousHeading - currentHeading);
+        if (headingDelta > 180.0) headingDelta = 360.0 - headingDelta;     // shortest angle: 355 -> 5 is 10 deg, not 350
         if (lastTx > currentSmartBeaconValues.minDeltaBeacon * 1000) {
             if (speed == 0) {
                 TurnMinAngle = currentSmartBeaconValues.turnMinDeg + (currentSmartBeaconValues.turnSlope/(speed + 1));
@@ -244,7 +250,7 @@ namespace GPS_Utils {
         if (gps.speed.kmph() > 0.5) bearing = course;
 
         if (bearing >= 354.375 || bearing < 5.625)    return ">.NW.....(N).....NE.<"; // N
-        if (bearing >= 5.675 && bearing < 16.875)     return ">.......N.|.....NE..<";
+        if (bearing >= 5.625 && bearing < 16.875)     return ">.......N.|.....NE..<";
         if (bearing >= 16.875 && bearing < 28.125)    return ">.....N...|...NE....<"; // NEN
         if (bearing >= 28.125 && bearing < 39.375)    return ">...N.....|.NE......<";
         if (bearing >= 39.375 && bearing < 50.625)    return ">.N......(NE).....E.<"; // NE
