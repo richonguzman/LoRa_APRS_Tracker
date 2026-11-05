@@ -257,6 +257,7 @@ namespace LoRa_Utils {
     }
 
     void sendNewPacket(const String& newPacket) {
+        displayWake();
         if (Config.cadActive) {
             cadStartTime = millis();
             cadNoticeShown = false;
@@ -295,6 +296,7 @@ namespace LoRa_Utils {
         #ifdef FAN_CTRL_PIN
             THERMAL_Utils::onTxEnd();
         #endif
+        displayWake();  // Start the timeout after the blocking transmission.
         transmitFlag = true;
         if (state == RADIOLIB_ERR_NONE) {
             //Serial.println(F("success!"));
@@ -328,6 +330,7 @@ namespace LoRa_Utils {
         #endif
         int state = radio.readData(packet);
         if (state == RADIOLIB_ERR_NONE) {
+            if (packet.startsWith("\x3c\xff\x01") && packet.length() > 3) displayWake();
             receivedLoraPacket.text       = packet;
             receivedLoraPacket.rssi       = radio.getRSSI();
             receivedLoraPacket.snr        = radio.getSNR();
@@ -354,6 +357,7 @@ namespace LoRa_Utils {
                 if (state == RADIOLIB_ERR_NONE) {
                     if(!packet.isEmpty()) {
                         logger.log(logging::LoggerLevel::LOGGER_LEVEL_INFO, "LoRa Rx","---> %s", packet.substring(3).c_str());
+                        if (packet.startsWith("\x3c\xff\x01") && packet.length() > 3) displayWake();
                         receivedLoraPacket.text       = packet;
                         receivedLoraPacket.rssi       = radio.getRSSI();
                         receivedLoraPacket.snr        = radio.getSNR();

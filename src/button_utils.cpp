@@ -44,23 +44,28 @@
         void singlePress1() {
             menuTime = millis();
             KEYBOARD_Utils::downArrow();
+            displayWake();
         }
         #ifdef RPC_Electronics_1W_LoRa_GPS
             void singlePress2() {
+                displayWake();
                 menuTime = millis();
                 KEYBOARD_Utils::upArrow();
             }
             void singlePress3() {
+                displayWake();
                 menuTime = millis();
                 KEYBOARD_Utils::rightArrow();
             }
             void singlePress4() {
+                displayWake();
                 menuTime = millis();
                 KEYBOARD_Utils::leftArrow();
             }
         #endif
 
         void longPress1() {
+            displayWake();
             menuTime = millis();
             KEYBOARD_Utils::rightArrow();
         }

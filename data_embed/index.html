@@ -416,7 +416,7 @@ body{background:var(--msh-bg);color:var(--msh-text);font-family:"Inter",system-u
                                     Bluetooth
                                 </h5>
                                 <small
-                                    >BT Classic or BLE Configuration.</small
+                                    >BLE requires the PIN shown on the tracker when pairing a new phone.</small
                                 >
                             </div>
                             <div class="col-lg-9 col-sm-12">
@@ -484,6 +484,10 @@ body{background:var(--msh-bg);color:var(--msh-text);font-family:"Inter",system-u
                                         </select>
                                     </div>
                                 </div>
+                                <div class="row mt-3"><div class="col-12">
+                                    <label><input type="checkbox" name="bluetooth.clearBonds" /> Forget paired BLE devices when saving</label>
+                                    <small class="d-block">After saving, also forget the tracker on your phone before pairing again. Bonds are cleared when BLE next starts.</small>
+                                </div></div>
                             </div>
                         </div>
 

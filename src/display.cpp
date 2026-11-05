@@ -24,6 +24,7 @@
 #include "station_utils.h"
 #include "board_pinout.h"
 #include "display.h"
+#include "ble_utils.h"
 #include "TimeLib.h"
 
 
@@ -86,6 +87,8 @@ extern Configuration    Config;
 extern Beacon           *currentBeacon;
 extern int              menuDisplay;
 extern bool             bluetoothConnected;
+extern bool             displayState;
+extern uint32_t         displayTime;
 
 const char* symbolArray[]     = { "[", ">", "j", "b", "<", "s", "u", "R", "v", "(", ";", "-", "k",
                                 "C", "a", "Y", "O", "'", "=", "y", "U", "p", "_", ")"};
@@ -293,7 +296,14 @@ void displaySetup() {
     #endif
 }
 
+void displayWake() {
+    if (!displayState) displayToggle(true);
+    displayTime = millis();
+}
+
 void displayToggle(bool toggle) {
+    displayState = toggle;
+    if (toggle) displayTime = millis();
     if (toggle) {
         #ifdef HAS_TFT
             analogWrite(TFT_BL, screenBrightness);
@@ -317,7 +327,7 @@ void displayToggle(bool toggle) {
     }
 }
 
-void displayShow(const String& header, const String& line1, const String& line2, int wait) {
+static void displayShowShort(const String& header, const String& line1, const String& line2, int wait) {
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();
@@ -404,6 +414,16 @@ void displayShow(const String& header, const String& line1, const String& line2,
     #endif
 }
 
+void displayShow(const String& header, const String& line1, const String& line2, int wait) {
+    if (BLE_Utils::isPairing()) return;
+    displayShowShort(header, line1, line2, wait);
+}
+
+void displayShowPairing(const String& header, const String& line1, const String& line2) {
+    if (!BLE_Utils::isPairing()) return;
+    displayShowShort(header, line1, line2, 0);
+}
+
 #ifndef HELTEC_WSL_V3_TNC
 void drawSymbol(int symbolIndex, bool bluetoothActive) {
     const uint8_t *bitMap = symbolsAPRS[symbolIndex];
@@ -422,6 +442,7 @@ void drawSymbol(int symbolIndex, bool bluetoothActive) {
 #endif
 
 void displayShow(const String& header, const String& line1, const String& line2, const String& line3, const String& line4, const String& line5, int wait) {
+    if (BLE_Utils::isPairing()) return;
     #ifdef HAS_TFT
         #if defined(TTGO_T_DECK_GPS) || defined(TTGO_T_DECK_PLUS)
             draw_T_DECK_Top();

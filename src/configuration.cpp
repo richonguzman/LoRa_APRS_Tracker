@@ -61,6 +61,7 @@ bool Configuration::writeFile() {
         data["display"]["turn180"]                  = display.turn180;
         data["display"]["showSymbol"]               = display.showSymbol;
 
+        data["bluetooth"]["bondResetPending"]       = bluetooth.bondResetPending;
         data["bluetooth"]["active"]                 = bluetooth.active;
         data["bluetooth"]["deviceName"]             = bluetooth.deviceName;
         #ifdef HAS_BT_CLASSIC
@@ -181,6 +182,7 @@ bool Configuration::readFile() {
             data["bluetooth"]["deviceName"].isNull() ||
             data["bluetooth"]["useBLE"].isNull() ||
             data["bluetooth"]["useKISS"].isNull()) needsRewrite = true;
+        bluetooth.bondResetPending      = data["bluetooth"]["bondResetPending"] | false;
         bluetooth.active                = data["bluetooth"]["active"] | false;
         bluetooth.deviceName            = data["bluetooth"]["deviceName"] | "LoRaTracker";
         #ifdef HAS_BT_CLASSIC

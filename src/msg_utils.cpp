@@ -43,6 +43,8 @@ extern bool                 messageLed;
 extern uint32_t             messageLedTime;
 
 extern bool                 digipeaterActive;
+extern bool                 bluetoothActive;
+extern bool                 bluetoothConnected;
 
 extern int                  ackRequestNumber;
 
@@ -83,6 +85,15 @@ uint32_t    messageLedTime      = millis();
 
 
 namespace MSG_Utils {
+
+    static void acknowledgeReceivedMessage(const String& sender, const String& payload) {
+        // A connected KISS application owns message acknowledgements.
+        // BLE bluetoothConnected is only true after authenticated pairing.
+        if (bluetoothActive && bluetoothConnected && Config.bluetooth.useKISS) return;
+        const String ackMessage = APRSPacketLib::generateAckMessage(payload);
+        if (ackMessage != "") addToOutputBuffer(0, sender, ackMessage);
+    }
+
 
     bool warnNoAPRSMessages() {
         return noAPRSMsgWarning;
@@ -439,8 +450,7 @@ namespace MSG_Utils {
                             }
                         }
                         if (lastReceivedPacket.payload.indexOf("{") >= 0) {
-                            String ackMessage = APRSPacketLib::generateAckMessage(lastReceivedPacket.payload);
-                            if (ackMessage != "") MSG_Utils::addToOutputBuffer(0, lastReceivedPacket.sender, ackMessage);     // "" if '{' carries no ID
+                            acknowledgeReceivedMessage(lastReceivedPacket.sender, lastReceivedPacket.payload);
                             lastMsgRxTime = millis();
                             lastReceivedPacket.payload = lastReceivedPacket.payload.substring(0, lastReceivedPacket.payload.indexOf("{"));
                         }

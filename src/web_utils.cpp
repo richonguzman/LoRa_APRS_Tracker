@@ -187,6 +187,7 @@ namespace WEB_Utils {
         Config.display.showSymbol               = request->hasParam("display.showSymbol", true);
 
         //  Bluetooth
+        if (request->hasParam("bluetooth.clearBonds", true)) Config.bluetooth.bondResetPending = true;
         Config.bluetooth.active                 = request->hasParam("bluetooth.active", true);
         if (Config.bluetooth.active) {
             Config.bluetooth.deviceName         = getParamStringSafe("bluetooth.deviceName", Config.bluetooth.deviceName);

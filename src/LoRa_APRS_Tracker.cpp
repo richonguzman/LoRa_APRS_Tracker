@@ -196,6 +196,7 @@ void setup() {
 
 void loop() {
     currentBeacon = &Config.beacons[myBeaconsIndex];
+    if (bluetoothActive && Config.bluetooth.useBLE) BLE_Utils::loop();
     if (statusUpdate) {
         if (APRSPacketLib::checkNocall(currentBeacon->callsign)) {
             logger.log(logging::LoggerLevel::LOGGER_LEVEL_ERROR, "Config", "Change your callsigns in WebConfig");
@@ -284,4 +285,5 @@ void loop() {
             refreshDisplayTime = millis();
         }
     }
+    if (bluetoothActive && Config.bluetooth.useBLE) BLE_Utils::showPairing();
 }
