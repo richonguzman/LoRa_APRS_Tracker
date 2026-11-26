@@ -74,8 +74,8 @@ function loadSettings(settings) {
                             name="beacons.${index}.callsign" 
                             id="beacons.${index}.callsign" 
                             required
-                            value="${beacons.callsign}"
-                            oninput="this.value = this.value.toUpperCase();">
+                            value="${String(beacons.callsign ?? '').replace(/\s+/g, '')}"
+                            oninput="this.value = this.value.toUpperCase().replace(/\\s+/g, '');">
                         <label for="beacons.${index}.callsign">Callsign</label>
                     </div>
                     <div class="form-floating col-4 col-md-2">
