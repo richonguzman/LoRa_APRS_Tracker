@@ -43,6 +43,7 @@ bool Configuration::writeFile() {
 
         for (int i = 0; i < beacons.size(); i++) {
             beacons[i].callsign.trim();
+            beacons[i].callsign.replace(" ", "");
             beacons[i].callsign.toUpperCase();
             data["beacons"][i]["callsign"]              = beacons[i].callsign;
             data["beacons"][i]["symbol"]                = beacons[i].symbol;
@@ -156,6 +157,8 @@ bool Configuration::readFile() {
             Beacon bcn;
 
             bcn.callsign                = BeaconsArray[i]["callsign"] | "NOCALL-7";
+            bcn.callsign.trim();
+            bcn.callsign.replace(" ", "");
             bcn.callsign.toUpperCase();
             bcn.symbol                  = BeaconsArray[i]["symbol"] | "[";
             bcn.overlay                 = BeaconsArray[i]["overlay"] | "/";
